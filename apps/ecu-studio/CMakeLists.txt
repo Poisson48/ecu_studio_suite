@@ -8,6 +8,29 @@ set(CMAKE_AUTORCC ON)
 
 # ── Sources SocketSpy réutilisées directement ─────────────────────────────────
 set(SOCKETSPY_GUI_DIR "${CMAKE_SOURCE_DIR}/apps/socketspy/gui")
+set(SOCKETSPY_CORE_DIR "${CMAKE_SOURCE_DIR}/apps/socketspy/core")
+
+# ── cancore : lib de capture SocketCAN de SocketSpy ───────────────────────────
+# On reconstruit ici un petit target statique à partir des sources de cancore
+# (ring_buffer + can_socket) plutôt que de tirer tout le sous-projet SocketSpy
+# (qui réclamerait SerialBus/Charts/Bluetooth). cancore ne dépend que de la libc
+# et, sous Linux, de SocketCAN — aucun lien Qt requis. Compilé uniquement sous
+# Linux. Si ECU_BUILD_SOCKETSPY=ON, le sous-projet définit déjà `cancore`, donc
+# on ne crée notre cible que si elle n'existe pas, pour éviter toute collision.
+set(ECU_HAVE_CANCORE FALSE)
+if(UNIX AND NOT APPLE AND EXISTS "${SOCKETSPY_CORE_DIR}/src/can_socket.cpp")
+    if(TARGET cancore)
+        set(ECU_CANCORE_TARGET cancore)
+    else()
+        add_library(ecu_cancore STATIC
+            ${SOCKETSPY_CORE_DIR}/src/ring_buffer.cpp
+            ${SOCKETSPY_CORE_DIR}/src/can_socket.cpp
+        )
+        target_include_directories(ecu_cancore PUBLIC ${SOCKETSPY_CORE_DIR}/include)
+        set(ECU_CANCORE_TARGET ecu_cancore)
+    endif()
+    set(ECU_HAVE_CANCORE TRUE)
+endif()
 
 set(ECU_STUDIO_SOURCES
     src/main.cpp
@@ -22,6 +45,7 @@ set(ECU_STUDIO_SOURCES
     src/panels/compare_panel.cpp
     src/panels/git_panel.cpp
     src/panels/a2l_panel.cpp
+    src/panels/can_panel.cpp
 
     # Système de mise à jour intégré (vérifie les releases GitHub)
     src/updater.cpp
@@ -60,6 +84,19 @@ target_link_libraries(ecu_studio
         ecu_shared
         OpenSSL::Crypto
 )
+
+# ── Moniteur CAN embarqué (cancore) ───────────────────────────────────────────
+# Lie la lib cancore et active le code SocketCAN du CanPanel si disponible.
+if(ECU_HAVE_CANCORE)
+    target_link_libraries(ecu_studio PRIVATE ${ECU_CANCORE_TARGET})
+    target_compile_definitions(ecu_studio PRIVATE ECU_HAVE_CANCORE)
+endif()
+
+# Le panneau CAN peut lancer le binaire complet SocketSpy s'il a été buildé
+# (ECU_BUILD_SOCKETSPY=ON). On passe son nom au code pour la résolution de chemin.
+if(ECU_BUILD_SOCKETSPY AND TARGET socketspy)
+    target_compile_definitions(ecu_studio PRIVATE ECU_HAVE_SOCKETSPY_APP)
+endif()
 
 # ── Ressources : réutilise le thème de SocketSpy ─────────────────────────────
 configure_file(

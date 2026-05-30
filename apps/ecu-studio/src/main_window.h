@@ -19,6 +19,7 @@ class ChecksumPanel;
 class ComparePanel;
 class GitPanel;
 class A2lPanel;
+class CanPanel;
 class Updater;
 
 class MainWindow : public QMainWindow {
@@ -56,6 +57,7 @@ private:
     ComparePanel*   m_comparePanel{nullptr};
     GitPanel*       m_gitPanel{nullptr};
     A2lPanel*       m_a2lPanel{nullptr};
+    CanPanel*       m_canPanel{nullptr};
 
     QLabel* m_statusLabel{nullptr};
     QLabel* m_deviceLabel{nullptr};
