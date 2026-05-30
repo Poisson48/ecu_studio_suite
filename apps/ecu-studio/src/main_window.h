@@ -9,6 +9,7 @@
 
 namespace ecu_studio {
 
+class RomDocument;
 class MppsPanel;
 class HexViewPanel;
 class MapEditorPanel;
@@ -30,6 +31,7 @@ private:
     void setupUi();
     void setupMenuBar();
     void setupStatusBar();
+    void wirePanels();   // câble les signaux inter-panels (goto adresse, ROM lue…)
 
     // Lance le dialogue de mise à jour. Si silent=true, ne montre rien tant
     // qu'aucune mise à jour n'est disponible (vérification au démarrage).
@@ -37,6 +39,9 @@ private:
 
     socketspy::gui::SidebarNav* m_sidebar{nullptr};
     Updater* m_updater{nullptr};
+
+    // Document partagé : la ROM actuellement chargée, référencée par tous les panels.
+    RomDocument* m_doc{nullptr};
 
     // Panels ECU Studio
     MppsPanel*      m_mppsPanel{nullptr};

@@ -10,6 +10,7 @@
 #include "panels/a2l_panel.h"
 #include "updater.h"
 #include "update_dialog.h"
+#include "rom_document.h"
 
 #include <QMenuBar>
 #include <QMenu>
@@ -20,11 +21,13 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QTimer>
+#include <QFileInfo>
 
 namespace ecu_studio {
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     m_updater = new Updater(this);
+    m_doc     = new RomDocument(this);
 
     setupUi();
     setupMenuBar();
@@ -44,16 +47,18 @@ void MainWindow::setupUi() {
     resize(1280, 760);
     setMinimumSize(900, 560);
 
-    // Panels — même pattern que SocketSpy
-    m_projectPanel  = new ProjectPanel(this);
+    // Panels — tous reliés au document ROM partagé (sauf MPPS qui le remplit).
+    m_projectPanel  = new ProjectPanel(m_doc, this);
     m_mppsPanel     = new MppsPanel(this);
-    m_hexPanel      = new HexViewPanel(this);
-    m_mapEditor     = new MapEditorPanel(this);
-    m_autoMods      = new AutoModsPanel(this);
-    m_checksumPanel = new ChecksumPanel(this);
-    m_comparePanel  = new ComparePanel(this);
-    m_gitPanel      = new GitPanel(this);
-    m_a2lPanel      = new A2lPanel(this);
+    m_hexPanel      = new HexViewPanel(m_doc, this);
+    m_mapEditor     = new MapEditorPanel(m_doc, this);
+    m_autoMods      = new AutoModsPanel(m_doc, this);
+    m_checksumPanel = new ChecksumPanel(m_doc, this);
+    m_comparePanel  = new ComparePanel(m_doc, this);
+    m_gitPanel      = new GitPanel(m_doc, this);
+    m_a2lPanel      = new A2lPanel(m_doc, this);
+
+    wirePanels();
 
     // Sidebar — réutilise SidebarNav de SocketSpy verbatim
     m_sidebar = new socketspy::gui::SidebarNav(this);
@@ -74,6 +79,33 @@ void MainWindow::setupUi() {
     hbox->addWidget(m_sidebar);
     hbox->addWidget(m_sidebar->stack(), 1);
     setCentralWidget(central);
+}
+
+void MainWindow::wirePanels() {
+    // La ROM lue par MPPS devient le document courant.
+    connect(m_mppsPanel, &MppsPanel::romReadComplete, this,
+            [this](QByteArray rom) { m_doc->loadFromData(rom, tr("MPPS")); });
+
+    // Ouvrir un projet définit l'ECU et rafraîchit les auto-mods.
+    connect(m_projectPanel, &ProjectPanel::projectOpened, this,
+            [this](const QString& ecuId) {
+                m_doc->setEcuId(ecuId);
+                m_autoMods->refresh();
+                // Le dépôt Git du projet est le dossier qui contient la ROM.
+                const QString romPath = m_doc->path();
+                m_gitPanel->setRepoPath(
+                    romPath.isEmpty() ? QString()
+                                      : QFileInfo(romPath).absolutePath());
+            });
+
+    // « Voir dans Hex » depuis Maps / Compare / A2L → positionne l'éditeur hex.
+    auto gotoHex = [this](quint32 address) {
+        m_hexPanel->gotoOffset(address);
+        m_sidebar->showPanel(m_hexPanel);
+    };
+    connect(m_mapEditor,    &MapEditorPanel::gotoAddressRequested, this, gotoHex);
+    connect(m_comparePanel, &ComparePanel::gotoAddressRequested,   this, gotoHex);
+    connect(m_a2lPanel,     &A2lPanel::gotoAddressRequested,       this, gotoHex);
 }
 
 void MainWindow::setupMenuBar() {

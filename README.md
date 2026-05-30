@@ -2,6 +2,8 @@
 
 100% local, no telemetry, no network calls. Linux-native with SocketCAN and libusb, Windows cross-compile supported.
 
+**Website:** https://poisson48.github.io/ecu_studio_suite/
+
 Part of the **ECU Studio Suite** alongside **[SocketSpy](https://github.com/Poisson48/SocketSpy)** — the Linux CAN bus analysis platform.
 
 ---
@@ -31,7 +33,7 @@ Part of the **ECU Studio Suite** alongside **[SocketSpy](https://github.com/Pois
 - **Checksum panel** — compute and patch checksums for supported ECU families
 - **Compare panel** — side-by-side diff of two ROM files; byte-level delta, filterable by region
 - **AutoMods panel** — apply named calibration patches from a JSON recipe; batch apply / revert
-- **Git versioning** — libgit2-backed ROM history; commit after each flash, diff between versions, blame
+- **Git versioning** — libgit2-backed ROM history; commit any state, browse the commit log, restore (roll back) any previous version straight into the editor
 - **Project manager** — `.ecuproj` project files with ROM path, ECU type, notes, and flash log
 - **CAN companion** — launch SocketSpy side-by-side for live CAN monitoring during reprogramming
 
