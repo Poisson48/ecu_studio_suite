@@ -22,6 +22,24 @@ Part of the **ECU Studio Suite** alongside **[SocketSpy](https://github.com/Pois
 
 ---
 
+## Screenshots
+
+> Full gallery: **https://poisson48.github.io/ecu_studio_suite/demo.html**
+
+| Hex editor | Map editor | Checksum |
+|:---:|:---:|:---:|
+| [![Hex](docs/screenshots/es_hex.png)](docs/screenshots/es_hex.png) | [![Maps](docs/screenshots/es_maps.png)](docs/screenshots/es_maps.png) | [![Checksum](docs/screenshots/es_checksum.png)](docs/screenshots/es_checksum.png) |
+
+| ROM compare | AutoMods | Git versioning |
+|:---:|:---:|:---:|
+| [![Compare](docs/screenshots/es_compare.png)](docs/screenshots/es_compare.png) | [![AutoMods](docs/screenshots/es_automods.png)](docs/screenshots/es_automods.png) | [![Git](docs/screenshots/es_git.png)](docs/screenshots/es_git.png) |
+
+| A2L browser | MPPS flashing | Project manager |
+|:---:|:---:|:---:|
+| [![A2L](docs/screenshots/es_a2l.png)](docs/screenshots/es_a2l.png) | [![MPPS](docs/screenshots/es_mpps.png)](docs/screenshots/es_mpps.png) | [![Project](docs/screenshots/es_project.png)](docs/screenshots/es_project.png) |
+
+---
+
 ## Features
 
 ### ECU Studio (main app)

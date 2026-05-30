@@ -326,6 +326,7 @@
   </a>
   <ul class="nav-links">
     <li><a href="#features">Features</a></li>
+    <li><a href="demo.html">Demo</a></li>
     <li><a href="#download">Build</a></li>
     <li><a href="#adapters">Hardware</a></li>
     <li><a href="https://github.com/Poisson48/SocketSpy">SocketSpy</a></li>
@@ -383,88 +384,53 @@
       <div class="dot dot-grn"></div>
       <span class="mock-title">ECU Studio v1.0.0 — EDC16C34</span>
     </div>
-    <div class="mock-body">
-      <div class="mock-toolbar">
-        <span>ROM</span>
-        <select class="mock-select"><option>EDC16C34_full.bin · 2.0 MB</option></select>
-        <span>Offset</span>
-        <select class="mock-select"><option>0x1A400</option></select>
-        <span class="mock-spacer"></span>
-        <button class="mock-btn-sm">Read</button>
-        <button class="mock-btn-sm">Write</button>
-        <button class="mock-btn-stop">Stop</button>
-      </div>
-
-      <div class="mock-split">
-        <!-- hex view -->
-        <div class="hex-col">
-          <table class="mock-hex">
-            <thead>
-              <tr><th>Address</th><th>00 .. 0F</th><th>ASCII</th></tr>
-            </thead>
-            <tbody>
-              <tr><td class="addr">0001A3F0</td><td class="bytes">3F 80 00 00 41 20 00 00 42 48 00 00 43 96 00 00</td><td class="ascii">?...A .​.BH..C...</td></tr>
-              <tr><td class="addr">0001A400</td><td class="bytes"><span class="map-a">12 8A 13 04 14 7E 15 F2 17 6B</span> 18 E0 1A 55 1B CA</td><td class="ascii">.....~..<span class="map-a">.k.</span>.U..</td></tr>
-              <tr><td class="addr">0001A410</td><td class="bytes"><span class="map-a">1D 3F 1E B4 20 29 21 9E 23 13</span> 24 88 25 FD 27 72</td><td class="ascii">.?.. )!.#.$.%.'r</td></tr>
-              <tr><td class="addr">0001A420</td><td class="bytes"><span class="map-a">28 E7 2A 5C 2B D1 2D 46 2E BB</span> 30 30 31 A5 33 1A</td><td class="ascii">(.*\+.-F..0011.3.</td></tr>
-              <tr><td class="addr">0001A430</td><td class="bytes">00 64 00 C8 01 2C 01 90 01 F4 02 58 02 BC 03 20</td><td class="ascii">.d...,.....X... </td></tr>
-              <tr><td class="addr">0001A440</td><td class="bytes"><span class="map-b">7D 00 7B 80 79 00 76 80 74 00</span> 71 80 6F 00 6C 80</td><td class="ascii"><span class="map-b">}.{.y.v.t.</span>q.o.l.</td></tr>
-              <tr><td class="addr">0001A450</td><td class="bytes"><span class="map-b">6A 00 67 80 65 00 62 80 60 00</span> 5D 80 5B 00 58 80</td><td class="ascii"><span class="map-b">j.g.e.b.`.</span>].[.X.</td></tr>
-              <tr><td class="addr">0001A460</td><td class="bytes">A5 5A 6C 33 0F E1 22 9B 44 D7 88 1E 9C 02 BB 60</td><td class="ascii">.Zl3..".D......`</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <!-- map panel -->
-        <div class="map-col">
-          <div class="map-panel">
-            <div class="map-panel-head">
-              <span>KFMIRL · Injection</span>
-              <span class="map-tag tag-a">2D</span>
-            </div>
-            <div class="map-grid">
-              <div class="map-cell cool">142</div><div class="map-cell cool">158</div><div class="map-cell">176</div><div class="map-cell warm">201</div><div class="map-cell warm">228</div><div class="map-cell hot">255</div>
-              <div class="map-cell cool">131</div><div class="map-cell cool">149</div><div class="map-cell">170</div><div class="map-cell warm">196</div><div class="map-cell warm">224</div><div class="map-cell hot">252</div>
-              <div class="map-cell cool">120</div><div class="map-cell">138</div><div class="map-cell">162</div><div class="map-cell warm">190</div><div class="map-cell hot">240</div><div class="map-cell hot">255</div>
-              <div class="map-cell cool">108</div><div class="map-cell">128</div><div class="map-cell">155</div><div class="map-cell warm">188</div><div class="map-cell hot">238</div><div class="map-cell hot">255</div>
-            </div>
-            <div style="margin-top:.65rem;font-family:sans-serif;font-size:.7rem;color:var(--muted)">
-              <span class="map-tag tag-b" style="margin-left:0">Stage&nbsp;1</span>
-              +14% applied · checksum ✓
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="mock-body" style="padding:0">
+      <img id="showcase-img"
+           src="screenshots/es_hex.png"
+           alt="ECU Studio - Hex editor"
+           style="display:block;width:100%;height:auto;background:#0f1623" />
     </div>
   </div>
   <div class="panel-tabs">
-    <button class="panel-tab active" onclick="switchTab(this)">Project</button>
-    <button class="panel-tab" onclick="switchTab(this)">MPPS</button>
-    <button class="panel-tab" onclick="switchTab(this)">Hex</button>
-    <button class="panel-tab" onclick="switchTab(this)">Maps</button>
-    <button class="panel-tab" onclick="switchTab(this)">AutoMods</button>
-    <button class="panel-tab" onclick="switchTab(this)">Checksum</button>
-    <button class="panel-tab" onclick="switchTab(this)">Compare</button>
-    <button class="panel-tab" onclick="switchTab(this)">Git</button>
-    <button class="panel-tab" onclick="switchTab(this)">A2L</button>
+    <button class="panel-tab active" data-shot="screenshots/es_hex.png"      data-label="Hex editor"      onclick="switchTab(this)">Hex</button>
+    <button class="panel-tab"        data-shot="screenshots/es_maps.png"     data-label="Map editor"      onclick="switchTab(this)">Maps</button>
+    <button class="panel-tab"        data-shot="screenshots/es_checksum.png" data-label="Checksum"        onclick="switchTab(this)">Checksum</button>
+    <button class="panel-tab"        data-shot="screenshots/es_compare.png"  data-label="ROM compare"     onclick="switchTab(this)">Compare</button>
+    <button class="panel-tab"        data-shot="screenshots/es_automods.png" data-label="AutoMods"        onclick="switchTab(this)">AutoMods</button>
+    <button class="panel-tab"        data-shot="screenshots/es_git.png"      data-label="Git versioning"  onclick="switchTab(this)">Git</button>
+    <button class="panel-tab"        data-shot="screenshots/es_a2l.png"      data-label="A2L browser"     onclick="switchTab(this)">A2L</button>
+    <button class="panel-tab"        data-shot="screenshots/es_mpps.png"     data-label="MPPS flashing"   onclick="switchTab(this)">MPPS</button>
+    <button class="panel-tab"        data-shot="screenshots/es_project.png"  data-label="Project manager" onclick="switchTab(this)">Project</button>
   </div>
+  <p style="text-align:center;margin-top:1.1rem">
+    <a class="btn btn-ghost" href="demo.html">See the full demo gallery &rarr;</a>
+  </p>
 </div>
 <script>
-// panel tabs (visual highlight + light auto-rotation)
+// panel tabs — swap real screenshots + light auto-rotation
 const tabs = Array.from(document.querySelectorAll('.panel-tab'));
+const showcaseImg = document.getElementById('showcase-img');
 let activeTab = 0;
 let tabTimer = null;
 
 function setActive(idx) {
   activeTab = ((idx % tabs.length) + tabs.length) % tabs.length;
   tabs.forEach((b, i) => b.classList.toggle('active', i === activeTab));
+  const btn = tabs[activeTab];
+  if (showcaseImg && btn.dataset.shot) {
+    showcaseImg.src = btn.dataset.shot;
+    showcaseImg.alt = 'ECU Studio - ' + (btn.dataset.label || '');
+  }
 }
 function switchTab(btn) {
   setActive(tabs.indexOf(btn));
   clearInterval(tabTimer);
-  tabTimer = setInterval(() => setActive(activeTab + 1), 4000);
+  tabTimer = setInterval(() => setActive(activeTab + 1), 4500);
 }
-// auto-rotate the active tab highlight
-tabTimer = setInterval(() => setActive(activeTab + 1), 4000);
+// préchargement des captures pour des transitions fluides
+tabs.forEach(b => { if (b.dataset.shot) { const i = new Image(); i.src = b.dataset.shot; } });
+// auto-rotate
+tabTimer = setInterval(() => setActive(activeTab + 1), 4500);
 
 // keyboard navigation
 document.addEventListener('keydown', e => {

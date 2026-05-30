@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ECU Studio — Demo gallery</title>
+  <meta name="description" content="Screenshot gallery of ECU Studio: hex editor, Bosch map editor, checksum correction, ROM compare, AutoMods, libgit2 versioning, A2L browser and MPPS flashing." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0f1623; --card:#1a2235; --hover:#232f45; --border:#2a3a55;
+      --accent:#6366f1; --accent2:#818cf8; --green:#22c55e;
+      --text:#f1f5f9; --muted:#7c8fa6; --radius:10px;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+    }
+    a { color: var(--accent2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(15,22,35,.85); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .85rem 1.5rem;
+    }
+    .nav-logo { display: flex; align-items: center; gap: .6rem; font-weight: 700; color: var(--text); }
+    .nav-links { display: flex; gap: 1.4rem; list-style: none; font-size: .92rem; }
+    .nav-links a { color: var(--muted); }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+
+    header.demo-hero { text-align: center; padding: 3.2rem 1.5rem 1.5rem; }
+    header.demo-hero .badge {
+      display: inline-block; font-size: .78rem; letter-spacing: .04em;
+      color: var(--accent2); border: 1px solid var(--border);
+      border-radius: 999px; padding: .3rem .85rem; margin-bottom: 1rem;
+    }
+    header.demo-hero h1 { font-size: 2.3rem; line-height: 1.15; }
+    header.demo-hero p { color: var(--muted); max-width: 640px; margin: .9rem auto 0; }
+
+    .gallery {
+      max-width: 1100px; margin: 2rem auto 4rem; padding: 0 1.2rem;
+      display: flex; flex-direction: column; gap: 2.6rem;
+    }
+    .shot-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .shot-frame {
+      background: #0b111c; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: .45rem; padding: .55rem .8rem;
+    }
+    .dot { width: 11px; height: 11px; border-radius: 50%; }
+    .dot-red { background:#ff5f56; } .dot-yel { background:#ffbd2e; } .dot-grn { background:#27c93f; }
+    .shot-frame .t { margin-left: .6rem; color: var(--muted); font-size: .82rem; }
+    .shot-card img { display: block; width: 100%; height: auto; background: var(--bg); }
+    .shot-meta { padding: 1.1rem 1.3rem 1.3rem; }
+    .shot-meta h3 { font-size: 1.15rem; margin-bottom: .3rem; }
+    .shot-meta h3 .tag {
+      font-size: .68rem; vertical-align: middle; margin-left: .55rem;
+      color: var(--green); border: 1px solid #1f5132; background: #0e2a1a;
+      border-radius: 999px; padding: .12rem .5rem;
+    }
+    .shot-meta p { color: var(--muted); font-size: .95rem; }
+
+    .cta { text-align: center; margin: 0 auto 4rem; }
+    .btn {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .7rem 1.3rem; border-radius: 8px; font-weight: 600; font-size: .95rem;
+      border: 1px solid var(--border); color: var(--text);
+    }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent2); text-decoration: none; }
+    .btn-ghost:hover { background: var(--hover); text-decoration: none; }
+
+    footer {
+      border-top: 1px solid var(--border); padding: 2rem 1.5rem;
+      text-align: center; color: var(--muted); font-size: .9rem;
+      display: flex; flex-wrap: wrap; gap: 1.2rem; justify-content: center;
+    }
+    @media (max-width: 600px) { header.demo-hero h1 { font-size: 1.7rem; } }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="index.html">
+    <svg width="26" height="26" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <rect width="64" height="64" rx="12" fill="#0f1623"/>
+      <rect x="18" y="18" width="28" height="28" rx="4" fill="#1a2235" stroke="#6366f1" stroke-width="2.5"/>
+      <rect x="26" y="26" width="12" height="12" rx="2" fill="#6366f1"/>
+      <circle cx="32" cy="32" r="2.4" fill="#22c55e"/>
+    </svg>
+    ECU Studio Suite
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="index.html#features">Features</a></li>
+    <li><a href="index.html#download">Build</a></li>
+    <li><a href="https://github.com/Poisson48/ecu_studio_suite">GitHub</a></li>
+  </ul>
+</nav>
+
+<header class="demo-hero">
+  <div class="badge">Live UI — Qt6 dark theme</div>
+  <h1>ECU Studio — demo gallery</h1>
+  <p>
+    Real screenshots of every panel, captured straight from the Qt6 build in
+    simulation mode. No hardware required — everything runs 100% locally.
+  </p>
+</header>
+
+<div class="gallery">
+
+  <div class="shot-card">
+    <div class="shot-frame"><span class="dot dot-red"></span><span class="dot dot-yel"></span><span class="dot dot-grn"></span><span class="t">ECU Studio — Hex</span></div>
+    <img src="screenshots/es_hex.png" alt="Hex editor with map highlight" loading="lazy" />
+    <div class="shot-meta">
+      <h3>Hex editor</h3>
+      <p>Fast byte-level viewer with address jump, search and live map-range highlighting. Edits flow straight into the shared ROM document and notify every other panel.</p>
+    </div>
+  </div>
+
+  <div class="shot-card">
+    <div class="shot-frame"><span class="dot dot-red"></span><span class="dot dot-yel"></span><span class="dot dot-grn"></span><span class="t">ECU Studio — Maps</span></div>
+    <img src="screenshots/es_maps.png" alt="Bosch map editor" loading="lazy" />
+    <div class="shot-meta">
+      <h3>Map editor</h3>
+      <p>Visualize and edit scalar, curve and 2-D/3-D Bosch maps with RPM/load axes and a heat-mapped grid. Apply a percentage delta or a full Stage&nbsp;1 recipe in one click.</p>
+    </div>
+  </div>
+
+  <div class="shot-card">
+    <div class="shot-frame"><span class="dot dot-red"></span><span class="dot dot-yel"></span><span class="dot dot-grn"></span><span class="t">ECU Studio — Checksum</span></div>
+    <img src="screenshots/es_checksum.png" alt="Checksum verification and correction" loading="lazy" />
+    <div class="shot-meta">
+      <h3>Checksum correction</h3>
+      <p>Compute and patch checksums (Sum32, CRC-32, …) per region. The results table flags mismatches in red and the journal logs every verification and fix.</p>
+    </div>
+  </div>
+
+  <div class="shot-card">
+    <div class="shot-frame"><span class="dot dot-red"></span><span class="dot dot-yel"></span><span class="dot dot-grn"></span><span class="t">ECU Studio — Compare</span></div>
+    <img src="screenshots/es_compare.png" alt="ROM compare with modified ranges" loading="lazy" />
+    <div class="shot-meta">
+      <h3>ROM compare</h3>
+      <p>Side-by-side byte diff of two ROMs. The modified-ranges table lets you jump any delta straight to the hex editor for inspection.</p>
+    </div>
+  </div>
+
+  <div class="shot-card">
+    <div class="shot-frame"><span class="dot dot-red"></span><span class="dot dot-yel"></span><span class="dot dot-grn"></span><span class="t">ECU Studio — AutoMods</span></div>
+    <img src="screenshots/es_automods.png" alt="AutoMods recipe panel" loading="lazy" />
+    <div class="shot-meta">
+      <h3>AutoMods</h3>
+      <p>Apply named calibration patches from JSON recipes — Stage&nbsp;1, EGR off, DTC removal, speed-limiter changes — with batch apply and one-click revert.</p>
+    </div>
+  </div>
+
+  <div class="shot-card">
+    <div class="shot-frame"><span class="dot dot-red"></span><span class="dot dot-yel"></span><span class="dot dot-grn"></span><span class="t">ECU Studio — Git</span></div>
+    <img src="screenshots/es_git.png" alt="Git versioning panel" loading="lazy" />
+    <div class="shot-meta">
+      <h3>Git versioning <span class="tag">new</span></h3>
+      <p>libgit2-backed ROM history: commit any state, browse the full commit log, and restore (roll back) any previous version straight into the editor. Instant rollback, no cloud.</p>
+    </div>
+  </div>
+
+  <div class="shot-card">
+    <div class="shot-frame"><span class="dot dot-red"></span><span class="dot dot-yel"></span><span class="dot dot-grn"></span><span class="t">ECU Studio — A2L</span></div>
+    <img src="screenshots/es_a2l.png" alt="A2L characteristics browser" loading="lazy" />
+    <div class="shot-meta">
+      <h3>A2L browser</h3>
+      <p>Parse ASAP2 <code>.a2l</code> files and browse characteristics and measurements by name, type, address and unit — with instant filtering and double-click to hex.</p>
+    </div>
+  </div>
+
+  <div class="shot-card">
+    <div class="shot-frame"><span class="dot dot-red"></span><span class="dot dot-yel"></span><span class="dot dot-grn"></span><span class="t">ECU Studio — MPPS</span></div>
+    <img src="screenshots/es_mpps.png" alt="MPPS V21 flashing panel" loading="lazy" />
+    <div class="shot-meta">
+      <h3>MPPS flashing</h3>
+      <p>Detect the MPPS V21 programmer, pick K-Line or CAN, then read or write the full ROM over USB with a live progress bar. Simulation mode needs no hardware.</p>
+    </div>
+  </div>
+
+  <div class="shot-card">
+    <div class="shot-frame"><span class="dot dot-red"></span><span class="dot dot-yel"></span><span class="dot dot-grn"></span><span class="t">ECU Studio — Project</span></div>
+    <img src="screenshots/es_project.png" alt="Project manager" loading="lazy" />
+    <div class="shot-meta">
+      <h3>Project manager</h3>
+      <p>Organise work into projects with ROM path, ECU type, vehicle metadata and notes. Opening a project wires its directory into the Git versioning panel automatically.</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="cta">
+  <a class="btn btn-primary" href="https://github.com/Poisson48/ecu_studio_suite#build">Build from source</a>
+  &nbsp;
+  <a class="btn btn-ghost" href="index.html">&larr; Back to home</a>
+</div>
+
+<footer>
+  <a href="index.html">Home</a>
+  <a href="https://github.com/Poisson48/ecu_studio_suite">GitHub</a>
+  <a href="https://github.com/Poisson48/SocketSpy">SocketSpy</a>
+  <a href="https://github.com/Poisson48/ecu_studio_suite/blob/main/LICENSE">GPL-3.0</a>
+</footer>
+
+</body>
+</html>
