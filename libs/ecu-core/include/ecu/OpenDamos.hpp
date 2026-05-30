@@ -183,16 +183,6 @@ struct RelocResult {
 };
 
 // ---------------------------------------------------------------------------
-// Preserved legacy fingerprint descriptor (kept for API compatibility).
-// ---------------------------------------------------------------------------
-
-struct DamosFingerprint {
-    QString  ecuId;
-    QString  variant;
-    uint32_t checksumOffset = 0;
-};
-
-// ---------------------------------------------------------------------------
 // OpenDamos — load a recipe, fingerprint a ROM, relocate every characteristic.
 // ---------------------------------------------------------------------------
 
@@ -231,9 +221,6 @@ public:
     // Set the recipe used by the convenience relocate() overload.
     void setRecipe(DamosRecipe recipe) { m_recipe = std::move(recipe); }
     const std::optional<DamosRecipe>& recipe() const { return m_recipe; }
-
-    // --- Preserved legacy API -------------------------------------------
-    std::optional<DamosFingerprint> fingerprint(const QByteArray& rom);
 
 private:
     std::optional<DamosRecipe> m_recipe;
