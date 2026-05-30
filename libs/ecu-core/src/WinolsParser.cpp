@@ -2,7 +2,9 @@
 
 #include <QByteArray>
 #include <QList>
+#include <QRegularExpression>
 #include <QString>
+#include <QStringList>
 #include <zlib.h>
 
 #include <algorithm>
@@ -211,18 +213,18 @@ WinolsParser::parse(const QByteArray& data, const QString& filename) const
 
     // Intel HEX: either the extension says so, or the file starts with ':' and
     // the leading bytes pattern-match a valid record.
-    if (ext.endsWith(u".hex") || (data.size() > 0 && bytes[0] == 0x3A && looksLikeHex(data))) {
+    if (ext.endsWith(u".hex"_qs) || (data.size() > 0 && bytes[0] == 0x3A && looksLikeHex(data))) {
         QString outName = filename;
         // Strip .hex suffix — the reconstructed flat binary is a .bin.
         static const QRegularExpression kHexSuffix(u"\\.hex$"_qs,
             QRegularExpression::CaseInsensitiveOption);
         outName.remove(kHexSuffix);
-        outName += u".bin";
+        outName += u".bin"_qs;
         return WinolsParseResult{ parseIntelHex(data), outName, {} };
     }
 
     // Raw binary fallback.
-    const QString outName = ext.endsWith(u".bin") ? filename : filename + u".bin";
+    const QString outName = ext.endsWith(u".bin"_qs) ? filename : filename + u".bin"_qs;
     return WinolsParseResult{ data, outName, {} };
 }
 

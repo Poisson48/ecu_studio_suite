@@ -17,6 +17,7 @@ list(APPEND ECU_CORE_SOURCES src/OpenDamos.cpp)
 list(APPEND ECU_CORE_SOURCES src/OpenDamosRecipes.cpp)
 list(APPEND ECU_CORE_SOURCES src/OpenDamosA2lExport.cpp)
 list(APPEND ECU_CORE_SOURCES src/ReportGenerator.cpp)
+list(APPEND ECU_CORE_SOURCES src/WinolsParser.cpp)
 
 # GitManager optionnel (libgit2 requis)
 if(LIBGIT2_FOUND)
@@ -32,8 +33,11 @@ target_include_directories(ecu_core
             ${LIBGIT2_INCLUDE_DIRS}
 )
 
+find_package(ZLIB REQUIRED)
+
 target_link_libraries(ecu_core
     PUBLIC  Qt6::Core Qt6::Sql
+    PRIVATE ZLIB::ZLIB
 )
 if(nlohmann_json_FOUND)
     target_link_libraries(ecu_core PUBLIC nlohmann_json::nlohmann_json)
