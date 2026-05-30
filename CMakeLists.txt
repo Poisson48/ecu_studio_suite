@@ -7,7 +7,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ── Options ──────────────────────────────────────────────────────────────────
-option(ECU_BUILD_SOCKETSPY       "Build SocketSpy"                     ON)
+# Build complet de l'app SocketSpy (apps/socketspy) en tant que sous-projet.
+# OFF par défaut localement : la GUI SocketSpy requiert Qt6Bluetooth (ELM327),
+# souvent absent des machines de dev. Activez-la (ECU_BUILD_SOCKETSPY=ON) sur la
+# CI où toutes les dépendances Qt sont présentes pour obtenir le binaire complet
+# `socketspy`, qu'ECU Studio peut lancer depuis le panneau « CAN ».
+option(ECU_BUILD_SOCKETSPY       "Build complet de l'app SocketSpy"    OFF)
 option(ECU_BUILD_ECU_STUDIO      "Build ECU Studio"                    ON)
 option(ECU_BUILD_TESTS           "Build tests"                         ON)
 option(ECU_MPPS_SIMULATION       "Simulate MPPS (pas de vrai USB)"     OFF)
@@ -61,8 +66,27 @@ add_subdirectory(libs/can-core)
 add_subdirectory(libs/mpps)
 add_subdirectory(libs/ecu-core)
 
-# SocketSpy est un submodule utilisé comme bibliothèque de sources (sidebar, theme)
-# On ne le build pas comme sous-projet — ses sources sont incluses directement dans ecu_studio
+# ── SocketSpy ────────────────────────────────────────────────────────────────
+# Le submodule SocketSpy est utilisé de deux manières :
+#  1. Comme bibliothèque de sources (sidebar, theme, et la lib `cancore` pour le
+#     moniteur CAN embarqué d'ECU Studio — voir apps/ecu-studio/CMakeLists.txt).
+#  2. Optionnellement, comme app complète buildée à part (ECU_BUILD_SOCKETSPY=ON),
+#     qu'ECU Studio peut lancer en sous-processus. Désactivé par défaut car la GUI
+#     SocketSpy requiert Qt6Bluetooth, souvent absent en local.
+if(ECU_BUILD_SOCKETSPY)
+    if(EXISTS "${CMAKE_SOURCE_DIR}/apps/socketspy/CMakeLists.txt")
+        # On force les options SocketSpy avant d'inclure le sous-projet :
+        # pas de tests (collision de cibles gtest), QML expérimental off.
+        set(SOCKETSPY_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+        set(SOCKETSPY_QML         OFF CACHE BOOL "" FORCE)
+        add_subdirectory(apps/socketspy)
+    else()
+        message(WARNING
+            "ECU_BUILD_SOCKETSPY=ON mais apps/socketspy est vide. "
+            "Lancez : git submodule update --init apps/socketspy")
+    endif()
+endif()
+
 if(ECU_BUILD_ECU_STUDIO)
     add_subdirectory(apps/ecu-studio)
 endif()
