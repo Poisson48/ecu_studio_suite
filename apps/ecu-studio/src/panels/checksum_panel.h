@@ -36,9 +36,10 @@ public:
 
     // Algorithmes de checksum supportés.
     enum class Algo {
-        Sum32,  // somme additive 32 bits des mots (défaut EDC16)
-        Sum16,  // somme additive 16 bits des half-words
-        Xor32,  // XOR 32 bits des mots
+        MppsCrc16Arc, // VRAI checksum MPPS reverse-engineered (CRC-16/ARC EDC16) — défaut
+        Sum32,        // somme additive 32 bits des mots (générique)
+        Sum16,        // somme additive 16 bits des half-words (générique)
+        Xor32,        // XOR 32 bits des mots (générique)
     };
 
 public slots:
@@ -54,6 +55,17 @@ private:
     void log(const QString& msg, bool error = false);
     void onRomLoaded();
     void updateEnabled();
+    // Active/désactive les champs « génériques » selon l'algo sélectionné
+    // (le mode MPPS utilise une région fixe auto-détectée par taille).
+    void onAlgoChanged();
+
+    // ── Mode MPPS CRC-16/ARC (moteur réel ecu::ChecksumEngine) ───────────────
+    // Vérifie via le moteur réel (région auto-détectée 32k/64k par la taille).
+    void verifyMpps();
+    // Corrige via le moteur réel puis re-vérifie.
+    void runCorrectionMpps();
+    // true si l'algo courant est le mode MPPS.
+    bool isMppsMode() const;
 
     // ── Helpers d'analyse ────────────────────────────────────────────────────
     // Lit les bornes saisies par l'utilisateur. Retourne false (et journalise)

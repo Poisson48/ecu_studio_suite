@@ -1,5 +1,6 @@
 #include "checksum_panel.h"
 #include "../rom_document.h"
+#include "ecu/ChecksumEngine.hpp"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -86,9 +87,14 @@ void ChecksumPanel::buildUi() {
 
     grid->addWidget(new QLabel(tr("Algorithme:"), this), 1, 2);
     m_algoCombo = new QComboBox(this);
-    m_algoCombo->addItem("Sum32", static_cast<int>(Algo::Sum32));
-    m_algoCombo->addItem("Sum16", static_cast<int>(Algo::Sum16));
-    m_algoCombo->addItem("Xor32", static_cast<int>(Algo::Xor32));
+    // VRAI checksum MPPS reverse-engineered — mode primaire et par défaut.
+    m_algoCombo->addItem(tr("MPPS CRC-16/ARC (EDC16)"),
+                         static_cast<int>(Algo::MppsCrc16Arc));
+    // Modes génériques secondaires (conservés mais non par défaut).
+    m_algoCombo->addItem(tr("Sum32 (générique)"), static_cast<int>(Algo::Sum32));
+    m_algoCombo->addItem(tr("Sum16 (générique)"), static_cast<int>(Algo::Sum16));
+    m_algoCombo->addItem(tr("Xor32 (générique)"), static_cast<int>(Algo::Xor32));
+    m_algoCombo->setCurrentIndex(0); // MPPS CRC-16/ARC par défaut
     grid->addWidget(m_algoCombo, 1, 3);
 
     grid->addWidget(new QLabel(tr("Endianness:"), this), 2, 0);
@@ -140,6 +146,27 @@ void ChecksumPanel::buildUi() {
 
     connect(m_verifyBtn,  &QPushButton::clicked, this, &ChecksumPanel::verify);
     connect(m_correctBtn, &QPushButton::clicked, this, &ChecksumPanel::runCorrection);
+    connect(m_algoCombo,
+            QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int) { onAlgoChanged(); });
+
+    onAlgoChanged(); // reflète l'état initial (mode MPPS par défaut)
+}
+
+bool ChecksumPanel::isMppsMode() const {
+    return static_cast<Algo>(m_algoCombo->currentData().toInt())
+           == Algo::MppsCrc16Arc;
+}
+
+// En mode MPPS la région/le stockage sont fixés par le moteur (auto-détectés
+// selon la taille). On grise donc les champs manuels pour éviter toute
+// confusion ; ils restent actifs pour les modes génériques.
+void ChecksumPanel::onAlgoChanged() {
+    const bool generic = !isMppsMode();
+    m_startEdit->setEnabled(generic);
+    m_endEdit->setEnabled(generic);
+    m_storeEdit->setEnabled(generic);
+    m_endianCombo->setEnabled(generic);
 }
 
 void ChecksumPanel::log(const QString& msg, bool error) {
@@ -248,6 +275,10 @@ quint32 ChecksumPanel::computeChecksum(const QByteArray& rom, qsizetype start,
 
     quint32 acc = 0;
     switch (algo) {
+    case Algo::MppsCrc16Arc:
+        // Mode MPPS : traité par le moteur réel (verifyMpps/runCorrectionMpps),
+        // jamais via ce calcul générique. Présent pour l'exhaustivité du switch.
+        break;
     case Algo::Sum32:
         for (qsizetype i = start; i + 4 <= end; i += 4)
             acc += word32(i);
@@ -292,6 +323,11 @@ quint32 ChecksumPanel::computeCrc32(const QByteArray& rom, qsizetype start,
 //  Vérification
 // ─────────────────────────────────────────────────────────────────────────────
 void ChecksumPanel::verify() {
+    if (isMppsMode()) {
+        verifyMpps();
+        return;
+    }
+
     qsizetype start = 0, end = 0, store = 0;
     bool bigEndian = false;
     Algo algo = Algo::Sum32;
@@ -356,6 +392,11 @@ void ChecksumPanel::verify() {
 //  Correction (slot public appelé par le menu Outils)
 // ─────────────────────────────────────────────────────────────────────────────
 void ChecksumPanel::runCorrection() {
+    if (isMppsMode()) {
+        runCorrectionMpps();
+        return;
+    }
+
     qsizetype start = 0, end = 0, store = 0;
     bool bigEndian = false;
     Algo algo = Algo::Sum32;
@@ -398,6 +439,139 @@ void ChecksumPanel::runCorrection() {
         .arg(computed, 8, 16, QLatin1Char('0')));
 
     verify();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Mode MPPS CRC-16/ARC — moteur réel ecu::ChecksumEngine
+//
+//  Algorithme reverse-engineered des modules MPPS Check001/Check045 :
+//  CRC-16/ARC (poly 0x8005 réfléchi = 0xA001, init 0), checksum stocké en
+//  big-endian. La région et l'offset de stockage sont fixés par la TAILLE de la
+//  ROM (32 Ko : [0x0030,0x7FEA) stocké @ 0x7FEA ; 64 Ko : [0x8041,0xFFFA)
+//  stocké @ 0xFFFA). Cf. docs/mpps-checksums.md §3.
+// ─────────────────────────────────────────────────────────────────────────────
+namespace {
+// Vue std::span<const uint8_t> sur un QByteArray, sans copie.
+std::span<const uint8_t> toSpan(const QByteArray& a) {
+    return { reinterpret_cast<const uint8_t*>(a.constData()),
+             static_cast<std::size_t>(a.size()) };
+}
+std::span<uint8_t> toMutSpan(QByteArray& a) {
+    return { reinterpret_cast<uint8_t*>(a.data()),
+             static_cast<std::size_t>(a.size()) };
+}
+QString hex16(quint16 v) {
+    return QString("0x%1").arg(v, 4, 16, QLatin1Char('0')).toUpper().replace("0X", "0x");
+}
+// Nom lisible de la disposition auto-détectée.
+QString layoutName(ecu::EdcLayout l) {
+    switch (l) {
+    case ecu::EdcLayout::Edc32k:   return ChecksumPanel::tr("EDC16 32 Ko");
+    case ecu::EdcLayout::Edc64k:   return ChecksumPanel::tr("EDC16 64 Ko");
+    case ecu::EdcLayout::Unknown:
+    default:                       return ChecksumPanel::tr("inconnue");
+    }
+}
+} // namespace
+
+void ChecksumPanel::verifyMpps() {
+    if (!m_doc || !m_doc->isLoaded()) {
+        log(tr("Aucune ROM chargée"), true);
+        return;
+    }
+    const QByteArray& rom    = m_doc->rom();
+    const std::size_t size   = static_cast<std::size_t>(rom.size());
+    const ecu::EdcLayout lay = ecu::mppsLayoutForSize(size);
+
+    if (lay == ecu::EdcLayout::Unknown) {
+        log(tr("[!] Taille 0x%1 (%2 Ko) non reconnue comme disposition EDC16 MPPS "
+               "(attendu 32 Ko ou 64 Ko). Vérification MPPS impossible.")
+            .arg(size, 0, 16).arg(size / 1024), true);
+        log(tr("Note : le flash signé EDC17 (MD5+RSA, Check008) n'est PAS pris en "
+               "charge par ce moteur."));
+        m_table->setRowCount(0);
+        return;
+    }
+
+    const auto region = ecu::mppsRegionForSize(size);
+    const auto res     = ecu::ChecksumEngine::verifyMpps(toSpan(rom));
+    if (!region || !res) { // garde-fou : ne devrait pas arriver après la détection
+        log(tr("[!] Disposition EDC16 détectée mais région indisponible."), true);
+        return;
+    }
+
+    log(tr("Vérification MPPS CRC-16/ARC — disposition %1, région [0x%2, 0x%3), "
+           "stockage 0x%4 (big-endian)")
+        .arg(layoutName(lay))
+        .arg(region->start, 0, 16).arg(region->end, 0, 16)
+        .arg(region->checksumOff, 0, 16));
+
+    m_table->setRowCount(1);
+    auto* c0 = new QTableWidgetItem(tr("MPPS CRC-16/ARC"));
+    auto* c1 = new QTableWidgetItem(hex16(res->computed));
+    auto* c2 = new QTableWidgetItem(hex16(res->stored));
+    QString state;
+    if (res->valid) {
+        state = tr("OK");
+        c2->setForeground(QColor("#22c55e"));
+    } else {
+        state = tr("DIFFÉRENT");
+        c1->setForeground(QColor("#ef4444"));
+        c2->setForeground(QColor("#ef4444"));
+    }
+    auto* c3 = new QTableWidgetItem(state);
+    m_table->setItem(0, 0, c0);
+    m_table->setItem(0, 1, c1);
+    m_table->setItem(0, 2, c2);
+    m_table->setItem(0, 3, c3);
+
+    if (res->valid)
+        log(tr("[OK] Checksum MPPS valide (%1)").arg(hex16(res->computed)));
+    else
+        log(tr("[!] Checksum MPPS invalide : calculé %1, stocké %2")
+            .arg(hex16(res->computed), hex16(res->stored)), true);
+}
+
+void ChecksumPanel::runCorrectionMpps() {
+    if (!m_doc || !m_doc->isLoaded()) {
+        log(tr("Aucune ROM chargée"), true);
+        return;
+    }
+    const std::size_t size   = static_cast<std::size_t>(m_doc->rom().size());
+    const ecu::EdcLayout lay = ecu::mppsLayoutForSize(size);
+
+    if (lay == ecu::EdcLayout::Unknown) {
+        log(tr("[!] Taille 0x%1 (%2 Ko) non reconnue comme disposition EDC16 MPPS "
+               "(attendu 32 Ko ou 64 Ko). Correction MPPS impossible.")
+            .arg(size, 0, 16).arg(size / 1024), true);
+        return;
+    }
+
+    const auto region = ecu::mppsRegionForSize(size);
+    if (!region) {
+        log(tr("[!] Disposition EDC16 détectée mais région indisponible."), true);
+        return;
+    }
+
+    QByteArray& rom = m_doc->romMutable();
+    const auto fixed = ecu::ChecksumEngine::correctMpps(toMutSpan(rom));
+    if (!fixed) { // taille inconnue — déjà filtré, garde-fou
+        log(tr("[!] Correction MPPS impossible : taille non reconnue."), true);
+        return;
+    }
+
+    if (*fixed == 0) {
+        log(tr("Rien à corriger : checksum MPPS déjà valide."));
+    } else {
+        // Le moteur a réécrit le checksum 16 bits big-endian à checksumOff.
+        m_doc->markModified(static_cast<qsizetype>(region->checksumOff), 2);
+        log(tr("[OK] %n checksum(s) MPPS corrigé(s) à l'offset 0x%1 "
+               "(disposition %2).", "", *fixed)
+            .arg(region->checksumOff, 0, 16)
+            .arg(layoutName(lay)));
+    }
+
+    verifyMpps(); // re-vérification après correction
 }
 
 } // namespace ecu_studio
