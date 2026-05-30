@@ -269,9 +269,9 @@ ProjectManager::importRom(const QString& id,
     if (!existing)
         return std::unexpected(QString("Project not found: %1").arg(id));
 
-    existing->hasRom       = true;
-    existing->romName      = originalName;
-    existing->romSize      = static_cast<qint64>(data.size());
+    existing->hasRom        = true;
+    existing->romName       = originalName;
+    existing->romSize       = static_cast<qint64>(data.size());
     existing->romImportedAt = QDateTime::currentDateTimeUtc();
 
     if (!writeMeta(id, *existing))
