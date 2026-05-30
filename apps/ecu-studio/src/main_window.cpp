@@ -11,7 +11,9 @@
 #include "updater.h"
 #include "update_dialog.h"
 #include "rom_document.h"
+#include "byte_span.h"
 #include "ecu/WinolsParser.hpp"
+#include "ecu/ReportGenerator.hpp"
 
 #include <QMenuBar>
 #include <QFile>
@@ -24,6 +26,11 @@
 #include <QSettings>
 #include <QTimer>
 #include <QFileInfo>
+#include <QDesktopServices>
+#include <QUrl>
+
+#include <span>
+#include <cstdint>
 
 namespace ecu_studio {
 
@@ -143,21 +150,62 @@ void MainWindow::importWinols() {
         5000);
 }
 
-// MainWindow::generateReport() est défini dans report_action.cpp — TU séparé
-// pour éviter le conflit entre ecu::Characteristic (MapDiffer.hpp, tiré par
-// ReportGenerator.hpp) et celui d'A2lParser.hpp inclus ici via a2l_panel.h.
+void MainWindow::generateReport() {
+    if (!m_doc->isLoaded()) {
+        QMessageBox::information(this, tr("Rapport"), tr("Aucune ROM chargée."));
+        return;
+    }
+
+    // ROM originale optionnelle — sinon on compare la ROM à elle-même.
+    const QString origPath = QFileDialog::getOpenFileName(
+        this, tr("ROM originale pour comparaison (optionnel — Annuler pour ignorer)"),
+        {}, tr("ROM (*.bin *.ori *.mod);;Tous (*.*)"));
+    QByteArray original = m_doc->rom();
+    if (!origPath.isEmpty()) {
+        QFile of(origPath);
+        if (of.open(QIODevice::ReadOnly)) original = of.readAll();
+    }
+
+    ecu::ReportInput in;
+    in.project.name    = m_doc->name();
+    in.project.ecu     = m_doc->ecuId();
+    in.project.romName = m_doc->name();
+    in.originalBuf = ecu_studio::constByteSpan(original);
+    in.currentBuf  = ecu_studio::constByteSpan(m_doc->rom());
+
+    auto html = ecu::ReportGenerator{}.generate(in);
+    if (!html) {
+        QMessageBox::warning(this, tr("Rapport"), tr("Génération impossible."));
+        return;
+    }
+
+    const QString suggested =
+        QString("rapport_%1.html").arg(m_doc->name().isEmpty() ? "ecu" : m_doc->name());
+    QString out = QFileDialog::getSaveFileName(this, tr("Enregistrer le rapport"),
+                                               suggested, tr("HTML (*.html)"));
+    if (out.isEmpty()) return;
+
+    QFile of(out);
+    if (!of.open(QIODevice::WriteOnly)) {
+        QMessageBox::warning(this, tr("Rapport"), tr("Écriture impossible : %1").arg(out));
+        return;
+    }
+    of.write(html->toUtf8());
+    of.close();
+    QDesktopServices::openUrl(QUrl::fromLocalFile(out));
+}
 
 void MainWindow::setupMenuBar() {
     auto* fileMenu = menuBar()->addMenu(tr("Fichier"));
-    fileMenu->addAction(tr("Nouveau projet"),    this, [this]() { m_projectPanel->newProject(); }, QKeySequence::New);
-    fileMenu->addAction(tr("Ouvrir projet"),     this, [this]() { m_projectPanel->openProject(); }, QKeySequence::Open);
+    fileMenu->addAction(tr("Nouveau projet"),    QKeySequence::New,  this, [this]() { m_projectPanel->newProject(); });
+    fileMenu->addAction(tr("Ouvrir projet"),     QKeySequence::Open, this, [this]() { m_projectPanel->openProject(); });
     fileMenu->addAction(tr("Ouvrir ROM..."),     this, [this]() {
         QString f = QFileDialog::getOpenFileName(this, tr("Ouvrir ROM"), {}, tr("ROM (*.bin *.ori *.mod);;Tous (*.*)"));
         if (!f.isEmpty()) m_hexPanel->loadRom(f);
     });
     fileMenu->addAction(tr("Importer projet WinOLS..."), this, &MainWindow::importWinols);
     fileMenu->addSeparator();
-    fileMenu->addAction(tr("Quitter"), this, &QWidget::close, QKeySequence::Quit);
+    fileMenu->addAction(tr("Quitter"), QKeySequence::Quit, this, &QWidget::close);
 
     auto* mppsMenu = menuBar()->addMenu(tr("MPPS"));
     mppsMenu->addAction(tr("Scanner les périphériques"),  m_mppsPanel, &MppsPanel::scanDevices);

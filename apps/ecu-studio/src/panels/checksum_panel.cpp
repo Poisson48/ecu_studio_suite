@@ -1,5 +1,6 @@
 #include "checksum_panel.h"
 #include "../rom_document.h"
+#include "../byte_span.h"
 #include "ecu/ChecksumEngine.hpp"
 
 #include <QVBoxLayout>
@@ -451,15 +452,6 @@ void ChecksumPanel::runCorrection() {
 //  stocké @ 0xFFFA). Cf. docs/mpps-checksums.md §3.
 // ─────────────────────────────────────────────────────────────────────────────
 namespace {
-// Vue std::span<const uint8_t> sur un QByteArray, sans copie.
-std::span<const uint8_t> toSpan(const QByteArray& a) {
-    return { reinterpret_cast<const uint8_t*>(a.constData()),
-             static_cast<std::size_t>(a.size()) };
-}
-std::span<uint8_t> toMutSpan(QByteArray& a) {
-    return { reinterpret_cast<uint8_t*>(a.data()),
-             static_cast<std::size_t>(a.size()) };
-}
 QString hex16(quint16 v) {
     return QString("0x%1").arg(v, 4, 16, QLatin1Char('0')).toUpper().replace("0X", "0x");
 }
@@ -494,7 +486,7 @@ void ChecksumPanel::verifyMpps() {
     }
 
     const auto region = ecu::mppsRegionForSize(size);
-    const auto res     = ecu::ChecksumEngine::verifyMpps(toSpan(rom));
+    const auto res     = ecu::ChecksumEngine::verifyMpps(constByteSpan(rom));
     if (!region || !res) { // garde-fou : ne devrait pas arriver après la détection
         log(tr("[!] Disposition EDC16 détectée mais région indisponible."), true);
         return;
@@ -554,7 +546,7 @@ void ChecksumPanel::runCorrectionMpps() {
     }
 
     QByteArray& rom = m_doc->romMutable();
-    const auto fixed = ecu::ChecksumEngine::correctMpps(toMutSpan(rom));
+    const auto fixed = ecu::ChecksumEngine::correctMpps(mutByteSpan(rom));
     if (!fixed) { // taille inconnue — déjà filtré, garde-fou
         log(tr("[!] Correction MPPS impossible : taille non reconnue."), true);
         return;

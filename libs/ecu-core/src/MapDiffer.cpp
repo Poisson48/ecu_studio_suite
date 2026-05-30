@@ -74,7 +74,7 @@ int typeWeight(CharType t) {
 
 } // namespace
 
-std::size_t estimateRegionSize(const Characteristic& c) {
+std::size_t estimateRegionSize(const DiffCharacteristic& c) {
     const int  xPts     = c.xAxis ? c.xAxis->maxAxisPoints : 0;
     const int  yPts     = c.yAxis ? c.yAxis->maxAxisPoints : 0;
     const auto valSize  = c.byteSize;
@@ -124,7 +124,7 @@ std::vector<DiffInterval> diffIntervals(std::span<const uint8_t> a,
 
 MapsChangedResult mapsChanged(std::span<const uint8_t>        bufA,
                               std::span<const uint8_t>        bufB,
-                              std::span<const Characteristic> characteristics) {
+                              std::span<const DiffCharacteristic> characteristics) {
     auto intervals = diffIntervals(bufA, bufB);
     if (intervals.empty())
         return MapsChangedResult{};

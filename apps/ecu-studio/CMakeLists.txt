@@ -12,7 +12,6 @@ set(SOCKETSPY_GUI_DIR "${CMAKE_SOURCE_DIR}/apps/socketspy/gui")
 set(ECU_STUDIO_SOURCES
     src/main.cpp
     src/main_window.cpp
-    src/report_action.cpp
     src/rom_document.cpp
     src/panels/mpps_panel.cpp
     src/panels/hex_view_panel.cpp
