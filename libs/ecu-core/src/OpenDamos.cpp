@@ -699,18 +699,4 @@ OpenDamos::relocate(QByteArrayView rom, const RelocateOptions& opts) const {
     return relocate(*m_recipe, rom, opts);
 }
 
-// ---------------------------------------------------------------------------
-// Legacy API.
-// ---------------------------------------------------------------------------
-
-std::optional<DamosFingerprint> OpenDamos::fingerprint(const QByteArray& rom) {
-    // Best-effort legacy descriptor: report the loaded recipe's ECU id when a
-    // ROM is present. The real work lives in relocate(); this overload exists
-    // only for source compatibility with the previous stub API.
-    if (rom.isEmpty()) return std::nullopt;
-    DamosFingerprint fp;
-    if (m_recipe) fp.ecuId = QString::fromStdString(m_recipe->ecuId);
-    return fp;
-}
-
 } // namespace ecu

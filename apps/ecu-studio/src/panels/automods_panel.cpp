@@ -1,5 +1,6 @@
 #include "automods_panel.h"
 #include "../rom_document.h"
+#include "../byte_span.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -36,16 +37,6 @@ QString bytesToHex(std::span<const uint8_t> b) {
         s += QString("%1").arg(b[i], 2, 16, QChar('0')).toUpper();
     }
     return s;
-}
-
-// Vue mutable sur le QByteArray de la ROM.
-std::span<uint8_t> mutSpan(QByteArray& rom) {
-    return { reinterpret_cast<uint8_t*>(rom.data()), static_cast<std::size_t>(rom.size()) };
-}
-
-std::span<const uint8_t> constSpan(const QByteArray& rom) {
-    return { reinterpret_cast<const uint8_t*>(rom.constData()),
-             static_cast<std::size_t>(rom.size()) };
 }
 
 // Recherche d'un motif d'octets dans la ROM. Retourne l'offset ou -1.
@@ -461,7 +452,7 @@ bool AutoModsPanel::applyTemplate(const QString& templateId) {
                     found = true;
 
                     QByteArray& rom = m_doc->romMutable();
-                    auto romSpan = mutSpan(rom);
+                    auto romSpan = mutByteSpan(rom);
                     auto res = ecu::applyPctToMap(romSpan, m.address,
                                                   static_cast<double>(pct));
                     if (!res) {

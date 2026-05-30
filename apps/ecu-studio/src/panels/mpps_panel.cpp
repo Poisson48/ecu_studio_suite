@@ -1,4 +1,5 @@
 #include "mpps_panel.h"
+#include "../byte_span.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGroupBox>
@@ -259,10 +260,7 @@ void MppsPanel::writeRom(const QByteArray& rom) {
         auto cb = [this](uint32_t done, uint32_t total, const std::string& msg) {
             emit progressUpdated((int)(done * 100 / total), QString::fromStdString(msg));
         };
-        std::span<const uint8_t> span(
-            reinterpret_cast<const uint8_t*>(m_pendingWrite.constData()),
-            (size_t)m_pendingWrite.size());
-        auto result = m_device->writeFullRom(span, cb);
+        auto result = m_device->writeFullRom(constByteSpan(m_pendingWrite), cb);
         if (result) {
             log(tr("[OK] ROM écrite avec succès"));
         } else {

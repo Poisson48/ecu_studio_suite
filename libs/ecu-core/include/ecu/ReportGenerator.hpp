@@ -27,7 +27,7 @@ struct ReportInput {
     std::span<const uint8_t>   originalBuf;
     std::span<const uint8_t>   currentBuf;
     // Characteristics from A2L; may be empty (report will still be produced).
-    std::span<const Characteristic> characteristics;
+    std::span<const DiffCharacteristic> characteristics;
 };
 
 class ReportGenerator {

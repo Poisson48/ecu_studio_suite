@@ -15,7 +15,10 @@ struct AxisDef {
     std::size_t byteSize      = 2;
 };
 
-struct Characteristic {
+// Lightweight, diff-oriented characteristic record used by the map differ and
+// report generator. Distinct from ecu::Characteristic (A2lParser.hpp), which is
+// the full A2L record. Kept separate so the two headers can coexist in one TU.
+struct DiffCharacteristic {
     std::string           name;
     CharType              type        = CharType::OTHER;
     uint32_t              address     = 0;
@@ -62,13 +65,13 @@ struct MapsChangedResult {
     std::vector<MapDiffResult>  maps;
 };
 
-std::size_t estimateRegionSize(const Characteristic& c);
+std::size_t estimateRegionSize(const DiffCharacteristic& c);
 
 std::vector<DiffInterval> diffIntervals(std::span<const uint8_t> a,
                                         std::span<const uint8_t> b);
 
 MapsChangedResult mapsChanged(std::span<const uint8_t>         bufA,
                               std::span<const uint8_t>         bufB,
-                              std::span<const Characteristic>  characteristics);
+                              std::span<const DiffCharacteristic>  characteristics);
 
 } // namespace ecu

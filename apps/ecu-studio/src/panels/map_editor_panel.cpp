@@ -1,5 +1,6 @@
 #include "map_editor_panel.h"
 #include "../rom_document.h"
+#include "../byte_span.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -24,18 +25,6 @@
 namespace ecu_studio {
 
 namespace {
-
-// Construit un span const sur la ROM du document.
-std::span<const uint8_t> constSpan(const QByteArray& rom) {
-    return { reinterpret_cast<const uint8_t*>(rom.constData()),
-             static_cast<std::size_t>(rom.size()) };
-}
-
-// Construit un span mutable sur la ROM du document.
-std::span<uint8_t> mutSpan(QByteArray& rom) {
-    return { reinterpret_cast<uint8_t*>(rom.data()),
-             static_cast<std::size_t>(rom.size()) };
-}
 
 QString hex32(quint32 v) {
     return QString("0x%1").arg(v, 6, 16, QChar('0')).toUpper().replace("0X", "0x");
@@ -149,7 +138,7 @@ void MapEditorPanel::refreshMaps() {
 
     if (m_doc && m_doc->isLoaded()) {
         const QByteArray& rom = m_doc->rom();
-        auto span = constSpan(rom);
+        auto span = constByteSpan(rom);
 
         // (a) Maps connues du catalogue Stage 1 pour l'ECU du document.
         auto ecu = ecu::getEcu(m_doc->ecuId().toStdString());
@@ -233,7 +222,7 @@ void MapEditorPanel::loadGrid(quint32 address) {
         return;
     }
 
-    auto span = constSpan(m_doc->rom());
+    auto span = constByteSpan(m_doc->rom());
     auto md   = ecu::readMapData(span, address);
     if (!md) {
         m_loadingGrid = true;
@@ -310,11 +299,11 @@ void MapEditorPanel::onCellChanged(QTableWidgetItem* item) {
         return;
     }
 
-    ecu::writeSwordBE(mutSpan(rom), off, value);
+    ecu::writeSwordBE(mutByteSpan(rom), off, value);
     m_doc->markModified(static_cast<qsizetype>(off), 2);
 
     // Relit la valeur réellement écrite (clamp éventuel) et la réaffiche.
-    const int16_t written = ecu::readSwordBE(constSpan(m_doc->rom()), off);
+    const int16_t written = ecu::readSwordBE(constByteSpan(m_doc->rom()), off);
     if (written != static_cast<int16_t>(value)) {
         m_loadingGrid = true;
         item->setText(QString::number(written));
@@ -338,7 +327,7 @@ void MapEditorPanel::applyPercent() {
     const double  pct  = m_pctSpin->value();
 
     QByteArray& rom = m_doc->romMutable();
-    auto result = ecu::applyPctToMap(mutSpan(rom), addr, pct);
+    auto result = ecu::applyPctToMap(mutByteSpan(rom), addr, pct);
     if (!result) {
         setStatus(QString::fromStdString(result.error()), true);
         return;
@@ -377,7 +366,7 @@ void MapEditorPanel::applyFullStage1() {
     std::size_t totalCells = 0;
 
     for (const auto& m : *ecuEntry->stage1Maps) {
-        auto result = ecu::applyPctToMap(mutSpan(rom), m.address,
+        auto result = ecu::applyPctToMap(mutByteSpan(rom), m.address,
                                          static_cast<double>(m.defaultPct));
         if (result) {
             totalCells += result->size();
@@ -414,7 +403,7 @@ void MapEditorPanel::runMapFinder() {
 
     setStatus(tr("Recherche heuristique de maps en cours..."));
 
-    auto span = constSpan(m_doc->rom());
+    auto span = constByteSpan(m_doc->rom());
     ecu::FindMapsOptions opts;
     auto candidates = ecu::findMaps(span, opts);
 
@@ -469,7 +458,7 @@ void MapEditorPanel::runOpenDamos() {
         if (e.stage1 && !e.openDamos) kept.push_back(e);
     m_entries = std::move(kept);
 
-    auto span = constSpan(rom);
+    auto span = constByteSpan(rom);
     int byFingerprint = 0;
     int total = 0;
 

@@ -1,5 +1,6 @@
 #include "compare_panel.h"
 #include "../rom_document.h"
+#include "../byte_span.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -157,14 +158,8 @@ void ComparePanel::refresh() {
 
     const QByteArray& romA = m_doc->rom();
 
-    std::span<const uint8_t> spanA(
-        reinterpret_cast<const uint8_t*>(romA.constData()),
-        static_cast<std::size_t>(romA.size()));
-    std::span<const uint8_t> spanB(
-        reinterpret_cast<const uint8_t*>(m_romB.constData()),
-        static_cast<std::size_t>(m_romB.size()));
-
-    const std::vector<ecu::DiffInterval> intervals = ecu::diffIntervals(spanA, spanB);
+    const std::vector<ecu::DiffInterval> intervals =
+        ecu::diffIntervals(constByteSpan(romA), constByteSpan(m_romB));
 
     std::size_t totalChanged = 0;
     for (const auto& iv : intervals)
