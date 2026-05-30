@@ -12,19 +12,11 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout (no submodules yet)
+      # Le submodule apps/socketspy est en HTTPS public → checkout natif.
+      - name: Checkout (with submodules)
         uses: actions/checkout@v4
         with:
-          submodules: false
-
-      # The apps/socketspy submodule URL uses an SSH host alias; rewrite it to
-      # public HTTPS so the runner can fetch it, then pull submodules.
-      - name: Fetch submodules over HTTPS
-        run: |
-          git config --global url."https://github.com/".insteadOf "git@github-poisson48:"
-          git config --global url."https://github.com/".insteadOf "git@github.com:"
-          git submodule sync --recursive
-          git submodule update --init --recursive
+          submodules: recursive
 
       - name: Install system dependencies
         run: |
@@ -93,8 +85,10 @@ jobs:
           UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
         run: |
           if [ -z "$UPDATE_SIGNING_KEY" ]; then
-            echo "::error::UPDATE_SIGNING_KEY secret is not set — the in-app updater requires a signed manifest."
-            exit 1
+            echo "::warning::UPDATE_SIGNING_KEY absent — AppImage publiée SANS manifeste signé."
+            echo "L'AppImage reste téléchargeable ; seule la mise à jour intégrée auto est désactivée"
+            echo "tant que le secret n'est pas défini."
+            exit 0
           fi
           VERSION="${GITHUB_REF_NAME#v}"
           APPIMAGE="ECU_Studio-x86_64.AppImage"
