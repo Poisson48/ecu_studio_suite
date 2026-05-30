@@ -11,8 +11,10 @@
 #include "updater.h"
 #include "update_dialog.h"
 #include "rom_document.h"
+#include "ecu/WinolsParser.hpp"
 
 #include <QMenuBar>
+#include <QFile>
 #include <QMenu>
 #include <QAction>
 #include <QStatusBar>
@@ -108,6 +110,43 @@ void MainWindow::wirePanels() {
     connect(m_a2lPanel,     &A2lPanel::gotoAddressRequested,       this, gotoHex);
 }
 
+void MainWindow::importWinols() {
+    const QString f = QFileDialog::getOpenFileName(
+        this, tr("Importer un export WinOLS"), {},
+        tr("Exports WinOLS (*.zip *.ols *.hex *.bin);;Tous (*.*)"));
+    if (f.isEmpty()) return;
+
+    QFile file(f);
+    if (!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(this, tr("Import WinOLS"),
+                             tr("Impossible d'ouvrir %1").arg(f));
+        return;
+    }
+    const QByteArray data = file.readAll();
+
+    ecu::WinolsParser parser;
+    auto result = parser.parse(data, QFileInfo(f).fileName());
+    if (!result) {
+        QMessageBox::warning(this, tr("Import WinOLS"),
+                             tr("Échec de l'import : %1")
+                                 .arg(QString::fromStdString(result.error().toStdString())));
+        return;
+    }
+
+    m_doc->loadFromData(result->rom, result->filename);
+    m_sidebar->showPanel(m_hexPanel);
+    statusBar()->showMessage(
+        tr("Importé : %1 (%2 Ko, %3 maps)")
+            .arg(result->filename)
+            .arg(result->rom.size() / 1024)
+            .arg(result->maps.size()),
+        5000);
+}
+
+// MainWindow::generateReport() est défini dans report_action.cpp — TU séparé
+// pour éviter le conflit entre ecu::Characteristic (MapDiffer.hpp, tiré par
+// ReportGenerator.hpp) et celui d'A2lParser.hpp inclus ici via a2l_panel.h.
+
 void MainWindow::setupMenuBar() {
     auto* fileMenu = menuBar()->addMenu(tr("Fichier"));
     fileMenu->addAction(tr("Nouveau projet"),    this, [this]() { m_projectPanel->newProject(); }, QKeySequence::New);
@@ -116,6 +155,7 @@ void MainWindow::setupMenuBar() {
         QString f = QFileDialog::getOpenFileName(this, tr("Ouvrir ROM"), {}, tr("ROM (*.bin *.ori *.mod);;Tous (*.*)"));
         if (!f.isEmpty()) m_hexPanel->loadRom(f);
     });
+    fileMenu->addAction(tr("Importer projet WinOLS..."), this, &MainWindow::importWinols);
     fileMenu->addSeparator();
     fileMenu->addAction(tr("Quitter"), this, &QWidget::close, QKeySequence::Quit);
 
@@ -128,6 +168,8 @@ void MainWindow::setupMenuBar() {
     toolsMenu->addAction(tr("Corriger checksums"),  m_checksumPanel, &ChecksumPanel::runCorrection);
     toolsMenu->addAction(tr("Comparer ROMs"),       m_comparePanel,  &ComparePanel::openComparison);
     toolsMenu->addAction(tr("Chercher maps"),       m_mapEditor,     &MapEditorPanel::runMapFinder);
+    toolsMenu->addSeparator();
+    toolsMenu->addAction(tr("Générer rapport..."),  this,            &MainWindow::generateReport);
 
     auto* helpMenu = menuBar()->addMenu(tr("Aide"));
     helpMenu->addAction(tr("Vérifier les mises à jour"), this,

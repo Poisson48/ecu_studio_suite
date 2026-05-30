@@ -33,6 +33,9 @@ private:
     void setupStatusBar();
     void wirePanels();   // câble les signaux inter-panels (goto adresse, ROM lue…)
 
+    void importWinols();    // importe un export WinOLS (.zip/.hex/.bin) dans le document
+    void generateReport();  // génère un rapport HTML des modifications de la ROM
+
     // Lance le dialogue de mise à jour. Si silent=true, ne montre rien tant
     // qu'aucune mise à jour n'est disponible (vérification au démarrage).
     void checkForUpdates(bool silent);
