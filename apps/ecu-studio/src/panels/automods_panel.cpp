@@ -12,6 +12,7 @@
 #include <QMessageBox>
 #include <QDateTime>
 #include <QFont>
+#include <QColor>
 
 #include <cstdint>
 #include <span>
@@ -20,6 +21,11 @@
 #include "ecu/EcuCatalog.hpp"
 #include "ecu/VehicleTemplates.hpp"
 #include "ecu/RomPatcher.hpp"
+#include "ecu/OpenDamos.hpp"
+#include "ecu/OpenDamosRecipes.hpp"
+
+#include <unordered_map>
+#include <unordered_set>
 
 namespace ecu_studio {
 
@@ -37,6 +43,16 @@ QString bytesToHex(std::span<const uint8_t> b) {
         s += QString("%1").arg(b[i], 2, 16, QChar('0')).toUpper();
     }
     return s;
+}
+
+// Libellé court du niveau de risque d'une recette open_damos.
+QString riskLabel(ecu::RecipeRisk r) {
+    switch (r) {
+        case ecu::RecipeRisk::Low:    return AutoModsPanel::tr("risque faible");
+        case ecu::RecipeRisk::Medium: return AutoModsPanel::tr("risque moyen");
+        case ecu::RecipeRisk::High:   return AutoModsPanel::tr("risque \303\251lev\303\251");
+    }
+    return {};
 }
 
 // Recherche d'un motif d'octets dans la ROM. Retourne l'offset ou -1.
@@ -142,13 +158,23 @@ void AutoModsPanel::refresh() {
         return;
     }
 
-    auto addItem = [this](const QString& text, Kind kind, const QString& id) {
+    auto addItem = [this](const QString& text, Kind kind, const QString& id,
+                          const QString& tooltip = QString(),
+                          bool enabled = true) -> QListWidgetItem* {
         auto* it = new QListWidgetItem(text, m_list);
         it->setData(kRoleKind, static_cast<int>(kind));
         it->setData(kRoleId, id);
+        if (!tooltip.isEmpty())
+            it->setToolTip(tooltip);
+        if (!enabled) {
+            // Affiché mais non sélectionnable : Appliquer ne peut pas le viser.
+            it->setFlags(it->flags() & ~Qt::ItemIsSelectable & ~Qt::ItemIsEnabled);
+            it->setForeground(QColor("#6b7280"));
+        }
+        return it;
     };
 
-    int nbTpl = 0, nbPat = 0, nbAddr = 0;
+    int nbTpl = 0, nbPat = 0, nbAddr = 0, nbRecipe = 0;
 
     // ── Templates véhicule ──────────────────────────────────────────────────
     auto templates = ecu::listTemplatesForEcu(ecuStd);
@@ -191,8 +217,83 @@ void AutoModsPanel::refresh() {
         }
     }
 
-    log(tr("ECU %1 : %2 template(s), %3 pattern(s), %4 adresse(s).")
-            .arg(ecuId).arg(nbTpl).arg(nbPat).arg(nbAddr));
+    // ── Recettes open_damos (OpenDamosRecipes) ──────────────────────────────
+    // Les recettes ciblent des caractéristiques par NOM (ex. VSSCD_vMax_C). On
+    // résout ces noms en adresses via la relocalisation open_damos de l'ECU.
+    // Une recette est applicable si la recette open_damos charge ET qu'au moins
+    // une de ses opérations cible une caractéristique relocalisée de façon sûre.
+    {
+        const auto recipes = ecu::listRecipes();
+        if (!recipes.empty()) {
+            // Charge + relocalise une seule fois pour évaluer la disponibilité.
+            std::unordered_set<std::string> resolvable;  // noms relocalisés sûrs
+            QString loadErr;
+            auto damos = ecu::OpenDamos::loadRecipe(ecuId);
+            if (!damos) {
+                loadErr = QString::fromStdString(damos.error());
+            } else if (m_doc->isLoaded()) {
+                ecu::OpenDamos od;
+                od.setRecipe(std::move(*damos));
+                const QByteArray& rom = m_doc->rom();
+                auto relocated = od.relocate(QByteArrayView(rom.constData(), rom.size()));
+                for (const auto& r : relocated) {
+                    const bool safe =
+                        r.addressSource != ecu::AddressSource::DefaultFallback
+                        && r.score != 0.0;
+                    if (safe) resolvable.insert(r.name);
+                }
+            }
+
+            // Sépare visuellement la section.
+            auto* sep = new QListWidgetItem(tr("──  Recettes open_damos  ──"), m_list);
+            sep->setFlags(Qt::NoItemFlags);
+            sep->setForeground(QColor("#9ca3af"));
+
+            for (const auto& s : recipes) {
+                // Une recette n'est applicable que si la recette open_damos a
+                // chargé ET qu'au moins une op résout sur cette ROM.
+                bool applicable = loadErr.isEmpty();
+                QString unavailable;
+                if (!applicable) {
+                    unavailable = loadErr;
+                } else if (const ecu::Recipe* full = ecu::getRecipe(s.id)) {
+                    bool anyResolvable = false;
+                    for (const auto& op : full->ops)
+                        if (resolvable.count(op.entry)) { anyResolvable = true; break; }
+                    if (!anyResolvable) {
+                        applicable = false;
+                        unavailable = tr("aucune caract\303\251ristique relocalisable "
+                                         "sur cette ROM");
+                    }
+                }
+
+                QString label = QString("[Recipe] %1  \302\267 %2  \302\267 %3")
+                                    .arg(QString::fromStdString(s.name),
+                                         QString::fromStdString(s.category),
+                                         riskLabel(s.risk));
+                label += tr("  (%1 op.)").arg(s.opsCount);
+                if (!applicable)
+                    label += tr("  \342\200\224 indisponible");
+
+                QString tip = QString("%1\n\n%2\n%3")
+                                  .arg(QString::fromStdString(s.name),
+                                       QString::fromStdString(s.category),
+                                       QString::fromStdString(s.description));
+                if (!applicable && !unavailable.isEmpty())
+                    tip += tr("\n\nIndisponible : %1").arg(unavailable);
+
+                addItem(label, Kind::Recipe, QString::fromStdString(s.id), tip,
+                        applicable);
+                if (!applicable)
+                    log(tr("[Recipe %1] indisponible : %2")
+                            .arg(QString::fromStdString(s.id), unavailable));
+                ++nbRecipe;
+            }
+        }
+    }
+
+    log(tr("ECU %1 : %2 template(s), %3 pattern(s), %4 adresse(s), %5 recette(s).")
+            .arg(ecuId).arg(nbTpl).arg(nbPat).arg(nbAddr).arg(nbRecipe));
 
     if (m_list->count() == 0)
         log(tr("Aucune modification disponible pour cet ECU."));
@@ -240,6 +341,7 @@ void AutoModsPanel::applySelection() {
             case Kind::Template: changed = applyTemplate(e.id); break;
             case Kind::Pattern:  changed = applyPattern(e.id);  break;
             case Kind::Address:  changed = applyAddress(e.id);  break;
+            case Kind::Recipe:   changed = applyRecipe(e.id);   break;
         }
         anyChange = anyChange || changed;
     }
@@ -279,6 +381,10 @@ void AutoModsPanel::restoreSelection() {
             case Kind::Address: changed = restoreAddress(e.id); break;
             case Kind::Template:
                 log(tr("Restauration non disponible pour le template « %1 ».")
+                        .arg(e.id), true);
+                break;
+            case Kind::Recipe:
+                log(tr("Restauration non disponible pour la recette « %1 ».")
                         .arg(e.id), true);
                 break;
         }
@@ -509,6 +615,84 @@ bool AutoModsPanel::applyTemplate(const QString& templateId) {
         log(tr("[Template %1] aucun changement défini.").arg(templateId));
 
     return anyChange;
+}
+
+bool AutoModsPanel::applyRecipe(const QString& recipeId) {
+    const ecu::Recipe* recipe = ecu::getRecipe(recipeId.toStdString());
+    if (!recipe) {
+        log(tr("[Recipe %1] introuvable dans la bibliothèque open_damos.")
+                .arg(recipeId), true);
+        return false;
+    }
+
+    QByteArray& rom = m_doc->romMutable();
+    auto romSpan = mutByteSpan(rom);
+
+    // applyRecipe() charge l'open_damos de l'ECU, relocalise chaque
+    // caractéristique nommée → adresse, puis applique chaque opération in-place.
+    auto res = ecu::applyRecipe(*recipe, romSpan, m_doc->ecuId());
+    if (!res) {
+        log(tr("[Recipe %1] échec : %2")
+                .arg(recipeId, QString::fromStdString(res.error())), true);
+        return false;
+    }
+
+    bool anyChange = false;
+    for (const ecu::OpResult& op : res->operations) {
+        const QString entry = QString::fromStdString(op.entry);
+
+        if (op.error) {
+            // Adresse non résolue ou opération non supportée : avertissement clair.
+            log(tr("[Recipe %1] « %2 » ignorée : %3")
+                    .arg(recipeId, entry, QString::fromStdString(*op.error)), true);
+            continue;
+        }
+
+        const QString method = QString::fromStdString(op.method);
+        QString addrTxt = op.address
+            ? QString("0x%1").arg(static_cast<qulonglong>(*op.address), 0, 16)
+            : tr("(adresse inconnue)");
+        if (!op.addressSource.empty())
+            addrTxt += QString(" [%1]").arg(QString::fromStdString(op.addressSource));
+
+        QString detail;
+        if (method == "setPhys" || method == "setMapAll") {
+            detail = tr("%1 = %2 (raw %3)")
+                         .arg(method)
+                         .arg(op.physValue ? *op.physValue : 0.0)
+                         .arg(op.rawValue ? *op.rawValue : 0);
+            if (op.cellsChanged)
+                detail += tr(", %1 cellule(s)").arg(*op.cellsChanged);
+            if (op.prevRaw && op.rawValue)
+                detail += tr(" (avant raw %1)").arg(*op.prevRaw);
+        } else if (method == "setRaw") {
+            detail = tr("setRaw = %1").arg(op.rawValue ? *op.rawValue : 0);
+            if (op.prevRaw)
+                detail += tr(" (avant raw %1)").arg(*op.prevRaw);
+        } else if (method == "addPct") {
+            detail = tr("addPct %1%2%% (%3 cellule(s))")
+                         .arg(op.pct.value_or(0.0) >= 0 ? "+" : "")
+                         .arg(op.pct.value_or(0.0))
+                         .arg(op.cellsChanged ? *op.cellsChanged : 0);
+        } else {
+            detail = method;
+        }
+
+        log(tr("[Recipe %1] « %2 » @ %3 : %4")
+                .arg(recipeId, entry, addrTxt, detail));
+        anyChange = true;
+    }
+
+    if (res->bytesChanged > 0)
+        log(tr("[Recipe %1] %2 octet(s) modifié(s).")
+                .arg(recipeId).arg(res->bytesChanged));
+    else if (anyChange)
+        log(tr("[Recipe %1] opérations appliquées (aucun octet net modifié).")
+                .arg(recipeId));
+
+    // anyChange = au moins une op a réussi (≈ res->ok), mais on signale le vrai
+    // changement octet pour markModified() côté appelant.
+    return res->bytesChanged > 0;
 }
 
 } // namespace ecu_studio

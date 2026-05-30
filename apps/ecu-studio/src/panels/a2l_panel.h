@@ -27,6 +27,7 @@ public:
 public slots:
     void loadA2l();                       // ouvre un dialogue de fichier
     bool loadA2lFile(const QString& path);// charge un chemin précis
+    void exportA2l();                     // exporte un A2L depuis le recipe open_damos
 
 signals:
     // Émis sur double-clic d'une ligne : le main_window positionne l'éditeur
@@ -49,6 +50,7 @@ private:
     bool           m_loaded{false};
 
     QPushButton*   m_loadBtn{nullptr};
+    QPushButton*   m_exportBtn{nullptr};
     QLineEdit*     m_filterEdit{nullptr};
     QTableWidget*  m_table{nullptr};
     QLabel*        m_countLabel{nullptr};

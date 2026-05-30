@@ -34,7 +34,7 @@ private slots:
 
 private:
     // Catégorie d'une entrée listée.
-    enum class Kind { Template, Pattern, Address };
+    enum class Kind { Template, Pattern, Address, Recipe };
 
     struct Entry {
         Kind    kind;
@@ -48,6 +48,10 @@ private:
     bool applyTemplate(const QString& templateId);
     bool applyPattern(const QString& patternId);
     bool applyAddress(const QString& addressId);
+
+    // Applique une recette open_damos (OpenDamosRecipes) : relocalise les
+    // caractéristiques nommées puis applique chaque opération in-place.
+    bool applyRecipe(const QString& recipeId);
 
     // Restaure une entrée (pattern/address) si des octets de restauration existent.
     bool restorePattern(const QString& patternId);

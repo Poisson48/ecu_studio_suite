@@ -15,7 +15,11 @@
 #include <QFileInfo>
 #include <QFile>
 
+#include <QTextStream>
+
 #include "ecu/EcuCatalog.hpp"
+#include "ecu/OpenDamos.hpp"
+#include "ecu/OpenDamosA2lExport.hpp"
 
 namespace ecu_studio {
 
@@ -50,6 +54,11 @@ void A2lPanel::buildUi() {
     m_loadBtn = new QPushButton(tr("Charger A2L..."), this);
     m_loadBtn->setObjectName("accentBtn");
     toolRow->addWidget(m_loadBtn);
+
+    m_exportBtn = new QPushButton(tr("Exporter A2L..."), this);
+    m_exportBtn->setToolTip(
+        tr("Génère un A2L décrivant les maps open_damos relocalisées pour la ROM courante"));
+    toolRow->addWidget(m_exportBtn);
 
     m_filterEdit = new QLineEdit(this);
     m_filterEdit->setPlaceholderText(tr("Filtrer (nom, type, unité, adresse)..."));
@@ -89,6 +98,7 @@ void A2lPanel::buildUi() {
     root->addWidget(m_countLabel);
 
     connect(m_loadBtn,    &QPushButton::clicked,   this, &A2lPanel::loadA2l);
+    connect(m_exportBtn,  &QPushButton::clicked,   this, &A2lPanel::exportA2l);
     connect(m_filterEdit, &QLineEdit::textChanged, this, &A2lPanel::applyFilter);
     connect(m_table,      &QTableWidget::cellDoubleClicked,
             this, &A2lPanel::onCellDoubleClicked);
@@ -122,6 +132,74 @@ bool A2lPanel::loadA2lFile(const QString& path) {
     const int n = static_cast<int>(m_parser.characteristics().size());
     emit a2lLoaded(path, n);
     return true;
+}
+
+void A2lPanel::exportA2l() {
+    // L'export tire sa valeur des maps open_damos relocalisées pour le firmware
+    // courant : il faut donc une ROM chargée et un ECU connu.
+    if (!m_doc || !m_doc->isLoaded()) {
+        QMessageBox::information(this, tr("Exporter A2L"),
+            tr("Aucune ROM n'est chargée. Chargez d'abord un firmware pour "
+               "exporter un A2L décrivant ses maps relocalisées."));
+        return;
+    }
+
+    const QString ecuId = m_doc->ecuId();
+    if (ecuId.isEmpty()) {
+        QMessageBox::information(this, tr("Exporter A2L"),
+            tr("Aucun ECU n'est associé à la ROM courante. Identifiez d'abord "
+               "l'ECU pour disposer d'un recipe open_damos."));
+        return;
+    }
+
+    // 1) Charger le recipe open_damos de l'ECU.
+    auto recipeRes = ecu::OpenDamos::loadRecipe(ecuId);
+    if (!recipeRes) {
+        QMessageBox::warning(this, tr("Exporter A2L"),
+            tr("Impossible de charger le recipe open_damos pour l'ECU « %1 » :\n%2")
+                .arg(ecuId, QString::fromStdString(recipeRes.error())));
+        return;
+    }
+    const ecu::DamosRecipe& recipe = *recipeRes;
+
+    // 2) Relocaliser chaque caractéristique sur la ROM courante (adresses résolues).
+    ecu::OpenDamos damos;
+    const std::vector<ecu::RelocResult> reloc =
+        damos.relocate(recipe, m_doc->rom());
+
+    // 3) Générer le texte A2L complet (en-tête + RECORD_LAYOUTs + COMPU_METHODs
+    //    + CHARACTERISTICs + pied) à partir du recipe et des adresses résolues.
+    auto exportRes = ecu::OpenDamosA2lExport::exportA2l(recipe, reloc);
+    if (!exportRes) {
+        QMessageBox::warning(this, tr("Exporter A2L"),
+            tr("Échec de la génération de l'A2L :\n%1")
+                .arg(QString::fromStdString(exportRes.error())));
+        return;
+    }
+
+    // 4) Choisir le fichier de destination et écrire.
+    const QString defaultName = ecuId + QStringLiteral(".a2l");
+    QString path = QFileDialog::getSaveFileName(
+        this, tr("Exporter un fichier A2L"), defaultName,
+        tr("Fichiers A2L (*.a2l);;Tous les fichiers (*.*)"));
+    if (path.isEmpty()) return;
+    if (!path.endsWith(QStringLiteral(".a2l"), Qt::CaseInsensitive))
+        path += QStringLiteral(".a2l");
+
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::critical(this, tr("Exporter A2L"),
+            tr("Impossible d'écrire le fichier :\n%1").arg(path));
+        return;
+    }
+    QTextStream out(&file);
+    out << exportRes->a2l;
+    file.close();
+
+    const int n = static_cast<int>(recipe.characteristics.size());
+    QMessageBox::information(this, tr("Exporter A2L"),
+        tr("A2L exporté avec succès : %n caractéristique(s).\n%1",
+           nullptr, n).arg(path));
 }
 
 void A2lPanel::populateTable() {
