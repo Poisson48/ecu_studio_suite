@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ECU Studio Suite — Linux ECU tuning &amp; diagnostics platform</title>
+  <meta name="description" content="Open automotive software suite for Linux. ECU reflashing via MPPS, map editor, A2L/DAMOS parsing, checksum correction, CAN bus analysis. 100% local, no cloud." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0f1623;
+      --card:    #1a2235;
+      --input:   #111827;
+      --hover:   #232f45;
+      --border:  #2a3a55;
+      --accent:  #6366f1;
+      --accent2: #818cf8;
+      --green:   #22c55e;
+      --text:    #f1f5f9;
+      --muted:   #7c8fa6;
+      --radius:  10px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(15,22,35,.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .75rem 2rem;
+    }
+    .nav-logo { display: flex; align-items: center; gap: .6rem; font-weight: 700; font-size: 1.05rem; text-decoration: none; color: var(--text); }
+    .nav-logo svg { flex-shrink: 0; }
+    .nav-links { display: flex; gap: 1.5rem; list-style: none; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: .9rem; transition: color .15s; }
+    .nav-links a:hover { color: var(--text); }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 6rem 1.5rem 5rem;
+      max-width: 820px; margin: 0 auto;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: .4rem;
+      background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.35);
+      color: var(--accent2); border-radius: 99px;
+      padding: .25rem .85rem; font-size: .78rem; font-weight: 600;
+      margin-bottom: 1.5rem; letter-spacing: .04em;
+    }
+    .badge::before { content: "●"; color: var(--green); font-size: .6rem; }
+    h1 {
+      font-size: clamp(2.2rem, 5vw, 3.6rem);
+      font-weight: 800; line-height: 1.15;
+      background: linear-gradient(135deg, #f1f5f9 30%, var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1.1rem;
+    }
+    .hero-sub {
+      font-size: 1.15rem; color: var(--muted);
+      max-width: 580px; margin: 0 auto 2.5rem;
+    }
+    .cta-row { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .75rem 1.75rem; border-radius: var(--radius);
+      font-size: .95rem; font-weight: 600; text-decoration: none;
+      transition: filter .15s, transform .1s;
+      cursor: pointer; border: none;
+    }
+    .btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-ghost   { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn svg { flex-shrink: 0; }
+
+    /* ── SCREEN SHOWCASE ── */
+    .screen-wrap {
+      max-width: 960px; margin: 0 auto 5rem;
+      padding: 0 1.5rem;
+    }
+    .screen-mock {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0,0,0,.55);
+      position: relative;
+    }
+
+    /* panel tab strip */
+    .panel-tabs {
+      display: flex; flex-wrap: wrap; gap: .4rem;
+      margin-top: .9rem; justify-content: center;
+    }
+    .panel-tab {
+      background: var(--card); color: var(--muted);
+      border: 1px solid var(--border); border-radius: 99px;
+      padding: .28rem .85rem; font-size: .78rem; font-weight: 600;
+      cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+    }
+    .panel-tab:hover { background: var(--hover); color: var(--text); border-color: var(--accent); }
+    .panel-tab.active {
+      background: rgba(99,102,241,.18); color: var(--accent2);
+      border-color: var(--accent);
+    }
+
+    /* animated live-stats strip */
+    .live-stats {
+      display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap;
+      margin: 0 auto 4rem; max-width: 700px; padding: 0 1.5rem;
+    }
+    .stat-item { text-align: center; }
+    .stat-num {
+      display: block; font-size: 2rem; font-weight: 800;
+      background: linear-gradient(135deg, #f1f5f9 30%, var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; font-variant-numeric: tabular-nums;
+    }
+    .stat-label { font-size: .75rem; color: var(--muted); font-weight: 600;
+      text-transform: uppercase; letter-spacing: .07em; }
+
+    /* feature card hover glow */
+    .feat-card { transition: border-color .2s, transform .15s, box-shadow .2s; }
+    .feat-card:hover {
+      border-color: var(--accent); transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(99,102,241,.15);
+    }
+    .mock-titlebar {
+      background: var(--input);
+      padding: .6rem 1rem;
+      display: flex; align-items: center; gap: .5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-red   { background: #ef4444; }
+    .dot-yel   { background: #eab308; }
+    .dot-grn   { background: #22c55e; }
+    .mock-title { margin-left: .5rem; font-size: .82rem; color: var(--muted); }
+    .mock-body  { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+
+    /* toolbar */
+    .mock-toolbar {
+      display: flex; align-items: center; gap: .75rem;
+      background: var(--input); border: 1px solid var(--border);
+      border-radius: 8px; padding: .45rem .75rem; font-size: .8rem; color: var(--muted);
+      flex-wrap: wrap;
+    }
+    .mock-select {
+      background: var(--hover); border: 1px solid var(--border);
+      border-radius: 6px; padding: .25rem .6rem; color: var(--text); font-size: .8rem;
+    }
+    .mock-btn-sm {
+      background: var(--accent); color: #fff; border: none; border-radius: 6px;
+      padding: .25rem .65rem; font-size: .78rem; font-weight: 600; cursor: default;
+    }
+    .mock-btn-stop {
+      background: #ef4444; color: #fff; border: none; border-radius: 6px;
+      padding: .25rem .65rem; font-size: .78rem; font-weight: 600; cursor: default;
+    }
+    .mock-spacer { flex: 1; }
+
+    /* hex editor mock */
+    .mock-hex {
+      width: 100%; border-collapse: collapse;
+      font-size: .76rem; font-family: monospace;
+      background: var(--input); border: 1px solid var(--border);
+      border-radius: 8px; overflow: hidden;
+    }
+    .mock-hex th {
+      text-align: left; color: var(--muted); font-weight: 600; font-family: sans-serif;
+      padding: .35rem .55rem; border-bottom: 1px solid var(--border); font-size: .72rem;
+    }
+    .mock-hex td { padding: .22rem .55rem; border-bottom: 1px solid rgba(42,58,85,.4); white-space: nowrap; }
+    .mock-hex tr:hover td { background: var(--hover); }
+    .addr  { color: var(--accent2); }
+    .bytes { color: #cbd5e1; letter-spacing: .04em; }
+    .ascii { color: var(--muted); }
+    .map-a { background: rgba(99,102,241,.16); color: #c7d2fe; border-radius: 3px; }
+    .map-b { background: rgba(34,197,94,.16);  color: #bbf7d0; border-radius: 3px; }
+    .map-tag {
+      display: inline-block; font-size: .68rem; font-weight: 700; font-family: sans-serif;
+      padding: .05rem .45rem; border-radius: 99px; margin-left: .4rem;
+    }
+    .tag-a { background: rgba(99,102,241,.2); color: var(--accent2); border: 1px solid rgba(99,102,241,.4); }
+    .tag-b { background: rgba(34,197,94,.18);  color: #4ade80;     border: 1px solid rgba(34,197,94,.4); }
+
+    /* side-by-side hex + map */
+    .mock-split { display: flex; gap: 1rem; align-items: flex-start; }
+    .mock-split > .hex-col { flex: 2; min-width: 0; overflow-x: auto; }
+    .mock-split > .map-col { flex: 1; min-width: 0; }
+    .map-panel {
+      background: var(--input); border: 1px solid var(--border); border-radius: 8px;
+      padding: .75rem; font-family: monospace; font-size: .74rem;
+    }
+    .map-panel-head {
+      font-family: sans-serif; font-size: .76rem; font-weight: 700; color: var(--text);
+      margin-bottom: .6rem; display: flex; align-items: center; justify-content: space-between;
+    }
+    .map-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
+    .map-cell {
+      text-align: center; padding: .28rem 0; border-radius: 4px;
+      background: var(--hover); color: #cbd5e1;
+    }
+    .map-cell.hot  { background: rgba(239,68,68,.22);  color: #fca5a5; }
+    .map-cell.warm { background: rgba(245,158,11,.20); color: #fcd34d; }
+    .map-cell.cool { background: rgba(99,102,241,.20); color: #c7d2fe; }
+    @media (max-width: 720px) { .mock-split { flex-direction: column; } .map-col { width: 100%; } }
+
+    /* ── FEATURES ── */
+    section { padding: 5rem 1.5rem; max-width: 1060px; margin: 0 auto; }
+    .section-label {
+      text-transform: uppercase; letter-spacing: .1em; font-size: .72rem;
+      color: var(--accent2); font-weight: 700; margin-bottom: .75rem;
+    }
+    h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 700; margin-bottom: .5rem; }
+    .section-sub { color: var(--muted); max-width: 520px; margin-bottom: 3rem; }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+      gap: 1.25rem;
+    }
+    .feat-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.4rem 1.5rem;
+      transition: border-color .2s, transform .15s;
+    }
+    .feat-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .feat-icon {
+      width: 40px; height: 40px; border-radius: 9px;
+      background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.25);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1rem; font-size: 1.2rem;
+    }
+    .feat-card h3 { font-size: .95rem; font-weight: 700; margin-bottom: .35rem; }
+    .feat-card p  { font-size: .83rem; color: var(--muted); line-height: 1.55; }
+
+    /* ── DOWNLOAD ── */
+    .download-section {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 3rem 2.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 2rem; flex-wrap: wrap;
+    }
+    .dl-left h2 { font-size: 1.7rem; margin-bottom: .5rem; }
+    .dl-left p  { color: var(--muted); font-size: .9rem; max-width: 460px; }
+    .dl-meta { display: flex; gap: 1.2rem; margin-top: 1.25rem; flex-wrap: wrap; }
+    .dl-pill {
+      background: var(--hover); border: 1px solid var(--border);
+      border-radius: 99px; padding: .25rem .9rem;
+      font-size: .78rem; color: var(--muted);
+    }
+    .dl-pill span { color: var(--text); font-weight: 600; }
+    .dl-right { display: flex; flex-direction: column; gap: .75rem; min-width: 220px; }
+    .code-block {
+      background: var(--input); border: 1px solid var(--border);
+      border-radius: 8px; padding: .75rem 1rem;
+      font-family: monospace; font-size: .8rem; color: #7dd3fc;
+    }
+
+    /* ── ADAPTERS ── */
+    .adapters-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;
+    }
+    .adapter-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1rem 1.2rem;
+    }
+    .adapter-card h4 { font-size: .88rem; font-weight: 700; margin-bottom: .25rem; }
+    .adapter-card p  { font-size: .78rem; color: var(--muted); }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 1.5rem; text-align: center;
+      color: var(--muted); font-size: .82rem;
+    }
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+    .footer-links { display: flex; gap: 1.5rem; justify-content: center; margin-bottom: .75rem; flex-wrap: wrap; }
+
+    @media (max-width: 640px) {
+      nav { padding: .75rem 1rem; }
+      .nav-links { display: none; }
+      .download-section { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ──────────────────────────────────────────────────────── -->
+<nav>
+  <a class="nav-logo" href="#">
+    <svg width="28" height="28" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <rect width="64" height="64" rx="12" fill="#0f1623"/>
+      <!-- ECU chip body -->
+      <rect x="18" y="18" width="28" height="28" rx="4" fill="#1a2235" stroke="#6366f1" stroke-width="2.5"/>
+      <!-- die / core -->
+      <rect x="26" y="26" width="12" height="12" rx="2" fill="#6366f1"/>
+      <circle cx="32" cy="32" r="2.4" fill="#22c55e"/>
+      <!-- pins -->
+      <line x1="24" y1="18" x2="24" y2="10" stroke="#3d5270" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="32" y1="18" x2="32" y2="10" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="40" y1="18" x2="40" y2="10" stroke="#3d5270" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="24" y1="46" x2="24" y2="54" stroke="#3d5270" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="32" y1="46" x2="32" y2="54" stroke="#3d5270" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="40" y1="46" x2="40" y2="54" stroke="#3d5270" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="18" y1="24" x2="10" y2="24" stroke="#3d5270" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="18" y1="40" x2="10" y2="40" stroke="#3d5270" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="46" y1="24" x2="54" y2="24" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="46" y1="40" x2="54" y2="40" stroke="#3d5270" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    ECU Studio Suite
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#download">Build</a></li>
+    <li><a href="#adapters">Hardware</a></li>
+    <li><a href="https://github.com/Poisson48/SocketSpy">SocketSpy</a></li>
+    <li><a href="https://github.com/Poisson48/ecu_studio_suite">GitHub</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO ──────────────────────────────────────────────────────── -->
+<div class="hero">
+  <div class="badge">Qt6 · C++23 · Linux x86_64</div>
+  <h1>ECU tuning &amp; diagnostics,<br/>built for Linux</h1>
+  <p class="hero-sub">
+    Read and reflash your ECU over MPPS, edit Bosch maps, parse A2L/DAMOS,
+    auto-correct checksums — bundled with SocketSpy for live CAN analysis.
+    100% local, no cloud.
+  </p>
+  <div class="cta-row">
+    <a class="btn btn-primary" href="https://github.com/Poisson48/ecu_studio_suite">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      View on GitHub
+    </a>
+    <a class="btn btn-ghost" href="https://github.com/Poisson48/ecu_studio_suite#build">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Build from source
+    </a>
+  </div>
+</div>
+
+<!-- ── LIVE STATS ─────────────────────────────────────────────────── -->
+<div class="live-stats">
+  <div class="stat-item">
+    <span class="stat-num" id="stat-panels">9</span>
+    <span class="stat-label">Panels</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-num" id="stat-ecus">14</span>
+    <span class="stat-label">Supported ECUs</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-num" id="stat-chipsets">6</span>
+    <span class="stat-label">MPPS chipsets</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-num">100%</span>
+    <span class="stat-label">Local — no cloud</span>
+  </div>
+</div>
+
+<!-- ── SCREENSHOT SHOWCASE ────────────────────────────────────────── -->
+<div class="screen-wrap">
+  <div class="screen-mock">
+    <div class="mock-titlebar">
+      <div class="dot dot-red"></div>
+      <div class="dot dot-yel"></div>
+      <div class="dot dot-grn"></div>
+      <span class="mock-title">ECU Studio v1.0.0 — EDC16C34</span>
+    </div>
+    <div class="mock-body">
+      <div class="mock-toolbar">
+        <span>ROM</span>
+        <select class="mock-select"><option>EDC16C34_full.bin · 2.0 MB</option></select>
+        <span>Offset</span>
+        <select class="mock-select"><option>0x1A400</option></select>
+        <span class="mock-spacer"></span>
+        <button class="mock-btn-sm">Read</button>
+        <button class="mock-btn-sm">Write</button>
+        <button class="mock-btn-stop">Stop</button>
+      </div>
+
+      <div class="mock-split">
+        <!-- hex view -->
+        <div class="hex-col">
+          <table class="mock-hex">
+            <thead>
+              <tr><th>Address</th><th>00 .. 0F</th><th>ASCII</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="addr">0001A3F0</td><td class="bytes">3F 80 00 00 41 20 00 00 42 48 00 00 43 96 00 00</td><td class="ascii">?...A .​.BH..C...</td></tr>
+              <tr><td class="addr">0001A400</td><td class="bytes"><span class="map-a">12 8A 13 04 14 7E 15 F2 17 6B</span> 18 E0 1A 55 1B CA</td><td class="ascii">.....~..<span class="map-a">.k.</span>.U..</td></tr>
+              <tr><td class="addr">0001A410</td><td class="bytes"><span class="map-a">1D 3F 1E B4 20 29 21 9E 23 13</span> 24 88 25 FD 27 72</td><td class="ascii">.?.. )!.#.$.%.'r</td></tr>
+              <tr><td class="addr">0001A420</td><td class="bytes"><span class="map-a">28 E7 2A 5C 2B D1 2D 46 2E BB</span> 30 30 31 A5 33 1A</td><td class="ascii">(.*\+.-F..0011.3.</td></tr>
+              <tr><td class="addr">0001A430</td><td class="bytes">00 64 00 C8 01 2C 01 90 01 F4 02 58 02 BC 03 20</td><td class="ascii">.d...,.....X... </td></tr>
+              <tr><td class="addr">0001A440</td><td class="bytes"><span class="map-b">7D 00 7B 80 79 00 76 80 74 00</span> 71 80 6F 00 6C 80</td><td class="ascii"><span class="map-b">}.{.y.v.t.</span>q.o.l.</td></tr>
+              <tr><td class="addr">0001A450</td><td class="bytes"><span class="map-b">6A 00 67 80 65 00 62 80 60 00</span> 5D 80 5B 00 58 80</td><td class="ascii"><span class="map-b">j.g.e.b.`.</span>].[.X.</td></tr>
+              <tr><td class="addr">0001A460</td><td class="bytes">A5 5A 6C 33 0F E1 22 9B 44 D7 88 1E 9C 02 BB 60</td><td class="ascii">.Zl3..".D......`</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- map panel -->
+        <div class="map-col">
+          <div class="map-panel">
+            <div class="map-panel-head">
+              <span>KFMIRL · Injection</span>
+              <span class="map-tag tag-a">2D</span>
+            </div>
+            <div class="map-grid">
+              <div class="map-cell cool">142</div><div class="map-cell cool">158</div><div class="map-cell">176</div><div class="map-cell warm">201</div><div class="map-cell warm">228</div><div class="map-cell hot">255</div>
+              <div class="map-cell cool">131</div><div class="map-cell cool">149</div><div class="map-cell">170</div><div class="map-cell warm">196</div><div class="map-cell warm">224</div><div class="map-cell hot">252</div>
+              <div class="map-cell cool">120</div><div class="map-cell">138</div><div class="map-cell">162</div><div class="map-cell warm">190</div><div class="map-cell hot">240</div><div class="map-cell hot">255</div>
+              <div class="map-cell cool">108</div><div class="map-cell">128</div><div class="map-cell">155</div><div class="map-cell warm">188</div><div class="map-cell hot">238</div><div class="map-cell hot">255</div>
+            </div>
+            <div style="margin-top:.65rem;font-family:sans-serif;font-size:.7rem;color:var(--muted)">
+              <span class="map-tag tag-b" style="margin-left:0">Stage&nbsp;1</span>
+              +14% applied · checksum ✓
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="panel-tabs">
+    <button class="panel-tab active" onclick="switchTab(this)">Project</button>
+    <button class="panel-tab" onclick="switchTab(this)">MPPS</button>
+    <button class="panel-tab" onclick="switchTab(this)">Hex</button>
+    <button class="panel-tab" onclick="switchTab(this)">Maps</button>
+    <button class="panel-tab" onclick="switchTab(this)">AutoMods</button>
+    <button class="panel-tab" onclick="switchTab(this)">Checksum</button>
+    <button class="panel-tab" onclick="switchTab(this)">Compare</button>
+    <button class="panel-tab" onclick="switchTab(this)">Git</button>
+    <button class="panel-tab" onclick="switchTab(this)">A2L</button>
+  </div>
+</div>
+<script>
+// panel tabs (visual highlight + light auto-rotation)
+const tabs = Array.from(document.querySelectorAll('.panel-tab'));
+let activeTab = 0;
+let tabTimer = null;
+
+function setActive(idx) {
+  activeTab = ((idx % tabs.length) + tabs.length) % tabs.length;
+  tabs.forEach((b, i) => b.classList.toggle('active', i === activeTab));
+}
+function switchTab(btn) {
+  setActive(tabs.indexOf(btn));
+  clearInterval(tabTimer);
+  tabTimer = setInterval(() => setActive(activeTab + 1), 4000);
+}
+// auto-rotate the active tab highlight
+tabTimer = setInterval(() => setActive(activeTab + 1), 4000);
+
+// keyboard navigation
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') { setActive(activeTab + 1); clearInterval(tabTimer); tabTimer = setInterval(() => setActive(activeTab + 1), 4000); }
+  if (e.key === 'ArrowLeft')  { setActive(activeTab - 1); clearInterval(tabTimer); tabTimer = setInterval(() => setActive(activeTab + 1), 4000); }
+});
+
+// count-up animation for stats
+function countUp(el, target, duration) {
+  let start = 0; const step = duration / target;
+  const t = setInterval(() => {
+    start++;
+    el.textContent = start;
+    if (start >= target) clearInterval(t);
+  }, step);
+}
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      obs.unobserve(e.target);
+      countUp(document.getElementById('stat-panels'),    9,  700);
+      countUp(document.getElementById('stat-ecus'),      14, 900);
+      countUp(document.getElementById('stat-chipsets'),   6, 600);
+    }
+  });
+});
+obs.observe(document.querySelector('.live-stats'));
+</script>
+
+<!-- ── FEATURES ──────────────────────────────────────────────────── -->
+<section id="features">
+  <div class="section-label">What's inside</div>
+  <h2>Everything you need to read, tune &amp; reflash an ECU</h2>
+  <p class="section-sub">Two apps, one theme and sidebar: ECU Studio for reflashing and map editing, SocketSpy for CAN analysis. Everything runs on your machine.</p>
+
+  <div class="features-grid">
+
+    <div class="feat-card">
+      <div class="feat-icon">🔌</div>
+      <h3>MPPS Flashing</h3>
+      <p>Read &amp; write ECU ROM over MPPS V21 (FTDI/CH340/CP2102). libusb on Linux, no proprietary driver needed. Background-threaded with live progress.</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">🗃️</div>
+      <h3>Virtual Hex Editor</h3>
+      <p>Smooth hex view for 2–6 MB ROMs with map-region overlays (planned: 60fps QPainter virtual scrolling).</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">📊</div>
+      <h3>Bosch Map Editor</h3>
+      <p>Read/write Kf_Xs16_Ys16_Ws16 maps, apply percentage changes to Stage 1 maps with positive-only scaling.</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">🔎</div>
+      <h3>Heuristic Map Finder</h3>
+      <p>Detect 2D maps in a ROM without an A2L, scored by axis monotonicity and data smoothness.</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">📄</div>
+      <h3>A2L / DAMOS Parser</h3>
+      <p>Parse ASAP2 CHARACTERISTIC/AXIS_PTS/RECORD_LAYOUT, resolve cross-references (Bosch &amp; PSA dialects).</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">✅</div>
+      <h3>Checksum Correction</h3>
+      <p>Auto-correct ECU checksums before writing, with read-back verification.</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">≠</div>
+      <h3>ROM Compare</h3>
+      <p>Byte-level diff between two ROMs, grouped into changed map intervals.</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">Ⓖ</div>
+      <h3>Git Versioning</h3>
+      <p>Every ROM write is auto-committed via libgit2 — full history, instant rollback.</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">🚗</div>
+      <h3>ECU Catalog &amp; Vehicle Templates</h3>
+      <p>Built-in catalog (EDC16C34, EDC17, ME7, MED17…) and one-click Stage 1 / Pop&amp;Bang / depollution presets per vehicle.</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">📡</div>
+      <h3>SocketSpy CAN Analysis</h3>
+      <p>Bundled SocketSpy app: live CAN monitor, DBC decoding, UDS, Lua scripting — watch the bus during a flash.</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">🪟</div>
+      <h3>Detachable Panels</h3>
+      <p>Same icon-sidebar UX as SocketSpy: drag or right-click any panel to float it as its own window.</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">🔒</div>
+      <h3>100% Local</h3>
+      <p>No account, no telemetry, no cloud. Everything runs on your machine.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── DOWNLOAD / BUILD ───────────────────────────────────────────── -->
+<section id="download" style="padding-top:0">
+  <div class="download-section">
+    <div class="dl-left">
+      <h2>Build ECU Studio Suite</h2>
+      <p>Qt6 C++23 mono-repo. Linux-first, builds with CMake + Ninja. Simulation mode lets you try the UI without any hardware.</p>
+      <div class="dl-meta">
+        <div class="dl-pill">Version <span>1.0.0</span></div>
+        <div class="dl-pill">Language <span>C++23</span></div>
+        <div class="dl-pill">Build <span>CMake/Ninja</span></div>
+        <div class="dl-pill">License <span>GPL-3.0</span></div>
+      </div>
+    </div>
+    <div class="dl-right">
+      <a class="btn btn-primary" href="https://github.com/Poisson48/ecu_studio_suite#build" style="justify-content:center">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Build from source
+      </a>
+      <div class="code-block">git clone --recursive https://github.com/Poisson48/ecu_studio_suite<br>cd ecu_studio_suite &amp;&amp; ./build.sh</div>
+      <a class="btn btn-ghost" href="https://github.com/Poisson48/ecu_studio_suite#readme" style="justify-content:center;font-size:.85rem">Read the docs →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── ADAPTERS / HARDWARE ────────────────────────────────────────── -->
+<section id="adapters">
+  <div class="section-label">Hardware</div>
+  <h2>Works with common MPPS clones</h2>
+  <p class="section-sub">Any FTDI or serial-bridge MPPS interface the Linux kernel enumerates.</p>
+
+  <div class="adapters-grid">
+    <div class="adapter-card">
+      <h4>FTDI FT232R/BM</h4>
+      <p>ftdi_sio (0403:6001)</p>
+    </div>
+    <div class="adapter-card">
+      <h4>FTDI FT2232H</h4>
+      <p>dual channel (0403:6010)</p>
+    </div>
+    <div class="adapter-card">
+      <h4>FTDI FTX series</h4>
+      <p>(0403:6015)</p>
+    </div>
+    <div class="adapter-card">
+      <h4>WCH CH340</h4>
+      <p>low-cost clones (1a86:7523)</p>
+    </div>
+    <div class="adapter-card">
+      <h4>WCH CH341</h4>
+      <p>(1a86:5523)</p>
+    </div>
+    <div class="adapter-card">
+      <h4>SiLabs CP2102</h4>
+      <p>(10c4:ea60)</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ─────────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-links">
+    <a href="https://github.com/Poisson48/ecu_studio_suite">GitHub</a>
+    <a href="https://github.com/Poisson48/SocketSpy">SocketSpy</a>
+    <a href="https://github.com/Poisson48/ecu_studio_suite#readme">Documentation</a>
+    <a href="https://github.com/Poisson48/ecu_studio_suite/blob/main/LICENSE">GPL-3.0 License</a>
+  </div>
+  <p>ECU Studio Suite — 100% local, no telemetry, no cloud.</p>
+</footer>
+
+</body>
+</html>
