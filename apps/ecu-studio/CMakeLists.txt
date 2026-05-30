@@ -1,4 +1,4 @@
-find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent LinguistTools)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent Network LinguistTools)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -19,6 +19,10 @@ set(ECU_STUDIO_SOURCES
     src/panels/compare_panel.cpp
     src/panels/git_panel.cpp
     src/panels/a2l_panel.cpp
+
+    # Système de mise à jour intégré (vérifie les releases GitHub)
+    src/updater.cpp
+    src/update_dialog.cpp
 
     # SidebarNav de SocketSpy — copié pour que AUTOMOC le traite correctement
     src/sidebar_nav.cpp
@@ -47,6 +51,7 @@ target_link_libraries(ecu_studio
     PRIVATE
         Qt6::Widgets
         Qt6::Concurrent
+        Qt6::Network
         mppslib
         ecu_core
         ecu_shared

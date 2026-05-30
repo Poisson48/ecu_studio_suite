@@ -18,6 +18,7 @@ class ChecksumPanel;
 class ComparePanel;
 class GitPanel;
 class A2lPanel;
+class Updater;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -30,7 +31,12 @@ private:
     void setupMenuBar();
     void setupStatusBar();
 
+    // Lance le dialogue de mise à jour. Si silent=true, ne montre rien tant
+    // qu'aucune mise à jour n'est disponible (vérification au démarrage).
+    void checkForUpdates(bool silent);
+
     socketspy::gui::SidebarNav* m_sidebar{nullptr};
+    Updater* m_updater{nullptr};
 
     // Panels ECU Studio
     MppsPanel*      m_mppsPanel{nullptr};

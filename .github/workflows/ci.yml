@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        # ubuntu-24.04 ships Qt 6.4 with Charts/SerialBus/SerialPort/OpenGL dev
+        # packages and supports qt_standard_project_setup() (needs Qt 6.3+).
+        # ubuntu-22.04 ships Qt 6.2 and lacks several of these modules.
+        os: [ubuntu-24.04]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # The apps/socketspy submodule URL in .gitmodules uses an SSH host alias
+      # (git@github-poisson48:...). Rewrite it to a public HTTPS URL so the
+      # GitHub Actions runner can fetch it without SSH keys, then pull submodules.
+      - name: Checkout (no submodules yet)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Fetch submodules over HTTPS
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github-poisson48:"
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git submodule sync --recursive
+          git submodule update --init --recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y \
+            cmake ninja-build git pkg-config \
+            qt6-base-dev qt6-charts-dev qt6-declarative-dev \
+            qt6-serialbus-dev qt6-serialport-dev qt6-connectivity-dev \
+            qt6-tools-dev qt6-tools-dev-tools libqt6opengl6-dev \
+            libgl1-mesa-dev libssl-dev \
+            libusb-1.0-0-dev libgit2-dev \
+            lua5.4 liblua5.4-dev \
+            nlohmann-json3-dev libgtest-dev
+
+      # Build with simulation OFF so the real libusb code path
+      # (MppsDevice_libusb.cpp) and the libgit2 GitManager are compiled too.
+      # Tests are enabled and run in the same build.
+      - name: CMake configure
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DECU_MPPS_SIMULATION=OFF \
+            -DECU_BUILD_TESTS=ON \
+            -DECU_BUILD_SOCKETSPY=OFF \
+            -G Ninja
+
+      - name: CMake build (ecu_studio + tests)
+        run: cmake --build build --parallel "$(nproc)"
+
+      - name: Run tests (ctest)
+        run: ctest --test-dir build --output-on-failure

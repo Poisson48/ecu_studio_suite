@@ -8,6 +8,8 @@
 #include "panels/compare_panel.h"
 #include "panels/git_panel.h"
 #include "panels/a2l_panel.h"
+#include "updater.h"
+#include "update_dialog.h"
 
 #include <QMenuBar>
 #include <QMenu>
@@ -17,13 +19,22 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
+#include <QTimer>
 
 namespace ecu_studio {
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
+    m_updater = new Updater(this);
+
     setupUi();
     setupMenuBar();
     setupStatusBar();
+
+    // Vérification silencieuse au démarrage (uniquement en AppImage) — ne
+    // dérange l'utilisateur que si une mise à jour est réellement disponible.
+    if (m_updater->isAppImage()) {
+        QTimer::singleShot(2000, this, [this]() { checkForUpdates(/*silent=*/true); });
+    }
 }
 
 MainWindow::~MainWindow() = default;
@@ -85,6 +96,41 @@ void MainWindow::setupMenuBar() {
     toolsMenu->addAction(tr("Corriger checksums"),  m_checksumPanel, &ChecksumPanel::runCorrection);
     toolsMenu->addAction(tr("Comparer ROMs"),       m_comparePanel,  &ComparePanel::openComparison);
     toolsMenu->addAction(tr("Chercher maps"),       m_mapEditor,     &MapEditorPanel::runMapFinder);
+
+    auto* helpMenu = menuBar()->addMenu(tr("Aide"));
+    helpMenu->addAction(tr("Vérifier les mises à jour"), this,
+                        [this]() { checkForUpdates(/*silent=*/false); });
+    helpMenu->addAction(tr("À propos d'ECU Studio"), this, [this]() {
+        QMessageBox::about(this, tr("À propos d'ECU Studio"),
+                           tr("ECU Studio v%1").arg(APP_VERSION));
+    });
+}
+
+void MainWindow::checkForUpdates(bool silent) {
+    if (silent) {
+        // En mode silencieux, on interroge l'Updater directement et n'ouvre le
+        // dialogue (qui relance sa propre vérification) que si une mise à jour
+        // est effectivement disponible — sinon on ne dérange pas l'utilisateur.
+        auto* conn = new QObject(this);
+        auto cleanup = [conn]() { conn->deleteLater(); };
+        connect(m_updater, &Updater::updateAvailable, conn,
+                [this, conn](const QString&) {
+                    conn->deleteLater();
+                    auto* dlg = new UpdateDialog(m_updater, this);
+                    dlg->setAttribute(Qt::WA_DeleteOnClose);
+                    dlg->show();
+                    dlg->startCheck();
+                });
+        connect(m_updater, &Updater::upToDate,   conn, cleanup);
+        connect(m_updater, &Updater::checkError, conn, cleanup);
+        m_updater->checkForUpdates();
+        return;
+    }
+
+    auto* dlg = new UpdateDialog(m_updater, this);
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+    dlg->show();
+    dlg->startCheck();
 }
 
 void MainWindow::setupStatusBar() {

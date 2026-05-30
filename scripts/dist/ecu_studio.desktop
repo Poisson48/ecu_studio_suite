@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=ECU Studio
+Comment=Suite de reprogrammation et d'analyse de calculateurs ECU
+Exec=ecu_studio
+Icon=ecu_studio
+Type=Application
+Categories=Development;Electronics;
+Keywords=ECU;MPPS;ROM;tuning;automotive;flash;
+StartupNotify=true

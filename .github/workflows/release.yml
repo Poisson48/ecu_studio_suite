@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  appimage:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout (no submodules yet)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      # The apps/socketspy submodule URL uses an SSH host alias; rewrite it to
+      # public HTTPS so the runner can fetch it, then pull submodules.
+      - name: Fetch submodules over HTTPS
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github-poisson48:"
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git submodule sync --recursive
+          git submodule update --init --recursive
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y \
+            cmake ninja-build git pkg-config patchelf libfuse2 \
+            qt6-base-dev qt6-charts-dev qt6-declarative-dev \
+            qt6-serialbus-dev qt6-serialport-dev qt6-connectivity-dev \
+            qt6-tools-dev qt6-tools-dev-tools libqt6opengl6-dev \
+            libgl1-mesa-dev libssl-dev \
+            libusb-1.0-0-dev libgit2-dev \
+            lua5.4 liblua5.4-dev \
+            nlohmann-json3-dev libgtest-dev \
+            libxkbcommon-x11-0 libxcb-cursor0 libxcb-xkb1 \
+            libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 \
+            libxcb-render-util0 libxcb-shape0 libxcb-xinerama0 \
+            libxcb-util1 libegl1 libgbm1
+
+      - name: CMake configure
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/usr \
+            -DECU_MPPS_SIMULATION=OFF \
+            -DECU_BUILD_TESTS=OFF \
+            -DECU_BUILD_SOCKETSPY=OFF \
+            -G Ninja
+
+      - name: CMake build
+        run: cmake --build build --target ecu_studio --parallel "$(nproc)"
+
+      - name: Download linuxdeploy and Qt plugin
+        run: |
+          curl -fsSL -o /tmp/linuxdeploy \
+            https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          curl -fsSL -o /tmp/linuxdeploy-plugin-qt \
+            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x /tmp/linuxdeploy /tmp/linuxdeploy-plugin-qt
+
+      - name: Build AppImage
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          # The install target only installs the binary to bin/; stage it in an
+          # AppDir together with the .desktop file and icon for linuxdeploy.
+          DESTDIR=/tmp/appdir cmake --install build
+          # Bundle the Qt TLS plugin so HTTPS works inside the AppImage (the
+          # in-app updater needs it) — linuxdeploy-plugin-qt skips it otherwise.
+          QT_PLUGIN_DIR="$(qmake6 -query QT_INSTALL_PLUGINS 2>/dev/null || echo /usr/lib/x86_64-linux-gnu/qt6/plugins)"
+          mkdir -p /tmp/appdir/usr/plugins/tls
+          cp "${QT_PLUGIN_DIR}/tls/"*.so /tmp/appdir/usr/plugins/tls/ 2>/dev/null || true
+          EXTRA_QT_MODULES="charts;serialbus;serialport;concurrent;sql;network;opengl" \
+          QMAKE="$(command -v qmake6)" \
+          /tmp/linuxdeploy \
+            --appdir /tmp/appdir \
+            --executable /tmp/appdir/usr/bin/ecu_studio \
+            --desktop-file scripts/dist/ecu_studio.desktop \
+            --icon-file scripts/dist/ecu_studio.png \
+            --plugin qt \
+            --output appimage
+          mv ECU_Studio*.AppImage "ECU_Studio-x86_64.AppImage" 2>/dev/null || \
+            mv ECU*Studio*-x86_64.AppImage "ECU_Studio-x86_64.AppImage"
+          ls -la ECU_Studio-x86_64.AppImage
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ECU_Studio-x86_64.AppImage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
