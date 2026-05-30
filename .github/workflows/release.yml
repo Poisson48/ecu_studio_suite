@@ -88,10 +88,37 @@ jobs:
             mv ECU*Studio*-x86_64.AppImage "ECU_Studio-x86_64.AppImage"
           ls -la ECU_Studio-x86_64.AppImage
 
+      - name: Sign release manifest
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: |
+          if [ -z "$UPDATE_SIGNING_KEY" ]; then
+            echo "::error::UPDATE_SIGNING_KEY secret is not set — the in-app updater requires a signed manifest."
+            exit 1
+          fi
+          VERSION="${GITHUB_REF_NAME#v}"
+          APPIMAGE="ECU_Studio-x86_64.AppImage"
+          SHA256=$(sha256sum "$APPIMAGE" | awk '{print $1}')
+          # Le manifeste doit référencer le NOM EXACT de l'asset attendu par
+          # l'updater (Updater::startDownload reconstruit l'URL à partir de
+          # version + filename).
+          printf '{\n  "version": "%s",\n  "filename": "%s",\n  "sha256": "%s"\n}\n' \
+              "$VERSION" "$APPIMAGE" "$SHA256" > release-manifest.json
+          echo "$UPDATE_SIGNING_KEY" > /tmp/_sign_key.pem
+          chmod 600 /tmp/_sign_key.pem
+          # Signature Ed25519 « one-shot » (-rawin) du manifeste complet.
+          openssl pkeyutl -sign -inkey /tmp/_sign_key.pem -rawin \
+              -in release-manifest.json -out release-manifest.json.sig
+          rm -f /tmp/_sign_key.pem
+          echo "Manifest signed for v${VERSION} (sha256=${SHA256})"
+          cat release-manifest.json
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             ECU_Studio-x86_64.AppImage
+            release-manifest.json
+            release-manifest.json.sig
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
