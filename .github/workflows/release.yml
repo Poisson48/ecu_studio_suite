@@ -76,8 +76,11 @@ jobs:
             --icon-file scripts/dist/ecu_studio.png \
             --plugin qt \
             --output appimage
-          mv ECU_Studio*.AppImage "ECU_Studio-x86_64.AppImage" 2>/dev/null || \
-            mv ECU*Studio*-x86_64.AppImage "ECU_Studio-x86_64.AppImage"
+          # linuxdeploy peut déjà produire le bon nom : ne renomme que si besoin.
+          produced="$(ls ECU*Studio*.AppImage | head -1)"
+          if [ "$produced" != "ECU_Studio-x86_64.AppImage" ]; then
+            mv "$produced" "ECU_Studio-x86_64.AppImage"
+          fi
           ls -la ECU_Studio-x86_64.AppImage
 
       - name: Sign release manifest
