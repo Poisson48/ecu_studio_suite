@@ -172,6 +172,27 @@ void MainWindow::setupMenuBar() {
     toolsMenu->addAction(tr("Générer rapport..."),  this,            &MainWindow::generateReport);
 
     auto* helpMenu = menuBar()->addMenu(tr("Aide"));
+
+    // Sous-menu de sélection de la langue (persistée via QSettings("language")).
+    auto* langMenu = helpMenu->addMenu(tr("Langue / Language"));
+    QSettings langSettings;
+    const QString curLang = langSettings.value("language", "fr").toString();
+    auto addLang = [&](const QString& label, const QString& code) {
+        auto* act = langMenu->addAction(label);
+        act->setCheckable(true);
+        act->setChecked(curLang == code);
+        connect(act, &QAction::triggered, this, [this, code]() {
+            QSettings s;
+            s.setValue("language", code);
+            QMessageBox::information(this,
+                tr("Langue modifiée"),
+                tr("Veuillez redémarrer ECU Studio pour appliquer la nouvelle langue."));
+        });
+    };
+    addLang("Français", "fr");
+    addLang("English",  "en");
+    helpMenu->addSeparator();
+
     helpMenu->addAction(tr("Vérifier les mises à jour"), this,
                         [this]() { checkForUpdates(/*silent=*/false); });
     helpMenu->addAction(tr("À propos d'ECU Studio"), this, [this]() {

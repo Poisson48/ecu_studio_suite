@@ -24,4 +24,6 @@ ui_*
 tools/reverse/mpps_extracted/
 tools/reverse/*.rar
 tools/reverse/*.exe
+tools/reverse/*.dll
 tools/reverse/MPPS_V21.exe
+mpps_protocol_capture.log

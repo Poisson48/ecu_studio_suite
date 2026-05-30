@@ -16,7 +16,12 @@ static std::ofstream s_protoLog("mpps_protocol.log", std::ios::app);
 
 namespace mpps {
 
-static constexpr std::array<std::pair<uint16_t,uint16_t>, 6> KNOWN_DEVICES {{
+static constexpr std::array<std::pair<uint16_t,uint16_t>, 7> KNOWN_DEVICES {{
+    // FACT: genuine MPPS V21 dongle. Source: Device Driver/AMT/AmtFlash.inf →
+    //       "USB\VID_1C43&PID_0500" (Amt-Cartech Ltd), kernel driver AmtFlash.sys.
+    //       Custom bulk USB device, NOT a CDC/serial port. See docs/mpps-reverse.md §2.1.
+    {0x1C43, 0x0500},  // AMT MPPS V21 (Amt-Cartech)
+    // FTDI-based MPPS clones / older interfaces (Device Driver/FTDI/ also bundled).
     {0x0403, 0x6001},  // FTDI FT232BM/RL
     {0x0403, 0x6010},  // FTDI FT2232H
     {0x0403, 0x6015},  // FTDI FTX
@@ -26,6 +31,7 @@ static constexpr std::array<std::pair<uint16_t,uint16_t>, 6> KNOWN_DEVICES {{
 }};
 
 static std::string chipTypeStr(uint16_t vid, uint16_t pid) {
+    if (vid == 0x1C43 && pid == 0x0500) return "AMT MPPS V21";  // FACT: AmtFlash.inf
     if (vid == 0x0403) {
         if (pid == 0x6010) return "FTDI FT2232H";
         if (pid == 0x6015) return "FTDI FTX";

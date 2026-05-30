@@ -11,6 +11,7 @@ set(ECU_CORE_SOURCES
     src/MapDiffer.cpp
     src/ProjectManager.cpp
     src/A2lParser.cpp
+    src/ChecksumEngine.cpp
 )
 
 list(APPEND ECU_CORE_SOURCES src/OpenDamos.cpp)
