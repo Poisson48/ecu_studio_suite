@@ -1,0 +1,16 @@
+# 60-mpps.rules — règles udev pour les interfaces MPPS
+# Installer : sudo cp tools/60-mpps.rules /etc/udev/rules.d/
+# Puis      : sudo udevadm control --reload-rules && sudo udevadm trigger
+
+# FTDI FT232BM/RL — clones MPPS haut de gamme
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", MODE="0666", GROUP="plugdev", SYMLINK+="mpps_%k"
+# FTDI FT2232H — dual channel
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6010", MODE="0666", GROUP="plugdev", SYMLINK+="mpps_%k"
+# FTDI FTX series
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6015", MODE="0666", GROUP="plugdev", SYMLINK+="mpps_%k"
+# WCH CH340 — clones bas coût chinois
+SUBSYSTEM=="usb", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", MODE="0666", GROUP="plugdev", SYMLINK+="mpps_%k"
+# WCH CH341
+SUBSYSTEM=="usb", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="5523", MODE="0666", GROUP="plugdev", SYMLINK+="mpps_%k"
+# SiLabs CP2102
+SUBSYSTEM=="usb", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", MODE="0666", GROUP="plugdev", SYMLINK+="mpps_%k"

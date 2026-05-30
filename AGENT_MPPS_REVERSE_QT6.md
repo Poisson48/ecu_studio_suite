@@ -62,9 +62,9 @@
 ## PHASE 0 — INITIALISATION DU MONO-REPO [HAIKU]
 
 ```bash
-# Créer la structure complète du mono-repo cb4tech-suite
-mkdir -p cb4tech-suite/{libs/{shared,mpps,can-core,ecu-core},apps,tools/reverse,tests,docs,cmake}
-cd cb4tech-suite
+# Créer la structure complète du mono-repo ecu-studio-suite
+mkdir -p ecu-studio-suite/{libs/{shared,mpps,can-core,ecu-core},apps,tools/reverse,tests,docs,cmake}
+cd ecu-studio-suite
 
 # Submodule SocketSpy
 git init
@@ -84,9 +84,9 @@ mkdir -p docs
 ### [HAIKU] Générer le CMakeLists.txt racine
 
 ```cmake
-# cb4tech-suite/CMakeLists.txt
+# ecu-studio-suite/CMakeLists.txt
 cmake_minimum_required(VERSION 3.28)
-project(cb4tech-suite VERSION 1.0.0 LANGUAGES CXX C)
+project(ecu-studio-suite VERSION 1.0.0 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -153,7 +153,7 @@ endif()
 
 ```json
 {
-  "name": "cb4tech-suite",
+  "name": "ecu-studio-suite",
   "version": "1.0.0",
   "dependencies": [
     "nlohmann-json",
@@ -1222,8 +1222,8 @@ std::unique_ptr<MppsDevice> MppsDevice::openSimulation() {
 
 Lire les fichiers source de open_car_reprog :
 ```bash
-git clone https://github.com/Poisson48/open_car_reprog /tmp/open_car_reprog
-ls /tmp/open_car_reprog/src/
+# open_car_reprog est déjà disponible localement
+ls /home/valou/leo/open_car_reprog/
 ```
 
 Porter chaque module dans cet ordre (du plus simple au plus complexe) :
@@ -1233,20 +1233,25 @@ Porter chaque module dans cet ordre (du plus simple au plus complexe) :
 ```
 1. ecu-catalog.js       → EcuCatalog.cpp      [HAIKU — portage mécanique]
 2. vehicle-templates.js → VehicleTemplates.cpp [HAIKU — portage mécanique]
-3. checksum-engine.js   → ChecksumEngine.cpp   [SONNET — algos CRC/ADD32]
-4. rom-patcher.js       → RomPatcher.cpp       [SONNET — lecture/écriture maps]
-5. map-finder.js        → MapFinder.cpp        [SONNET — scan heuristique]
-6. open-damos.js        → OpenDamos.cpp        [SONNET — fingerprint + reloc]
-7. map-differ.js        → MapDiffer.cpp        [SONNET — diff ROM]
-8. project-manager.js   → ProjectManager.cpp   [SONNET — QFile/QDir]
-9. git-manager.js       → GitManager.cpp       [SONNET — libgit2]
-10. a2l-parser.js       → A2lParser.cpp        [OPUS — parser récursif ASAP2]
+3. rom-patcher.js       → RomPatcher.cpp       [SONNET — lecture/écriture maps]
+4. map-finder.js        → MapFinder.cpp        [SONNET — scan heuristique]
+5. open-damos.js        → OpenDamos.cpp        [SONNET — fingerprint + reloc]
+6. map-differ.js        → MapDiffer.cpp        [SONNET — diff ROM]
+7. project-manager.js   → ProjectManager.cpp   [SONNET — QFile/QDir]
+8. git-manager.js       → GitManager.cpp       [SONNET — libgit2]
+9. a2l-parser.js        → A2lParser.cpp        [OPUS — parser récursif ASAP2]
 ```
+
+Note : open_car_reprog est déjà disponible localement dans /home/valou/leo/open_car_reprog/
+Les sources JS sont dans le sous-dossier src/.
+Modules disponibles dans src/ : a2l-parser.js, ecu-catalog.js, git-manager.js, map-differ.js,
+map-finder.js, open-damos.js, project-manager.js, rom-patcher.js, vehicle-templates.js,
+winols-parser.js, open-damos-recipes.js, open-damos-a2l-export.js, report-generator.js
 
 Pour chaque module :
 ```bash
-# Lire le source JS
-cat /tmp/open_car_reprog/src/MODULE.js
+# Lire le source JS (chemin local — pas besoin de cloner)
+cat /home/valou/leo/open_car_reprog/src/MODULE.js
 
 # Créer le header C++
 # Créer l'implémentation C++

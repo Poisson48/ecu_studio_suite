@@ -1,0 +1,3 @@
+[submodule "apps/socketspy"]
+	path = apps/socketspy
+	url = git@github-poisson48:Poisson48/SocketSpy.git

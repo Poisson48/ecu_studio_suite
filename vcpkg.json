@@ -1,0 +1,16 @@
+{
+  "name": "ecu-studio-suite",
+  "version": "1.0.0",
+  "dependencies": [
+    "nlohmann-json",
+    "libusb",
+    "libgit2",
+    "gtest",
+    "lua",
+    {
+      "name": "qt6",
+      "features": ["core","widgets","charts","serialbus","serialport",
+                   "concurrent","sql","network","opengl"]
+    }
+  ]
+}
