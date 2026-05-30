@@ -19,20 +19,12 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      # The apps/socketspy submodule URL in .gitmodules uses an SSH host alias
-      # (git@github-poisson48:...). Rewrite it to a public HTTPS URL so the
-      # GitHub Actions runner can fetch it without SSH keys, then pull submodules.
-      - name: Checkout (no submodules yet)
+      # The apps/socketspy submodule uses a public HTTPS URL, so the runner can
+      # fetch it natively with the checkout action — no SSH keys required.
+      - name: Checkout (with submodules)
         uses: actions/checkout@v4
         with:
-          submodules: false
-
-      - name: Fetch submodules over HTTPS
-        run: |
-          git config --global url."https://github.com/".insteadOf "git@github-poisson48:"
-          git config --global url."https://github.com/".insteadOf "git@github.com:"
-          git submodule sync --recursive
-          git submodule update --init --recursive
+          submodules: recursive
 
       - name: Install dependencies
         run: |
