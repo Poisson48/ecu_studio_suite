@@ -76,7 +76,6 @@ public:
     // Render a CHARACTERISTIC block (VALUE / CURVE / MAP) at the given address.
     static QString renderCharacteristic(const DamosEntry& entry, uint32_t addr);
 
-private:
     // Indent every non-empty line of `s` by `n` spaces.
     static QString indent(const QString& s, int n = 2);
 };

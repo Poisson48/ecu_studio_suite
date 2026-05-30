@@ -15,6 +15,7 @@ set(ECU_CORE_SOURCES
 
 list(APPEND ECU_CORE_SOURCES src/OpenDamos.cpp)
 list(APPEND ECU_CORE_SOURCES src/OpenDamosRecipes.cpp)
+list(APPEND ECU_CORE_SOURCES src/OpenDamosA2lExport.cpp)
 
 # GitManager optionnel (libgit2 requis)
 if(LIBGIT2_FOUND)
