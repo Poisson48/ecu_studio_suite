@@ -8,6 +8,25 @@ Part of the **ECU Studio Suite** alongside **[SocketSpy](https://github.com/Pois
 
 ---
 
+## Download
+
+[![Release](https://img.shields.io/github/v/release/Poisson48/ecu_studio_suite)](https://github.com/Poisson48/ecu_studio_suite/releases/latest)
+
+**[⬇ Download ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — v1.0.0, ~34 MB, Linux x86_64
+
+Then make it executable and run it:
+
+```bash
+chmod +x ECU_Studio-x86_64.AppImage
+./ECU_Studio-x86_64.AppImage
+```
+
+Self-contained AppImage — Qt6 is bundled, so there is nothing to install and no root access needed. Just download, `chmod +x`, and run. All [releases](https://github.com/Poisson48/ecu_studio_suite/releases/latest) are on GitHub.
+
+> Prefer to build it yourself? See **[Build from source (developers)](#build-from-source-developers)** below.
+
+---
+
 ## What's inside
 
 | Component | Description |
@@ -94,7 +113,9 @@ Part of the **ECU Studio Suite** alongside **[SocketSpy](https://github.com/Pois
 
 ---
 
-## Build
+## Build from source (developers)
+
+> Most users should just **[download the AppImage](#download)** above. Building from source is only needed for development or hacking on the code.
 
 ### Dependencies (Ubuntu / Debian)
 
