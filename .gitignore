@@ -19,3 +19,9 @@ qrc_*
 ui_*
 *.autosave
 .DS_Store
+
+# Binaires MPPS propriétaires (reverse engineering local uniquement)
+tools/reverse/mpps_extracted/
+tools/reverse/*.rar
+tools/reverse/*.exe
+tools/reverse/MPPS_V21.exe

@@ -1,4 +1,6 @@
 find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent Network LinguistTools)
+# OpenSSL::Crypto — vérification de signature Ed25519 des mises à jour (updater).
+find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -57,6 +59,7 @@ target_link_libraries(ecu_studio
         mppslib
         ecu_core
         ecu_shared
+        OpenSSL::Crypto
 )
 
 # ── Ressources : réutilise le thème de SocketSpy ─────────────────────────────

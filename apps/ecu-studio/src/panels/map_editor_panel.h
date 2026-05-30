@@ -25,6 +25,9 @@ public:
 public slots:
     // Lance la recherche heuristique de maps sur la ROM courante (menu Outils).
     void runMapFinder();
+    // Lance open_damos : relocalise automatiquement les maps connues par empreinte
+    // d'axe dans n'importe quelle ROM EDC16C34 PSA (pas de DAMOS dédié requis).
+    void runOpenDamos();
 
 signals:
     // Émis quand l'utilisateur demande à voir la map sélectionnée dans le panel Hex.
@@ -40,6 +43,9 @@ private:
         double      score   = 0.0;   // -1 => pas de score (map connue)
         bool        stage1  = false; // provient du catalogue Stage 1
         int         defaultPct = 0;  // pourcentage Stage 1 par défaut
+        bool        openDamos  = false; // relocalisée par open_damos
+        bool        fallback   = false; // adresse par défaut (pas d'empreinte)
+        QString     matchInfo;          // mode de match / source (open_damos)
     };
 
     void buildUi();
@@ -63,6 +69,7 @@ private:
     QPushButton*    m_applyPctBtn = nullptr;
     QPushButton*    m_applyStage1Btn = nullptr;
     QPushButton*    m_gotoHexBtn = nullptr;
+    QPushButton*    m_openDamosBtn = nullptr;
 
     std::vector<MapEntry> m_entries;
     int       m_currentRow  = -1;   // ligne sélectionnée dans m_mapTable

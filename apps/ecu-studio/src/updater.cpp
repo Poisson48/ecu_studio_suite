@@ -3,9 +3,12 @@
 #include <cerrno>
 #include <cstdio>
 
+#include <openssl/evp.h>
+#include <openssl/pem.h>
+
+#include <QCryptographicHash>
 #include <QFile>
 #include <QFileInfo>
-#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QNetworkReply>
@@ -15,12 +18,22 @@
 
 namespace ecu_studio {
 
-// Nom de l'asset AppImage attaché aux releases (voir release.yml).
-static constexpr const char* kAssetName = "ECU_Studio-x86_64.AppImage";
+// Clé publique Ed25519 utilisée pour vérifier release-manifest.json.sig.
+// La clé privée correspondante est conservée dans le secret GitHub
+// UPDATE_SIGNING_KEY et n'est jamais distribuée.
+static constexpr const char* kPublicKeyPem = R"(
+-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAf7RMrzyYCm862/V/QK2D0oAVkW2Gv2MPf6PlaUNkzAE=
+-----END PUBLIC KEY-----
+)";
 
-// API GitHub — dernière release publiée du dépôt.
-static constexpr const char* kLatestReleaseUrl =
-    "https://api.github.com/repos/Poisson48/ecu_studio_suite/releases/latest";
+static constexpr const char* kManifestUrl =
+    "https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/"
+    "release-manifest.json";
+
+static constexpr const char* kSigUrl =
+    "https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/"
+    "release-manifest.json.sig";
 
 Updater::Updater(QObject* parent) : QObject(parent) {
     m_nam = new QNetworkAccessManager(this);
@@ -50,16 +63,15 @@ void Updater::checkForUpdates() {
         return;
     }
 
-    m_state = State::FetchRelease;
+    m_state = State::FetchManifest;
 
-    QNetworkRequest req{QUrl(kLatestReleaseUrl)};
-    req.setRawHeader("Accept", "application/vnd.github+json");
+    QNetworkRequest req{QUrl(kManifestUrl)};
     req.setHeader(QNetworkRequest::UserAgentHeader, "ECU-Studio-Updater");
     req.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                      QNetworkRequest::NoLessSafeRedirectPolicy);
     m_reply = m_nam->get(req);
     connect(m_reply, &QNetworkReply::finished, this,
-            [this]() { onReleaseReply(m_reply); });
+            [this]() { onManifestReply(m_reply); });
 }
 
 void Updater::cancel() {
@@ -69,7 +81,29 @@ void Updater::cancel() {
 
 // ── helpers privés ────────────────────────────────────────────────────────────
 
-void Updater::onReleaseReply(QNetworkReply* reply) {
+void Updater::onManifestReply(QNetworkReply* reply) {
+    reply->deleteLater();
+    m_reply = nullptr;
+
+    if (reply->error() != QNetworkReply::NoError) {
+        m_state = State::Idle;
+        emit checkError(tr("Erreur réseau : %1").arg(reply->errorString()));
+        return;
+    }
+
+    m_manifest = reply->readAll();
+    m_state = State::FetchSig;
+
+    QNetworkRequest req{QUrl(kSigUrl)};
+    req.setHeader(QNetworkRequest::UserAgentHeader, "ECU-Studio-Updater");
+    req.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                     QNetworkRequest::NoLessSafeRedirectPolicy);
+    m_reply = m_nam->get(req);
+    connect(m_reply, &QNetworkReply::finished, this,
+            [this]() { onSigReply(m_reply); });
+}
+
+void Updater::onSigReply(QNetworkReply* reply) {
     reply->deleteLater();
     m_reply = nullptr;
     m_state = State::Idle;
@@ -79,29 +113,26 @@ void Updater::onReleaseReply(QNetworkReply* reply) {
         return;
     }
 
-    QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+    QByteArray sig = reply->readAll();
+
+    if (!verifySignature(m_manifest, sig)) {
+        emit checkError(tr("Échec de la vérification de signature — mise à jour rejetée."));
+        return;
+    }
+
+    QJsonDocument doc = QJsonDocument::fromJson(m_manifest);
     if (!doc.isObject()) {
-        emit checkError(tr("Réponse GitHub mal formée."));
+        emit checkError(tr("Manifeste de mise à jour mal formé."));
         return;
     }
     QJsonObject obj = doc.object();
+    m_version  = obj.value("version").toString();
+    m_sha256   = obj.value("sha256").toString();
+    m_filename = obj.value("filename").toString();
 
-    // tag_name de la forme "v1.2.3" — on retire le préfixe "v".
-    QString tag = obj.value("tag_name").toString();
-    m_version = tag.startsWith('v') ? tag.mid(1) : tag;
-    if (m_version.isEmpty()) {
-        emit checkError(tr("Aucune version publiée trouvée."));
+    if (m_version.isEmpty() || m_sha256.isEmpty() || m_filename.isEmpty()) {
+        emit checkError(tr("Manifeste de mise à jour incomplet."));
         return;
-    }
-
-    // Recherche de l'asset AppImage dans la liste des fichiers attachés.
-    m_downloadUrl.clear();
-    for (const QJsonValue& a : obj.value("assets").toArray()) {
-        QJsonObject asset = a.toObject();
-        if (asset.value("name").toString() == QString(kAssetName)) {
-            m_downloadUrl = asset.value("browser_download_url").toString();
-            break;
-        }
     }
 
     QString current = QString(APP_VERSION);
@@ -119,17 +150,17 @@ void Updater::startDownload() {
         emit downloadError(tr("Chemin APPIMAGE introuvable."));
         return;
     }
-    if (m_downloadUrl.isEmpty()) {
-        emit downloadError(tr("Aucune AppImage attachée à la release."));
-        return;
-    }
 
     // Stocke le téléchargement dans le même répertoire pour garantir le même
     // système de fichiers (renommage atomique).
     m_tmpPath = QFileInfo(appImagePath).absolutePath() + "/ECU_Studio-update.AppImage.tmp";
 
+    QString downloadUrl =
+        QString("https://github.com/Poisson48/ecu_studio_suite/releases/download/v%1/%2")
+            .arg(m_version, m_filename);
+
     m_state = State::Downloading;
-    QNetworkRequest req{QUrl(m_downloadUrl)};
+    QNetworkRequest req{QUrl(downloadUrl)};
     req.setHeader(QNetworkRequest::UserAgentHeader, "ECU-Studio-Updater");
     req.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                      QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -160,6 +191,12 @@ void Updater::onAppImageReply(QNetworkReply* reply) {
     tmp.write(reply->readAll());
     tmp.close();
 
+    if (!verifySha256(m_tmpPath, m_sha256)) {
+        QFile::remove(m_tmpPath);
+        emit downloadError(tr("Empreinte SHA-256 incorrecte — fichier corrompu."));
+        return;
+    }
+
     if (!atomicInstall(m_tmpPath)) {
         QFile::remove(m_tmpPath);
         emit downloadError(tr("Installation échouée — vérifiez les permissions."));
@@ -167,6 +204,37 @@ void Updater::onAppImageReply(QNetworkReply* reply) {
     }
 
     emit installReady();
+}
+
+// ── crypto ─────────────────────────────────────────────────────────────────────
+
+bool Updater::verifySignature(const QByteArray& data, const QByteArray& sig) const {
+    BIO* bio = BIO_new_mem_buf(kPublicKeyPem, -1);
+    EVP_PKEY* pkey = PEM_read_bio_PUBKEY(bio, nullptr, nullptr, nullptr);
+    BIO_free(bio);
+    if (!pkey) return false;
+
+    EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+    bool ok = false;
+    // Ed25519 : signature « one-shot » via EVP_DigestVerify (digest interne).
+    if (EVP_DigestVerifyInit(ctx, nullptr, nullptr, nullptr, pkey) == 1) {
+        ok = (EVP_DigestVerify(ctx,
+                               reinterpret_cast<const unsigned char*>(sig.constData()),
+                               static_cast<std::size_t>(sig.size()),
+                               reinterpret_cast<const unsigned char*>(data.constData()),
+                               static_cast<std::size_t>(data.size())) == 1);
+    }
+    EVP_MD_CTX_free(ctx);
+    EVP_PKEY_free(pkey);
+    return ok;
+}
+
+bool Updater::verifySha256(const QString& path, const QString& expected) const {
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly)) return false;
+    QCryptographicHash hash(QCryptographicHash::Sha256);
+    hash.addData(&f);
+    return hash.result().toHex().toLower() == expected.toLower().trimmed();
 }
 
 bool Updater::atomicInstall(const QString& tmpPath) const {

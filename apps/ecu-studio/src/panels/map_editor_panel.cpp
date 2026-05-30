@@ -19,6 +19,7 @@
 #include "ecu/EcuCatalog.hpp"
 #include "ecu/MapFinder.hpp"
 #include "ecu/RomPatcher.hpp"
+#include "ecu/OpenDamos.hpp"
 
 namespace ecu_studio {
 
@@ -79,6 +80,13 @@ void MapEditorPanel::buildUi() {
 
     m_gotoHexBtn = new QPushButton(tr("Voir dans Hex"), this);
     stageLay->addWidget(m_gotoHexBtn);
+
+    m_openDamosBtn = new QPushButton(tr("open_damos (auto-localiser)"), this);
+    m_openDamosBtn->setObjectName("accentBtn");
+    m_openDamosBtn->setToolTip(tr("Relocalise automatiquement les maps connues par "
+                                  "empreinte d'axe (aucun DAMOS dédié requis)."));
+    stageLay->addWidget(m_openDamosBtn);
+
     stageLay->addStretch();
     root->addWidget(stageBox);
 
@@ -127,6 +135,7 @@ void MapEditorPanel::buildUi() {
     connect(m_applyPctBtn,    &QPushButton::clicked, this, &MapEditorPanel::applyPercent);
     connect(m_applyStage1Btn, &QPushButton::clicked, this, &MapEditorPanel::applyFullStage1);
     connect(m_gotoHexBtn,     &QPushButton::clicked, this, &MapEditorPanel::gotoHex);
+    connect(m_openDamosBtn,   &QPushButton::clicked, this, &MapEditorPanel::runOpenDamos);
 }
 
 void MapEditorPanel::setStatus(const QString& msg, bool error) {
@@ -186,9 +195,14 @@ void MapEditorPanel::rebuildMapTable() {
             ? QString("%1×%2").arg(e.nx).arg(e.ny)
             : QString("—");
         auto* sizeItem = new QTableWidgetItem(sizeStr);
-        const QString scoreStr = (e.score >= 0.0)
-            ? QString::number(e.score, 'f', 1)
-            : (e.stage1 ? tr("Stage1") : QString("—"));
+        QString scoreStr;
+        if (e.openDamos) {
+            scoreStr = e.matchInfo;
+        } else if (e.score >= 0.0) {
+            scoreStr = QString::number(e.score, 'f', 1);
+        } else {
+            scoreStr = e.stage1 ? tr("Stage1") : QString("—");
+        }
         auto* scoreItem = new QTableWidgetItem(scoreStr);
 
         m_mapTable->setItem(row, 0, nameItem);
@@ -424,6 +438,80 @@ void MapEditorPanel::runMapFinder() {
     rebuildMapTable();
     setStatus(tr("%1 candidate(s) détectée(s) (%2 entrée(s) au total).")
         .arg(candidates.size()).arg(m_entries.size()));
+}
+
+void MapEditorPanel::runOpenDamos() {
+    if (!m_doc || !m_doc->isLoaded()) {
+        setStatus(tr("Aucune ROM chargée."), true);
+        return;
+    }
+
+    setStatus(tr("open_damos : relocalisation par empreinte en cours..."));
+
+    // (1) Charge la recette open_damos pour l'ECU du document.
+    auto recipe = ecu::OpenDamos::loadRecipe(m_doc->ecuId());
+    if (!recipe) {
+        setStatus(tr("open_damos : échec du chargement de la recette — %1")
+                      .arg(QString::fromStdString(recipe.error())),
+                  true);
+        return;
+    }
+
+    // (2) Relocalise chaque caractéristique en scannant la ROM.
+    const QByteArray& rom = m_doc->rom();
+    QByteArrayView view(rom.constData(), rom.size());
+    auto results = ecu::OpenDamos{}.relocate(*recipe, view);
+
+    // (3) Réinjecte les résultats dans la liste : on conserve les maps Stage 1
+    // du catalogue puis on ajoute les maps relocalisées par open_damos.
+    std::vector<MapEntry> kept;
+    for (auto& e : m_entries)
+        if (e.stage1 && !e.openDamos) kept.push_back(e);
+    m_entries = std::move(kept);
+
+    auto span = constSpan(rom);
+    int byFingerprint = 0;
+    int total = 0;
+
+    for (const auto& r : results) {
+        ++total;
+        const bool fallback = (r.addressSource == ecu::AddressSource::DefaultFallback);
+        if (!fallback) ++byFingerprint;
+
+        MapEntry e;
+        e.name      = QString::fromStdString(r.name);
+        e.address   = static_cast<quint32>(r.address);
+        e.score     = r.score;
+        e.stage1    = false;
+        e.openDamos = true;
+        e.fallback  = fallback;
+
+        // Dimensions lues directement depuis la ROM à l'adresse résolue.
+        if (auto md = ecu::readMapData(span, e.address)) {
+            e.nx = md->nx;
+            e.ny = md->ny;
+        }
+
+        // Libellé de la colonne « Score » : source + mode + confiance.
+        QString src;
+        switch (r.addressSource) {
+            case ecu::AddressSource::Fingerprint: src = tr("empreinte"); break;
+            case ecu::AddressSource::Anchor:      src = tr("ancre");     break;
+            case ecu::AddressSource::DefaultFallback: src = tr("défaut"); break;
+        }
+        const QString mode = QString::fromStdString(r.matchMode);
+        e.matchInfo = mode.isEmpty()
+            ? QString("%1 (%2)").arg(src).arg(r.score, 0, 'f', 2)
+            : QString("%1 %2 (%3)").arg(src, mode).arg(r.score, 0, 'f', 2);
+
+        m_entries.push_back(std::move(e));
+    }
+
+    rebuildMapTable();
+
+    setStatus(tr("open_damos : %1/%2 maps relocalisées par empreinte.")
+                  .arg(byFingerprint)
+                  .arg(total));
 }
 
 } // namespace ecu_studio
