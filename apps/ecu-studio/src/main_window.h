@@ -13,6 +13,7 @@ class RomDocument;
 class MppsPanel;
 class HexViewPanel;
 class MapEditorPanel;
+class Map3dPanel;
 class ProjectPanel;
 class AutoModsPanel;
 class ChecksumPanel;
@@ -51,6 +52,7 @@ private:
     MppsPanel*      m_mppsPanel{nullptr};
     HexViewPanel*   m_hexPanel{nullptr};
     MapEditorPanel* m_mapEditor{nullptr};
+    Map3dPanel*     m_map3dPanel{nullptr};
     ProjectPanel*   m_projectPanel{nullptr};
     AutoModsPanel*  m_autoMods{nullptr};
     ChecksumPanel*  m_checksumPanel{nullptr};

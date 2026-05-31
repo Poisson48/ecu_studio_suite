@@ -70,6 +70,10 @@ void MapEditorPanel::buildUi() {
     m_gotoHexBtn = new QPushButton(tr("Voir dans Hex"), this);
     stageLay->addWidget(m_gotoHexBtn);
 
+    m_view3dBtn = new QPushButton(tr("Voir en 3D"), this);
+    m_view3dBtn->setToolTip(tr("Affiche la map sélectionnée en surface 3D (panneau 3D)."));
+    stageLay->addWidget(m_view3dBtn);
+
     m_openDamosBtn = new QPushButton(tr("open_damos (auto-localiser)"), this);
     m_openDamosBtn->setObjectName("accentBtn");
     m_openDamosBtn->setToolTip(tr("Relocalise automatiquement les maps connues par "
@@ -124,6 +128,7 @@ void MapEditorPanel::buildUi() {
     connect(m_applyPctBtn,    &QPushButton::clicked, this, &MapEditorPanel::applyPercent);
     connect(m_applyStage1Btn, &QPushButton::clicked, this, &MapEditorPanel::applyFullStage1);
     connect(m_gotoHexBtn,     &QPushButton::clicked, this, &MapEditorPanel::gotoHex);
+    connect(m_view3dBtn,      &QPushButton::clicked, this, &MapEditorPanel::view3d);
     connect(m_openDamosBtn,   &QPushButton::clicked, this, &MapEditorPanel::runOpenDamos);
 }
 
@@ -393,6 +398,14 @@ void MapEditorPanel::gotoHex() {
         return;
     }
     emit gotoAddressRequested(m_entries[static_cast<std::size_t>(m_currentRow)].address);
+}
+
+void MapEditorPanel::view3d() {
+    if (m_currentRow < 0 || m_currentRow >= static_cast<int>(m_entries.size())) {
+        setStatus(tr("Sélectionnez une map d'abord."), true);
+        return;
+    }
+    emit view3dRequested(m_entries[static_cast<std::size_t>(m_currentRow)].address);
 }
 
 void MapEditorPanel::runMapFinder() {

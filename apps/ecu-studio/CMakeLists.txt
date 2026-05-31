@@ -2,6 +2,18 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent Network LinguistTools)
 # OpenSSL::Crypto — vérification de signature Ed25519 des mises à jour (updater).
 find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 
+# ── Visualisation 3D des maps (panneau « 3D », à la WinOLS) ────────────────────
+# Qt6::DataVisualization fournit Q3DSurface pour un rendu OpenGL natif. Le module
+# est OPTIONNEL : s'il est absent (cas fréquent sur les machines minimales), le
+# panneau retombe sur un rendu pseudo-3D / heatmap maison basé sur QPainter, qui
+# ne dépend que de Qt6::Widgets. On détecte ici et on bascule via ECU_HAVE_DATAVIZ.
+find_package(Qt6 QUIET COMPONENTS DataVisualization)
+if(Qt6DataVisualization_FOUND)
+    message(STATUS "ECU Studio : Qt6::DataVisualization trouvé — rendu 3D natif (Q3DSurface).")
+else()
+    message(STATUS "ECU Studio : Qt6::DataVisualization absent — repli QPainter (pseudo-3D/heatmap).")
+endif()
+
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
@@ -39,6 +51,8 @@ set(ECU_STUDIO_SOURCES
     src/panels/mpps_panel.cpp
     src/panels/hex_view_panel.cpp
     src/panels/map_editor_panel.cpp
+    src/panels/map3d_panel.cpp
+    src/panels/map3d_view.cpp
     src/panels/project_panel.cpp
     src/panels/automods_panel.cpp
     src/panels/checksum_panel.cpp
@@ -84,6 +98,12 @@ target_link_libraries(ecu_studio
         ecu_shared
         OpenSSL::Crypto
 )
+
+# ── Visualisation 3D : lien conditionnel à Qt6::DataVisualization ──────────────
+if(Qt6DataVisualization_FOUND)
+    target_link_libraries(ecu_studio PRIVATE Qt6::DataVisualization)
+    target_compile_definitions(ecu_studio PRIVATE ECU_HAVE_DATAVIZ)
+endif()
 
 # ── Moniteur CAN embarqué (cancore) ───────────────────────────────────────────
 # Lie la lib cancore et active le code SocketCAN du CanPanel si disponible.

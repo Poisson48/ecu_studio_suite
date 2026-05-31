@@ -32,6 +32,8 @@ public slots:
 signals:
     // Émis quand l'utilisateur demande à voir la map sélectionnée dans le panel Hex.
     void gotoAddressRequested(quint32 address);
+    // Émis quand l'utilisateur demande la visualisation 3D de la map sélectionnée.
+    void view3dRequested(quint32 address);
 
 private:
     // Origine d'une entrée listée dans la table des maps.
@@ -57,6 +59,7 @@ private:
     void applyPercent();
     void applyFullStage1();
     void gotoHex();
+    void view3d();
     void setStatus(const QString& msg, bool error = false);
 
     RomDocument* m_doc = nullptr;
@@ -69,6 +72,7 @@ private:
     QPushButton*    m_applyPctBtn = nullptr;
     QPushButton*    m_applyStage1Btn = nullptr;
     QPushButton*    m_gotoHexBtn = nullptr;
+    QPushButton*    m_view3dBtn  = nullptr;
     QPushButton*    m_openDamosBtn = nullptr;
 
     std::vector<MapEntry> m_entries;

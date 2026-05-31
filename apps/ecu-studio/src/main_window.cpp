@@ -2,6 +2,7 @@
 #include "panels/mpps_panel.h"
 #include "panels/hex_view_panel.h"
 #include "panels/map_editor_panel.h"
+#include "panels/map3d_panel.h"
 #include "panels/project_panel.h"
 #include "panels/automods_panel.h"
 #include "panels/checksum_panel.h"
@@ -62,6 +63,7 @@ void MainWindow::setupUi() {
     m_mppsPanel     = new MppsPanel(this);
     m_hexPanel      = new HexViewPanel(m_doc, this);
     m_mapEditor     = new MapEditorPanel(m_doc, this);
+    m_map3dPanel    = new Map3dPanel(m_doc, this);
     m_autoMods      = new AutoModsPanel(m_doc, this);
     m_checksumPanel = new ChecksumPanel(m_doc, this);
     m_comparePanel  = new ComparePanel(m_doc, this);
@@ -77,6 +79,8 @@ void MainWindow::setupUi() {
     m_sidebar->addPanel("\xf0\x9f\x94\x8c",  tr("MPPS"),      m_mppsPanel);
     m_sidebar->addPanel("\xf0\x9f\x97\x83",  tr("Hex"),       m_hexPanel);
     m_sidebar->addPanel("\xf0\x9f\x93\x8a",  tr("Maps"),      m_mapEditor);
+    // 🧊 (U+1F9CA, cube) — visualisation 3D de la map sélectionnée (à la WinOLS)
+    m_sidebar->addPanel("\xf0\x9f\xa7\x8a",  tr("3D"),        m_map3dPanel);
     m_sidebar->addPanel("\xe2\x9a\x99",      tr("AutoMods"),  m_autoMods);
     m_sidebar->addPanel("\xe2\x9c\x85",      tr("Checksum"),  m_checksumPanel);
     m_sidebar->addPanel("\xe2\x89\xa0",      tr("Compare"),   m_comparePanel);
@@ -119,6 +123,13 @@ void MainWindow::wirePanels() {
     connect(m_mapEditor,    &MapEditorPanel::gotoAddressRequested, this, gotoHex);
     connect(m_comparePanel, &ComparePanel::gotoAddressRequested,   this, gotoHex);
     connect(m_a2lPanel,     &A2lPanel::gotoAddressRequested,       this, gotoHex);
+
+    // « Voir en 3D » depuis Maps → pousse la map et bascule sur le panneau 3D.
+    connect(m_mapEditor, &MapEditorPanel::view3dRequested, this,
+            [this](quint32 address) {
+                m_map3dPanel->showMap(address);
+                m_sidebar->showPanel(m_map3dPanel);
+            });
 }
 
 void MainWindow::importWinols() {
