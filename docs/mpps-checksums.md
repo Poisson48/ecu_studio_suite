@@ -162,10 +162,112 @@ signature against known ROM dumps — handoff item.
 
 ---
 
-## 7. Summary
+## 8. EDC16C34 2 MB (PSA 1.6 HDi) — Check025 reverse + dump validation (FACT)
+
+Investigated specifically because `Mpps.Cfg` has `[Last Car] Ecu=25` and we hold two
+genuine 2 MB EDC16C34 dumps (`ori.BIN`, `9663944680.Bin`) to use as an oracle.
+
+### 8.1 Is Check025 the EDC16C34 module? — **NOT for a 2 MB image (FACT).**
+`Check025.dll` (28160 B, UPX) unpacks to a C++Builder DLL exporting the standard
+`Checksum/GetFile/GetMemoryAddress/...` ABI (§1). Its `GetFile` size-matcher
+(VA 0x401395) accepts **only** these image sizes and sets an algorithm-mode global
+`[0x40c108]`:
+
+| size | bytes | mode | signature check |
+|------|-------|------|-----------------|
+| `0x23020` / `0x23021` | 143392/3 | 0 / 1 | 2 bytes @ 0x9000 |
+| `0x80000` | 512 KB | 2 | 2 bytes @ 0x10010 |
+| `0x100000` | 1 MB | 3 | 2 bytes @ 0x10010 |
+| `0xB0010`-class | ~720 KB | 4 | 2 bytes @ 0xB0010 |
+
+**`0x200000` (2 MB) is not an accepted size.** The `Checksum` dispatcher
+(VA 0x401311) switches on the same mode global; the mode-2 worker (VA 0x401572)
+additionally **requires `size >= 0x80000`** and **masks every region address with
+`0x7FFFF`** (i.e. a ≤512 KB address space), and reads its region descriptor tables
+from **fixed file offsets 0x3EF4 and 0x30180**. In both 2 MB dumps those offsets are
+empty (0x00/0xFF) and the mode-2/3 descriptor scan (VA 0x402cb1, step 0x7000 from
+0xFFD0 looking for `[+2]==1,[+3]==0`) finds **zero** hits. So Check025 operates on the
+**512 KB / 1 MB program image MPPS reads in boot mode**, not on a 2 MB full-flash dump.
+`Ecu=25` in `Mpps.Cfg` is a UI menu index, and `DataBase.Ini` is encrypted (§6), so
+"Check025 == EDC16C34 2 MB" is **not** established — and is contradicted by the sizes.
+
+### 8.2 Check025 algorithm (FACT, for its 512 KB/1 MB images)
+The per-region primitive (VA 0x402e46) is **CRC-16 with reflected polynomial
+`0xA001`** (CRC-16/ARC / Modbus family), processed byte-by-byte over inclusive
+`[start..end]` ranges taken from an in-ROM descriptor table; the result is compared
+to a stored big-endian word and patched back if different. Same CRC core as
+Check001/045 (§3) but driven by ROM-resident region tables instead of fixed offsets.
+
+### 8.3 The two 2 MB dumps (FACT)
+* `ori.BIN`: full read — program/code `0x10000-0xD0000` (PowerPC-looking opcodes)
+  **plus** calibration `0x1C0000-0x200000`.
+* `9663944680.Bin`: **calibration-only** — bytes `0..0x1C0000` are entirely FF/00;
+  only `0x1C0000-0x200000` is populated. Different vehicle (calib bytes differ).
+  → The two dumps do **not** share a checksummed program region, so they cannot both
+  validate a program-region algorithm; only the calibration region overlaps.
+
+### 8.4 The EDC16C34 checksum-descriptor table (FACT — empirically found in both)
+Both dumps embed a self-describing descriptor table. Each block ends with the 8-byte
+magic **`FA DE CA FE CA FE AF FE`**. A `len==4` descriptor lays out as (big-endian):
+```
+… [CK:4] [subid:2] [flags:2] [00 00 00 04] [start:4] [end:4]  FA DE CA FE CA FE AF FE
+```
+where `[start..end]` is a flash region and `CK` is its stored 32-bit checksum.
+Confirmed entries:
+
+| region | CK (ori.BIN) | CK (9663944680.Bin) |
+|--------|--------------|---------------------|
+| `0x010000..0x03F97F` | `0x164600C5` | (program absent) |
+| `0x040000..0x0FFFFF` | `0xBC444A75` | (program absent) |
+| `0x160000..0x1BFFFF` | `0xBC674B2D` | (program absent) |
+| **`0x1C0000..0x1FDFFF` (calibration)** | **`0xBC5269AC`** | **`0xBE536AA7`** |
+
+The calibration entry is present and distinct in **both** files → it is the only
+usable cross-dump oracle. (A by-byte diff confirms the volatile bytes between the two
+dumps are exactly the ASCII part-number @0x1C0010, the CK dword @0x1C0028, and the
+sub-block addresses — consistent with `CK` being the calibration checksum.)
+
+### 8.5 Algorithm search — **NOT recovered (FACT, honest negative).**
+Computed over `[0x1C0000..0x1FDFFF]` against the stored `CK` for both dumps, **none**
+of the following matched (with/without the 4 self-bytes zeroed, several end bounds,
+descriptor area excluded):
+* 8/16/32-bit additive sums (BE & LE), their negations, word/dword XOR;
+* `zlib` CRC-32 and its bit-inverse;
+* a table-driven sweep of CRC-32 polynomials {0x04C11DB7, 0x1EDC6F41, 0xA833982B,
+  0xF4ACFB13/AUTOSAR, 0x000000AF/XFER, 0x32583499} × init{0,~0} × xorout{0,~0} ×
+  {MSB,LSB-first}.
+
+The three program CKs share a high byte `0xBC`, hinting at an additive component, but
+no tested closed form reproduces the stored values. Bosch EDC16 uses a proprietary
+region checksum here; recovering it needs the 512 KB-image worker of the correct
+boot-mode module disassembled to its summation core (its descriptor tables live at the
+fixed offsets 0x3EF4/0x30180 of the *program* image, absent from a 2 MB dump) **or** a
+known-good corrected ROM to diff. **It is NOT guessed.**
+
+### 8.6 Engine decision — **FAIL-SAFE (no behaviour change to correction).**
+`mppsLayoutForSize(0x200000)` already returns `Unknown`, so `verifyMpps`/`correctMpps`
+return `nullopt` and the engine **never writes a checksum into a 2 MB EDC16C34 image.**
+Added only a non-mutating detector `ecu::isEdc16c34TwoMb()` (size 0x200000 + presence
+of `kEdc16c34ChecksumMagic`) so the UI can show a clear "checksum algorithm
+unsupported for this ECU — image left untouched" message instead of silently doing
+nothing. Unit tests assert detection works **and** that correction is still refused.
+
+**What is needed to finish (handoff):** the exact summation core of the EDC16C34
+512 KB/1 MB boot-mode checksum module (disassemble its mode-2 worker around the
+0x3EF4/0x30180 descriptor reads down to the per-region accumulate), or one
+genuine + one re-checksummed 2 MB pair to diff the calibration region against.
+
+---
+
+## 9. Summary
 
 * **Confident & implemented:** CRC-16/ARC (Check001/045), 32 KB & 64 KB layouts →
   `ecu::ChecksumEngine`.
+* **EDC16C34 2 MB:** descriptor table + magic `FA DE CA FE CA FE AF FE` and the
+  calibration region `0x1C0000-0x1FDFFF` with its stored 32-bit `CK` identified and
+  validated in both genuine dumps, **but the checksum primitive was NOT recovered**
+  (no sum/CRC variant matches). Engine kept **fail-safe** (detect-only, never
+  corrects) — see §8.
 * **Identified, not implemented (per brief — no guessing):** ~50 per-ECU EDC16
   region checksums (Check003-family), the RSA/MD5 module (Check008).
 * **Blocked:** DLL→ECU friendly-name map (encrypted DB).

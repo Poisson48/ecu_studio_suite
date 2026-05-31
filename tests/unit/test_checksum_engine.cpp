@@ -90,6 +90,36 @@ TEST(ChecksumEngine, UnknownSizeRejected) {
     EXPECT_FALSE(ChecksumEngine::correctMpps(rom).has_value());
 }
 
+// SAFETY-CRITICAL: a 2 MB EDC16C34 full-flash image must be DETECTED (so the UI
+// can warn) but NEVER auto-corrected — the real Bosch region checksum is unknown
+// and writing a wrong value bricks the ECU. The engine refuses by returning nullopt
+// from verify/correctMpps for any 2 MB image, regardless of detection.
+TEST(ChecksumEngine, Edc16c34TwoMbDetectedButRefused) {
+    std::vector<uint8_t> rom(kEdc16c34TwoMbSize, 0xFF);
+    // Plant one checksum-descriptor magic, as a genuine dump has.
+    const std::size_t magicAt = 0x1c003c;
+    for (std::size_t k = 0; k < kEdc16c34ChecksumMagic.size(); ++k)
+        rom[magicAt + k] = kEdc16c34ChecksumMagic[k];
+
+    EXPECT_TRUE(isEdc16c34TwoMb(rom));
+    // Detection must not imply a correctable layout.
+    EXPECT_EQ(mppsLayoutForSize(rom.size()), EdcLayout::Unknown);
+    EXPECT_FALSE(ChecksumEngine::verifyMpps(rom).has_value());
+    EXPECT_FALSE(ChecksumEngine::correctMpps(rom).has_value());
+}
+
+// A 2 MB blob without the descriptor magic is not flagged as EDC16C34, and a
+// genuine-size-but-wrong magic image is likewise refused for correction.
+TEST(ChecksumEngine, Edc16c34DetectionRequiresMagicAndSize) {
+    std::vector<uint8_t> noMagic(kEdc16c34TwoMbSize, 0x00);
+    EXPECT_FALSE(isEdc16c34TwoMb(noMagic));
+
+    std::vector<uint8_t> wrongSize(0x180000, 0x00);
+    for (std::size_t k = 0; k < kEdc16c34ChecksumMagic.size(); ++k)
+        wrongSize[0x1000 + k] = kEdc16c34ChecksumMagic[k];
+    EXPECT_FALSE(isEdc16c34TwoMb(wrongSize)); // right magic, wrong size -> no
+}
+
 TEST(ChecksumEngine, BigEndianAccessors) {
     std::vector<uint8_t> buf(4, 0x00);
     ChecksumEngine::writeStoredBE(buf, 1, 0x1234);

@@ -14,6 +14,7 @@
 //   32 KB image: window [0x0030, 0x7FEA), stored BE @ 0x7FEA
 //   64 KB image: window [0x8041, 0xFFFA), stored BE @ 0xFFFA
 //
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <span>
@@ -31,6 +32,30 @@ enum class EdcLayout {
     Edc32k,   // 0x8000  bytes — Check001 32 KB branch
     Edc64k,   // 0x10000 bytes — Check001 64 KB branch
 };
+
+// --- EDC16C34 2 MB full-flash (PSA 1.6 HDi) — DETECTION ONLY, NO CORRECTION ---
+//
+// A genuine 2 MB EDC16C34 dump carries a self-describing checksum-descriptor
+// table delimited by the 8-byte magic below. Each descriptor names a [start,end]
+// flash region plus a stored 32-bit checksum. The exact checksum primitive Bosch
+// uses over those regions has NOT been recovered (it is neither a plain 8/16/32-bit
+// additive sum nor any catalogued CRC-32 over the obvious region — verified against
+// two genuine factory dumps), and the MPPS `Check025.dll` module that handles this
+// ECU family only accepts 0x23020 / 0x80000 / 0x100000 program images read in boot
+// mode, never a 2 MB full-flash image. See docs/mpps-checksums.md §8.
+//
+// Because writing a wrong checksum bricks the ECU, the engine deliberately refuses
+// to "correct" a 2 MB EDC16C34 image: mppsLayoutForSize() returns Unknown for it
+// and correctMpps()/verifyMpps() return nullopt. This helper exists ONLY so the UI
+// layer can recognise the image and show a clear "checksum unsupported — left
+// untouched" message instead of silently doing nothing.
+constexpr std::size_t kEdc16c34TwoMbSize = 0x200000; // 2,097,152 bytes
+inline constexpr std::array<uint8_t, 8> kEdc16c34ChecksumMagic{
+    0xFA, 0xDE, 0xCA, 0xFE, 0xCA, 0xFE, 0xAF, 0xFE};
+
+// True iff `image` looks like a 2 MB EDC16C34 full-flash dump (correct size AND at
+// least one checksum-descriptor magic present). Never modifies the image.
+bool isEdc16c34TwoMb(std::span<const uint8_t> image);
 
 struct ChecksumRegion {
     std::size_t start;        // first byte covered by the CRC

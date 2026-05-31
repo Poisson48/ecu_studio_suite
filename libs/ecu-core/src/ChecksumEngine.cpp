@@ -50,6 +50,23 @@ EdcLayout mppsLayoutForSize(std::size_t imageSize) {
     }
 }
 
+bool isEdc16c34TwoMb(std::span<const uint8_t> image) {
+    if (image.size() != kEdc16c34TwoMbSize) return false;
+    // A genuine EDC16C34 2 MB dump embeds at least one checksum-descriptor block
+    // terminated by kEdc16c34ChecksumMagic. We only DETECT it (so the UI can warn);
+    // we never recompute or write any checksum for this layout — see header note.
+    const auto& magic = kEdc16c34ChecksumMagic;
+    if (image.size() < magic.size()) return false;
+    for (std::size_t i = 0; i + magic.size() <= image.size(); ++i) {
+        std::size_t k = 0;
+        for (; k < magic.size(); ++k) {
+            if (image[i + k] != magic[k]) break;
+        }
+        if (k == magic.size()) return true;
+    }
+    return false;
+}
+
 std::optional<ChecksumRegion> mppsRegionForSize(std::size_t imageSize) {
     switch (mppsLayoutForSize(imageSize)) {
     case EdcLayout::Edc32k:
