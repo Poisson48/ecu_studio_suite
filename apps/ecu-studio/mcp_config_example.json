@@ -1,0 +1,9 @@
+{
+  "_comment": "Configuration MCP pour ECU Studio. À ajouter dans la config de Claude Desktop : ~/Library/Application Support/Claude/claude_desktop_config.json (macOS), %APPDATA%/Claude/claude_desktop_config.json (Windows) ou ~/.config/Claude/claude_desktop_config.json (Linux). Pour Claude Code : claude mcp add ecu-studio /usr/local/bin/ecu_studio --mcp",
+  "mcpServers": {
+    "ecu-studio": {
+      "command": "/usr/local/bin/ecu_studio",
+      "args": ["--mcp"]
+    }
+  }
+}

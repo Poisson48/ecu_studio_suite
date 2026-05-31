@@ -65,6 +65,7 @@ add_subdirectory(libs/shared)
 add_subdirectory(libs/can-core)
 add_subdirectory(libs/mpps)
 add_subdirectory(libs/ecu-core)
+add_subdirectory(libs/ecu-mcp)
 
 # ── SocketSpy ────────────────────────────────────────────────────────────────
 # Le submodule SocketSpy est utilisé de deux manières :
