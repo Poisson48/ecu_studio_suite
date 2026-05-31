@@ -1,0 +1,214 @@
+{
+  "_meta": {
+    "purpose": "PROPOSAL ONLY. Mirrors ecu::EcuEntry schema in libs/ecu-core/include/ecu/EcuCatalog.hpp. NOT written into EcuCatalog.cpp.",
+    "generated": "2026-05-31",
+    "confidence_levels": ["CONFIRMED", "REPORTED", "UNVERIFIED"],
+    "rules": [
+      "Every address carries _source + _confidence.",
+      "No address was invented. Unsourced addresses are omitted.",
+      "Concrete map/auto-mod addresses are firmware/box-specific (tagged _boxSpecific:true) and must be resolved per-file via DAMOS/A2L, NOT hardcoded family-wide.",
+      "Schema fields: id,name,family,fuel,application,a2l,stage1Maps[{name,address,defaultPct,label}],popbangParams{nOvrRun,qOvrRun},autoModAddresses[{id,address,bytes,note}]."
+    ],
+    "checksum_note": "EcuCatalog comment says 'EDC16 = CRC-16/ARC'. Research did NOT corroborate that for PSA EDC16C34 (RSA1024 + sum32). Re-check ChecksumEngine.cpp against a real dump before trusting CRC-16/ARC."
+  },
+
+  "checksumFamilies": {
+    "EDC16_PSA_C34": {
+      "algorithm": "RSA-1024 signature + 32-bit additive (sum32)",
+      "signatureAddress": "0x1FDF7C",
+      "controlWordAddress": "0x1FDFFC",
+      "controlWordFormula": "-0xD01FE500 - sum32[0x1FDF7C..0x1FDFFB]",
+      "_confidence": "REPORTED",
+      "_source": ["https://www.digital-kaos.co.uk/forums/archive/index.php/t-965883.html", "https://github.com/JeanLucPons/DTCController", "https://reflashecu.com/en/docs/edc16c34-psa/"]
+    },
+    "EDC16_VAG_Siemens": {
+      "algorithm": "additive multi-region (RSA shortcut on some); not confirmed",
+      "_confidence": "UNVERIFIED",
+      "_source": ["https://mhhauto.com/Thread-EDC16-Checksum", "https://www.evc.de/en/service/q1304.asp"]
+    },
+    "EDC17_MED17": {
+      "algorithm": "CRC32 + ADD32 + ADD16",
+      "crc32": {"poly": "0xEDB88320", "init": "0xFADECAFE", "expect": "0x35015001"},
+      "add32": {"init": "0xFADECAFE", "expect": "0xCAFEAFFE"},
+      "add16": {"init": "0xFADECAFE", "expect": "0xCAFEAFFE"},
+      "blockIds": {"absConst": "0xC0", "customer": "0x30", "appSw": "0x40", "dataset": "0x60", "startup": "0x10"},
+      "cvn": "CRC32 over calibration, reported via OBD-II",
+      "_confidence": "CONFIRMED",
+      "_source": ["https://github.com/ConnorHowell/medc17-checksum-tool", "https://tuninghost.com/med17-edc17-crc-algo/"]
+    },
+    "ME7": {
+      "algorithm": "main ROM checksum + multipoint checksum block (region descriptors) + CRC + RSA on later builds",
+      "multipointRegionExample_ME711": "0x0-0x3FFF",
+      "_confidence": "CONFIRMED",
+      "_source": ["https://github.com/nyetwurk/ME7Sum", "http://nefariousmotorsports.com/forum/index.php?topic=447.0"]
+    }
+  },
+
+  "ecus": [
+    {
+      "id": "edc16c34",
+      "name": "EDC16C34",
+      "family": "EDC16",
+      "fuel": "diesel",
+      "application": "PSA 1.6 HDi (DV6TED4 110/DV6BTED4 75) / Ford 1.6 TDCi 109 — 206/307/308/Berlingo/Partner/C3/C4/Focus",
+      "_applicationConfidence": "CONFIRMED (existing catalog + PSA seedkey repo)",
+      "_seedKey": {"value": "0x475A", "_confidence": "REPORTED", "_source": "https://github.com/ludwig-v/psa-seedkey-algorithm/blob/main/ECU_KEYS.md"},
+      "a2l": {"value": "ressources/edc16c34/damos.a2l", "_confidence": "CONFIRMED (existing local file ref)"},
+      "stage1Maps": [
+        {"name": "AccPed_trqEngHiGear_MAP", "address": "0x1C1448", "defaultPct": 15, "label": "Couple pedale Hi gear", "_confidence": "CONFIRMED (existing EcuCatalog.cpp)", "_source": "libs/ecu-core/src/EcuCatalog.cpp"},
+        {"name": "AccPed_trqEngLoGear_MAP", "address": "0x1C168C", "defaultPct": 15, "label": "Couple pedale Lo gear", "_confidence": "CONFIRMED (existing EcuCatalog.cpp)", "_source": "libs/ecu-core/src/EcuCatalog.cpp"},
+        {"name": "FMTC_trq2qBas_MAP", "address": "0x1C9AAA", "defaultPct": 12, "label": "Couple -> Injection (FMTC)", "_confidence": "CONFIRMED (existing EcuCatalog.cpp)", "_source": "libs/ecu-core/src/EcuCatalog.cpp"},
+        {"name": "Rail_pSetPointBase_MAP", "address": "0x1E726C", "defaultPct": 10, "label": "Pression rail setpoint", "_confidence": "CONFIRMED (existing EcuCatalog.cpp)", "_source": "libs/ecu-core/src/EcuCatalog.cpp"},
+        {"name": "EngPrt_trqAPSLim_MAP", "address": "0x1C8838", "defaultPct": 25, "label": "Limite protection moteur", "_confidence": "CONFIRMED (existing EcuCatalog.cpp)", "_source": "libs/ecu-core/src/EcuCatalog.cpp"}
+      ],
+      "popbangParams": {
+        "nOvrRun": {"address": "0x1C4046", "min": 500, "max": 5500, "label": "RPM depart overrun", "_confidence": "CONFIRMED (existing EcuCatalog.cpp)"},
+        "qOvrRun": {"address": "0x1C40B4", "min": 0, "max": 100, "label": "Qte carburant", "_confidence": "CONFIRMED (existing EcuCatalog.cpp)"}
+      },
+      "autoModAddresses": [
+        {"id": "egr_off", "address": "0x1C41B8", "bytes": "1F 40", "note": "AirCtl_nMin_C -> 8000 rpm", "_confidence": "UNVERIFIED (existing catalog, not corroborated by public source found)", "_source": "libs/ecu-core/src/EcuCatalog.cpp (forum ecuedit/mhhauto, not re-found)"},
+        {"id": "dpf_dtc_off", "address": "0x1E9DD4", "bytes": "FF FF", "restore": "00 01", "note": "DPF DTC status byte", "_confidence": "UNVERIFIED (existing catalog, not corroborated)", "_source": "libs/ecu-core/src/EcuCatalog.cpp"}
+      ],
+      "_dtcTable": {"start": "0x1C65AE", "end": "0x1C6732", "bytesPerEntry": 2, "first": "P0530", "last": "P1621", "_confidence": "CONFIRMED", "_source": "https://github.com/JeanLucPons/DTCController", "_note": "DTC code table region; corroborates the kind of DTC edit our dpf_dtc_off does. Not the same byte as 0x1E9DD4."}
+    },
+
+    {
+      "id": "edc16_guide_generic",
+      "name": "EDC16 (Tuning Guide v1.1 reference dump)",
+      "family": "EDC16",
+      "fuel": "diesel",
+      "application": "VAG-style EDC16 reference bin from EDC16 Tuning Guide v1.1 (exact part unknown)",
+      "_warning": "BOX-SPECIFIC addresses. Do NOT apply to other EDC16 dumps. Provided as labels/leads only.",
+      "stage1Maps": [
+        {"name": "DriversWish", "address": "0x1C2F96", "defaultPct": 0, "label": "Required torque vs RPM x pedal (8x16, f0.1)", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://pdfcoffee.com/edc16-tuning-guide-version-11-pdf-free.html"},
+        {"name": "TorqueLimiter", "address": "0x1D43C2", "defaultPct": 20, "label": "Torque cap vs RPM x atmos (21x3, f0.1)", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://pdfcoffee.com/edc16-tuning-guide-version-11-pdf-free.html"},
+        {"name": "Nm2IQ", "address": "0x1D6F9A", "defaultPct": 12, "label": "Requested Nm -> injection qty (16x15, f0.1)", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://pdfcoffee.com/edc16-tuning-guide-version-11-pdf-free.html"},
+        {"name": "Boost", "address": "0x1EAD92", "defaultPct": 10, "label": "Turbo pressure vs torque x RPM (10x16)", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://pdfcoffee.com/edc16-tuning-guide-version-11-pdf-free.html"},
+        {"name": "BoostLimiter", "address": "0x1EAF00", "defaultPct": 10, "label": "Boost cap vs atmos (10x11)", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://pdfcoffee.com/edc16-tuning-guide-version-11-pdf-free.html"},
+        {"name": "SmokeLimiter", "address": "0x1D6188", "defaultPct": 20, "label": "IQ limit vs airmass x RPM (12x16, f0.01)", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://pdfcoffee.com/edc16-tuning-guide-version-11-pdf-free.html"},
+        {"name": "SingleBoostLimiter", "address": "0x1EB04A", "defaultPct": 0, "label": "Absolute turbo pressure cap (stock 2350 mBar)", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://pdfcoffee.com/edc16-tuning-guide-version-11-pdf-free.html"},
+        {"name": "InjectionDuration", "address": "0x1E4F90", "defaultPct": 0, "label": "Crank degrees for injection (15x19, f0.023437)", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://pdfcoffee.com/edc16-tuning-guide-version-11-pdf-free.html"}
+      ]
+    },
+
+    {
+      "id": "edc16u31",
+      "name": "EDC16U31",
+      "family": "EDC16",
+      "fuel": "diesel",
+      "application": "VAG 1.9 TDI CR (BLS / BKE etc.) — A4 / Golf / Octavia / Passat",
+      "stage1Maps": [],
+      "_egrOff": {"method": "Zeroing EGR maps does NOT work on EDC16 (per ecuedit admin). Reported working: MAF target tables ~1500mg + EGR duty ~15% at upper RPM; or operate on EGR control bits.", "address": null, "_confidence": "REPORTED (no hex address published)", "_source": "https://www.ecuedit.com/disabling-egr-edc16u31-t232"}
+    },
+    {
+      "id": "edc16u34",
+      "name": "EDC16U34",
+      "family": "EDC16",
+      "fuel": "diesel",
+      "application": "VAG 2.0 TDI / 1.9 TDI (e.g. 03G906021LR Passat B6) — Octavia/Passat/Golf",
+      "stage1Maps": [],
+      "_egrDtcOff": {"method": "EGR + DTC P0401 off documented as ready files; no published hex.", "_confidence": "REPORTED", "_source": ["https://www.ecuedit.com/egr-dtc-off-edc16u34-octavia-2-0-tdi-t2861", "https://obdtotal.com/product/vw-passat-b6-1-9-tdi-bosch-edc16u34-03g906021lr-egr-dtc-p0401-off/"]}
+    },
+
+    {
+      "id": "edc17_guide_vag20tdi",
+      "name": "EDC17 (VAG 2.0 TDI 143hp, 03L906022JN)",
+      "family": "EDC17",
+      "fuel": "diesel",
+      "application": "Audi A4 2.0 TDI CR 143hp/320Nm (EA189-era) — ECU 03L906022JN",
+      "_warning": "BOX-SPECIFIC. From EDC17 Tuning Guide. Do NOT apply to other EDC17 dumps.",
+      "stage1Maps": [
+        {"name": "DriversWish", "address": "0x1B26CC", "defaultPct": 0, "label": "Req torque (8x16, f0.1); also 1B2800/1B2934/1B2A68/1B2B9C/1B2CD0", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://pdfcoffee.com/edc17-tuning-guide-pdf-free.html"},
+        {"name": "DriversWishLimiter", "address": "0x1A13AA", "defaultPct": 0, "label": "Max torque (8x8)", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://pdfcoffee.com/edc17-tuning-guide-pdf-free.html"},
+        {"name": "TorqueLimiter", "address": "0x1C1FCC", "defaultPct": 20, "label": "Torque cap (24x4, f0.1)", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://pdfcoffee.com/edc17-tuning-guide-pdf-free.html"},
+        {"name": "Torque2IQ", "address": "0x1BD364", "defaultPct": 12, "label": "Torque -> IQ mg/stroke (16x16, f0.01); also 1BD5A8", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://pdfcoffee.com/edc17-tuning-guide-pdf-free.html"},
+        {"name": "BoostLimiter", "address": "0x1E86C0", "defaultPct": 8, "label": "Boost cap mBar (10x16)", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://pdfcoffee.com/edc17-tuning-guide-pdf-free.html"},
+        {"name": "SmokeMAF", "address": "0x1EE33A", "defaultPct": 20, "label": "IQ limit vs airmass (16x11, f0.01); also 1EE610", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://pdfcoffee.com/edc17-tuning-guide-pdf-free.html"},
+        {"name": "SmokeMAP", "address": "0x1F55BE", "defaultPct": 15, "label": "IQ limit vs boost (14x16, f0.01)", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://pdfcoffee.com/edc17-tuning-guide-pdf-free.html"},
+        {"name": "RailPressureLimiterOffset", "address": "0x1F2C6E", "defaultPct": 0, "label": "Rail pressure bar (10x14, f0.1)", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://pdfcoffee.com/edc17-tuning-guide-pdf-free.html"},
+        {"name": "RailPressureLimiter", "address": "0x1F2DC6", "defaultPct": 0, "label": "Rail pressure ctrl (10x14, f0.1)", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://pdfcoffee.com/edc17-tuning-guide-pdf-free.html"}
+      ],
+      "autoModAddresses": [
+        {"id": "dpf_off_switch", "address": "0x1EC667", "bytes": null, "note": "DPF/FAP switch 1x1 (also 0x1EC668). Method: find hex A0 0F 01, +6 bytes -> 01 01, flip to disable. Bytes box-specific, NOT published as confirmed pattern.", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://pdfcoffee.com/edc17-tuning-guide-pdf-free.html"}
+      ]
+    },
+    {
+      "id": "edc17cp14",
+      "name": "EDC17CP14",
+      "family": "EDC17",
+      "fuel": "diesel",
+      "application": "VAG / common-rail diesel (varies by build)",
+      "_warning": "BOX-SPECIFIC, varies even between CP14 files (some have only lambda maps).",
+      "stage1Maps": [
+        {"name": "DriversWish", "address": "0x1B421C", "defaultPct": 0, "label": "Req torque (8x14); also 1B4350/1B4484", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://ecuedit.com/edc17cp14-map-adress-t21751"},
+        {"name": "TorqueLimiter", "address": "0x1C34C0", "defaultPct": 20, "label": "Torque cap", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://mhhauto.com/Thread-edc17cp14-drivers-wish-request"},
+        {"name": "Torque2IQ", "address": "0x1BE49A", "defaultPct": 12, "label": "Torque -> IQ", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://mhhauto.com/Thread-edc17cp14-drivers-wish-request"}
+      ]
+    },
+    {
+      "id": "edc17c46",
+      "name": "EDC17C46",
+      "family": "EDC17",
+      "fuel": "diesel",
+      "application": "VAG / Renault 1.5-2.0 TDI (K9K, EA189) — Audi Q3, Renault Megane/Clio/Kangoo",
+      "stage1Maps": [],
+      "_egrDpfDtcOff": {"method": "EGR/DPF/DTC off widely available as ready files; warning: close regen maps too or DPF over-regens. No published hex.", "_confidence": "REPORTED", "_source": ["https://ecutools.eu/chip-tuning/probyte/vag-group-diesel-bosch-edc17c46/", "https://mhhauto.com/Thread-Audi-Q3-2-0-TDI-edc17c46-egr-off-problem-regeneration-dpf"]}
+    },
+
+    {
+      "id": "med17.5.5",
+      "name": "MED17.5.5",
+      "family": "MED17",
+      "fuel": "petrol",
+      "application": "VAG 2.0 TFSI/TSI (EA888) — Golf GTI etc.",
+      "_warning": "Addresses for ONE MED17.5.5 box. Closest analogue for MED17.5.25 but NOT confirmed for it.",
+      "stage1Maps": [
+        {"name": "KFMIOP", "address": "0x58366", "defaultPct": -5, "label": "load->torque (inverse of KFMIRL; divide ~1.05)", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://www.ecuedit.com/map-location-and-name-for-med17-5-5-t17686"},
+        {"name": "KFMIRL", "address": "0x585EA", "defaultPct": 5, "label": "req torque->req load (raise ~1.05 for boost)", "_boxSpecific": true, "_confidence": "REPORTED", "_source": "https://www.ecuedit.com/map-location-and-name-for-med17-5-5-t17686"}
+      ]
+    },
+    {
+      "id": "med17.5.25",
+      "name": "MED17.5.25",
+      "family": "MED17",
+      "fuel": "petrol",
+      "application": "VAG 1.4/1.8/2.0 TFSI/TSI (EA111/EA888)",
+      "stage1Maps": [],
+      "_note": "Stage-1 = LDRXN/KFMIRL x~1.05, KFMIOP /~1.05 (REPORTED recipe). No 17.5.25-specific address confirmed; do NOT reuse 17.5.5 addresses by analogy.",
+      "_source": "https://mhhauto.com/Thread-KFMIOP-KFMIRL"
+    },
+
+    {
+      "id": "me7.5",
+      "name": "ME7.5",
+      "family": "ME7",
+      "fuel": "petrol",
+      "application": "VAG 1.8T/2.0 (APY/AWU/BAM/AJQ/AUQ) — S3/TT225/Golf",
+      "_seedKey_psaME745": {"value": "0xF8F3", "_note": "PSA ME7.4.5 variant only", "_source": "https://github.com/ludwig-v/psa-seedkey-algorithm/blob/main/ECU_KEYS.md"},
+      "stage1Maps": [],
+      "_stage1MapNames": {
+        "names": ["LDRXN", "KFMIRL", "KFMIOP", "KFLDHBN", "KFLDIMX", "KFLDRL", "KFVPDKSD", "LAMFA", "KFLBTS", "KFZW"],
+        "semantics": "see me7.md; LDRXN=max load/boost-request limiter, KFMIRL=torque->load (raise), KFMIOP=load->torque (keep inverse), KFLDHBN=max pressure ratio, LAMFA=peak-load lambda enrich, KFZW=ignition timing",
+        "_confidence": "CONFIRMED (names+semantics, >=2 sources)",
+        "_addressesNote": "Addresses are per-box; resolve via DAMOS/A2L (e.g. 06A906032xx). No stable family-wide address.",
+        "_source": ["https://s4wiki.com/wiki/Tuning", "http://nefariousmotorsports.com/forum/index.php?topic=7106.0", "https://www.tuning-database.co.uk/bosch-me7-tuning-complete-technical-guide/"]
+      },
+      "_autoModsCodewords": {
+        "method": "Petrol: no DPF/EGR. Diagnostic disables via codewords/ESKONF: CDKAT(cat)=0, CDLSH(post-cat O2)=0, CWKONLS(O2 banks 0x33->0x11), CATR(EGT)=0, CDSLS(SAI)=0, ESKONF unused bit-pairs=11.",
+        "addresses_boxSpecific": {"CWKONABG": "0x181B9", "CWKONLS": "0x181BB", "CLRHK": "0x11A87", "CLRKA": "0x11A72", "CATR": "0x192CA", "FKHABMN": "0x1937D"},
+        "_confidence": "REPORTED method / UNVERIFIED box-specific addresses",
+        "_source": ["http://www.nefariousmotorsports.com/wiki/index.php/ME7_Tuning_Information", "https://s4wiki.com/wiki/Tuning"]
+      }
+    },
+    {
+      "id": "me7.4.4",
+      "name": "ME7.4.4",
+      "family": "ME7",
+      "fuel": "petrol",
+      "application": "VAG 1.8T 20v (AUM/ARZ/APX) — Golf 4 / A3 8L / TT",
+      "stage1Maps": [],
+      "_note": "Same map names/semantics as ME7.5 (see me7.md). Addresses per-box; resolve via DAMOS/A2L.",
+      "_source": "https://s4wiki.com/wiki/Tuning"
+    }
+  ]
+}
