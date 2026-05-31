@@ -47,6 +47,8 @@ endif()
 set(ECU_STUDIO_SOURCES
     src/main.cpp
     src/main_window.cpp
+    src/splash_screen.cpp
+    src/welcome_screen.cpp
     src/rom_document.cpp
     src/panels/mpps_panel.cpp
     src/panels/hex_view_panel.cpp
