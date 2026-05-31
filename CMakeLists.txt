@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(ecu-studio-suite VERSION 1.1.0 LANGUAGES CXX C)
+project(ecu-studio-suite VERSION 1.2.0 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
