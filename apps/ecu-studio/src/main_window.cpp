@@ -13,6 +13,7 @@
 #include "updater.h"
 #include "update_dialog.h"
 #include "rom_document.h"
+#include "welcome_screen.h"
 #include "byte_span.h"
 #include "ecu/WinolsParser.hpp"
 #include "ecu/ReportGenerator.hpp"
@@ -26,23 +27,44 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
+#include <QStandardPaths>
+#include <QDir>
 #include <QTimer>
 #include <QFileInfo>
+#include <QCloseEvent>
 #include <QDesktopServices>
 #include <QUrl>
 
+#include <algorithm>
 #include <span>
 #include <cstdint>
 
 namespace ecu_studio {
 
+namespace {
+QString projectsRoot() {
+    return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+           + "/projects";
+}
+} // namespace
+
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     m_updater = new Updater(this);
     m_doc     = new RomDocument(this);
 
+    const QString root = projectsRoot();
+    QDir().mkpath(root);
+    m_projects = std::make_unique<ecu::ProjectManager>(root);
+
     setupUi();
     setupMenuBar();
     setupStatusBar();
+
+    m_welcomeScreen = new WelcomeScreen(this);
+    connectWelcomeSignals();
+
+    restoreWindowState();
+    updateRomStatus();
 
     // Vérification silencieuse au démarrage (uniquement en AppImage) — ne
     // dérange l'utilisateur que si une mise à jour est réellement disponible.
@@ -96,6 +118,13 @@ void MainWindow::setupUi() {
     hbox->addWidget(m_sidebar);
     hbox->addWidget(m_sidebar->stack(), 1);
     setCentralWidget(central);
+
+    // Persiste le panneau courant pour le restaurer au prochain lancement.
+    connect(m_sidebar, &socketspy::gui::SidebarNav::currentPanelChanged, this,
+            [this](QWidget*) {
+                QSettings s;
+                s.setValue("window/panelIndex", m_sidebar->stack()->currentIndex());
+            });
 }
 
 void MainWindow::wirePanels() {
@@ -130,6 +159,13 @@ void MainWindow::wirePanels() {
                 m_map3dPanel->showMap(address);
                 m_sidebar->showPanel(m_map3dPanel);
             });
+
+    // Barre de statut live : se met à jour à chaque changement du document.
+    connect(m_doc, &RomDocument::romLoaded,           this, &MainWindow::updateRomStatus);
+    connect(m_doc, &RomDocument::ecuChanged,          this, [this](const QString&) { updateRomStatus(); });
+    connect(m_doc, &RomDocument::modifiedStateChanged, this, [this](bool) { updateRomStatus(); });
+    connect(m_doc, &RomDocument::romModified,         this,
+            [this](qsizetype, qsizetype) { updateRomStatus(); });
 }
 
 void MainWindow::importWinols() {
@@ -210,15 +246,39 @@ void MainWindow::generateReport() {
     QDesktopServices::openUrl(QUrl::fromLocalFile(out));
 }
 
+void MainWindow::openRomFromDialog() {
+    const QString f = QFileDialog::getOpenFileName(
+        this, tr("Ouvrir ROM"), {}, tr("ROM (*.bin *.ori *.mod);;Tous (*.*)"));
+    if (!f.isEmpty()) m_hexPanel->loadRom(f);
+}
+
 void MainWindow::setupMenuBar() {
     auto* fileMenu = menuBar()->addMenu(tr("Fichier"));
     fileMenu->addAction(tr("Nouveau projet"),    QKeySequence::New,  this, [this]() { m_projectPanel->newProject(); });
     fileMenu->addAction(tr("Ouvrir projet"),     QKeySequence::Open, this, [this]() { m_projectPanel->openProject(); });
-    fileMenu->addAction(tr("Ouvrir ROM..."),     this, [this]() {
-        QString f = QFileDialog::getOpenFileName(this, tr("Ouvrir ROM"), {}, tr("ROM (*.bin *.ori *.mod);;Tous (*.*)"));
-        if (!f.isEmpty()) m_hexPanel->loadRom(f);
-    });
+    fileMenu->addAction(tr("Ouvrir ROM..."), QKeySequence(Qt::CTRL | Qt::Key_R),
+                        this, &MainWindow::openRomFromDialog);
+
+    // Sous-menu « Projets récents » (reconstruit à l'ouverture du menu).
+    m_recentMenu = fileMenu->addMenu(tr("Projets récents"));
+    connect(m_recentMenu, &QMenu::aboutToShow, this, &MainWindow::rebuildRecentMenu);
+
     fileMenu->addAction(tr("Importer projet WinOLS..."), this, &MainWindow::importWinols);
+    fileMenu->addSeparator();
+    fileMenu->addAction(tr("Enregistrer ROM..."), QKeySequence::Save, this, [this]() {
+        if (!m_doc->isLoaded()) {
+            QMessageBox::information(this, tr("Enregistrer"), tr("Aucune ROM chargée."));
+            return;
+        }
+        const QString suggested = m_doc->name().isEmpty() ? QStringLiteral("rom.bin") : m_doc->name();
+        const QString out = QFileDialog::getSaveFileName(
+            this, tr("Enregistrer ROM"), suggested, tr("ROM (*.bin);;Tous (*.*)"));
+        if (out.isEmpty()) return;
+        if (m_doc->saveToFile(out))
+            statusBar()->showMessage(tr("ROM enregistrée : %1").arg(out), 4000);
+        else
+            QMessageBox::warning(this, tr("Enregistrer"), tr("Écriture impossible : %1").arg(out));
+    });
     fileMenu->addSeparator();
     fileMenu->addAction(tr("Quitter"), QKeySequence::Quit, this, &QWidget::close);
 
@@ -256,12 +316,68 @@ void MainWindow::setupMenuBar() {
     addLang("English",  "en");
     helpMenu->addSeparator();
 
+    helpMenu->addAction(tr("Écran d'accueil..."), this, &MainWindow::showWelcome);
     helpMenu->addAction(tr("Vérifier les mises à jour"), this,
                         [this]() { checkForUpdates(/*silent=*/false); });
-    helpMenu->addAction(tr("À propos d'ECU Studio"), this, [this]() {
-        QMessageBox::about(this, tr("À propos d'ECU Studio"),
-                           tr("ECU Studio v%1").arg(APP_VERSION));
-    });
+    helpMenu->addSeparator();
+    helpMenu->addAction(tr("À propos d'ECU Studio"), this, &MainWindow::showAbout);
+}
+
+void MainWindow::rebuildRecentMenu() {
+    if (!m_recentMenu) return;
+    m_recentMenu->clear();
+
+    auto listed = m_projects->list();
+    QList<ecu::ProjectMeta> entries;
+    if (listed) entries = *listed;
+    std::sort(entries.begin(), entries.end(),
+              [](const ecu::ProjectMeta& a, const ecu::ProjectMeta& b) {
+                  return a.createdAt > b.createdAt;
+              });
+
+    if (entries.isEmpty()) {
+        auto* act = m_recentMenu->addAction(tr("(aucun projet récent)"));
+        act->setEnabled(false);
+        return;
+    }
+
+    int count = 0;
+    for (const ecu::ProjectMeta& e : entries) {
+        if (count++ >= 10) break;
+        const QString id = e.id;
+        QString label = e.name;
+        if (!e.ecu.isEmpty()) label += QStringLiteral("  (%1)").arg(e.ecu);
+        m_recentMenu->addAction(label, this, [this, id]() { openProjectById(id); });
+    }
+}
+
+void MainWindow::openProjectById(const QString& id) {
+    auto meta = m_projects->get(id);
+    if (!meta) {
+        QMessageBox::warning(this, tr("Ouvrir projet"), tr("Projet introuvable."));
+        return;
+    }
+
+    auto path = m_projects->romPath(id);
+    if (path && QFile::exists(*path)) {
+        if (!m_doc->loadFromFile(*path)) {
+            QMessageBox::warning(this, tr("Ouvrir projet"),
+                                 tr("Impossible de charger la ROM : %1").arg(*path));
+            return;
+        }
+    } else {
+        QMessageBox::information(this, tr("Ouvrir projet"),
+            tr("Le projet « %1 » ne contient pas encore de ROM.").arg(meta->name));
+    }
+
+    m_doc->setEcuId(meta->ecu);
+    m_autoMods->refresh();
+    const QString romPath = m_doc->path();
+    m_gitPanel->setRepoPath(romPath.isEmpty() ? QString()
+                                              : QFileInfo(romPath).absolutePath());
+    m_sidebar->showPanel(m_hexPanel);
+    QSettings s;
+    s.setValue("project/lastId", id);
 }
 
 void MainWindow::checkForUpdates(bool silent) {
@@ -291,18 +407,121 @@ void MainWindow::checkForUpdates(bool silent) {
     dlg->startCheck();
 }
 
+void MainWindow::showAbout() {
+    QMessageBox::about(this, tr("À propos d'ECU Studio"),
+        QString("<b>ECU Studio v%1</b><br>"
+                "%2<br><br>"
+                "%3<br>"
+                "<a href=\"https://github.com/Poisson48/ecu_studio_suite\" "
+                "style=\"color:#6366f1;\">github.com/Poisson48/ecu_studio_suite</a>")
+            .arg(APP_VERSION,
+                 tr("Plateforme de reprogrammation ECU"),
+                 tr("100% local · aucune télémétrie")));
+}
+
 void MainWindow::setupStatusBar() {
+    // Message transitoire à gauche (showMessage), puis indicateurs permanents.
+    m_romLabel = new QLabel(this);
+    m_romLabel->setObjectName("romLabel");
+    statusBar()->addPermanentWidget(m_romLabel);
+
+    m_modifiedLabel = new QLabel(this);
+    m_modifiedLabel->setObjectName("modifiedLabel");
+    m_modifiedLabel->setToolTip(tr("ROM modifiée non enregistrée"));
+    statusBar()->addPermanentWidget(m_modifiedLabel);
+
+    m_ecuLabel = new QLabel(this);
+    m_ecuLabel->setObjectName("ecuLabel");
+    statusBar()->addPermanentWidget(m_ecuLabel);
+
     m_deviceLabel = new QLabel(tr("Aucun périphérique"), this);
     m_deviceLabel->setObjectName("deviceLabel");
     statusBar()->addPermanentWidget(m_deviceLabel);
 
-    m_statusLabel = new QLabel("ECU Studio prêt", this);
-    m_statusLabel->setObjectName("statusLabel");
-    statusBar()->addWidget(m_statusLabel);
-
-    // Mettre à jour le label device quand MPPS connecté/déconnecté
+    // Statut MPPS live.
     connect(m_mppsPanel, &MppsPanel::deviceStatusChanged, this,
             [this](const QString& status) { m_deviceLabel->setText(status); });
+}
+
+void MainWindow::updateRomStatus() {
+    if (!m_romLabel) return;
+
+    if (m_doc->isLoaded()) {
+        const double kb = m_doc->rom().size() / 1024.0;
+        m_romLabel->setText(tr("%1  ·  %2 Ko")
+                                .arg(m_doc->name().isEmpty() ? tr("ROM") : m_doc->name())
+                                .arg(kb, 0, 'f', 1));
+    } else {
+        m_romLabel->setText(tr("Aucune ROM"));
+    }
+
+    const QString ecu = m_doc->ecuId();
+    m_ecuLabel->setText(ecu.isEmpty() ? QString() : tr("ECU : %1").arg(ecu));
+
+    if (m_doc->isModified()) {
+        m_modifiedLabel->setText(QStringLiteral("\xe2\x97\x8f"));
+        m_modifiedLabel->setStyleSheet("color: #f59e0b; font-weight: 700;");
+    } else {
+        m_modifiedLabel->clear();
+    }
+}
+
+// ── Écran d'accueil ───────────────────────────────────────────────────────────
+
+void MainWindow::connectWelcomeSignals() {
+    connect(m_welcomeScreen, &WelcomeScreen::newProjectRequested, this, [this]() {
+        m_sidebar->showPanel(m_projectPanel);
+        m_projectPanel->newProject();
+    });
+    connect(m_welcomeScreen, &WelcomeScreen::openRomRequested, this,
+            &MainWindow::openRomFromDialog);
+    connect(m_welcomeScreen, &WelcomeScreen::openProjectRequested, this, [this]() {
+        m_sidebar->showPanel(m_projectPanel);
+        m_projectPanel->openProject();
+    });
+    connect(m_welcomeScreen, &WelcomeScreen::openRecentProjectRequested, this,
+            &MainWindow::openProjectById);
+    connect(m_welcomeScreen, &WelcomeScreen::scanMppsRequested, this, [this]() {
+        m_sidebar->showPanel(m_mppsPanel);
+        m_mppsPanel->scanDevices();
+    });
+}
+
+void MainWindow::showWelcome() {
+    m_welcomeScreen->refreshRecentProjects();
+    m_welcomeScreen->show();
+    m_welcomeScreen->raise();
+    m_welcomeScreen->activateWindow();
+}
+
+// ── Persistance de l'état de la fenêtre ───────────────────────────────────────
+
+void MainWindow::saveWindowState() {
+    QSettings s;
+    s.setValue("window/geometry", saveGeometry());
+    s.setValue("window/state", saveState());
+    s.setValue("window/panelIndex", m_sidebar->stack()->currentIndex());
+    if (!m_doc->path().isEmpty())
+        s.setValue("rom/lastPath", m_doc->path());
+}
+
+void MainWindow::restoreWindowState() {
+    QSettings s;
+    const QByteArray geom = s.value("window/geometry").toByteArray();
+    if (!geom.isEmpty()) restoreGeometry(geom);
+    const QByteArray st = s.value("window/state").toByteArray();
+    if (!st.isEmpty()) restoreState(st);
+
+    const int idx = s.value("window/panelIndex", 0).toInt();
+    if (idx >= 0 && idx < m_sidebar->stack()->count()) {
+        if (auto* w = m_sidebar->stack()->widget(idx))
+            m_sidebar->showPanel(w);
+    }
+}
+
+void MainWindow::closeEvent(QCloseEvent* e) {
+    saveWindowState();
+    QMainWindow::closeEvent(e);
 }
 
 } // namespace ecu_studio

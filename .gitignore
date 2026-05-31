@@ -27,3 +27,4 @@ tools/reverse/*.exe
 tools/reverse/*.dll
 tools/reverse/MPPS_V21.exe
 mpps_protocol_capture.log
+.claude/
