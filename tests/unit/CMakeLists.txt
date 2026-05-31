@@ -25,3 +25,9 @@ ecu_core_test(test_ecu_catalog)
 ecu_core_test(test_vehicle_templates)
 ecu_core_test(test_winols_parser)
 ecu_core_test(test_checksum_engine)
+
+# ── ecu-mcp : serveur MCP JSON-RPC 2.0 ────────────────────────────────────────
+# ecu_mcp expose son include PUBLIC et tire nlohmann_json/ecu_core transitivement.
+add_executable(test_mcp_server test_mcp_server.cpp)
+target_link_libraries(test_mcp_server PRIVATE ecu_mcp GTest::gtest_main)
+gtest_discover_tests(test_mcp_server)

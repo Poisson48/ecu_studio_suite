@@ -81,6 +81,7 @@ target_link_libraries(ecu_studio
         Qt6::Network
         mppslib
         ecu_core
+        ecu_mcp
         ecu_shared
         OpenSSL::Crypto
 )
