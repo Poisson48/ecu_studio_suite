@@ -2,6 +2,7 @@
 #include <QWidget>
 #include <QString>
 #include <cstdint>
+#include <functional>
 #include <vector>
 
 class QTableWidget;
@@ -9,6 +10,8 @@ class QTableWidgetItem;
 class QLabel;
 class QPushButton;
 class QDoubleSpinBox;
+class QLineEdit;
+class QCheckBox;
 
 namespace ecu_studio {
 
@@ -51,6 +54,7 @@ private:
     void buildUi();
     void refreshMaps();           // reconstruit la liste à partir du catalogue
     void rebuildMapTable();       // remplit la table des maps
+    void applyMapFilter();        // filtre la liste des maps (search box)
     void onMapSelectionChanged();
     void loadGrid(quint32 address);
     void onCellChanged(QTableWidgetItem* item);
@@ -59,12 +63,33 @@ private:
     void gotoHex();
     void setStatus(const QString& msg, bool error = false);
 
+    // Heatmap : recolore toutes les cellules selon leur valeur (froid→chaud).
+    void recolorHeatmap();
+    void onGridSelectionChanged();   // met à jour le readout min/max/moy
+
+    // Opérations sur la sélection multi-cellules.
+    void opSet();          // fixe une valeur
+    void opAdd();          // ajoute une valeur brute
+    void opMultiply();     // multiplie par (1 + %/100)
+    void opInterpolate();  // interpolation linéaire bord-à-bord (lignes)
+    void opSmooth();       // lissage 3×3 (moyenne des voisins)
+    // Applique f(valeur) à chaque cellule sélectionnée et persiste dans la ROM.
+    void applyToSelection(const QString& label,
+                          const std::function<double(int, double)>& fn);
+
+    // Copier / coller d'une région (TSV, compatible Excel).
+    void copyRegionTsv();
+    void pasteRegionTsv();
+
     RomDocument* m_doc = nullptr;
 
+    QLineEdit*      m_mapFilter  = nullptr;  // search box sur la liste
     QTableWidget*   m_mapTable   = nullptr;  // liste des maps
     QTableWidget*   m_grid       = nullptr;  // cellules de la map sélectionnée
     QLabel*         m_infoLabel  = nullptr;
+    QLabel*         m_selLabel   = nullptr;  // readout min/max/moy de la sélection
     QLabel*         m_statusLabel = nullptr;
+    QCheckBox*      m_heatmapChk = nullptr;
     QDoubleSpinBox* m_pctSpin    = nullptr;
     QPushButton*    m_applyPctBtn = nullptr;
     QPushButton*    m_applyStage1Btn = nullptr;
