@@ -29,9 +29,13 @@ std::size_t damosTypeSize(DamosDataType t) {
         case DamosDataType::SByte:
         case DamosDataType::UByte:   return 1;
         case DamosDataType::SWordBE:
-        case DamosDataType::UWordBE: return 2;
+        case DamosDataType::UWordBE:
+        case DamosDataType::SWordLE:
+        case DamosDataType::UWordLE: return 2;
         case DamosDataType::SLongBE:
-        case DamosDataType::ULongBE: return 4;
+        case DamosDataType::ULongBE:
+        case DamosDataType::SLongLE:
+        case DamosDataType::ULongLE: return 4;
     }
     return 2;
 }
@@ -43,6 +47,10 @@ DamosDataType parseDamosDataType(const std::string& s) {
     if (s == "UWORD_BE") return DamosDataType::UWordBE;
     if (s == "SLONG_BE") return DamosDataType::SLongBE;
     if (s == "ULONG_BE") return DamosDataType::ULongBE;
+    if (s == "SWORD_LE") return DamosDataType::SWordLE;
+    if (s == "UWORD_LE") return DamosDataType::UWordLE;
+    if (s == "SLONG_LE") return DamosDataType::SLongLE;
+    if (s == "ULONG_LE") return DamosDataType::ULongLE;
     return DamosDataType::SWordBE;
 }
 
@@ -113,6 +121,18 @@ DamosEntry parseEntry(const json& c) {
                 for (const auto& v : a["fingerprint"])
                     if (v.is_number())
                         ax.fingerprint.push_back(v.get<std::int64_t>());
+            // COM_AXIS: the axis's own block address (hex string or integer).
+            if (a.contains("address")) {
+                const auto& av = a["address"];
+                if (av.is_string()) {
+                    std::string s = av.get<std::string>();
+                    std::size_t pos = (s.rfind("0x", 0) == 0 || s.rfind("0X", 0) == 0) ? 2 : 0;
+                    ax.address = static_cast<std::int64_t>(
+                        std::strtoll(s.c_str() + pos, nullptr, 16));
+                } else if (av.is_number_integer()) {
+                    ax.address = av.get<std::int64_t>();
+                }
+            }
             e.axes.push_back(std::move(ax));
         }
     }
@@ -146,6 +166,13 @@ DamosEntry parseEntry(const json& c) {
         e.stockRawValue = c["stockRawValue"].get<std::int64_t>();
     if (c.contains("stockPhysValue") && c["stockPhysValue"].is_number())
         e.stockPhysValue = c["stockPhysValue"].get<double>();
+
+    // COM_AXIS: explicit flag, or inferred when the axes carry their own address.
+    if (c.contains("comAxis") && c["comAxis"].is_boolean())
+        e.comAxis = c["comAxis"].get<bool>();
+    else
+        e.comAxis = std::any_of(e.axes.begin(), e.axes.end(),
+                                [](const DamosAxis& a) { return a.address.has_value(); });
 
     e.hasStage1 = c.contains("stage1");
     // egrOff peut être un booléen simple ou un objet {recommendedRawValue, note}.

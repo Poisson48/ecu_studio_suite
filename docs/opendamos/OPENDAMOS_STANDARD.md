@@ -280,8 +280,14 @@ Patches « en un clic » versionnés avec la recette. Deux saveurs.
 | `UWORD_BE` | 2      | non   | big    | `UWordBE` |
 | `SLONG_BE` | 4      | oui   | big    | `SLongBE` |
 | `ULONG_BE` | 4      | non   | big    | `ULongBE` |
+| `SWORD_LE` | 2      | oui   | little | `SWordLE` |
+| `UWORD_LE` | 2      | non   | little | `UWordLE` |
+| `SLONG_LE` | 4      | oui   | little | `SLongLE` |
+| `ULONG_LE` | 4      | non   | little | `ULongLE` |
 
-Tout type inconnu **DOIT** être traité comme `SWORD_BE` (comportement de `parseDamosDataType`). Seul le big-endian est standardisé en v1.
+Tout type inconnu **DOIT** être traité comme `SWORD_BE` (comportement de `parseDamosDataType`).
+
+**Endianness.** Les ECU Bosch EDC16/EDC17 sont **big-endian** (`*_BE`). Les Continental SID/MEDC17 sont **little-endian** (`*_LE`). Une recette **PEUT** déclarer un `byteOrder` (`"BE"` | `"LE"`, défaut `"BE"`) à la racine et/ou par `recordLayout`, qui fixe l'endianness des types non suffixés ; un `dataType` explicitement suffixé (`SWORD_LE`…) prime toujours.
 
 ---
 
@@ -291,7 +297,7 @@ Pour situer le rôle de chaque champ. Implémentation : `OpenDamos::relocate` (C
 
 Pour chaque **MAP / CURVE** :
 1. Scan de la ROM par pas de 2 octets.
-2. À chaque offset, l'en-tête `(nx[, ny])` en `UWORD_BE` doit matcher `dims`.
+2. À chaque offset, l'en-tête `(nx[, ny])` doit matcher `dims`. Il est lu dans l'**endianness des axes** : `UWORD_BE` pour un ECU big-endian (Bosch EDC16), `UWORD_LE` pour un ECU little-endian (Bosch EDC17 TriCore). Les deux familles utilisent un en-tête de dimensions inline (`NO_AXIS_PTS` dans le RECORD_LAYOUT A2L) et sont donc relocalisables par ce scan.
 3. Si oui, lecture des axes et comparaison au `fingerprint` via un matcher à **deux passes** :
    - **Strict** : chaque point lu doit être à `max(absTol=100, relTol=5%·attendu)` de l'attendu ; **≥ 85 %** de matchs ⇒ match strict.
    - **Bag-of-values** (fallback) : combien de valeurs du fingerprint existent *quelque part* dans l'axe (à tolérance) ; **≥ 70 %** + min/max cohérents (±15 %) ⇒ match bag (score plus bas).
@@ -303,6 +309,15 @@ Pour chaque **VALUE** : ancrage via `relocation.anchorMap` (delta de l'ancre), s
 Chaque résultat porte un `addressSource` ∈ {`fingerprint`, `anchor`, `default-fallback`} et un score 0…1.
 
 **Limites :** cartes sans en-tête de dimensions inline → non détectables par fingerprint (utiliser un ancrage) ; firmwares très divergents (axes redessinés) → ajouter une variante de fingerprint ou un DAMOS custom.
+
+**Mode COM_AXIS (axes séparés — PSA Valeo, Continental SID, certains EDC17).** Ces ECU ne stockent **pas** d'en-tête `(nx, ny)` inline devant la carte : les axes vivent dans des blocs `AXIS_PTS` indépendants (COM_AXIS), souvent partagés entre plusieurs cartes, et le bloc de données est une simple grille `nx·ny` sans signature propre. Une caractéristique COM_AXIS porte `comAxis: true` et chaque axe porte son propre `address` (+ son `fingerprint`).
+
+Algorithme (implémenté, `findComAxis`) :
+1. Pour chaque axe référencé, scan de la ROM pour son `fingerprint` (séquence autonome, sans en-tête), à son `dataType` et son endianness.
+2. **Consensus de delta** : on cherche le couple (offset axe X, offset axe Y) qui partage le **même delta** d'adresse (`offsetX − address_X == offsetY − address_Y`). Ce delta commun lève l'ambiguïté des axes courts/génériques.
+3. Le bloc de données headerless est **ancré** au même delta : `data = defaultAddress + delta`, avec sanity-check (bloc ni tout-`FF` ni tout-`00`).
+
+Limite : une carte dont les axes sont trop courts/génériques **et** dont les données sont uniformes (carte « plate ») ne peut pas être confirmée par le contenu → retombe sur `default-fallback`. Vérifié sur PSA Valeo V46 : 11/12 cartes distinctes relocalisées (score 1.0).
 
 ---
 

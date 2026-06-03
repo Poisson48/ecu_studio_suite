@@ -1,0 +1,61 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "edc16cp33",
+  "name": "open_damos — EDC16CP33 Bosch (seed)",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "homepage": "https://github.com/Poisson48/open_car_reprog/wiki/Open-DAMOS",
+  "description": "SEED recipe for Bosch EDC16CP33 (Renault 2.0 dCi M9R and family). Bootstrapped from a WinOLS .ols project: the ROM was extracted with ecu::olsExtractRom and AccPed_trqPrp_MAP was located + verified by fingerprint relocation (score 1.00) against that ROM. Only fingerprint-confirmed entries are included — the remaining Stage 1 maps await a CP33-specific DAMOS/A2L (the 2.0 dCi axis breakpoints differ too much from the EDC16C34 1.6 HDi reference to transfer its fingerprints, and the OLS 5.x record→address layout is not reverse-engineered). Big-endian like all Bosch EDC16.",
+  "byteOrder": "BE",
+  "baseline": {
+    "source": "tests/ols_import/RENAULT_2.0_DCI_EDC16CP33.ols",
+    "damos": "(embedded in the .ols WinOLS project — labels present, addresses not resolved from OLS5)",
+    "note": "ROM extracted via ecu::olsExtractRom (eprom block 0x1EE000 = 2023424 bytes). Fingerprints below are the raw axis values read in that extracted ROM at the resolved address. defaultAddress is the offset within the extracted ROM image."
+  },
+  "recordLayouts": {
+    "Kf_Xs16_Ys16_Ws16": {
+      "type": "MAP",
+      "byteOrder": "BE",
+      "headerBytes": 4,
+      "headerType": "UWORD_BE",
+      "axisDataType": "SWORD_BE",
+      "dataType": "SWORD_BE"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "AccPed_trqPrp_MAP",
+      "category": "stage1",
+      "description": "Driver's wish PROPULSION — torque requested for the mastershift (auto/semi-auto gearbox). 16×16 vs VSSCD_v (vehicle speed) and AccPed_rChkdVal (pedal). Located + verified by fingerprint relocation on the extracted CP33 ROM (score 1.00).",
+      "type": "MAP",
+      "recordLayout": "Kf_Xs16_Ys16_Ws16",
+      "defaultAddress": "0x1DE52A",
+      "dims": { "nx": 16, "ny": 16 },
+      "axes": [
+        {
+          "inputQuantity": "VSSCD_v",
+          "unit": "km/h",
+          "factor": 0.01,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [0, 1001, 2002, 2999, 4000, 5000, 6001, 6998, 7999, 9000, 10001, 11999, 13000, 15001, 15998, 18000]
+        },
+        {
+          "inputQuantity": "AccPed_rChkdVal",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [0, 410, 819, 1229, 1638, 2048, 2867, 3277, 3686, 4096, 4506, 5325, 5734, 6554, 7373, 8192]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_BE",
+        "factor": 0.2,
+        "offset": 0,
+        "unit": "Nm"
+      },
+      "stage1": { "defaultPct": 15, "safePct": 10, "sportPct": 18 }
+    }
+  ]
+}

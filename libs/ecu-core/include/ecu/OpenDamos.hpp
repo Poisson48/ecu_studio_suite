@@ -42,6 +42,11 @@ enum class DamosDataType {
     UWordBE,
     SLongBE,
     ULongBE,
+    // Little-endian variants (Continental SID807, MEDC17, …).
+    SWordLE,
+    UWordLE,
+    SLongLE,
+    ULongLE,
 };
 
 // Size in bytes of a DamosDataType.
@@ -60,6 +65,10 @@ struct DamosAxis {
     std::string          quantity; // inputQuantity (Eng_nAvrg, …) — pour info
     double               factor = 1.0;
     double               offset = 0.0;
+    // COM_AXIS only: the axis's own block address (offset in the ROM image).
+    // Present when the axes live in separate AXIS_PTS blocks (no inline header),
+    // e.g. PSA Valeo, Continental SID. The data block is then anchored on it.
+    std::optional<std::int64_t> address;
 };
 
 struct DamosDims {
@@ -102,6 +111,12 @@ struct DamosEntry {
     // Free-form extras preserved for downstream consumers (stage1, egrOff...).
     bool                   hasStage1 = false;
     bool                   egrOff    = false;
+
+    // COM_AXIS layout: axes are separate AXIS_PTS blocks (no inline (nx,ny)
+    // header before the data). Set when recordLayout axisMode is "COM_AXIS" or
+    // when the axes carry their own address. Relocated by anchoring the
+    // headerless data block on a fingerprinted axis (see relocate()).
+    bool                   comAxis = false;
 };
 
 // Auto-mod (patch) embarqué dans le recipe open_damos. Deux saveurs :

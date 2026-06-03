@@ -1,0 +1,701 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "edc17c50",
+  "name": "open_damos — Bosch EDC17_C50 (Hyundai/Kia D-engine 7HH21)",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "homepage": "https://github.com/Poisson48/open_car_reprog/wiki/Open-DAMOS",
+  "description": "Open DAMOS for Bosch EDC17_C50 (TriCore, little-endian). Generated from the manufacturer DAMOS (ASAP2 A2L, project X_7HH21) + matching ROM via scripts/damos_a2l_to_opendamos.py. STD_AXIS maps carry an inline (nx,ny) header (NO_AXIS_PTS) so fingerprint relocation works across firmware variants. 12 tuning maps (driver's wish, injection timing, rail pressure, smoke limiter, air, injector trim).",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "X_7HH21-000027D9.HEX (TriCore image @0x80000000)",
+    "damos": "X_7HH21-000027D9.A2L (ASAP2 1.4, MSB_LAST)",
+    "note": "Addresses stored as offset within the flash image (A2L addr - 0x80000000). Fingerprints read from the reference ROM; relocation verified onto sibling firmware C56 (7HH50)."
+  },
+  "recordLayouts": {
+    "Map_Xs16Ys16Ws16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "headerType": "UWORD_LE",
+      "axisDataType": "SWORD_LE",
+      "dataType": "SWORD_LE"
+    },
+    "Kf_Xs16_Ys16_Ws16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "headerType": "UWORD_LE",
+      "axisDataType": "SWORD_LE",
+      "dataType": "SWORD_LE"
+    },
+    "Kl_Xs16_Ws16": {
+      "type": "CURVE",
+      "byteOrder": "LE",
+      "headerBytes": 2,
+      "headerType": "UWORD_LE",
+      "axisDataType": "SWORD_LE",
+      "dataType": "SWORD_LE"
+    },
+    "Cur_Xs16Ws16": {
+      "type": "CURVE",
+      "byteOrder": "LE",
+      "headerBytes": 2,
+      "headerType": "UWORD_LE",
+      "axisDataType": "SWORD_LE",
+      "dataType": "SWORD_LE"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "AccPed_trqEngHigh_MAP",
+      "type": "MAP",
+      "description": "#SSDRel#MFTRel Fahrverhaltenkennfeld für Maximalwert des Fahrerwunsches.",
+      "recordLayout": "Kf_Xs16_Ys16_Ws16",
+      "defaultAddress": "0x3558F0",
+      "dims": {
+        "nx": 14,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            10000
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            819,
+            1065,
+            1638,
+            2458,
+            4096,
+            5734,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "stage1",
+      "stage1": {
+        "defaultPct": 12,
+        "safePct": 8,
+        "sportPct": 15
+      }
+    },
+    {
+      "name": "AccPed_trqEngLow_MAP",
+      "type": "MAP",
+      "description": "#SSDRel#MFTRel Kennfeld für AWD",
+      "recordLayout": "Kf_Xs16_Ys16_Ws16",
+      "defaultAddress": "0x355A00",
+      "dims": {
+        "nx": 14,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            10000
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            819,
+            1065,
+            1638,
+            2458,
+            4096,
+            5734,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "stage1",
+      "stage1": {
+        "defaultPct": 12,
+        "safePct": 8,
+        "sportPct": 15
+      }
+    },
+    {
+      "name": "InjCrv_phiMI1APSCor1EOM0_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x30C4EC",
+      "dims": {
+        "nx": 10,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1500,
+            1780,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            5000,
+            6000,
+            8000
+          ]
+        },
+        {
+          "inputQuantity": "InjCtl_qSetUnBal",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            4000,
+            5000,
+            6500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.021972656250005364,
+        "offset": 0.0,
+        "unit": "deg CrS"
+      },
+      "category": "timing"
+    },
+    {
+      "name": "InjCrv_phiMI1APSCor1EOM1_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x30C5E0",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2000,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            7500,
+            8000
+          ]
+        },
+        {
+          "inputQuantity": "InjCtl_qSetUnBal",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            500,
+            1000,
+            1500,
+            2000,
+            3000,
+            4000,
+            5000,
+            6000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.021972656250005364,
+        "offset": 0.0,
+        "unit": "deg CrS"
+      },
+      "category": "timing"
+    },
+    {
+      "name": "Rail_pSetPointAPSCorEOM0_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x3BF792",
+      "dims": {
+        "nx": 12,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            1500,
+            1780,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            5000,
+            6000,
+            8000,
+            10400
+          ]
+        },
+        {
+          "inputQuantity": "InjCtl_qCurr",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            2000,
+            3000,
+            4000,
+            5000,
+            6500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "bar"
+      },
+      "category": "rail"
+    },
+    {
+      "name": "Rail_pSetPointATSCorEOM0_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x3C03FA",
+      "dims": {
+        "nx": 12,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            1500,
+            1780,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            5000,
+            6000,
+            8000,
+            10400
+          ]
+        },
+        {
+          "inputQuantity": "InjCtl_qCurr",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            2000,
+            3000,
+            4000,
+            5000,
+            6500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "bar"
+      },
+      "category": "rail"
+    },
+    {
+      "name": "SmkLim_facLamAPSCorEOM1_CUR",
+      "type": "CURVE",
+      "description": "Lambda-Korrektur durch Atmosphärendruck bei Betriebsart EOM1",
+      "recordLayout": "Kl_Xs16_Ws16",
+      "defaultAddress": "0x3C9594",
+      "dims": {
+        "nx": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "EnvP_p",
+          "unit": "hPa",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            700,
+            750,
+            800,
+            850,
+            900,
+            950,
+            1000,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0001220703125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "smoke"
+    },
+    {
+      "name": "SmkLim_facLamAPSCorEOM2_CUR",
+      "type": "CURVE",
+      "description": "Lambda-Korrektur durch Atmosphärendruck bei Betriebsart EOM2",
+      "recordLayout": "Kl_Xs16_Ws16",
+      "defaultAddress": "0x3C95B6",
+      "dims": {
+        "nx": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "EnvP_p",
+          "unit": "hPa",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            700,
+            750,
+            800,
+            850,
+            900,
+            950,
+            1000,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0001220703125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "smoke"
+    },
+    {
+      "name": "AFS_dmTransfTyp0_CUR",
+      "type": "CURVE",
+      "description": "AFS-Sensorkennlinie zur Umwandlung des Sensorsignals in ein physikalisches Luftmassenstromsignal",
+      "recordLayout": "Cur_Xs16Ws16",
+      "defaultAddress": "0x347A44",
+      "dims": {
+        "nx": 27
+      },
+      "axes": [
+        {
+          "inputQuantity": "AFS_tiTransfCrvIn_mp",
+          "unit": "us",
+          "factor": 0.05,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            3200,
+            4500,
+            5500,
+            6500,
+            7000,
+            7500,
+            8000,
+            8400,
+            8800,
+            9200,
+            9600,
+            10000,
+            10400,
+            10800,
+            11200,
+            11600,
+            12000,
+            12500,
+            13000,
+            13500,
+            14000,
+            14500,
+            15000,
+            15500,
+            16000,
+            17000,
+            18000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Kg/h"
+      },
+      "category": "air"
+    },
+    {
+      "name": "AFS_dmTransfTyp1_CUR",
+      "type": "CURVE",
+      "description": "AFS-Sensorkennlinie zur Umwandlung des Sensorsignals in ein physikalisches Luftmassenstromsignal",
+      "recordLayout": "Cur_Xs16Ws16",
+      "defaultAddress": "0x347AB2",
+      "dims": {
+        "nx": 27
+      },
+      "axes": [
+        {
+          "inputQuantity": "AFS_tiTransfCrvIn_mp",
+          "unit": "us",
+          "factor": 0.05,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            3200,
+            4500,
+            5500,
+            6500,
+            7000,
+            7500,
+            8000,
+            8400,
+            8800,
+            9200,
+            9600,
+            10000,
+            10400,
+            10800,
+            11200,
+            11600,
+            12000,
+            12500,
+            13000,
+            13500,
+            14000,
+            14500,
+            15000,
+            15500,
+            16000,
+            17000,
+            18000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Kg/h"
+      },
+      "category": "air"
+    },
+    {
+      "name": "InjVlv_facCor1_MAP",
+      "type": "MAP",
+      "description": "Faktor-KF für die Berechnung des Gewichtungsfaktors InjVlv_facPoI21_mp des Gegendruckeinflusses bei DPF-Betrieb",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x390774",
+      "dims": {
+        "nx": 8,
+        "ny": 9
+      },
+      "axes": [
+        {
+          "inputQuantity": "InjCrv_qPoI2Des_mp",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            150,
+            250,
+            400,
+            550,
+            700,
+            800,
+            950
+          ]
+        },
+        {
+          "inputQuantity": "RailP_pCurr",
+          "unit": "bar",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            2000,
+            5000,
+            7000,
+            10000,
+            11500,
+            12500,
+            14000,
+            15000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0078125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "injection"
+    },
+    {
+      "name": "InjVlv_facCor2_MAP",
+      "type": "MAP",
+      "description": "Faktor-KF für die Berechnung des Gewichtungsfaktors InjVlv_facPoI22_mp des Gegendruckeinflusses bei NSC-Betrieb",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x39082A",
+      "dims": {
+        "nx": 8,
+        "ny": 9
+      },
+      "axes": [
+        {
+          "inputQuantity": "InjCrv_qPoI2Des_mp",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            150,
+            250,
+            400,
+            550,
+            700,
+            800,
+            950
+          ]
+        },
+        {
+          "inputQuantity": "RailP_pCurr",
+          "unit": "bar",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            2000,
+            5000,
+            7000,
+            10000,
+            11500,
+            12500,
+            14000,
+            15000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0078125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "injection"
+    }
+  ]
+}

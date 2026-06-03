@@ -1,0 +1,1005 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "sid807",
+  "name": "open_damos — Continental SID807 (PSA 1.6 HDi DS4, LE COM_AXIS)",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "homepage": "https://github.com/Poisson48/open_car_reprog/wiki/Open-DAMOS",
+  "description": "Open DAMOS for Continental SID807 (Citroen DS4 1.6 HDi). Little-endian, COM_AXIS layout (separate AXIS_PTS blocks, headerless data anchored on a fingerprinted axis). Generated from EC ULP S-record + A2L via scripts/damos_a2l_to_opendamos.py.",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "Citroen_DS4_1.6HDI_SID807.ULP (S-record)",
+    "damos": "Citroen_DS4_1.6HDI_SID807.a2l (ASAP2, MSB_LAST)",
+    "note": "TriCore mirrors normalised to physical (addr & 0x1FFFFFFF). COM_AXIS data anchored on axis delta."
+  },
+  "recordLayouts": {
+    "ComAxis_LE": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "axisMode": "COM_AXIS",
+      "dataType": "UBYTE"
+    },
+    "_REC_A1MAP_20_u2_u2_u2": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "axisMode": "COM_AXIS",
+      "dataType": "UWORD_LE"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "ip_tqi_dyn_n_fil_maf_fil_slm_0",
+      "type": "MAP",
+      "description": "Dynamic correction map 0 *",
+      "recordLayout": "_REC_A1MAP_20_u2_u2_u2",
+      "defaultAddress": "0x34A816",
+      "dims": {
+        "nx": 24,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_fil_tqi_lim",
+          "unit": "[rpm]",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4C22",
+          "fingerprint": [
+            24,
+            800,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3250,
+            3500,
+            3750,
+            4000,
+            4250,
+            4500,
+            4750,
+            5000,
+            5250
+          ]
+        },
+        {
+          "inputQuantity": "maf_fil_tqi_lim",
+          "unit": "[mg/stk]",
+          "factor": 0.02119478141451133,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4A6A",
+          "fingerprint": [
+            16,
+            9436,
+            14154,
+            18873,
+            21232,
+            23591,
+            25950,
+            28309,
+            30668,
+            33027,
+            35386,
+            37745,
+            40104,
+            42463,
+            44822,
+            49069
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "smoke"
+    },
+    {
+      "name": "ip_tqi_dyn_n_fil_maf_fil_slm_1",
+      "type": "MAP",
+      "description": "Dynamic correction map 1 *",
+      "recordLayout": "_REC_A1MAP_20_u2_u2_u2",
+      "defaultAddress": "0x34AB16",
+      "dims": {
+        "nx": 24,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_fil_tqi_lim",
+          "unit": "[rpm]",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4C22",
+          "fingerprint": [
+            24,
+            800,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3250,
+            3500,
+            3750,
+            4000,
+            4250,
+            4500,
+            4750,
+            5000,
+            5250
+          ]
+        },
+        {
+          "inputQuantity": "maf_fil_tqi_lim",
+          "unit": "[mg/stk]",
+          "factor": 0.02119478141451133,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4A6A",
+          "fingerprint": [
+            16,
+            9436,
+            14154,
+            18873,
+            21232,
+            23591,
+            25950,
+            28309,
+            30668,
+            33027,
+            35386,
+            37745,
+            40104,
+            42463,
+            44822,
+            49069
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "smoke"
+    },
+    {
+      "name": "ip_tqi_dyn_n_fil_maf_fil_slm_2",
+      "type": "MAP",
+      "description": "Dynamic correction map 2 *",
+      "recordLayout": "_REC_A1MAP_20_u2_u2_u2",
+      "defaultAddress": "0x34AE16",
+      "dims": {
+        "nx": 24,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_fil_tqi_lim",
+          "unit": "[rpm]",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4C22",
+          "fingerprint": [
+            24,
+            800,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3250,
+            3500,
+            3750,
+            4000,
+            4250,
+            4500,
+            4750,
+            5000,
+            5250
+          ]
+        },
+        {
+          "inputQuantity": "maf_fil_tqi_lim",
+          "unit": "[mg/stk]",
+          "factor": 0.02119478141451133,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4A6A",
+          "fingerprint": [
+            16,
+            9436,
+            14154,
+            18873,
+            21232,
+            23591,
+            25950,
+            28309,
+            30668,
+            33027,
+            35386,
+            37745,
+            40104,
+            42463,
+            44822,
+            49069
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "smoke"
+    },
+    {
+      "name": "ip_tqi_dyn_n_fil_maf_fil_slm_3",
+      "type": "MAP",
+      "description": "Dynamic correction map 3 *",
+      "recordLayout": "_REC_A1MAP_20_u2_u2_u2",
+      "defaultAddress": "0x34B116",
+      "dims": {
+        "nx": 24,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_fil_tqi_lim",
+          "unit": "[rpm]",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4C22",
+          "fingerprint": [
+            24,
+            800,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3250,
+            3500,
+            3750,
+            4000,
+            4250,
+            4500,
+            4750,
+            5000,
+            5250
+          ]
+        },
+        {
+          "inputQuantity": "maf_fil_tqi_lim",
+          "unit": "[mg/stk]",
+          "factor": 0.02119478141451133,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4A6A",
+          "fingerprint": [
+            16,
+            9436,
+            14154,
+            18873,
+            21232,
+            23591,
+            25950,
+            28309,
+            30668,
+            33027,
+            35386,
+            37745,
+            40104,
+            42463,
+            44822,
+            49069
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "smoke"
+    },
+    {
+      "name": "ip_tqi_dyn_n_maf_slm_rgn",
+      "type": "MAP",
+      "description": "Dynamic map for regenerative mode *",
+      "recordLayout": "_REC_A1MAP_20_u2_u2_u2",
+      "defaultAddress": "0x34B416",
+      "dims": {
+        "nx": 24,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_fil_tqi_lim",
+          "unit": "[rpm]",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4C22",
+          "fingerprint": [
+            24,
+            800,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3250,
+            3500,
+            3750,
+            4000,
+            4250,
+            4500,
+            4750,
+            5000,
+            5250
+          ]
+        },
+        {
+          "inputQuantity": "maf_fil_tqi_lim",
+          "unit": "[mg/stk]",
+          "factor": 0.02119478141451133,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4A6A",
+          "fingerprint": [
+            16,
+            9436,
+            14154,
+            18873,
+            21232,
+            23591,
+            25950,
+            28309,
+            30668,
+            33027,
+            35386,
+            37745,
+            40104,
+            42463,
+            44822,
+            49069
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "smoke"
+    },
+    {
+      "name": "ip_tqi_slm_bas_cor_temp",
+      "type": "MAP",
+      "description": "Torque offset for ambient temperature correction of basic smoke limitation *",
+      "recordLayout": "_REC_A1MAP_20_u2_u2_u2",
+      "defaultAddress": "0x34C512",
+      "dims": {
+        "nx": 24,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_fil_tqi_lim",
+          "unit": "[rpm]",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4C7A",
+          "fingerprint": [
+            24,
+            800,
+            1000,
+            1100,
+            1250,
+            1400,
+            1550,
+            1700,
+            1850,
+            2000,
+            2150,
+            2300,
+            2450,
+            2600,
+            2750,
+            2900,
+            3050,
+            3200,
+            3350,
+            3500,
+            3650,
+            3800,
+            3950,
+            4250
+          ]
+        },
+        {
+          "inputQuantity": "maf_fil_tqi_lim",
+          "unit": "[mg/stk]",
+          "factor": 0.02119478141451133,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E37C2",
+          "fingerprint": [
+            16,
+            14154,
+            16513,
+            18873,
+            21232,
+            23591,
+            25950,
+            28309,
+            30668,
+            33027,
+            35386,
+            37745,
+            40104,
+            42463,
+            44822,
+            49069
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "smoke"
+    },
+    {
+      "name": "ip_tqi_slm_cor_amp",
+      "type": "MAP",
+      "description": "Torque offset based on ambient pressure for correction of smoke limitation *",
+      "recordLayout": "_REC_A1MAP_20_u2_u2_u2",
+      "defaultAddress": "0x34C812",
+      "dims": {
+        "nx": 24,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_fil_tqi_lim",
+          "unit": "[rpm]",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4C7A",
+          "fingerprint": [
+            24,
+            800,
+            1000,
+            1100,
+            1250,
+            1400,
+            1550,
+            1700,
+            1850,
+            2000,
+            2150,
+            2300,
+            2450,
+            2600,
+            2750,
+            2900,
+            3050,
+            3200,
+            3350,
+            3500,
+            3650,
+            3800,
+            3950,
+            4250
+          ]
+        },
+        {
+          "inputQuantity": "maf_fil_tqi_lim",
+          "unit": "[mg/stk]",
+          "factor": 0.02119478141451133,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E3756",
+          "fingerprint": [
+            16,
+            8493,
+            10616,
+            12975,
+            15334,
+            16513,
+            17693,
+            18873,
+            20052,
+            21232,
+            23591,
+            25950,
+            28309,
+            29488,
+            30668,
+            49069
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "smoke"
+    },
+    {
+      "name": "ip_tqi_stat_n_fil_maf_fil_slm_0",
+      "type": "MAP",
+      "description": "Static correction map 0 *",
+      "recordLayout": "_REC_A1MAP_20_u2_u2_u2",
+      "defaultAddress": "0x34E1D2",
+      "dims": {
+        "nx": 24,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_fil_tqi_lim",
+          "unit": "[rpm]",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4CCA",
+          "fingerprint": [
+            24,
+            800,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3250,
+            3500,
+            3750,
+            4000,
+            4250,
+            4500,
+            4750,
+            5000,
+            5250
+          ]
+        },
+        {
+          "inputQuantity": "maf_fil_tqi_lim",
+          "unit": "[mg/stk]",
+          "factor": 0.02119478141451133,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4A8E",
+          "fingerprint": [
+            16,
+            9436,
+            14154,
+            18873,
+            21232,
+            23591,
+            25950,
+            28309,
+            30668,
+            33027,
+            35386,
+            37745,
+            40104,
+            42463,
+            44822,
+            49069
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "smoke"
+    },
+    {
+      "name": "ip_tqi_stat_n_fil_maf_fil_slm_1",
+      "type": "MAP",
+      "description": "Static correction map 1 *",
+      "recordLayout": "_REC_A1MAP_20_u2_u2_u2",
+      "defaultAddress": "0x34E4D2",
+      "dims": {
+        "nx": 24,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_fil_tqi_lim",
+          "unit": "[rpm]",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4CCA",
+          "fingerprint": [
+            24,
+            800,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3250,
+            3500,
+            3750,
+            4000,
+            4250,
+            4500,
+            4750,
+            5000,
+            5250
+          ]
+        },
+        {
+          "inputQuantity": "maf_fil_tqi_lim",
+          "unit": "[mg/stk]",
+          "factor": 0.02119478141451133,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4A8E",
+          "fingerprint": [
+            16,
+            9436,
+            14154,
+            18873,
+            21232,
+            23591,
+            25950,
+            28309,
+            30668,
+            33027,
+            35386,
+            37745,
+            40104,
+            42463,
+            44822,
+            49069
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "smoke"
+    },
+    {
+      "name": "ip_tqi_stat_n_fil_maf_fil_slm_2",
+      "type": "MAP",
+      "description": "Static correction map 2 *",
+      "recordLayout": "_REC_A1MAP_20_u2_u2_u2",
+      "defaultAddress": "0x34E7D2",
+      "dims": {
+        "nx": 24,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_fil_tqi_lim",
+          "unit": "[rpm]",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4CCA",
+          "fingerprint": [
+            24,
+            800,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3250,
+            3500,
+            3750,
+            4000,
+            4250,
+            4500,
+            4750,
+            5000,
+            5250
+          ]
+        },
+        {
+          "inputQuantity": "maf_fil_tqi_lim",
+          "unit": "[mg/stk]",
+          "factor": 0.02119478141451133,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4A8E",
+          "fingerprint": [
+            16,
+            9436,
+            14154,
+            18873,
+            21232,
+            23591,
+            25950,
+            28309,
+            30668,
+            33027,
+            35386,
+            37745,
+            40104,
+            42463,
+            44822,
+            49069
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "smoke"
+    },
+    {
+      "name": "ip_tqi_stat_n_fil_maf_fil_slm_3",
+      "type": "MAP",
+      "description": "Static correction map 3 *",
+      "recordLayout": "_REC_A1MAP_20_u2_u2_u2",
+      "defaultAddress": "0x34EAD2",
+      "dims": {
+        "nx": 24,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_fil_tqi_lim",
+          "unit": "[rpm]",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4CCA",
+          "fingerprint": [
+            24,
+            800,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3250,
+            3500,
+            3750,
+            4000,
+            4250,
+            4500,
+            4750,
+            5000,
+            5250
+          ]
+        },
+        {
+          "inputQuantity": "maf_fil_tqi_lim",
+          "unit": "[mg/stk]",
+          "factor": 0.02119478141451133,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4A8E",
+          "fingerprint": [
+            16,
+            9436,
+            14154,
+            18873,
+            21232,
+            23591,
+            25950,
+            28309,
+            30668,
+            33027,
+            35386,
+            37745,
+            40104,
+            42463,
+            44822,
+            49069
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "smoke"
+    },
+    {
+      "name": "ip_tqi_stat_n_maf_slm_rgn",
+      "type": "MAP",
+      "description": "Static map for regenerative mode *",
+      "recordLayout": "_REC_A1MAP_20_u2_u2_u2",
+      "defaultAddress": "0x34EDD2",
+      "dims": {
+        "nx": 24,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_fil_tqi_lim",
+          "unit": "[rpm]",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4CCA",
+          "fingerprint": [
+            24,
+            800,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3250,
+            3500,
+            3750,
+            4000,
+            4250,
+            4500,
+            4750,
+            5000,
+            5250
+          ]
+        },
+        {
+          "inputQuantity": "maf_fil_tqi_lim",
+          "unit": "[mg/stk]",
+          "factor": 0.02119478141451133,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x2E4A8E",
+          "fingerprint": [
+            16,
+            9436,
+            14154,
+            18873,
+            21232,
+            23591,
+            25950,
+            28309,
+            30668,
+            33027,
+            35386,
+            37745,
+            40104,
+            42463,
+            44822,
+            49069
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "smoke"
+    }
+  ]
+}

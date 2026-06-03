@@ -2255,7 +2255,14 @@
       "hw": "0281012620",
       "ref": "9663944680",
       "vehicle": "Citroën Berlingo I / Peugeot Partner 1.6 HDi 55kW 75 hp (DV6BTED4, engine code 9HW)",
-      "note": "OBD MPPS dump — calibration only. DTC table DSM_ClaDfp absent (BDM needed). Relocated with open_damos score 0.70–0.80."
+      "relocScore": "29/31 MAP/CURVE by fingerprint (score ~0.80–1.0)",
+      "knownDiff": [
+        "AccPed_trqEngHiGear_MAP et AccPed_trqEngLoGear_MAP partagent les mêmes axes pédale dans ce firmware 75hp (axe Y identique) — la désambiguïsation se fait uniquement par proximité de defaultAddress.",
+        "FMTC_trq2qRgn1_MAP : axe Y légèrement différent en 75hp (RPM bas 500/600/800 au lieu de 550/700/850 en ori.BIN 110hp) — match bag/strict.",
+        "InjCrv_qMI1BasRgn1_MAP et InjCrv_qMI1BasRgn2_MAP : absents dans ce firmware 75hp (dims 17×19 introuvables).",
+        "AirSys_pAirBasRgn2_MAP : absente en 75hp (calibration spécifique 110hp)."
+      ],
+      "note": "OBD MPPS dump — calibration only. DTC table DSM_ClaDfp absent (BDM needed). Test réalisé avec ressources/edc16c34/9663944680.bin."
     }
   ]
 }

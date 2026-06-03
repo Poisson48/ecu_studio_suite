@@ -28,3 +28,13 @@ tools/reverse/*.dll
 tools/reverse/MPPS_V21.exe
 mpps_protocol_capture.log
 .claude/
+
+# Raw proprietary DAMOS (local only — never commit, see data/ressources-ecu branch)
+.damos_raw/
+
+# Raw proprietary DAMOS test fixtures (local only — keep README.md tracked)
+tests/ols_import/*.ols
+tests/ols_import/*.a2l
+tests/ols_import/*.ULP
+tests/ols_import/*.hex
+tests/ols_import/*.bin

@@ -1,0 +1,766 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "edc16c39",
+  "name": "open_damos — EDC16C39 Bosch (CNH / New Holland / Case IH / Steyr)",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "homepage": "https://github.com/Poisson48/open_car_reprog/wiki/Open-DAMOS",
+  "description": "Open DAMOS for Bosch EDC16C39 (Iveco/FPT F4DE/F4DF, New Holland T6/T7, Case IH Maxxum/Puma, Steyr Profi tractors). Generated from the manufacturer DAMOS (ASAP2 A2L) + matching ROM via the DAMOS->OpenDAMOS convention: addresses + conversions from the A2L, axis fingerprints read from the reference ROM. Each entry relocates by fingerprint onto any firmware variant of the family (30+ power ratings share the same calibration structure). Big-endian.",
+  "byteOrder": "BE",
+  "baseline": {
+    "source": "New Holland T6090 140KW F4DE9687VJ101 / 8480.hex",
+    "damos": "8480.a2l (DAMOS++ V1.20, PROJECT C400 'EDC16C39 for CNH')",
+    "note": "Addresses + COMPU_METHOD conversions taken from 8480.a2l; fingerprints read from 8480.hex at those addresses. Fingerprint relocation finds the same maps in the other 30 variant ROMs."
+  },
+  "recordLayouts": {
+    "Kf_Xs16_Ys16_Ws16": {
+      "type": "MAP",
+      "byteOrder": "BE",
+      "headerBytes": 4,
+      "headerType": "UWORD_BE",
+      "axisDataType": "SWORD_BE",
+      "dataType": "SWORD_BE"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "AccPed_trqEng_MAP",
+      "type": "MAP",
+      "description": "driver's behaviour map as engine torque at conventional powertrain coordination",
+      "recordLayout": "Kf_Xs16_Ys16_Ws16",
+      "defaultAddress": "0x1C9F70",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Eng_nAvrg",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            200,
+            400,
+            600,
+            800,
+            1000,
+            1200,
+            1400,
+            1600,
+            1800,
+            2000,
+            2200,
+            2400,
+            2600,
+            2800,
+            3000,
+            3200
+          ]
+        },
+        {
+          "inputQuantity": "AccPed_rChkdVal",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            0,
+            410,
+            819,
+            1229,
+            1638,
+            2048,
+            2458,
+            3277,
+            4096,
+            4915,
+            5734,
+            6554,
+            6963,
+            7373,
+            7782,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_BE",
+        "factor": 0.1,
+        "offset": 0,
+        "unit": "Nm"
+      },
+      "category": "stage1",
+      "stage1": {
+        "defaultPct": 15,
+        "safePct": 10,
+        "sportPct": 18
+      }
+    },
+    {
+      "name": "AccPed_trqPrp_MAP",
+      "type": "MAP",
+      "description": "driver's behaviour map as propulsion torque at Mastershift powertrain coordination",
+      "recordLayout": "Kf_Xs16_Ys16_Ws16",
+      "defaultAddress": "0x1CA1B6",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "VSSCD_v",
+          "unit": "km/h",
+          "factor": 0.01,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            0,
+            1000,
+            2000,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            10000,
+            12000,
+            13000,
+            15000,
+            16000,
+            18000
+          ]
+        },
+        {
+          "inputQuantity": "AccPed_rChkdVal",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            0,
+            410,
+            819,
+            1229,
+            1638,
+            2048,
+            2867,
+            3277,
+            3686,
+            4096,
+            4506,
+            5325,
+            5734,
+            6554,
+            7373,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_BE",
+        "factor": 2.0,
+        "offset": 0,
+        "unit": "Nm"
+      },
+      "category": "stage1",
+      "stage1": {
+        "defaultPct": 15,
+        "safePct": 10,
+        "sportPct": 18
+      }
+    },
+    {
+      "name": "FMTC_trq2qBas_MAP",
+      "type": "MAP",
+      "description": "base map for torque to q conversion as function of working point",
+      "recordLayout": "Kf_Xs16_Ys16_Ws16",
+      "defaultAddress": "0x1D8290",
+      "dims": {
+        "nx": 25,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Eng_nAvrg",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            600,
+            700,
+            800,
+            900,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1700,
+            1800,
+            1900,
+            2000,
+            2100,
+            2200,
+            2300,
+            2400,
+            2500,
+            2600,
+            2700,
+            2800,
+            2900,
+            3000
+          ]
+        },
+        {
+          "inputQuantity": "CoEng_trqInrSet",
+          "unit": "Nm",
+          "factor": 0.1,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000,
+            13000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_BE",
+        "factor": 0.02,
+        "offset": 0,
+        "unit": "mg/cyc"
+      },
+      "category": "stage1",
+      "stage1": {
+        "defaultPct": 15,
+        "safePct": 10,
+        "sportPct": 18
+      }
+    },
+    {
+      "name": "InjCrv_phiMI1Bas1_MAP",
+      "type": "MAP",
+      "description": "1st base value map of start of energising  MI1",
+      "recordLayout": "Kf_Xs16_Ys16_Ws16",
+      "defaultAddress": "0x1DA390",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Eng_nAvrg",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            700,
+            800,
+            900,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1700,
+            1800,
+            1900,
+            2000,
+            2100,
+            2200
+          ]
+        },
+        {
+          "inputQuantity": "InjCrv_qMIFMACor_mp",
+          "unit": "mg/cyc",
+          "factor": 0.02,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            6500,
+            7000,
+            7500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_BE",
+        "factor": 0.023437499999999983,
+        "offset": 0,
+        "unit": "deg CrS"
+      },
+      "category": "timing",
+      "stage1": {
+        "defaultPct": 15,
+        "safePct": 10,
+        "sportPct": 18
+      }
+    },
+    {
+      "name": "InjCrv_phiMI1Bas2_MAP",
+      "type": "MAP",
+      "description": "2nd base value map of start of energising MI1",
+      "recordLayout": "Kf_Xs16_Ys16_Ws16",
+      "defaultAddress": "0x1DA5D4",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Eng_nAvrg",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            700,
+            800,
+            900,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1700,
+            1800,
+            1900,
+            2000,
+            2100,
+            2200
+          ]
+        },
+        {
+          "inputQuantity": "InjCrv_qMIFMACor_mp",
+          "unit": "mg/cyc",
+          "factor": 0.02,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            6500,
+            7000,
+            7500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_BE",
+        "factor": 0.023437499999999983,
+        "offset": 0,
+        "unit": "deg CrS"
+      },
+      "category": "timing",
+      "stage1": {
+        "defaultPct": 15,
+        "safePct": 10,
+        "sportPct": 18
+      }
+    },
+    {
+      "name": "FlMng_rLmbdSmk_MAP",
+      "type": "MAP",
+      "description": "map to determine the lambda value of smoke limitation",
+      "recordLayout": "Kf_Xs16_Ys16_Ws16",
+      "defaultAddress": "0x1D661A",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Eng_nAvrg",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            700,
+            800,
+            900,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1700,
+            1800,
+            1900,
+            2000,
+            2100,
+            2200
+          ]
+        },
+        {
+          "inputQuantity": "FlMng_mAirPerCyl",
+          "unit": "mg/Hub",
+          "factor": 0.44000000000000056,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            1818,
+            2045,
+            2272,
+            2386,
+            2500,
+            2613,
+            2729,
+            2954,
+            3182,
+            3409,
+            3636,
+            4091,
+            4545,
+            5000,
+            5454,
+            6363
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_BE",
+        "factor": 0.001,
+        "offset": 0,
+        "unit": "-"
+      },
+      "category": "smoke",
+      "stage1": {
+        "defaultPct": 15,
+        "safePct": 10,
+        "sportPct": 18
+      }
+    },
+    {
+      "name": "AFSCD_dmAirSubsVal_MAP",
+      "type": "MAP",
+      "description": "Substitute value for air mass flow based on engine speed and fuel quantity.",
+      "recordLayout": "Kf_Xs16_Ys16_Ws16",
+      "defaultAddress": "0x1CAC96",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Eng_nAvrg",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            600,
+            700,
+            800,
+            900,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1800,
+            2000,
+            2200,
+            2400,
+            2600
+          ]
+        },
+        {
+          "inputQuantity": "InjCtl_qRaw",
+          "unit": "mg/cyc",
+          "factor": 0.02,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            6500,
+            7000,
+            7500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_BE",
+        "factor": 0.1,
+        "offset": 0,
+        "unit": "Kg/h"
+      },
+      "category": "air"
+    },
+    {
+      "name": "AFSCD_dmEGRMsFlwCor_MAP",
+      "type": "MAP",
+      "description": "Map for calculating the corrected EGR mass flow rate value",
+      "recordLayout": "Kf_Xs16_Ys16_Ws16",
+      "defaultAddress": "0x1CAEDA",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "FrmMng_dmEGRMsFlwRt",
+          "unit": "Kg/h",
+          "factor": 0.1,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            0,
+            1000,
+            2000,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000,
+            13000,
+            14700,
+            16400
+          ]
+        },
+        {
+          "inputQuantity": "FrmMng_tEGRExhGsTemp",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            2331,
+            2731,
+            3131,
+            3531,
+            3931,
+            4331,
+            4731,
+            5131,
+            5531,
+            5931,
+            6331,
+            6731,
+            7131,
+            7531,
+            7931,
+            8731
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_BE",
+        "factor": 0.1,
+        "offset": 0,
+        "unit": "Kg/h"
+      },
+      "category": "air"
+    },
+    {
+      "name": "AirCtl_mDesBasIv_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Kf_Xs16_Ys16_Ws16",
+      "defaultAddress": "0x1CC70E",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Eng_nAvrg",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            700,
+            850,
+            1000,
+            1200,
+            1500,
+            1800,
+            2000,
+            2320,
+            2500,
+            2750,
+            3000,
+            3250,
+            3600,
+            3900,
+            4600,
+            4700
+          ]
+        },
+        {
+          "inputQuantity": "InjCtl_qRaw",
+          "unit": "mg/cyc",
+          "factor": 0.02,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            0,
+            25,
+            450,
+            600,
+            750,
+            900,
+            1050,
+            1200,
+            1400,
+            1600,
+            1800,
+            2000,
+            2200,
+            2400,
+            2600,
+            2650
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_BE",
+        "factor": 0.44000000000000056,
+        "offset": 0,
+        "unit": "mg/Hub"
+      },
+      "category": "air"
+    },
+    {
+      "name": "AirCtl_pBPSRefIv_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Kf_Xs16_Ys16_Ws16",
+      "defaultAddress": "0x1CCEFE",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Eng_nAvrg",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            0,
+            250,
+            500,
+            750,
+            1000,
+            1250,
+            1500,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3250,
+            3500,
+            3750
+          ]
+        },
+        {
+          "inputQuantity": "InjCtl_qRaw",
+          "unit": "mg/cyc",
+          "factor": 0.02,
+          "offset": 0,
+          "dataType": "SWORD_BE",
+          "fingerprint": [
+            0,
+            125,
+            250,
+            375,
+            500,
+            625,
+            750,
+            875,
+            1000,
+            1125,
+            1250,
+            1375,
+            1500,
+            1625,
+            1750,
+            1875
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_BE",
+        "factor": 1.0,
+        "offset": 0,
+        "unit": "hPa"
+      },
+      "category": "boost"
+    }
+  ]
+}

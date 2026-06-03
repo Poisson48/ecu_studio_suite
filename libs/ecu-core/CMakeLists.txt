@@ -21,6 +21,7 @@ list(APPEND ECU_CORE_SOURCES src/OpenDamosRecipes.cpp)
 list(APPEND ECU_CORE_SOURCES src/OpenDamosA2lExport.cpp)
 list(APPEND ECU_CORE_SOURCES src/ReportGenerator.cpp)
 list(APPEND ECU_CORE_SOURCES src/WinolsParser.cpp)
+list(APPEND ECU_CORE_SOURCES src/OlsImport.cpp)
 
 # GitManager optionnel (libgit2 requis)
 if(LIBGIT2_FOUND)
