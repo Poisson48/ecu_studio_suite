@@ -11,6 +11,7 @@
 #include "panels/git_panel.h"
 #include "panels/a2l_panel.h"
 #include "panels/can_panel.h"
+#include "hub/hub_launcher_panel.h"
 #include "updater.h"
 #include "update_dialog.h"
 #include "rom_document.h"
@@ -115,11 +116,15 @@ void MainWindow::setupUi() {
     m_gitPanel      = new GitPanel(m_doc, this);
     m_a2lPanel      = new A2lPanel(m_doc, this);
     m_canPanel      = new CanPanel(this);
+    m_hubPanel      = new HubLauncherPanel(m_doc, this);
 
     wirePanels();
 
     // Sidebar — réutilise SidebarNav de SocketSpy verbatim
     m_sidebar = new socketspy::gui::SidebarNav(this);
+    // 🚀 (U+1F680, rocket) — ECU Suite HUB : vue d'accueil, lance les sous-programmes
+    // spécialisés. Posée en premier pour servir de vue d'atterrissage par défaut.
+    m_sidebar->addPanel("\xf0\x9f\x9a\x80",  tr("HUB"),       m_hubPanel);
     m_sidebar->addPanel("\xf0\x9f\x93\x81",  tr("Projet"),    m_projectPanel);
     m_sidebar->addPanel("\xf0\x9f\x94\x8c",  tr("MPPS"),      m_mppsPanel);
     m_sidebar->addPanel("\xf0\x9f\x97\x83",  tr("Hex"),       m_hexPanel);
