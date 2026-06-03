@@ -12,8 +12,11 @@ bool RomDocument::loadFromFile(const QString& path) {
     m_rom  = f.readAll();
     m_path = path;
     m_name = QFileInfo(path).fileName();
+    m_baseline      = m_rom;       // snapshot pour mode fantôme
+    m_baselineLabel = QStringLiteral("au chargement");
     m_modified = false;
     emit modifiedStateChanged(false);
+    emit baselineChanged();
     emit romLoaded();
     return true;
 }
@@ -23,8 +26,11 @@ bool RomDocument::loadFromData(const QByteArray& data, const QString& name) {
     m_rom  = data;
     m_path.clear();
     m_name = name;
+    m_baseline      = m_rom;       // snapshot pour mode fantôme
+    m_baselineLabel = QStringLiteral("au chargement");
     m_modified = false;
     emit modifiedStateChanged(false);
+    emit baselineChanged();
     emit romLoaded();
     return true;
 }
@@ -37,6 +43,18 @@ bool RomDocument::saveToFile(const QString& path) {
     m_name = QFileInfo(path).fileName();
     if (m_modified) { m_modified = false; emit modifiedStateChanged(false); }
     return true;
+}
+
+void RomDocument::resetBaseline() {
+    m_baseline = m_rom;
+    m_baselineLabel = QStringLiteral("état courant");
+    emit baselineChanged();
+}
+
+void RomDocument::setBaselineFromBytes(const QByteArray& bytes, const QString& label) {
+    m_baseline = bytes;
+    m_baselineLabel = label.isEmpty() ? QStringLiteral("source externe") : label;
+    emit baselineChanged();
 }
 
 void RomDocument::setEcuId(const QString& id) {

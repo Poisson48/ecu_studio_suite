@@ -3,6 +3,8 @@
 #include <QString>
 #include <cstdint>
 #include <functional>
+#include <optional>
+#include <string>
 #include <vector>
 
 class QTableWidget;
@@ -31,12 +33,20 @@ public slots:
     // Lance open_damos : relocalise automatiquement les maps connues par empreinte
     // d'axe dans n'importe quelle ROM EDC16C34 PSA (pas de DAMOS dédié requis).
     void runOpenDamos();
+    // Importe un fichier open_damos.json externe (recipe custom).
+    void importOpenDamosRecipe();
+    // Reconstruit la liste à partir du catalogue / recipe — appelé après une
+    // sauvegarde via l'éditeur DAMOS pour refléter les changements.
+    void refreshFromCatalog() { refreshMaps(); }
 
 signals:
     // Émis quand l'utilisateur demande à voir la map sélectionnée dans le panel Hex.
     void gotoAddressRequested(quint32 address);
     // Émis quand l'utilisateur demande la visualisation 3D de la map sélectionnée.
-    void view3dRequested(quint32 address);
+    // Transmet les unités physiques (axe X/Y et data) issues du recipe open_damos.
+    void view3dRequested(quint32 address, const QString& name,
+                         const QString& xUnit, const QString& yUnit,
+                         const QString& dataUnit);
 
 private:
     // Origine d'une entrée listée dans la table des maps.
@@ -51,12 +61,26 @@ private:
         bool        openDamos  = false; // relocalisée par open_damos
         bool        fallback   = false; // adresse par défaut (pas d'empreinte)
         QString     matchInfo;          // mode de match / source (open_damos)
+        // Conversion phys↔raw depuis open_damos (data.factor / data.offset)
+        double      factor = 1.0;
+        double      offset = 0.0;
+        bool        hasConversion = false;
+        // Valeurs stock issues du recipe (optionnelles)
+        std::optional<int64_t> stockRaw;
+        std::optional<double>  stockPhys;
+        std::string            unit;        // unité physique des cellules (Nm, mg/cyc…)
+        std::string            xAxisUnit;   // unité axe X (rpm, %…)
+        std::string            yAxisUnit;   // unité axe Y
+        std::string            description;
     };
 
     void buildUi();
     void refreshMaps();           // reconstruit la liste à partir du catalogue
     void rebuildMapTable();       // remplit la table des maps
     void applyMapFilter();        // filtre la liste des maps (search box)
+    // Dialog de sélection de baseline pour le mode fantôme : commit git ou
+    // fichier .bin. Met à jour m_doc->setBaselineFromBytes.
+    void pickBaseline();
     void onMapSelectionChanged();
     void loadGrid(quint32 address);
     void onCellChanged(QTableWidgetItem* item);
@@ -93,12 +117,15 @@ private:
     QLabel*         m_selLabel   = nullptr;  // readout min/max/moy de la sélection
     QLabel*         m_statusLabel = nullptr;
     QCheckBox*      m_heatmapChk = nullptr;
+    QCheckBox*      m_ghostChk   = nullptr;  // mode fantôme : superpose baseline
+    QPushButton*    m_baselineBtn = nullptr; // dialog "Baseline…" (commit git)
     QDoubleSpinBox* m_pctSpin    = nullptr;
     QPushButton*    m_applyPctBtn = nullptr;
     QPushButton*    m_applyStage1Btn = nullptr;
     QPushButton*    m_gotoHexBtn = nullptr;
     QPushButton*    m_view3dBtn  = nullptr;
-    QPushButton*    m_openDamosBtn = nullptr;
+    QPushButton*    m_openDamosBtn     = nullptr;
+    QPushButton*    m_importRecipeBtn  = nullptr;
 
     std::vector<MapEntry> m_entries;
     int       m_currentRow  = -1;   // ligne sélectionnée dans m_mapTable
@@ -107,6 +134,11 @@ private:
     int       m_curNx       = 0;
     int       m_curNy       = 0;
     bool      m_loadingGrid = false; // garde-fou contre onCellChanged pendant le remplissage
+    // Taille de cellule choisie par l'utilisateur (drag des en-têtes) — persistante
+    // entre les sélections de map.
+    int       m_colWidth    = 60;
+    int       m_rowHeight   = 24;
+    bool      m_applyingCellSize = false; // évite la boucle sectionResized → setSection
 };
 
 } // namespace ecu_studio

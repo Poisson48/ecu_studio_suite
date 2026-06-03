@@ -38,7 +38,13 @@ public:
 
 public slots:
     // Affiche en 3D la map située à l'adresse donnée (appelé depuis MapEditor).
-    void showMap(quint32 address);
+    // Les unités (axes X/Y, data) viennent du recipe open_damos quand connues —
+    // elles s'affichent sur les axes et le bandeau info.
+    void showMap(quint32 address,
+                 const QString& name    = {},
+                 const QString& xUnit   = {},
+                 const QString& yUnit   = {},
+                 const QString& dataUnit = {});
 
 private:
     // Une entrée listée dans le sélecteur de maps.
@@ -48,6 +54,9 @@ private:
         int     nx      = 0;
         int     ny      = 0;
         bool    stage1  = false;
+        QString xUnit;     // unité axe X (rpm, kg/h, …) — depuis open_damos
+        QString yUnit;     // unité axe Y
+        QString dataUnit;  // unité des valeurs (Nm, mg/cyc, hPa, …)
     };
 
     void buildUi();
@@ -59,6 +68,9 @@ private:
     void render(quint32 address);  // lit la map et la transmet à la vue
     void toggleHeatmap(bool on);
     void setStatus(const QString& msg, bool error = false);
+    // Édition d'une cellule depuis le clic dans la vue 3D — ouvre une boîte
+    // de dialogue, écrit en ROM via writeSwordBE, relit et notifie le doc.
+    void onCellClicked(int gx, int gy, double currentValue);
 
     // Adaptateurs vers le backend de rendu effectif (cf. map3d_panel.cpp).
     void viewSetSurface(const SurfaceData& data);
@@ -70,6 +82,7 @@ private:
     QComboBox*   m_mapCombo  = nullptr;
     QPushButton* m_searchBtn = nullptr;
     QCheckBox*   m_heatChk   = nullptr;
+    QCheckBox*   m_ghostChk  = nullptr;  // mode fantôme (baseline overlay)
     QLabel*      m_infoLabel = nullptr;
     QLabel*      m_statusLabel = nullptr;
     QWidget*     m_view      = nullptr;  // Map3dViewPainter ou conteneur Q3DSurface

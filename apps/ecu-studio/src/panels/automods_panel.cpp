@@ -174,7 +174,7 @@ void AutoModsPanel::refresh() {
         return it;
     };
 
-    int nbTpl = 0, nbPat = 0, nbAddr = 0, nbRecipe = 0;
+    int nbTpl = 0, nbPat = 0, nbAddr = 0, nbRecipe = 0, nbDamosMod = 0;
 
     // ── Templates véhicule ──────────────────────────────────────────────────
     auto templates = ecu::listTemplatesForEcu(ecuStd);
@@ -292,8 +292,42 @@ void AutoModsPanel::refresh() {
         }
     }
 
-    log(tr("ECU %1 : %2 template(s), %3 pattern(s), %4 adresse(s), %5 recette(s).")
-            .arg(ecuId).arg(nbTpl).arg(nbPat).arg(nbAddr).arg(nbRecipe));
+    // ── Auto-mods embarqués dans open_damos.json (versionnés avec le recipe) ──
+    // Chargés à la volée — ne nécessitent pas de relocalisation puisqu'ils ciblent
+    // soit un pattern (search/replace) soit une adresse fixe.
+    {
+        auto damos = ecu::OpenDamos::loadRecipe(ecuId);
+        if (damos && !damos->autoMods.empty()) {
+            auto* sep = new QListWidgetItem(tr("──  Auto-mods (open_damos.json)  ──"),
+                                            m_list);
+            sep->setFlags(Qt::NoItemFlags);
+            sep->setForeground(QColor("#9ca3af"));
+            for (const auto& a : damos->autoMods) {
+                const QString id = QString::fromStdString(a.id);
+                QString label;
+                if (a.type == ecu::DamosAutoModType::Pattern) {
+                    label = QString("[Damos·Pattern] %1  (%2 octet(s))")
+                                .arg(id).arg(a.search.size());
+                } else if (a.type == ecu::DamosAutoModType::Address && a.address) {
+                    label = QString("[Damos·Address] %1  @ 0x%2  (%3 octet(s))")
+                                .arg(id).arg(*a.address, 0, 16).arg(a.replace.size());
+                } else {
+                    label = QString("[Damos·?] %1").arg(id);
+                }
+                if (!a.description.empty())
+                    label += QString("  — %1").arg(QString::fromStdString(a.description));
+                QString tip;
+                if (!a.description.empty()) tip += QString::fromStdString(a.description);
+                if (!a.note.empty()) { if (!tip.isEmpty()) tip += "\n"; tip += QString::fromStdString(a.note); }
+                addItem(label, Kind::DamosAutoMod, id, tip);
+                ++nbDamosMod;
+            }
+        }
+    }
+
+    log(tr("ECU %1 : %2 template(s), %3 pattern(s), %4 adresse(s), %5 recette(s), "
+           "%6 damos-auto-mod(s).")
+            .arg(ecuId).arg(nbTpl).arg(nbPat).arg(nbAddr).arg(nbRecipe).arg(nbDamosMod));
 
     if (m_list->count() == 0)
         log(tr("Aucune modification disponible pour cet ECU."));
@@ -338,10 +372,11 @@ void AutoModsPanel::applySelection() {
     for (const auto& e : entries) {
         bool changed = false;
         switch (e.kind) {
-            case Kind::Template: changed = applyTemplate(e.id); break;
-            case Kind::Pattern:  changed = applyPattern(e.id);  break;
-            case Kind::Address:  changed = applyAddress(e.id);  break;
-            case Kind::Recipe:   changed = applyRecipe(e.id);   break;
+            case Kind::Template:     changed = applyTemplate(e.id);     break;
+            case Kind::Pattern:      changed = applyPattern(e.id);      break;
+            case Kind::Address:      changed = applyAddress(e.id);      break;
+            case Kind::Recipe:       changed = applyRecipe(e.id);       break;
+            case Kind::DamosAutoMod: changed = applyDamosAutoMod(e.id); break;
         }
         anyChange = anyChange || changed;
     }
@@ -377,8 +412,9 @@ void AutoModsPanel::restoreSelection() {
     for (const auto& e : entries) {
         bool changed = false;
         switch (e.kind) {
-            case Kind::Pattern: changed = restorePattern(e.id); break;
-            case Kind::Address: changed = restoreAddress(e.id); break;
+            case Kind::Pattern:      changed = restorePattern(e.id);      break;
+            case Kind::Address:      changed = restoreAddress(e.id);      break;
+            case Kind::DamosAutoMod: changed = restoreDamosAutoMod(e.id); break;
             case Kind::Template:
                 log(tr("Restauration non disponible pour le template « %1 ».")
                         .arg(e.id), true);
@@ -693,6 +729,131 @@ bool AutoModsPanel::applyRecipe(const QString& recipeId) {
     // anyChange = au moins une op a réussi (≈ res->ok), mais on signale le vrai
     // changement octet pour markModified() côté appelant.
     return res->bytesChanged > 0;
+}
+
+// ── Auto-mods embarqués dans open_damos.json ──────────────────────────────────
+
+namespace {
+
+// Localise un auto-mod par id dans le recipe open_damos courant.
+const ecu::DamosAutoMod*
+findDamosAutoMod(const ecu::DamosRecipe& r, const QString& id) {
+    const std::string needle = id.toStdString();
+    for (const auto& a : r.autoMods)
+        if (a.id == needle) return &a;
+    return nullptr;
+}
+
+// Écrit `bytes` à `off` dans `rom`. Renvoie true si au moins un octet a changé.
+bool writeBytes(QByteArray& rom, qsizetype off,
+                const std::vector<std::uint8_t>& bytes) {
+    if (off < 0 || off + qsizetype(bytes.size()) > rom.size()) return false;
+    bool changed = false;
+    for (std::size_t i = 0; i < bytes.size(); ++i) {
+        const char c = static_cast<char>(bytes[i]);
+        if (rom[off + qsizetype(i)] != c) {
+            rom[off + qsizetype(i)] = c;
+            changed = true;
+        }
+    }
+    return changed;
+}
+
+} // namespace
+
+bool AutoModsPanel::applyDamosAutoMod(const QString& autoModId) {
+    auto recipe = ecu::OpenDamos::loadRecipe(m_doc->ecuId());
+    if (!recipe) {
+        log(tr("[Damos %1] recipe introuvable : %2")
+                .arg(autoModId, QString::fromStdString(recipe.error())), true);
+        return false;
+    }
+    const ecu::DamosAutoMod* a = findDamosAutoMod(*recipe, autoModId);
+    if (!a) {
+        log(tr("[Damos %1] auto-mod introuvable dans le recipe.").arg(autoModId), true);
+        return false;
+    }
+
+    QByteArray& rom = m_doc->romMutable();
+    if (a->type == ecu::DamosAutoModType::Pattern) {
+        if (a->search.empty() || a->replace.empty()) {
+            log(tr("[Damos %1] pattern incomplet (search/replace vide).").arg(autoModId), true);
+            return false;
+        }
+        if (a->search.size() != a->replace.size()) {
+            log(tr("[Damos %1] tailles search (%2) et replace (%3) différentes.")
+                    .arg(autoModId).arg(a->search.size()).arg(a->replace.size()), true);
+            return false;
+        }
+        std::span<const uint8_t> needle(a->search.data(), a->search.size());
+        const qsizetype off = findPattern(rom, needle);
+        if (off < 0) {
+            log(tr("[Damos %1] motif introuvable dans la ROM.").arg(autoModId), true);
+            return false;
+        }
+        const bool changed = writeBytes(rom, off, a->replace);
+        log(tr("[Damos %1] pattern @ 0x%2 → %3 octet(s) %4")
+                .arg(autoModId).arg(off, 0, 16).arg(a->replace.size())
+                .arg(changed ? tr("modifiés") : tr("déjà à la cible")));
+        return changed;
+    }
+    if (a->type == ecu::DamosAutoModType::Address) {
+        if (!a->address || a->replace.empty()) {
+            log(tr("[Damos %1] address incomplète (address/bytes manquants).")
+                    .arg(autoModId), true);
+            return false;
+        }
+        const qsizetype off = static_cast<qsizetype>(*a->address);
+        const bool changed = writeBytes(rom, off, a->replace);
+        if (!changed && off + qsizetype(a->replace.size()) > rom.size()) {
+            log(tr("[Damos %1] adresse 0x%2 hors ROM.")
+                    .arg(autoModId).arg(off, 0, 16), true);
+            return false;
+        }
+        log(tr("[Damos %1] address @ 0x%2 → %3 octet(s) %4")
+                .arg(autoModId).arg(off, 0, 16).arg(a->replace.size())
+                .arg(changed ? tr("modifiés") : tr("déjà à la cible")));
+        return changed;
+    }
+    log(tr("[Damos %1] type non supporté.").arg(autoModId), true);
+    return false;
+}
+
+bool AutoModsPanel::restoreDamosAutoMod(const QString& autoModId) {
+    auto recipe = ecu::OpenDamos::loadRecipe(m_doc->ecuId());
+    if (!recipe) return false;
+    const ecu::DamosAutoMod* a = findDamosAutoMod(*recipe, autoModId);
+    if (!a) return false;
+    if (a->restore.empty()) {
+        log(tr("[Damos %1] pas de bytes de restauration définis.").arg(autoModId), true);
+        return false;
+    }
+
+    QByteArray& rom = m_doc->romMutable();
+    if (a->type == ecu::DamosAutoModType::Pattern) {
+        // Pour un pattern, on cherche `replace` (l'état actuel "appliqué") puis on
+        // ré-écrit `restore` à la même position.
+        std::span<const uint8_t> needle(a->replace.data(), a->replace.size());
+        const qsizetype off = findPattern(rom, needle);
+        if (off < 0) {
+            log(tr("[Damos %1] motif appliqué introuvable — déjà restauré ?")
+                    .arg(autoModId), true);
+            return false;
+        }
+        const bool changed = writeBytes(rom, off, a->restore);
+        log(tr("[Damos %1] restauré @ 0x%2 (%3 octets).")
+                .arg(autoModId).arg(off, 0, 16).arg(a->restore.size()));
+        return changed;
+    }
+    if (a->type == ecu::DamosAutoModType::Address) {
+        if (!a->address) return false;
+        const qsizetype off = static_cast<qsizetype>(*a->address);
+        const bool changed = writeBytes(rom, off, a->restore);
+        log(tr("[Damos %1] restauré @ 0x%2 (%3 octets).")
+                .arg(autoModId).arg(off, 0, 16).arg(a->restore.size()));
+        return changed;
+    }
+    return false;
 }
 
 } // namespace ecu_studio

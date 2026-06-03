@@ -2,6 +2,7 @@
 #include "panels/mpps_panel.h"
 #include "panels/hex_view_panel.h"
 #include "panels/map_editor_panel.h"
+#include "panels/damos_editor_panel.h"
 #include "panels/map3d_panel.h"
 #include "panels/project_panel.h"
 #include "panels/automods_panel.h"
@@ -17,11 +18,13 @@
 #include "byte_span.h"
 #include "ecu/WinolsParser.hpp"
 #include "ecu/ReportGenerator.hpp"
+#include "ecu/OpenDamos.hpp"
 
 #include <QMenuBar>
 #include <QFile>
 #include <QMenu>
 #include <QAction>
+#include <QActionGroup>
 #include <QStatusBar>
 #include <QHBoxLayout>
 #include <QFileDialog>
@@ -46,6 +49,12 @@ QString projectsRoot() {
     return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
            + "/projects";
 }
+
+// Force le dialog Qt (pas natif GTK/portal) pour fiabiliser les filtres sur Linux.
+QString pickRomFile(QWidget* parent, const QString& title, const QString& filter) {
+    return QFileDialog::getOpenFileName(
+        parent, title, {}, filter, nullptr, QFileDialog::DontUseNativeDialog);
+}
 } // namespace
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
@@ -56,6 +65,12 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     QDir().mkpath(root);
     m_projects = std::make_unique<ecu::ProjectManager>(root);
 
+    // Charge la langue persistée avant de construire l'UI (tr() doit être prêt).
+    {
+        QSettings s;
+        applyLanguage(s.value("language", "fr").toString());
+    }
+
     setupUi();
     setupMenuBar();
     setupStatusBar();
@@ -65,6 +80,12 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     restoreWindowState();
     updateRomStatus();
+
+    // Autosave silencieux toutes les 60 s (si ROM modifiée et chemin connu).
+    m_autosaveTimer = new QTimer(this);
+    m_autosaveTimer->setInterval(60000);
+    connect(m_autosaveTimer, &QTimer::timeout, this, &MainWindow::autoSave);
+    m_autosaveTimer->start();
 
     // Vérification silencieuse au démarrage (uniquement en AppImage) — ne
     // dérange l'utilisateur que si une mise à jour est réellement disponible.
@@ -85,6 +106,7 @@ void MainWindow::setupUi() {
     m_mppsPanel     = new MppsPanel(this);
     m_hexPanel      = new HexViewPanel(m_doc, this);
     m_mapEditor     = new MapEditorPanel(m_doc, this);
+    m_damosEditor   = new DamosEditorPanel(m_doc, this);
     m_map3dPanel    = new Map3dPanel(m_doc, this);
     m_autoMods      = new AutoModsPanel(m_doc, this);
     m_checksumPanel = new ChecksumPanel(m_doc, this);
@@ -101,6 +123,8 @@ void MainWindow::setupUi() {
     m_sidebar->addPanel("\xf0\x9f\x94\x8c",  tr("MPPS"),      m_mppsPanel);
     m_sidebar->addPanel("\xf0\x9f\x97\x83",  tr("Hex"),       m_hexPanel);
     m_sidebar->addPanel("\xf0\x9f\x93\x8a",  tr("Maps"),      m_mapEditor);
+    // 📝 (U+1F4DD, memo) — éditeur de recipe open_damos (modifier ou créer)
+    m_sidebar->addPanel("\xf0\x9f\x93\x9d",  tr("DAMOS"),     m_damosEditor);
     // 🧊 (U+1F9CA, cube) — visualisation 3D de la map sélectionnée (à la WinOLS)
     m_sidebar->addPanel("\xf0\x9f\xa7\x8a",  tr("3D"),        m_map3dPanel);
     m_sidebar->addPanel("\xe2\x9a\x99",      tr("AutoMods"),  m_autoMods);
@@ -153,12 +177,37 @@ void MainWindow::wirePanels() {
     connect(m_comparePanel, &ComparePanel::gotoAddressRequested,   this, gotoHex);
     connect(m_a2lPanel,     &A2lPanel::gotoAddressRequested,       this, gotoHex);
 
-    // « Voir en 3D » depuis Maps → pousse la map et bascule sur le panneau 3D.
+    // « Voir en 3D » depuis Maps → pousse la map (avec unités) et bascule.
     connect(m_mapEditor, &MapEditorPanel::view3dRequested, this,
-            [this](quint32 address) {
-                m_map3dPanel->showMap(address);
+            [this](quint32 address, const QString& name,
+                   const QString& xUnit, const QString& yUnit, const QString& dUnit) {
+                m_map3dPanel->showMap(address, name, xUnit, yUnit, dUnit);
                 m_sidebar->showPanel(m_map3dPanel);
             });
+
+    // Quand l'éditeur DAMOS sauvegarde un recipe, MapEditor doit recharger
+    // ses entrées (open_damos relit depuis le disque).
+    connect(m_damosEditor, &DamosEditorPanel::recipeSaved, this,
+            [this](const QString&, const QString&) {
+                m_mapEditor->refreshFromCatalog();
+            });
+
+    // ECU inconnu : à la première chargée d'une ROM dont l'ECU n'a pas de recipe
+    // open_damos, on propose à l'utilisateur d'en créer un et on l'envoie sur
+    // l'éditeur DAMOS pré-rempli avec l'ECU id.
+    connect(m_doc, &RomDocument::ecuChanged, this, [this](const QString& ecuId) {
+        if (ecuId.isEmpty()) return;
+        auto probe = ecu::OpenDamos::loadRecipe(ecuId);
+        if (probe) return;  // recipe trouvé → rien à proposer
+        const auto ans = QMessageBox::question(this,
+            tr("ECU inconnu"),
+            tr("Aucun recipe open_damos n'a été trouvé pour « %1 ».\n\n"
+               "Créer un recipe vierge dans l'éditeur DAMOS ?").arg(ecuId),
+            QMessageBox::Yes | QMessageBox::No);
+        if (ans != QMessageBox::Yes) return;
+        m_damosEditor->newEmptyRecipe(ecuId);
+        m_sidebar->showPanel(m_damosEditor);
+    });
 
     // Barre de statut live : se met à jour à chaque changement du document.
     connect(m_doc, &RomDocument::romLoaded,           this, &MainWindow::updateRomStatus);
@@ -169,9 +218,8 @@ void MainWindow::wirePanels() {
 }
 
 void MainWindow::importWinols() {
-    const QString f = QFileDialog::getOpenFileName(
-        this, tr("Importer un export WinOLS"), {},
-        tr("Exports WinOLS (*.zip *.ols *.hex *.bin);;Tous (*.*)"));
+    const QString f = pickRomFile(this, tr("Importer un export WinOLS"),
+                                  tr("Exports WinOLS (*.zip *.ols *.hex *.bin);;Tous (*.*)"));
     if (f.isEmpty()) return;
 
     QFile file(f);
@@ -208,9 +256,9 @@ void MainWindow::generateReport() {
     }
 
     // ROM originale optionnelle — sinon on compare la ROM à elle-même.
-    const QString origPath = QFileDialog::getOpenFileName(
+    const QString origPath = pickRomFile(
         this, tr("ROM originale pour comparaison (optionnel — Annuler pour ignorer)"),
-        {}, tr("ROM (*.bin *.ori *.mod);;Tous (*.*)"));
+        tr("ROM (*.bin *.ori *.mod);;Tous (*.*)"));
     QByteArray original = m_doc->rom();
     if (!origPath.isEmpty()) {
         QFile of(origPath);
@@ -247,8 +295,8 @@ void MainWindow::generateReport() {
 }
 
 void MainWindow::openRomFromDialog() {
-    const QString f = QFileDialog::getOpenFileName(
-        this, tr("Ouvrir ROM"), {}, tr("ROM (*.bin *.ori *.mod);;Tous (*.*)"));
+    const QString f = pickRomFile(this, tr("Ouvrir ROM"),
+                                  tr("ROM (*.bin *.ori *.mod);;Tous (*.*)"));
     if (!f.isEmpty()) m_hexPanel->loadRom(f);
 }
 
@@ -296,24 +344,25 @@ void MainWindow::setupMenuBar() {
 
     auto* helpMenu = menuBar()->addMenu(tr("Aide"));
 
-    // Sous-menu de sélection de la langue (persistée via QSettings("language")).
+    // Sous-menu langue — miroir du sélecteur de l'écran d'accueil.
     auto* langMenu = helpMenu->addMenu(tr("Langue / Language"));
     QSettings langSettings;
     const QString curLang = langSettings.value("language", "fr").toString();
-    auto addLang = [&](const QString& label, const QString& code) {
-        auto* act = langMenu->addAction(label);
+    auto* langGroup = new QActionGroup(this);
+    langGroup->setExclusive(true);
+    for (const auto& [label, code] : {
+             std::pair<const char*, const char*>{"FR  Fran\xc3\xa7" "ais", "fr"},
+             std::pair<const char*, const char*>{"EN  English",            "en"},
+         }) {
+        auto* act = langMenu->addAction(QString::fromUtf8(label));
         act->setCheckable(true);
-        act->setChecked(curLang == code);
-        connect(act, &QAction::triggered, this, [this, code]() {
-            QSettings s;
-            s.setValue("language", code);
-            QMessageBox::information(this,
-                tr("Langue modifiée"),
-                tr("Veuillez redémarrer ECU Studio pour appliquer la nouvelle langue."));
+        act->setChecked(curLang == QString::fromUtf8(code));
+        langGroup->addAction(act);
+        const QString codeStr = QString::fromUtf8(code);
+        connect(act, &QAction::triggered, this, [this, codeStr]() {
+            applyLanguage(codeStr);
         });
-    };
-    addLang("Français", "fr");
-    addLang("English",  "en");
+    }
     helpMenu->addSeparator();
 
     helpMenu->addAction(tr("Écran d'accueil..."), this, &MainWindow::showWelcome);
@@ -485,6 +534,11 @@ void MainWindow::connectWelcomeSignals() {
         m_sidebar->showPanel(m_mppsPanel);
         m_mppsPanel->scanDevices();
     });
+    connect(m_welcomeScreen, &WelcomeScreen::languageChanged, this,
+            [this](const QString& code) {
+                applyLanguage(code);
+                recreateWelcomeScreen();
+            });
 }
 
 void MainWindow::showWelcome() {
@@ -517,6 +571,41 @@ void MainWindow::restoreWindowState() {
         if (auto* w = m_sidebar->stack()->widget(idx))
             m_sidebar->showPanel(w);
     }
+}
+
+void MainWindow::autoSave() {
+    if (!m_doc->isLoaded() || !m_doc->isModified() || m_doc->path().isEmpty())
+        return;
+    if (m_doc->saveToFile(m_doc->path()))
+        statusBar()->showMessage(tr("Sauvegarde automatique — %1").arg(m_doc->name()), 2000);
+}
+
+void MainWindow::applyLanguage(const QString& code) {
+    QSettings s;
+    s.setValue("language", code);
+
+    if (m_translator) {
+        qApp->removeTranslator(m_translator.get());
+        m_translator.reset();
+    }
+    // Le français est la langue source : pas de .qm nécessaire.
+    if (code != "fr") {
+        m_translator = std::make_unique<QTranslator>();
+        if (!m_translator->load(":/i18n/ecu_studio_" + code))
+            m_translator.reset();
+        else
+            qApp->installTranslator(m_translator.get());
+    }
+}
+
+void MainWindow::recreateWelcomeScreen() {
+    if (m_welcomeScreen) {
+        m_welcomeScreen->close();
+        m_welcomeScreen->deleteLater();
+    }
+    m_welcomeScreen = new WelcomeScreen(this);
+    connectWelcomeSignals();
+    showWelcome();
 }
 
 void MainWindow::closeEvent(QCloseEvent* e) {

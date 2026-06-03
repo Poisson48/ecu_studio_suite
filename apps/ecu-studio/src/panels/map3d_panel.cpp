@@ -6,6 +6,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGroupBox>
+#include <QInputDialog>
 #include <QLabel>
 #include <QComboBox>
 #include <QPushButton>
@@ -18,6 +19,7 @@
 #include "ecu/EcuCatalog.hpp"
 #include "ecu/MapFinder.hpp"
 #include "ecu/RomPatcher.hpp"
+#include "ecu/OpenDamos.hpp"
 
 #ifdef ECU_HAVE_DATAVIZ
 #include <Q3DSurface>
@@ -72,6 +74,10 @@ void Map3dPanel::buildUi() {
     ctl->addWidget(m_searchBtn);
     m_heatChk = new QCheckBox(tr("Heatmap 2D"), this);
     ctl->addWidget(m_heatChk);
+    m_ghostChk = new QCheckBox(tr("Fantôme"), this);
+    m_ghostChk->setToolTip(tr("Superpose la ROM d'origine en wireframe cyan sous "
+                              "la surface courante pour comparer les éditions."));
+    ctl->addWidget(m_ghostChk);
     ctl->addStretch();
     root->addWidget(ctlBox);
 
@@ -93,6 +99,9 @@ void Map3dPanel::buildUi() {
             this, &Map3dPanel::onMapSelected);
     connect(m_searchBtn, &QPushButton::clicked, this, &Map3dPanel::searchMaps);
     connect(m_heatChk, &QCheckBox::toggled, this, &Map3dPanel::toggleHeatmap);
+    connect(m_ghostChk, &QCheckBox::toggled, this, [this](bool) {
+        if (m_currentAddr != 0) render(m_currentAddr);
+    });
 }
 
 void Map3dPanel::viewSetSurface(const SurfaceData& data) {
@@ -133,11 +142,11 @@ void Map3dPanel::viewSetSurface(const SurfaceData& data) {
 
     m_surface->addSeries(m_series);
     if (m_surface->axisX()) {
-        m_surface->axisX()->setTitle(tr("X"));
+        m_surface->axisX()->setTitle(data.xAxisTitle.isEmpty() ? tr("X") : data.xAxisTitle);
         m_surface->axisX()->setTitleVisible(true);
     }
     if (m_surface->axisZ()) {
-        m_surface->axisZ()->setTitle(tr("Y"));
+        m_surface->axisZ()->setTitle(data.yAxisTitle.isEmpty() ? tr("Y") : data.yAxisTitle);
         m_surface->axisZ()->setTitleVisible(true);
     }
     if (m_surface->axisY()) {
@@ -178,6 +187,10 @@ void Map3dPanel::buildUi() {
     ctl->addWidget(m_searchBtn);
     m_heatChk = new QCheckBox(tr("Heatmap 2D"), this);
     ctl->addWidget(m_heatChk);
+    m_ghostChk = new QCheckBox(tr("Fantôme"), this);
+    m_ghostChk->setToolTip(tr("Superpose la ROM d'origine en wireframe cyan sous "
+                              "la surface courante pour comparer les éditions."));
+    ctl->addWidget(m_ghostChk);
     ctl->addStretch();
     root->addWidget(ctlBox);
 
@@ -197,6 +210,12 @@ void Map3dPanel::buildUi() {
             this, &Map3dPanel::onMapSelected);
     connect(m_searchBtn, &QPushButton::clicked, this, &Map3dPanel::searchMaps);
     connect(m_heatChk, &QCheckBox::toggled, this, &Map3dPanel::toggleHeatmap);
+    connect(m_ghostChk, &QCheckBox::toggled, this, [this](bool) {
+        if (m_currentAddr != 0) render(m_currentAddr);
+    });
+    // Édition par clic court sur un sommet (signal du painter).
+    connect(view, &Map3dViewPainter::cellClicked,
+            this, &Map3dPanel::onCellClicked);
 }
 
 void Map3dPanel::viewSetSurface(const SurfaceData& data) {
@@ -225,19 +244,52 @@ void Map3dPanel::refreshMaps() {
 
     if (m_doc && m_doc->isLoaded()) {
         auto span = constByteSpan(m_doc->rom());
-        auto ecu  = ecu::getEcu(m_doc->ecuId().toStdString());
-        if (ecu && ecu->stage1Maps) {
-            for (const auto& m : *ecu->stage1Maps) {
+
+        // open_damos : si un recipe est disponible pour cet ECU, on relocalise et
+        // on récupère les unités (axes + data) pour chaque characteristic — sinon
+        // la 3D resterait sans unités même quand MapEditor en a.
+        auto recipe = ecu::OpenDamos::loadRecipe(m_doc->ecuId());
+        if (recipe) {
+            QByteArrayView view(m_doc->rom().constData(), m_doc->rom().size());
+            auto results = ecu::OpenDamos{}.relocate(*recipe, view);
+            for (const auto& r : results) {
                 MapEntry e;
-                e.name    = QString::fromUtf8(m.name.data(),
-                                              static_cast<int>(m.name.size()));
-                e.address = m.address;
-                e.stage1  = true;
-                if (auto md = ecu::readMapData(span, m.address)) {
+                e.name    = QString::fromStdString(r.name);
+                e.address = static_cast<quint32>(r.address);
+                if (auto md = ecu::readMapData(span, e.address)) {
                     e.nx = md->nx;
                     e.ny = md->ny;
                 }
+                auto it = std::find_if(recipe->characteristics.begin(),
+                                       recipe->characteristics.end(),
+                                       [&](const ecu::DamosEntry& de) {
+                                           return de.name == r.name;
+                                       });
+                if (it != recipe->characteristics.end()) {
+                    e.dataUnit = QString::fromStdString(it->data.unit);
+                    if (!it->axes.empty())
+                        e.xUnit = QString::fromStdString(it->axes[0].unit);
+                    if (it->axes.size() > 1)
+                        e.yUnit = QString::fromStdString(it->axes[1].unit);
+                }
                 m_entries.push_back(std::move(e));
+            }
+        } else {
+            // Fallback : catalogue Stage 1 (pas d'unités).
+            auto ecu = ecu::getEcu(m_doc->ecuId().toStdString());
+            if (ecu && ecu->stage1Maps) {
+                for (const auto& m : *ecu->stage1Maps) {
+                    MapEntry e;
+                    e.name    = QString::fromUtf8(m.name.data(),
+                                                  static_cast<int>(m.name.size()));
+                    e.address = m.address;
+                    e.stage1  = true;
+                    if (auto md = ecu::readMapData(span, m.address)) {
+                        e.nx = md->nx;
+                        e.ny = md->ny;
+                    }
+                    m_entries.push_back(std::move(e));
+                }
             }
         }
     }
@@ -275,17 +327,31 @@ void Map3dPanel::onMapSelected(int index) {
     render(m_entries[static_cast<std::size_t>(index)].address);
 }
 
-void Map3dPanel::showMap(quint32 address) {
-    // Sélectionne l'entrée correspondante si elle existe déjà, sinon l'ajoute.
+void Map3dPanel::showMap(quint32 address, const QString& name,
+                         const QString& xUnit, const QString& yUnit,
+                         const QString& dataUnit) {
+    // Sélectionne l'entrée correspondante si elle existe déjà — et MAJ les unités
+    // si elles sont fournies (cas d'un appel depuis MapEditor avec recipe chargé).
     for (int i = 0; i < static_cast<int>(m_entries.size()); ++i) {
-        if (m_entries[static_cast<std::size_t>(i)].address == address) {
-            m_mapCombo->setCurrentIndex(i);  // déclenche onMapSelected → render
+        auto& existing = m_entries[static_cast<std::size_t>(i)];
+        if (existing.address == address) {
+            if (!xUnit.isEmpty())    existing.xUnit    = xUnit;
+            if (!yUnit.isEmpty())    existing.yUnit    = yUnit;
+            if (!dataUnit.isEmpty()) existing.dataUnit = dataUnit;
+            if (!name.isEmpty())     existing.name     = name;
+            m_mapCombo->setCurrentIndex(i);
+            // Re-render si déjà sur cet index (le setCurrentIndex ne déclenche
+            // pas onMapSelected si l'index ne change pas).
+            if (static_cast<int>(m_currentAddr) == static_cast<int>(address)) render(address);
             return;
         }
     }
     MapEntry e;
-    e.address = address;
-    e.name    = tr("map @ %1").arg(hex32(address));
+    e.address  = address;
+    e.name     = name.isEmpty() ? tr("map @ %1").arg(hex32(address)) : name;
+    e.xUnit    = xUnit;
+    e.yUnit    = yUnit;
+    e.dataUnit = dataUnit;
     if (m_doc && m_doc->isLoaded()) {
         if (auto md = ecu::readMapData(constByteSpan(m_doc->rom()), address)) {
             e.nx = md->nx;
@@ -299,6 +365,32 @@ void Map3dPanel::showMap(quint32 address) {
 
 void Map3dPanel::reloadCurrent() {
     if (m_currentAddr != 0) render(m_currentAddr);
+}
+
+void Map3dPanel::onCellClicked(int gx, int gy, double currentValue) {
+    if (!m_doc || !m_doc->isLoaded() || m_currentAddr == 0) return;
+    auto md = ecu::readMapData(constByteSpan(m_doc->rom()), m_currentAddr);
+    if (!md) { setStatus(QString::fromStdString(md.error()), true); return; }
+    if (gx < 0 || gy < 0 || gx >= md->nx || gy >= md->ny) return;
+
+    bool ok = false;
+    const double v = QInputDialog::getDouble(this,
+        tr("Éditer cellule [%1, %2]").arg(gx).arg(gy),
+        tr("Nouvelle valeur (raw, courante = %1) :").arg(currentValue, 0, 'f', 0),
+        currentValue, -32768, 32767, 0, &ok);
+    if (!ok) return;
+
+    const std::size_t idx = static_cast<std::size_t>(gy) *
+                            static_cast<std::size_t>(md->nx) +
+                            static_cast<std::size_t>(gx);
+    const std::size_t off = md->dataOff + idx * 2;
+    QByteArray& rom = m_doc->romMutable();
+    if (off + 2 > static_cast<std::size_t>(rom.size())) return;
+    ecu::writeSwordBE(mutByteSpan(rom), off, v);
+    m_doc->markModified(static_cast<qsizetype>(off), 2);
+    setStatus(tr("Cellule [%1,%2] modifiée : %3 → %4")
+                  .arg(gx).arg(gy).arg(currentValue, 0, 'f', 0).arg(v, 0, 'f', 0));
+    render(m_currentAddr);  // refresh surface
 }
 
 void Map3dPanel::render(quint32 address) {
@@ -330,24 +422,54 @@ void Map3dPanel::render(quint32 address) {
                                     static_cast<std::size_t>(gx);
             s.z[idx] = static_cast<double>(md->data[idx]);
         }
-    for (int x = 0; x < md->nx; ++x)
-        s.xLabels << QString::number(md->xAxis[static_cast<std::size_t>(x)]);
-    for (int y = 0; y < md->ny; ++y)
-        s.yLabels << QString::number(md->yAxis[static_cast<std::size_t>(y)]);
 
-    QString name;
+    // Mode fantôme : lit la même map dans la baseline et remplit baselineZ.
+    if (m_ghostChk && m_ghostChk->isChecked() && m_doc->hasBaseline()) {
+        auto bspan = constByteSpan(m_doc->baseline());
+        if (auto bmd = ecu::readMapData(bspan, address);
+            bmd && bmd->nx == md->nx && bmd->ny == md->ny) {
+            s.baselineZ.resize(s.z.size());
+            for (std::size_t i = 0; i < s.z.size(); ++i)
+                s.baselineZ[i] = static_cast<double>(bmd->data[i]);
+        }
+    }
+    // Récupère les unités depuis l'entrée (si fournies par open_damos).
+    QString name, xUnit, yUnit, dataUnit;
     for (const auto& e : m_entries)
-        if (e.address == address) { name = e.name; break; }
+        if (e.address == address) {
+            name = e.name; xUnit = e.xUnit; yUnit = e.yUnit; dataUnit = e.dataUnit;
+            break;
+        }
+
+    for (int x = 0; x < md->nx; ++x) {
+        const QString v = QString::number(md->xAxis[static_cast<std::size_t>(x)]);
+        s.xLabels << (xUnit.isEmpty() ? v : QString("%1 %2").arg(v, xUnit));
+    }
+    for (int y = 0; y < md->ny; ++y) {
+        const QString v = QString::number(md->yAxis[static_cast<std::size_t>(y)]);
+        s.yLabels << (yUnit.isEmpty() ? v : QString("%1 %2").arg(v, yUnit));
+    }
+
     s.title = name.isEmpty() ? hex32(address) : name;
+    if (!dataUnit.isEmpty()) s.title += QString(" [%1]").arg(dataUnit);
+    // Titres d'axes (utilisés par le backend Q3DSurface s'il est dispo).
+    s.xAxisTitle = xUnit.isEmpty() ? tr("X") : QString("X (%1)").arg(xUnit);
+    s.yAxisTitle = yUnit.isEmpty() ? tr("Y") : QString("Y (%1)").arg(yUnit);
 
     viewSetSurface(s);
     viewSetHeatmap(m_heatChk && m_heatChk->isChecked());
 
-    m_infoLabel->setText(tr("%1 — %2 — %3×%4 — données @ %5")
+    QString info = tr("%1 — %2 — %3×%4 — données @ %5")
         .arg(s.title)
         .arg(hex32(address))
         .arg(md->nx).arg(md->ny)
-        .arg(hex32(static_cast<quint32>(md->dataOff))));
+        .arg(hex32(static_cast<quint32>(md->dataOff)));
+    if (!xUnit.isEmpty() || !yUnit.isEmpty() || !dataUnit.isEmpty())
+        info += tr("   |   X=%1  Y=%2  data=%3")
+                    .arg(xUnit.isEmpty()    ? QStringLiteral("—") : xUnit,
+                         yUnit.isEmpty()    ? QStringLiteral("—") : yUnit,
+                         dataUnit.isEmpty() ? QStringLiteral("—") : dataUnit);
+    m_infoLabel->setText(info);
     setStatus(tr("Map affichée en 3D."));
 }
 

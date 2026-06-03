@@ -56,6 +56,10 @@ enum class DamosType { Map, Curve, Value, Unknown };
 struct DamosAxis {
     DamosDataType        dataType = DamosDataType::SWordBE;
     std::vector<int64_t> fingerprint;
+    std::string          unit;     // physical unit (rpm, kg/h, %, …)
+    std::string          quantity; // inputQuantity (Eng_nAvrg, …) — pour info
+    double               factor = 1.0;
+    double               offset = 0.0;
 };
 
 struct DamosDims {
@@ -67,6 +71,7 @@ struct DamosDataInfo {
     DamosDataType dataType = DamosDataType::SWordBE;
     double        factor   = 1.0;
     double        offset   = 0.0;
+    std::string   unit;     // physical unit of cell values (Nm, mg/cyc, hPa, …)
 };
 
 // Relocation hints for VALUE characteristics.
@@ -99,10 +104,35 @@ struct DamosEntry {
     bool                   egrOff    = false;
 };
 
+// Auto-mod (patch) embarqué dans le recipe open_damos. Deux saveurs :
+//   - "pattern" : remplace une séquence d'octets trouvée dans la ROM par une
+//     autre. Optionnellement `restore` pour pouvoir annuler.
+//   - "address" : écrit `bytes` à `address`. Optionnellement `restore`.
+//
+// Les chaînes d'octets sont stockées telles-quelles ("AA BB CC" ou "AABBCC")
+// dans le JSON, et parsées en vecteur d'octets côté C++.
+enum class DamosAutoModType { Unknown, Pattern, Address };
+
+struct DamosAutoMod {
+    std::string                 id;
+    DamosAutoModType            type = DamosAutoModType::Unknown;
+    std::string                 description;
+    std::string                 note;
+
+    // Pattern only.
+    std::vector<uint8_t>        search;
+    std::vector<uint8_t>        replace;
+    std::vector<uint8_t>        restore;
+
+    // Address only (`bytes` réutilise `replace` pour rester compact en mémoire).
+    std::optional<std::uint64_t> address;
+};
+
 // The whole loaded recipe (the "damos").
 struct DamosRecipe {
-    std::string             ecuId;
-    std::vector<DamosEntry> characteristics;
+    std::string                ecuId;
+    std::vector<DamosEntry>    characteristics;
+    std::vector<DamosAutoMod>  autoMods;   // patches en un clic
 };
 
 // ---------------------------------------------------------------------------
@@ -197,6 +227,14 @@ public:
     // Load a recipe directly from a JSON document (string).
     static std::expected<DamosRecipe, std::string>
     parseRecipe(const std::string& json);
+
+    // Serialize a recipe back to its open_damos.json representation. Re-parsable
+    // by parseRecipe() — used by the in-app DAMOS editor.
+    static std::string serializeRecipe(const DamosRecipe& recipe);
+
+    // Write a recipe to disk (creates parent directories as needed).
+    static std::expected<void, std::string>
+    saveRecipe(const DamosRecipe& recipe, const QString& path);
 
     // Scan the whole ROM for the axis fingerprint of one MAP/CURVE entry.
     // Returns all candidates, sorted best-first.

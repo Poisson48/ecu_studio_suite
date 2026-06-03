@@ -23,7 +23,6 @@ list(APPEND ECU_CORE_SOURCES src/WinolsParser.cpp)
 # GitManager optionnel (libgit2 requis)
 if(LIBGIT2_FOUND)
     list(APPEND ECU_CORE_SOURCES src/GitManager.cpp)
-    add_compile_definitions(ECU_GIT_AVAILABLE)
 endif()
 
 add_library(ecu_core STATIC ${ECU_CORE_SOURCES})
@@ -45,6 +44,9 @@ if(nlohmann_json_FOUND)
 endif()
 if(LIBGIT2_FOUND)
     target_link_libraries(ecu_core PRIVATE ${LIBGIT2_LIBRARIES})
+    # PUBLIC : la macro doit être visible par les consommateurs (ecu-studio) qui
+    # gardent `#ifdef ECU_GIT_AVAILABLE` autour de l'API GitManager.
+    target_compile_definitions(ecu_core PUBLIC ECU_GIT_AVAILABLE)
 endif()
 
 target_compile_options(ecu_core PRIVATE -Wall -Wextra -Wpedantic)

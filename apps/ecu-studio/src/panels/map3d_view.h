@@ -14,9 +14,12 @@ struct SurfaceData {
     int                  nx = 0;
     int                  ny = 0;
     std::vector<double>  z;          // ny*nx valeurs (ligne par ligne)
-    QStringList          xLabels;    // nx libellés (axe X)
-    QStringList          yLabels;    // ny libellés (axe Y)
-    QString              title;
+    std::vector<double>  baselineZ;  // vide si pas de baseline / fantôme off
+    QStringList          xLabels;    // nx libellés (axe X) — déjà suffixés d'unité
+    QStringList          yLabels;    // ny libellés (axe Y) — déjà suffixés d'unité
+    QString              title;      // nom de la map (+ [unit] si connue)
+    QString              xAxisTitle; // titre axe X (ex. "X (rpm)")
+    QString              yAxisTitle; // titre axe Y (ex. "Y (%)")
 };
 
 // Vue de rendu pseudo-3D / heatmap basée sur QPainter — repli universel sans
@@ -35,9 +38,15 @@ public:
     void setHeatmap(bool on);
     void clearSurface();
 
+signals:
+    // Émis quand l'utilisateur clique (clic court, pas drag) sur le sommet d'une
+    // cellule de la grille — destiné à ouvrir un éditeur de valeur.
+    void cellClicked(int gx, int gy, double currentValue);
+
 protected:
     void paintEvent(QPaintEvent*) override;
     void mousePressEvent(QMouseEvent*) override;
+    void mouseReleaseEvent(QMouseEvent*) override;
     void mouseMoveEvent(QMouseEvent*) override;
     void wheelEvent(QWheelEvent*) override;
 
@@ -56,7 +65,9 @@ private:
     double m_pitch = 28.0;   // degrés, inclinaison
     double m_zoom  = 1.0;
     QPoint m_lastPos;
-    bool   m_dragging = false;
+    QPoint m_pressPos;       // pour distinguer clic court vs glissement
+    bool   m_dragging  = false;
+    bool   m_dragMoved = false;
 };
 
 } // namespace ecu_studio

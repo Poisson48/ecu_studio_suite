@@ -3,6 +3,7 @@
 #include <QLabel>
 #include <QMenu>
 #include <QTimer>
+#include <QTranslator>
 #include <memory>
 
 // Réutilise SidebarNav de SocketSpy directement
@@ -15,6 +16,7 @@ class RomDocument;
 class MppsPanel;
 class HexViewPanel;
 class MapEditorPanel;
+class DamosEditorPanel;
 class Map3dPanel;
 class ProjectPanel;
 class AutoModsPanel;
@@ -66,9 +68,17 @@ private:
     // qu'aucune mise à jour n'est disponible (vérification au démarrage).
     void checkForUpdates(bool silent);
 
+    // Applique la langue (code "fr" ou "en"), persiste dans QSettings et
+    // reinstalle le traducteur Qt. Recrée l'écran d'accueil si nécessaire.
+    void applyLanguage(const QString& code);
+    void recreateWelcomeScreen();
+    void autoSave();
+
     socketspy::gui::SidebarNav* m_sidebar{nullptr};
     Updater* m_updater{nullptr};
     WelcomeScreen* m_welcomeScreen{nullptr};
+    std::unique_ptr<QTranslator> m_translator;
+    QTimer* m_autosaveTimer{nullptr};
 
     // Gestionnaire de projets (pour ouvrir un projet récent directement, sans
     // passer par le panneau Projet).
@@ -81,8 +91,9 @@ private:
     // Panels ECU Studio
     MppsPanel*      m_mppsPanel{nullptr};
     HexViewPanel*   m_hexPanel{nullptr};
-    MapEditorPanel* m_mapEditor{nullptr};
-    Map3dPanel*     m_map3dPanel{nullptr};
+    MapEditorPanel*   m_mapEditor{nullptr};
+    DamosEditorPanel* m_damosEditor{nullptr};
+    Map3dPanel*       m_map3dPanel{nullptr};
     ProjectPanel*   m_projectPanel{nullptr};
     AutoModsPanel*  m_autoMods{nullptr};
     ChecksumPanel*  m_checksumPanel{nullptr};
