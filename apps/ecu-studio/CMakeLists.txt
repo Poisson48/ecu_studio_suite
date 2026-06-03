@@ -161,7 +161,8 @@ install(TARGETS ecu_studio RUNTIME DESTINATION bin)
 if(UNIX AND NOT APPLE)
     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/resources/ecu-studio.desktop
             DESTINATION share/applications)
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/resources/ecu_studio_logo.png
-            DESTINATION share/icons/hicolor/256x256/apps
-            RENAME ecu-studio.png)
+    # Icône réellement 256×256 (le logo source fait ~1068px et serait ignoré par
+    # les loaders d'icônes hicolor à cette taille).
+    install(FILES ${CMAKE_SOURCE_DIR}/scripts/dist/ecu-studio.png
+            DESTINATION share/icons/hicolor/256x256/apps)
 endif()

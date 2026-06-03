@@ -893,7 +893,7 @@ Tool makeDamosUpdateEntryTool() {
 
         // Fusion JSON : sérialise l'entrée → merge avec fields → reparse.
         json before = json::parse(ecu::OpenDamos::serializeRecipe(
-            ecu::DamosRecipe{ r.ecuId, { *it } }))["characteristics"][0];
+            ecu::DamosRecipe{ r.ecuId, { *it }, {} }))["characteristics"][0];
         json merged = before;
         merged.merge_patch(p["fields"]);
         *it = entryFromJson(merged);

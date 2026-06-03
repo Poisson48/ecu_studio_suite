@@ -244,8 +244,18 @@
       display: flex; align-items: center; justify-content: center;
       margin-bottom: 1rem; font-size: 1.2rem;
     }
-    .feat-card h3 { font-size: .95rem; font-weight: 700; margin-bottom: .35rem; }
+    .feat-card h3 { font-size: .95rem; font-weight: 700; margin-bottom: .35rem; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
     .feat-card p  { font-size: .83rem; color: var(--muted); line-height: 1.55; }
+    .feat-badge {
+      font-size: .62rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+      padding: .1rem .45rem; border-radius: 99px; line-height: 1.4;
+    }
+    .badge-new  { background: rgba(34,197,94,.18);  color: #4ade80; border: 1px solid rgba(34,197,94,.4); }
+    .badge-beta { background: rgba(245,158,11,.18); color: #fcd34d; border: 1px solid rgba(245,158,11,.4); }
+    /* status legend under the section heading */
+    .status-legend { display: flex; gap: 1.25rem; flex-wrap: wrap; margin-bottom: 2rem; font-size: .78rem; color: var(--muted); }
+    .status-legend span { display: inline-flex; align-items: center; gap: .4rem; }
+    .dot-legend { width: 9px; height: 9px; border-radius: 50%; }
 
     /* ── DOWNLOAD ── */
     .download-section {
@@ -358,7 +368,7 @@
 <!-- ── LIVE STATS ─────────────────────────────────────────────────── -->
 <div class="live-stats">
   <div class="stat-item">
-    <span class="stat-num" id="stat-panels">9</span>
+    <span class="stat-num" id="stat-panels">12</span>
     <span class="stat-label">Panels</span>
   </div>
   <div class="stat-item">
@@ -382,7 +392,7 @@
       <div class="dot dot-red"></div>
       <div class="dot dot-yel"></div>
       <div class="dot dot-grn"></div>
-      <span class="mock-title">ECU Studio v1.2.1 — EDC16C34</span>
+      <span class="mock-title">ECU Studio v1.3.0 — EDC16C34</span>
     </div>
     <div class="mock-body" style="padding:0">
       <img id="showcase-img"
@@ -451,7 +461,7 @@ const obs = new IntersectionObserver(entries => {
   entries.forEach(e => {
     if (e.isIntersecting) {
       obs.unobserve(e.target);
-      countUp(document.getElementById('stat-panels'),    9,  700);
+      countUp(document.getElementById('stat-panels'),    12, 700);
       countUp(document.getElementById('stat-ecus'),      14, 900);
       countUp(document.getElementById('stat-chipsets'),   6, 600);
     }
@@ -465,6 +475,12 @@ obs.observe(document.querySelector('.live-stats'));
   <div class="section-label">What's inside</div>
   <h2>Everything you need to read, tune &amp; reflash an ECU</h2>
   <p class="section-sub">Two apps, one theme and sidebar: ECU Studio for reflashing and map editing, SocketSpy for CAN analysis. Everything runs on your machine.</p>
+
+  <div class="status-legend">
+    <span><span class="dot-legend" style="background:#22c55e"></span>Stable</span>
+    <span><span class="dot-legend" style="background:#4ade80"></span>New in v1.3.0</span>
+    <span><span class="dot-legend" style="background:#fcd34d"></span>Beta / coming soon</span>
+  </div>
 
   <div class="features-grid">
 
@@ -484,6 +500,24 @@ obs.observe(document.querySelector('.live-stats'));
       <div class="feat-icon">📊</div>
       <h3>Bosch Map Editor</h3>
       <p>Read/write Kf_Xs16_Ys16_Ws16 maps, apply percentage changes to Stage 1 maps with positive-only scaling.</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">📝</div>
+      <h3>DAMOS Editor <span class="feat-badge badge-new">New</span></h3>
+      <p>Create and edit <code>open_damos</code> definitions in-app: add/remove characteristics, edit fields, detect maps straight from a ROM, manage one-click AutoMods, and export to A2L.</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">🧊</div>
+      <h3>3D Map View <span class="feat-badge badge-beta">Beta</span></h3>
+      <p>Pseudo-3D surface + heatmap with a <em>ghost</em> baseline overlay to compare original vs modified. Native OpenGL (Q3DSurface) rendering is coming soon.</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">⬆️</div>
+      <h3>In-app Auto-update <span class="feat-badge badge-new">New</span></h3>
+      <p>The AppImage checks GitHub for new releases and updates itself in place — Ed25519-signed manifest with SHA-256 verification. No package manager, no reinstall.</p>
     </div>
 
     <div class="feat-card">
@@ -550,7 +584,7 @@ obs.observe(document.querySelector('.live-stats'));
       <h2>Download ECU Studio</h2>
       <p>Self-contained AppImage — Qt6, libusb and every runtime library bundled. Runs on a clean PC with nothing installed, no root needed. Just download, make it executable, and run.</p>
       <div class="dl-meta">
-        <div class="dl-pill">Version <span>1.2.1</span></div>
+        <div class="dl-pill">Version <span>1.3.0</span></div>
         <div class="dl-pill">Size <span>~37 MB</span></div>
         <div class="dl-pill">Platform <span>Linux x86_64</span></div>
         <div class="dl-pill">License <span>GPL-3.0</span></div>

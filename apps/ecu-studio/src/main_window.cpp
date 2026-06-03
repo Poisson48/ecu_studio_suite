@@ -20,6 +20,7 @@
 #include "ecu/ReportGenerator.hpp"
 #include "ecu/OpenDamos.hpp"
 
+#include <QApplication>
 #include <QMenuBar>
 #include <QFile>
 #include <QMenu>

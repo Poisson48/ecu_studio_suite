@@ -5,11 +5,11 @@
   "version": "1.3.0",
   "license": "CC0-1.0",
   "homepage": "https://github.com/Poisson48/open_car_reprog/wiki/Open-DAMOS",
-  "description": "Damos libre et gratuit pour Bosch EDC16C34 PSA (DV6TED4, 1.6 HDi 75/90/110 cv : Berlingo, Partner, 206, 207, 307, 308, 407, C3, C4, Fiesta TDCi, Mazda 2/3 MZ-CD). Chaque entrée inclut une empreinte d'axes permettant la relocalisation automatique sur n'importe quel firmware de la famille, sans besoin du damos Bosch propriétaire. Exportable en A2L ASAP2 standard (utilisable dans WinOLS, TunerPro, EcuFlash, open-car-reprog).",
+  "description": "Free and open DAMOS for Bosch EDC16C34 PSA (DV6TED4, 1.6 HDi 75/90/110 hp: Berlingo, Partner, 206, 207, 307, 308, 407, C3, C4, Fiesta TDCi, Mazda 2/3 MZ-CD). Each entry includes an axis fingerprint enabling automatic relocation onto any firmware in the family, without needing the proprietary Bosch DAMOS. Exportable to standard ASAP2 A2L (usable in WinOLS, TunerPro, EcuFlash, open-car-reprog).",
   "baseline": {
     "source": "ressources/edc16c34/ori.BIN",
     "damos": "ressources/edc16c34/damos.a2l",
-    "note": "Adresses et empreintes prélevées sur ori.BIN (match 100 % damos.a2l). Pour les autres firmwares (ex. SW 1037383736 Berlingo II 1.6 HDi 75), la relocalisation par empreinte retrouve les mêmes maps à des offsets différents."
+    "note": "Addresses and fingerprints taken from ori.BIN (100% match with damos.a2l). For other firmwares (e.g. SW 1037383736 Berlingo II 1.6 HDi 75), fingerprint relocation finds the same maps at different offsets."
   },
   "recordLayouts": {
     "Kf_Xs16_Ys16_Ws16": {
@@ -35,7 +35,7 @@
     {
       "name": "AccPed_trqEngHiGear_MAP",
       "category": "stage1",
-      "description": "Driver's wish — couple moteur demandé par la pédale d'accélérateur sur les rapports hauts (4e/5e).",
+      "description": "Driver's wish — engine torque requested by the accelerator pedal in high gears (4th/5th).",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1C1448",
@@ -104,7 +104,7 @@
     {
       "name": "AccPed_trqEngLoGear_MAP",
       "category": "stage1",
-      "description": "Driver's wish — couple moteur demandé par la pédale d'accélérateur sur les rapports bas (1re/2e/3e).",
+      "description": "Driver's wish — engine torque requested by the accelerator pedal in low gears (1st/2nd/3rd).",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1C168C",
@@ -173,7 +173,7 @@
     {
       "name": "AccPed_trqPrp_MAP",
       "category": "stage1",
-      "description": "Driver's wish PROPULSION — couple demandé pour le mastershift (boîte auto/semi-auto). 16×16 vs VSSCD_v (vitesse véhicule) et AccPed_rChkdVal (pédale).",
+      "description": "Driver's wish PROPULSION — torque requested for the mastershift (auto/semi-auto gearbox). 16×16 vs VSSCD_v (vehicle speed) and AccPed_rChkdVal (pedal).",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1C18D2",
@@ -245,12 +245,12 @@
         "sportPct": 12
       },
       "relocability": "ori-BIN-only",
-      "relocabilityNote": "MAP propulsion (boîte auto/sequentielle) — absente sur Berlingo Partner manual."
+      "relocabilityNote": "Propulsion MAP (auto/sequential gearbox) — absent on manual Berlingo/Partner."
     },
     {
       "name": "FMTC_trq2qBas_MAP",
       "category": "stage1",
-      "description": "Conversion couple → quantité carburant injectée (base). Pivot central du Stage 1 : plus de couple demandé = plus d'injection.",
+      "description": "Torque -> injected fuel quantity conversion (base). Central pivot of Stage 1: more requested torque = more injection.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1C9AAA",
@@ -325,7 +325,7 @@
     {
       "name": "Rail_pSetPointBase_MAP",
       "category": "stage1",
-      "description": "Consigne de pression rail (common rail) de base, fonction du régime et de la quantité injectée. Faut la monter pour injecter plus de carburant sans perte de combustion.",
+      "description": "Base rail (common rail) pressure setpoint, as a function of engine speed and injected quantity. Raise it to inject more fuel without combustion loss.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1E726C",
@@ -400,7 +400,7 @@
     {
       "name": "EngPrt_trqAPSLim_MAP",
       "category": "stage1",
-      "description": "Limite de couple pour protection moteur (turbocharger protection). Sans la relever, elle clamp ton gain Stage 1 → map la plus importante à toucher.",
+      "description": "Torque limit for engine protection (turbocharger protection). If not raised, it clamps your Stage 1 gain -> the most important map to touch.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1C8838",
@@ -463,7 +463,7 @@
     {
       "name": "FlMng_rLmbdSmk_MAP",
       "category": "smoke",
-      "description": "SMOKE LIMITER — consigne lambda mini vs débit d'air. C'est ce qui te bloque en fumée noire si tu ne peux pas monter l'injection assez haut. Baisser (ex. 1.2 → 1.1) pour autoriser plus d'injection avant le smoke cut.",
+      "description": "SMOKE LIMITER — minimum lambda setpoint vs air mass flow. This is what holds you back with black smoke if you can't raise injection high enough. Lower it (e.g. 1.2 -> 1.1) to allow more injection before the smoke cut.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1C931C",
@@ -533,15 +533,15 @@
         "defaultPct": -5,
         "safePct": 0,
         "sportPct": -8,
-        "note": "Baisser lambda = plus d'injection autorisée. -5% = ~1.33 → 1.26 lambda"
+        "note": "Lowering lambda = more injection allowed. -5% = ~1.33 -> 1.26 lambda"
       },
       "relocability": "ori-BIN-only",
-      "relocabilityNote": "Smoke limiter calibré différemment entre 75ch et 110ch — adresse ori.BIN non valide sur Berlingo."
+      "relocabilityNote": "Smoke limiter calibrated differently between 75 hp and 110 hp — ori.BIN address not valid on Berlingo."
     },
     {
       "name": "InjCrv_phiMI1Bas2_MAP",
       "category": "timing",
-      "description": "Start of energising Main Injection 1 (SOE MI1) — angle d'injection principal, base. Avancer de 1-2° pour Stage 1 peut améliorer les basses charges.",
+      "description": "Start of energising Main Injection 1 (SOE MI1) — main injection angle, base. Advancing by 1-2deg for Stage 1 can improve low-load behaviour.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1CBBD8",
@@ -611,7 +611,7 @@
     {
       "name": "AFSCD_facCorrVal_MAP",
       "category": "air",
-      "description": "Facteur de correction débit d'air (vs régime / qty carburant). Modifié par certains tuners pour compenser l'AGR.",
+      "description": "Air mass flow correction factor (vs engine speed / fuel qty). Modified by some tuners to compensate for EGR.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1C24F2",
@@ -681,7 +681,7 @@
     {
       "name": "AFSCD_dmAirSubsVal_MAP",
       "category": "air",
-      "description": "Valeur de substitution du débit d'air (modèle prédictif). Utilisée quand le capteur MAF est défaillant — peut être relevée pour forcer des valeurs plus optimistes.",
+      "description": "Air mass flow substitute value (predictive model). Used when the MAF sensor fails — can be raised to force more optimistic values.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1C22AA",
@@ -751,7 +751,7 @@
     {
       "name": "Prp_rPrp_MAP",
       "category": "driver",
-      "description": "Map inverse de la demande conducteur pour le mastershift (sortie couple → position pédale équivalente).",
+      "description": "Inverse map of the driver's demand for the mastershift (torque output -> equivalent pedal position).",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1E5FAC",
@@ -821,7 +821,7 @@
     {
       "name": "Rail_pSetPointMax_MAP",
       "category": "safety",
-      "description": "Limiteur max de pression rail (fonction régime + qty injectée). Relever uniquement si tu pousses le Stage 2+ et que Rail_pSetPointBase atteint ce plafond.",
+      "description": "Maximum rail pressure limiter (function of engine speed + injected qty). Raise only if you push Stage 2+ and Rail_pSetPointBase reaches this ceiling.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1E75E2",
@@ -879,7 +879,7 @@
     {
       "name": "EngPrt_qLim_CUR",
       "category": "safety",
-      "description": "Limiteur de quantité carburant (protection moteur) en fonction du régime. Courbe plafond à relever pour ne pas clamper un gros Stage 1/2.",
+      "description": "Fuel quantity limiter (engine protection) as a function of engine speed. Ceiling curve to raise so it doesn't clamp a big Stage 1/2.",
       "type": "CURVE",
       "recordLayout": "Kl_Xs16_Ws16",
       "defaultAddress": "0x1C87C6",
@@ -917,13 +917,13 @@
         "dataType": "SWORD_BE",
         "factor": 0.01,
         "offset": 0,
-        "unit": "mg/hub"
+        "unit": "mg/stroke"
       }
     },
     {
       "name": "AFSCD_dmLin_CUR",
       "category": "air",
-      "description": "Courbe de linéarisation du capteur MAF (voltage → débit d'air). À connaître mais pas à toucher en Stage 1 standard.",
+      "description": "MAF sensor linearization curve (voltage -> air mass flow). Good to know but not to be touched in a standard Stage 1.",
       "type": "CURVE",
       "recordLayout": "Kl_Xs16_Ws16",
       "defaultAddress": "0x1C1C64",
@@ -966,7 +966,7 @@
     {
       "name": "FlSys_rhoTFuel_CUR",
       "category": "fuel",
-      "description": "Correction de densité carburant en fonction de la température. Pas critique en Stage 1 mais utile pour certaines stratégies lambda.",
+      "description": "Fuel density correction as a function of temperature. Not critical in Stage 1 but useful for some lambda strategies.",
       "type": "CURVE",
       "recordLayout": "Kl_Xs16_Ws16",
       "defaultAddress": "0x1C9A50",
@@ -1006,7 +1006,7 @@
     {
       "name": "AccPed_trqNMRMax_C",
       "category": "safety",
-      "description": "Couple max autorisé dans la 'non-monitored range' (mode dégradé pédale). Stock 100 Nm — à monter si tu relèves les Stage 1 de beaucoup.",
+      "description": "Max torque allowed in the 'non-monitored range' (pedal limp mode). Stock 100 Nm — raise it if you increase Stage 1 by a lot.",
       "type": "VALUE",
       "recordLayout": "Kw_Ws16",
       "defaultAddress": "0x1C18D0",
@@ -1026,7 +1026,7 @@
     {
       "name": "AccPed_nLimNMR_C",
       "category": "safety",
-      "description": "Seuil régime moteur 'non-monitored range'. Stock 1500 rpm.",
+      "description": "Engine speed threshold for the 'non-monitored range'. Stock 1500 rpm.",
       "type": "VALUE",
       "recordLayout": "Kw_Ws16",
       "defaultAddress": "0x1C142C",
@@ -1046,7 +1046,7 @@
     {
       "name": "AirCtl_nOvrRun_C",
       "category": "popbang",
-      "description": "Seuil de régime pour la condition overrun (levée de pied). Baisser → pop&bang s'active plus souvent. Attention à ne pas descendre sous 1500 rpm (turbo).",
+      "description": "Engine speed threshold for the overrun condition (lift-off). Lower it -> pop&bang triggers more often. Be careful not to go below 1500 rpm (turbo).",
       "type": "VALUE",
       "recordLayout": "Kw_Ws16",
       "defaultAddress": "0x1C4046",
@@ -1061,13 +1061,13 @@
       "relocation": {
         "method": "nearby-anchor",
         "anchorMap": "AccPed_trqEngLoGear_MAP",
-        "note": "VALUE scalaires impossibles à fingerprinter seuls — s'appuie sur proximité d'une MAP connue (même région mémoire chez Bosch)."
+        "note": "Scalar VALUEs cannot be fingerprinted on their own — relies on proximity to a known MAP (same memory region in Bosch ECUs)."
       }
     },
     {
       "name": "AirCtl_qOvrRun_C",
       "category": "popbang",
-      "description": "Quantité de carburant injectée pendant l'overrun (pop&bang). Valeur stock = 50 (0.5 mg/hub), à monter à 500-2000 pour pétarades.",
+      "description": "Fuel quantity injected during overrun (pop&bang). Stock value = 50 (0.5 mg/stroke), raise to 500-2000 for crackles/bangs.",
       "type": "VALUE",
       "recordLayout": "Kw_Ws16",
       "defaultAddress": "0x1C40B4",
@@ -1077,7 +1077,7 @@
         "dataType": "SWORD_BE",
         "factor": 0.01,
         "offset": 0,
-        "unit": "mg/hub"
+        "unit": "mg/stroke"
       },
       "relocation": {
         "method": "nearby-anchor",
@@ -1087,7 +1087,7 @@
     {
       "name": "VSSCD_vMax_C",
       "category": "speed-limiter",
-      "description": "Seuil de vitesse véhicule pour le MAX-test (diagnostic vitesse). Stock ori.BIN = 220 km/h. Pas le limiteur principal mais cohérent avec lui.",
+      "description": "Vehicle speed threshold for the MAX-test (speed diagnostic). Stock ori.BIN = 220 km/h. Not the main limiter but consistent with it.",
       "type": "VALUE",
       "recordLayout": "Kw_Ws16",
       "defaultAddress": "0x1E85B6",
@@ -1107,13 +1107,13 @@
           300
         ],
         "searchWindow": 8192,
-        "note": "Scanne une fenêtre ±4KB autour de l'adresse ancrée pour une valeur 100-300 km/h."
+        "note": "Scans a +/-4KB window around the anchored address for a value of 100-300 km/h."
       }
     },
     {
       "name": "CrCCD_vSetSpdMax_C",
       "category": "speed-limiter",
-      "description": "Régulateur de vitesse / limiteur — valeur MAX configurable par le driver. Stock ori.BIN = 254 km/h (plafond régulateur). Relever à 260+ pour débloquer le régulateur.",
+      "description": "Cruise control / limiter — MAX value configurable by the driver. Stock ori.BIN = 254 km/h (cruise ceiling). Raise to 260+ to unlock the limiter.",
       "type": "VALUE",
       "recordLayout": "Kw_Ws16",
       "defaultAddress": "0x1C5A7E",
@@ -1138,7 +1138,7 @@
     {
       "name": "PrpCCD_vSetSpdMax_C",
       "category": "speed-limiter",
-      "description": "Setpoint MAX du limiteur de vitesse (propulsion). Stock ori.BIN = 254 km/h. Autre plafond potentiel à lever.",
+      "description": "MAX setpoint of the speed limiter (propulsion). Stock ori.BIN = 254 km/h. Another potential ceiling to raise.",
       "type": "VALUE",
       "recordLayout": "Kw_Ws16",
       "defaultAddress": "0x1E62C0",
@@ -1183,7 +1183,7 @@
     {
       "name": "AirCtl_nMin_C",
       "category": "egr",
-      "description": "Seuil de régime de coupure EGR. Le relever à 6000-8000 rpm (valeur raw 0x1770 ou 0x1F40) désactive l'EGR sur toute la plage d'utilisation normale.",
+      "description": "EGR cut-off engine speed threshold. Raising it to 6000-8000 rpm (raw value 0x1770 or 0x1F40) disables EGR across the entire normal operating range.",
       "type": "VALUE",
       "recordLayout": "Kw_Ws16",
       "defaultAddress": "0x1C41B8",
@@ -1197,7 +1197,7 @@
       },
       "egrOff": {
         "recommendedRawValue": 8000,
-        "note": "8000 rpm = EGR jamais active (méthode forum ecuedit)"
+        "note": "8000 rpm = EGR never active (ecuedit forum method)"
       },
       "relocation": {
         "method": "nearby-anchor",
@@ -1207,7 +1207,7 @@
     {
       "name": "AirCtl_rEGR_MAP",
       "category": "egr",
-      "description": "Taux d'EGR nominal demandé vs RPM (axe X) et charge air (axe Y, mass flow désiré normalisé). Abaisser toutes les cellules à 0 = EGR OFF cartographique. Méthode recommandée vs modification du seuil AirCtl_nMin_C seule.",
+      "description": "Nominal requested EGR rate vs RPM (X axis) and air load (Y axis, normalized desired mass flow). Lowering all cells to 0 = map-based EGR OFF. Recommended method over modifying the AirCtl_nMin_C threshold alone.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1C3C8C",
@@ -1235,7 +1235,7 @@
         },
         {
           "inputQuantity": "AirCtl_mDes",
-          "unit": "kg/h×0.1",
+          "unit": "kg/h x0.1",
           "factor": 0.1,
           "offset": 0,
           "dataType": "SWORD_BE",
@@ -1264,15 +1264,15 @@
         "factor": 0.00390625,
         "offset": 0,
         "unit": "%",
-        "note": "Taux EGR 0–100%. factor=1/256. 0=EGR fermé, 8192=32%=~100% ouverture."
+        "note": "EGR rate 0–100%. factor=1/256. 0=EGR closed, 8192=32%=~100% open."
       },
       "relocability": "ori-BIN-only",
-      "relocabilityNote": "Axes EGR complètement différents entre 75ch et 110ch — empreinte ori.BIN non applicable au Berlingo 75ch."
+      "relocabilityNote": "EGR axes completely different between 75 hp and 110 hp — ori.BIN fingerprint not applicable to the 75 hp Berlingo."
     },
     {
       "name": "EGRVlv_rPreCtlDyn_MAP",
       "category": "egr",
-      "description": "Position physique pré-commandée de la vanne EGR en conditions dynamiques (RPM × température eau). Pilote directement l'actionneur. À mettre à 0 pour annuler la pré-commande EGR.",
+      "description": "Pre-commanded physical position of the EGR valve under dynamic conditions (RPM x coolant temperature). Drives the actuator directly. Set to 0 to cancel the EGR pre-command.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1C808E",
@@ -1324,7 +1324,7 @@
     {
       "name": "EGRVlv_rPreCtlStat_MAP",
       "category": "egr",
-      "description": "Position physique pré-commandée de la vanne EGR en régime stabilisé (RPM × charge normalisée).",
+      "description": "Pre-commanded physical position of the EGR valve in steady state (RPM x normalized load).",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1C81C8",
@@ -1352,7 +1352,7 @@
         },
         {
           "inputQuantity": "AirCtl_mDes",
-          "unit": "kg/h×0.1",
+          "unit": "kg/h x0.1",
           "factor": 0.1,
           "offset": 0,
           "dataType": "SWORD_BE",
@@ -1376,7 +1376,7 @@
     {
       "name": "AirSys_pAirBasRgn1_MAP",
       "category": "boost",
-      "description": "Pression d'air cible (boost) en région 1 vs RPM (axe X) et charge pédale (axe Y). MAP principale de calibration turbo VGT. Relever les cellules = plus de boost = plus de couple disponible. Sur DV6BTED4 75ch, les valeurs sont ~15–20% inférieures à la version 110ch.",
+      "description": "Target air pressure (boost) in region 1 vs RPM (X axis) and pedal load (Y axis). Main VGT turbo calibration MAP. Raising the cells = more boost = more available torque. On the DV6BTED4 75 hp, values are ~15–20% lower than the 110 hp version.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1C4500",
@@ -1433,13 +1433,13 @@
         "factor": 1,
         "offset": 0,
         "unit": "mbar",
-        "note": "Pression absolue en mbar. 1013 mbar = atmosphérique. 1800 mbar = 0.8 bar de suralimentation."
+        "note": "Absolute pressure in mbar. 1013 mbar = atmospheric. 1800 mbar = 0.8 bar of boost."
       }
     },
     {
       "name": "AirSys_pAirBasRgn2_MAP",
       "category": "boost",
-      "description": "Pression d'air cible (boost) en région 2 (forte charge). Complète AirSys_pAirBasRgn1_MAP pour les plages de charge élevée.",
+      "description": "Target air pressure (boost) in region 2 (high load). Complements AirSys_pAirBasRgn1_MAP for high-load ranges.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1C4654",
@@ -1496,12 +1496,12 @@
         "unit": "mbar"
       },
       "relocability": "ori-BIN-only",
-      "relocabilityNote": "Grille de calibration boost région 2 spécifique au firmware 110ch ori.BIN."
+      "relocabilityNote": "Region 2 boost calibration grid specific to the 110 hp ori.BIN firmware."
     },
     {
       "name": "InjCrv_phiMI1Bas1_MAP",
       "category": "injection_timing",
-      "description": "Avance injection principale MI1 — zone de fonctionnement régime 1 (bas régime). Avance en °vilebrequin vs RPM (axe X) et pression rail (axe Y). Augmenter = avancer l'injection = plus d'efficacité (mais risque de cliquetis). Diminuer = retarder = moins de NOx.",
+      "description": "Main injection MI1 timing advance — operating region 1 (low engine speed). Advance in deg crankshaft vs RPM (X axis) and rail pressure (Y axis). Increase = advance injection = more efficiency (but knock risk). Decrease = retard = less NOx.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1CB994",
@@ -1566,13 +1566,13 @@
         "factor": 0.0222,
         "offset": 0,
         "unit": "°CA",
-        "note": "Degrés vilebrequin avant PMH. factor≈1/45. Valeur positive = avance."
+        "note": "Degrees crankshaft before TDC. factor~=1/45. Positive value = advance."
       }
     },
     {
       "name": "InjCrv_qMI1BasRgn1_MAP",
       "category": "injection_quantity",
-      "description": "Quantité injection principale MI1 — région 1 (bas régime, charge légère). Quantité en mm³/hub vs RPM (axe X) et pression rail (axe Y). C'est l'une des MAPs qui définit la puissance de base. Augmenter = plus de carburant = plus de couple. À combiner avec FMTC_trq2qBas_MAP.",
+      "description": "Main injection MI1 quantity — region 1 (low engine speed, light load). Quantity in mm3/stroke vs RPM (X axis) and rail pressure (Y axis). One of the MAPs that defines base power. Increase = more fuel = more torque. Combine with FMTC_trq2qBas_MAP.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1D05CC",
@@ -1640,16 +1640,16 @@
         "dataType": "SWORD_BE",
         "factor": 0.003906,
         "offset": 0,
-        "unit": "mm³/hub",
-        "note": "factor=1/256. 1mm³/hub ≈ 0.8mg/hub avec du gazole standard."
+        "unit": "mm³/stroke",
+        "note": "factor=1/256. 1mm³/stroke ≈ 0.8mg/stroke with standard diesel."
       },
       "relocability": "ori-BIN-only",
-      "relocabilityNote": "Dimensions et axes de quantité injection différents sur le firmware 75ch DV6BTED4."
+      "relocabilityNote": "Injection quantity dimensions and axes differ on the 75 hp DV6BTED4 firmware."
     },
     {
       "name": "InjCrv_qMI1BasRgn2_MAP",
       "category": "injection_quantity",
-      "description": "Quantité injection principale MI1 — région 2 (haute charge). Plage de fonctionnement pleine charge / accélération. MAP principale pour les gains Stage 1+.",
+      "description": "Main injection MI1 quantity — region 2 (high load). Full-load / acceleration operating range. Main MAP for Stage 1+ gains.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1D09E8",
@@ -1717,15 +1717,15 @@
         "dataType": "SWORD_BE",
         "factor": 0.003906,
         "offset": 0,
-        "unit": "mm³/hub"
+        "unit": "mm³/stroke"
       },
       "relocability": "ori-BIN-only",
-      "relocabilityNote": "Idem InjCrv_qMI1BasRgn1_MAP — calibration 75ch non compatible avec empreinte 110ch."
+      "relocabilityNote": "Same as InjCrv_qMI1BasRgn1_MAP — 75 hp calibration not compatible with the 110 hp fingerprint."
     },
     {
       "name": "InjCrv_qMI1MaxRgn1_MAP",
       "category": "injection_quantity",
-      "description": "Quantité injection maximale autorisée (plafond) — région 1. Limite absolue de carburant injecté, indépendante de la demande couple. Si Stage 1 atteint cette limite, relever ces valeurs pour débloquer le potentiel.",
+      "description": "Maximum allowed injection quantity (ceiling) — region 1. Absolute limit of injected fuel, independent of torque demand. If Stage 1 reaches this limit, raise these values to unlock the potential.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1D1048",
@@ -1781,14 +1781,14 @@
         "dataType": "SWORD_BE",
         "factor": 0.003906,
         "offset": 0,
-        "unit": "mm³/hub",
-        "note": "Plafond absolu. Stage 1 sans toucher ce plafond = gain réel possible."
+        "unit": "mm³/stroke",
+        "note": "Absolute ceiling. Stage 1 without touching this ceiling = real gain still possible."
       }
     },
     {
       "name": "FMTC_trq2qRgn1_MAP",
       "category": "stage1",
-      "description": "Conversion couple→quantité injection en région 1 (bas régime, charge légère). Complémentaire à FMTC_trq2qBas_MAP — s'applique dans la plage régime 1. Augmenter ces valeurs = plus de carburant pour un même couple demandé.",
+      "description": "Torque->injection quantity conversion in region 1 (low engine speed, light load). Complements FMTC_trq2qBas_MAP — applies in the region 1 speed range. Increasing these values = more fuel for the same requested torque.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1C9CEE",
@@ -1852,7 +1852,7 @@
         "dataType": "SWORD_BE",
         "factor": 0.003906,
         "offset": 0,
-        "unit": "mm³/hub"
+        "unit": "mm³/stroke"
       },
       "stage1": {
         "defaultPct": 12,
@@ -1863,7 +1863,7 @@
     {
       "name": "FMTC_trq2qRgn2_MAP",
       "category": "stage1",
-      "description": "Conversion couple→quantité injection en région 2 (haute charge / pleine accélération). MAP la plus importante pour libérer la puissance en pleine charge. Augmenter = plus de fuel = plus de fumée noire si air limité.",
+      "description": "Torque->injection quantity conversion in region 2 (high load / full acceleration). The most important MAP for unlocking full-load power. Increase = more fuel = more black smoke if air is limited.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1C9F32",
@@ -1927,7 +1927,7 @@
         "dataType": "SWORD_BE",
         "factor": 0.003906,
         "offset": 0,
-        "unit": "mm³/hub"
+        "unit": "mm³/stroke"
       },
       "stage1": {
         "defaultPct": 12,
@@ -1938,7 +1938,7 @@
     {
       "name": "Rail_pSetPointBasRgn_MAP",
       "category": "rail_pressure",
-      "description": "Consigne pression rail de base en plage de fonctionnement nominale. Complète Rail_pSetPointBase_MAP pour d'autres régions de calibration. Même logique : augmenter = meilleure atomisation = plus de puissance possible.",
+      "description": "Base rail pressure setpoint in the nominal operating range. Complements Rail_pSetPointBase_MAP for other calibration regions. Same logic: increase = better atomization = more possible power.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1E701A",
@@ -2006,12 +2006,12 @@
         "note": "Pression rail en bar. Stock DV6BTED4 75ch : max ~1350 bar. DV6TED4 110ch : ~1600 bar."
       },
       "relocability": "ori-BIN-only",
-      "relocabilityNote": "Axes de pression rail région différents sur firmware 75ch."
+      "relocabilityNote": "Rail pressure region axes differ on the 75 hp firmware."
     },
     {
       "name": "InjCrv_qPiI1Bas_MAP",
       "category": "injection_quantity",
-      "description": "Quantité de pré-injection (injection pilote PI1) de base vs RPM × pression rail. La pré-injection réduit le bruit de combustion (claquement diesel) et prépare la chambre pour la MI. Mettre à 0 = suppression pré-injection (plus de bruit, moins de consommation).",
+      "description": "Base pre-injection (pilot injection PI1) quantity vs RPM x rail pressure. Pre-injection reduces combustion noise (diesel knock) and prepares the chamber for the MI. Set to 0 = pre-injection removed (more noise, lower consumption).",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1D1610",
@@ -2074,13 +2074,13 @@
         "dataType": "SWORD_BE",
         "factor": 0.003906,
         "offset": 0,
-        "unit": "mm³/hub"
+        "unit": "mm³/stroke"
       }
     },
     {
       "name": "AirCtl_mDesBas_MAP",
       "category": "boost",
-      "description": "Masse d'air désirée de base vs RPM (axe X) et charge pédale (axe Y). Définit la cible du régulateur d'air (VGT/EGR combinés). Augmenter = plus d'air demandé = le turbo pousse plus. Référence fondamentale pour toute calibration boost.",
+      "description": "Base desired air mass vs RPM (X axis) and pedal load (Y axis). Defines the target of the air controller (combined VGT/EGR). Increase = more requested air = the turbo pushes more. Fundamental reference for any boost calibration.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1C2DC6",
@@ -2145,13 +2145,13 @@
         "factor": 0.1,
         "offset": 0,
         "unit": "kg/h",
-        "note": "Débit masse air en kg/h. Stock 75ch pleine charge ~85 kg/h, 110ch ~100 kg/h."
+        "note": "Air mass flow in kg/h. Stock 75 hp full load ~85 kg/h, 110 hp ~100 kg/h."
       }
     },
     {
       "name": "Eng_trqSpd_CUR",
       "category": "engine",
-      "description": "Courbe de couple moteur de référence vs RPM. Utilisée comme référence par le calculateur pour les modèles de couple. Représente la courbe couple/régime constructeur.",
+      "description": "Reference engine torque curve vs RPM. Used as a reference by the ECU for the torque models. Represents the manufacturer's torque/speed curve.",
       "type": "CURVE",
       "recordLayout": "Kl_Xs16_Ws16",
       "defaultAddress": "0x1C83BA",
@@ -2191,7 +2191,7 @@
     {
       "name": "EGRSCD_rLin_CUR",
       "category": "egr",
-      "description": "Courbe de linéarisation du capteur de position vanne EGR (EGRSCD). Convertit la tension capteur en taux d'ouverture réel. Utile pour comprendre les corrections EGR et les adaptatifs.",
+      "description": "Linearization curve of the EGR valve position sensor (EGRSCD). Converts sensor voltage into actual opening rate. Useful for understanding EGR corrections and adaptives.",
       "type": "CURVE",
       "recordLayout": "Kl_Xs16_Ws16",
       "defaultAddress": "0x1C7A90",
@@ -2220,7 +2220,7 @@
         "factor": 0.00390625,
         "offset": 0,
         "unit": "%",
-        "note": "Taux d'ouverture EGR en %. 0 = fermé, 10000×0.0039=~39% max."
+        "note": "EGR opening rate in %. 0 = closed, 10000x0.0039=~39% max."
       }
     }
   ],
@@ -2246,7 +2246,7 @@
         "Eng_trqSpd_CUR",
         "EGRSCD_rLin_CUR"
       ],
-      "note": "Ajout boost (AirSys), EGR complet, timing+qty injection MI/PI, FMTC régions, rail region, air mass desired. Empreintes extraites de ori.BIN. Total: 40 entrées."
+      "note": "Added boost (AirSys), full EGR, MI/PI injection timing+qty, FMTC regions, rail region, air mass desired. Fingerprints extracted from ori.BIN. Total: 40 entries."
     }
   ],
   "knownFirmwares": [
@@ -2254,8 +2254,8 @@
       "sw": "1037383736",
       "hw": "0281012620",
       "ref": "9663944680",
-      "vehicle": "Citroën Berlingo I / Peugeot Partner 1.6 HDi 55kW 75ch (DV6BTED4, code moteur 9HW)",
-      "note": "Dump OBD MPPS — calibration only. DTC table DSM_ClaDfp absente (BDM needed). Relocalisé avec score open_damos 0.70–0.80."
+      "vehicle": "Citroën Berlingo I / Peugeot Partner 1.6 HDi 55kW 75 hp (DV6BTED4, engine code 9HW)",
+      "note": "OBD MPPS dump — calibration only. DTC table DSM_ClaDfp absent (BDM needed). Relocated with open_damos score 0.70–0.80."
     }
   ]
 }

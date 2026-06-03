@@ -81,8 +81,8 @@ jobs:
           /tmp/linuxdeploy \
             --appdir /tmp/appdir \
             --executable /tmp/appdir/usr/bin/ecu_studio \
-            --desktop-file scripts/dist/ecu_studio.desktop \
-            --icon-file scripts/dist/ecu_studio.png \
+            --desktop-file apps/ecu-studio/resources/ecu-studio.desktop \
+            --icon-file scripts/dist/ecu-studio.png \
             ${LIBUSB:+--library "$LIBUSB"} \
             --plugin qt \
             --output appimage

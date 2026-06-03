@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QFile>
 #include <QIcon>
+#include <QPixmap>
 #include <QProcess>
 #include <QSettings>
 #include <QStandardPaths>
@@ -82,12 +83,19 @@ void ensureLinuxDesktopIntegration() {
     QDir().mkpath(iconDir);
     QDir().mkpath(appsDir);
 
-    // Icône : extrait de la ressource embarquée. Réécrit à chaque lancement pour
-    // qu'une nouvelle version du logo soit prise en compte sans réinstall.
+    // Icône : extraite de la ressource embarquée et redimensionnée à 256×256.
+    // Le logo source fait ~1068px ; un fichier hors-taille déposé dans le dossier
+    // hicolor « 256x256 » est ignoré par les loaders d'icônes (GNOME/KDE) → icône
+    // vide (visible notamment dans l'AppImage). On le scale donc explicitement.
+    // Réécrit à chaque lancement pour prendre en compte une nouvelle version.
     if (QFile::exists(iconPath)) QFile::remove(iconPath);
-    QFile::copy(QStringLiteral(":/ecu_studio_logo.png"), iconPath);
-    QFile::setPermissions(iconPath, QFileDevice::ReadOwner | QFileDevice::WriteOwner |
-                                    QFileDevice::ReadGroup | QFileDevice::ReadOther);
+    QPixmap logo(QStringLiteral(":/ecu_studio_logo.png"));
+    if (!logo.isNull()) {
+        logo.scaled(256, 256, Qt::KeepAspectRatio, Qt::SmoothTransformation)
+            .save(iconPath, "PNG");
+        QFile::setPermissions(iconPath, QFileDevice::ReadOwner | QFileDevice::WriteOwner |
+                                        QFileDevice::ReadGroup | QFileDevice::ReadOther);
+    }
 
     // .desktop : régénéré à chaque lancement (Exec= peut changer entre dev et prod).
     const QString exePath = QCoreApplication::applicationFilePath();

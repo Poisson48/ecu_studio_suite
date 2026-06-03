@@ -23,7 +23,7 @@ namespace ecu_studio {
 // UPDATE_SIGNING_KEY et n'est jamais distribuée.
 static constexpr const char* kPublicKeyPem = R"(
 -----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEAf7RMrzyYCm862/V/QK2D0oAVkW2Gv2MPf6PlaUNkzAE=
+MCowBQYDK2VwAyEASLZB2yYHaSVRNyAVfKeUD8kybi7feRQxs1R2lb+K2d0=
 -----END PUBLIC KEY-----
 )";
 

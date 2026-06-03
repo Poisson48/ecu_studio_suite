@@ -12,7 +12,7 @@ Part of the **ECU Studio Suite** alongside **[SocketSpy](https://github.com/Pois
 
 [![Release](https://img.shields.io/github/v/release/Poisson48/ecu_studio_suite)](https://github.com/Poisson48/ecu_studio_suite/releases/latest)
 
-**[⬇ Download ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — v1.2.1, ~37 MB, Linux x86_64
+**[⬇ Download ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — v1.3.0, ~37 MB, Linux x86_64
 
 Then make it executable and run it:
 
@@ -63,16 +63,22 @@ Self-contained AppImage — Qt6, libusb and every runtime library are bundled, s
 
 ### ECU Studio (main app)
 
-- **ROM read / write** — full-ROM and block-level flash via MPPS V21 over USB; progress bar, abort
-- **Hex view** — fast hex editor with search, byte-level diff overlay, address jump
-- **Map editor** — 2-D/3-D map visualization; edit scalar, curve, and table maps; import/export CSV
-- **A2L parser** — parse ASAP2 `.a2l` files; browse measurements and characteristics by ECU
-- **Checksum panel** — compute and patch checksums for supported ECU families
-- **Compare panel** — side-by-side diff of two ROM files; byte-level delta, filterable by region
-- **AutoMods panel** — apply named calibration patches from a JSON recipe; batch apply / revert
-- **Git versioning** — libgit2-backed ROM history; commit any state, browse the commit log, restore (roll back) any previous version straight into the editor
-- **Project manager** — `.ecuproj` project files with ROM path, ECU type, notes, and flash log
-- **CAN companion** — launch SocketSpy side-by-side for live CAN monitoring during reprogramming
+> **Status legend:** ✅ stable · ✨ new in v1.3.0 · 🔜 beta / coming soon
+
+- ✅ **ROM read / write** — full-ROM and block-level flash via MPPS V21 over USB; progress bar, abort
+- ✅ **Hex view** — fast hex editor with search, byte-level diff overlay, address jump
+- ✅ **Map editor** — 2-D map visualization; edit scalar, curve, and table maps; import/export CSV
+- ✨ **DAMOS editor** — create and edit `open_damos` definitions in-app: add/remove characteristics, edit fields, detect maps from a ROM, manage one-click AutoMods, export A2L
+- 🔜 **3D map view** — pseudo-3D surface + heatmap with *ghost* baseline overlay (compare original vs modified) works today; native OpenGL `Q3DSurface` rendering is coming soon (the AppImage currently uses the QPainter renderer)
+- ✅ **A2L parser & export** — parse ASAP2 `.a2l` files; browse measurements/characteristics by ECU, and export relocated `open_damos` maps to standard A2L
+- ✅ **Checksum panel** — compute and patch checksums for supported ECU families
+- ✅ **Compare panel** — side-by-side diff of two ROM files; byte-level delta, filterable by region
+- ✅ **AutoMods panel** — apply named calibration patches from a JSON recipe; batch apply / revert
+- ✅ **Git versioning** — libgit2-backed ROM history; commit any state, browse the commit log, restore (roll back) any previous version straight into the editor
+- ✅ **Project manager** — `.ecuproj` project files with ROM path, ECU type, notes, and flash log
+- ✅ **CAN companion** — launch SocketSpy side-by-side for live CAN monitoring during reprogramming
+- ✨ **In-app auto-update** — the AppImage checks GitHub for new signed releases and updates itself in place (Ed25519-signed manifest + SHA-256 verification)
+- ✨ **Brand identity & bilingual UI** — new ECU Studio logo and complete French/English translations (the bundled `open_damos` EDC16C34 definition is now fully in English)
 
 ### MPPS V21 driver (`libs/mpps`)
 

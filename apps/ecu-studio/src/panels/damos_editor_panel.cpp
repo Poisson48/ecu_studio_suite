@@ -596,8 +596,10 @@ void DamosEditorPanel::onDeleteEntry() {
     if (row < 0) return;
     m_recipe.characteristics.erase(m_recipe.characteristics.begin() + row);
     rebuildEntryTable();
-    if (!m_recipe.characteristics.empty())
-        m_entryTable->selectRow(std::min(row, static_cast<int>(m_recipe.characteristics.size()) - 1));
+    if (!m_recipe.characteristics.empty()) {
+        const int last = static_cast<int>(m_recipe.characteristics.size()) - 1;
+        m_entryTable->selectRow(row < last ? row : last);
+    }
     markDirty(true);
 }
 
@@ -956,8 +958,10 @@ void DamosEditorPanel::onDeleteAutoMod() {
     if (row < 0) return;
     m_recipe.autoMods.erase(m_recipe.autoMods.begin() + row);
     rebuildAutoModTable();
-    if (!m_recipe.autoMods.empty())
-        m_autoModTable->selectRow(std::min(row, static_cast<int>(m_recipe.autoMods.size()) - 1));
+    if (!m_recipe.autoMods.empty()) {
+        const int last = static_cast<int>(m_recipe.autoMods.size()) - 1;
+        m_autoModTable->selectRow(row < last ? row : last);
+    }
     markDirty(true);
 }
 

@@ -26,7 +26,7 @@ void setupServer(McpServer& s) {
 TEST(McpServer, RegistersAllTools) {
     McpServer s;
     setupServer(s);
-    EXPECT_EQ(s.toolCount(), 12u);
+    EXPECT_EQ(s.toolCount(), 22u);
 }
 
 TEST(McpServer, InitializeReturnsProtocol) {
@@ -56,7 +56,7 @@ TEST(McpServer, ToolsListExposesEveryTool) {
     ASSERT_TRUE(resp.contains("result"));
     const json& tools = resp["result"]["tools"];
     ASSERT_TRUE(tools.is_array());
-    EXPECT_EQ(tools.size(), 12u);
+    EXPECT_EQ(tools.size(), 22u);
 
     // Chaque outil doit porter name / description / inputSchema.
     bool sawListRecipes = false;
