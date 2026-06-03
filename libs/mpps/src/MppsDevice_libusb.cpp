@@ -42,7 +42,9 @@ static std::string chipTypeStr(uint16_t vid, uint16_t pid) {
     return "Unknown";
 }
 
-static std::string hexDump(const std::vector<uint8_t>& v) {
+// Used only inside PROTO_LOG, which is a no-op unless ECU_MPPS_PROTOCOL_LOG is
+// defined — mark maybe_unused so the default build stays warning-free.
+[[maybe_unused]] static std::string hexDump(const std::vector<uint8_t>& v) {
     std::string s;
     for (auto b : v) s += std::format("{:02X} ", b);
     return s;
