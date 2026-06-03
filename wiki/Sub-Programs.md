@@ -17,7 +17,7 @@ The suite is a **hub** that launches two sub-programs that share one Qt6 dark th
 
 | Feature | Status | What it does |
 |---------|--------|--------------|
-| **ROM read / write** | Proven | Full-ROM and block-level flash via MPPS V21 over USB; progress bar, abort. |
+| **ROM read / write (MPPS)** | Draft | Simulation mode only (`ECU_MPPS_SIMULATION` on by default); **not yet verified on real hardware**. |
 | **Hex view** | Proven | Fast hex editor with search, byte-level diff overlay, and address jump. |
 | **Map editor (2D)** | Proven | 2-D heatmap visualization; edit scalar, curve and table maps; CSV import/export. |
 | **Map editor (3D)** | Beta | Pseudo-3D surface + heatmap with a *ghost* baseline overlay (original vs modified) works today; native OpenGL `Q3DSurface` rendering is **Incoming** (the AppImage currently uses the QPainter renderer). |
@@ -97,7 +97,7 @@ La suite est un **hub** qui lance deux sous-programmes partageant un thème somb
 
 | Fonctionnalité | Statut | Ce que ça fait |
 |----------------|--------|----------------|
-| **Lecture / écriture ROM** | Proven | Flash ROM complète et par bloc via MPPS V21 en USB ; barre de progression, abandon. |
+| **Lecture / écriture ROM (MPPS)** | Brouillon | Mode simulation uniquement (`ECU_MPPS_SIMULATION` activé par défaut) ; **pas encore validé sur matériel réel**. |
 | **Vue hexadécimale** | Proven | Éditeur hex rapide avec recherche, overlay de diff à l'octet et saut d'adresse. |
 | **Éditeur de cartes (2D)** | Proven | Visualisation heatmap 2D ; édition scalaire/courbe/table ; import/export CSV. |
 | **Éditeur de cartes (3D)** | Beta | Surface pseudo-3D + heatmap avec overlay *fantôme* (original vs modifié) fonctionnel ; le rendu OpenGL natif `Q3DSurface` est **Incoming** (l'AppImage utilise le rendu QPainter). |

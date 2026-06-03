@@ -73,7 +73,7 @@ The flagship workflow — the reason the suite exists — closes the loop betwee
 
 | Feature | Maturity | Notes |
 |---------|:--------:|-------|
-| ROM read / write (MPPS V21 over USB) | ✅ Proven | Full-ROM and block-level flash; progress bar, abort |
+| ROM read / write (MPPS V21 over USB) | 🚧 Draft | Simulation mode only (`ECU_MPPS_SIMULATION` on by default); **not yet verified on real hardware** |
 | Hex view | ✅ Proven | Fast editor, search, byte-level diff overlay, address jump |
 | 2D map editor | ✅ Proven | Scalar / curve / table maps; CSV import/export |
 | DAMOS editor | ✅ Proven | Create & edit `open_damos` in-app, detect maps from ROM, export A2L |
@@ -256,7 +256,7 @@ Le workflow phare — la raison d'être de la suite — boucle entre *modifier* 
 
 | Fonctionnalité | Maturité | Notes |
 |----------------|:--------:|-------|
-| Lecture / écriture ROM (MPPS V21 par USB) | ✅ Éprouvé | Flash ROM complète et par bloc ; barre de progression, abandon |
+| Lecture / écriture ROM (MPPS V21 par USB) | 🚧 Brouillon | Mode simulation uniquement (`ECU_MPPS_SIMULATION` activé par défaut) ; **pas encore validé sur matériel réel** |
 | Vue hexadécimale | ✅ Éprouvé | Éditeur rapide, recherche, diff octet par octet, saut d'adresse |
 | Éditeur de cartos 2D | ✅ Éprouvé | Cartos scalaires / courbes / tables ; import/export CSV |
 | Éditeur DAMOS | ✅ Éprouvé | Créer & éditer `open_damos` dans l'appli, détecter les cartos depuis la ROM, exporter en A2L |
