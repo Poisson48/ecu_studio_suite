@@ -6,11 +6,14 @@
 #include <QGroupBox>
 #include <QLabel>
 #include <QPushButton>
+#include <QComboBox>
 #include <QTableWidget>
 #include <QHeaderView>
 #include <QInputDialog>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QSignalBlocker>
+#include <QSizePolicy>
 #include <QDir>
 #include <QFileInfo>
 #include <QFont>
@@ -30,8 +33,8 @@ void GitPanel::buildUi() {
     root->setSpacing(8);
     root->setContentsMargins(8, 8, 8, 8);
 
-    // ── Dépôt ─────────────────────────────────────────────────────────────
-    auto* repoBox = new QGroupBox(tr("Dépôt"), this);
+    // ── Projet ────────────────────────────────────────────────────────────
+    auto* repoBox = new QGroupBox(tr("Versions"), this);
     auto* repoLay = new QVBoxLayout(repoBox);
 
     m_pathLabel = new QLabel(tr("Aucun projet ouvert"), this);
@@ -39,10 +42,20 @@ void GitPanel::buildUi() {
     m_pathLabel->setWordWrap(true);
     repoLay->addWidget(m_pathLabel);
 
+    // Sélecteur de variantes (branches) + création de nouvelle variante.
+    auto* variantRow = new QHBoxLayout;
+    variantRow->addWidget(new QLabel(tr("Variante :"), this));
+    m_variantCombo = new QComboBox(this);
+    m_variantCombo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    variantRow->addWidget(m_variantCombo, 1);
+    m_newVariantBtn = new QPushButton(tr("Nouvelle variante…"), this);
+    variantRow->addWidget(m_newVariantBtn);
+    repoLay->addLayout(variantRow);
+
     auto* btnRow = new QHBoxLayout;
-    m_commitBtn  = new QPushButton(tr("Commit..."), this);
+    m_commitBtn  = new QPushButton(tr("Enregistrer une version"), this);
     m_commitBtn->setObjectName("accentBtn");
-    m_restoreBtn = new QPushButton(tr("Restaurer"), this);
+    m_restoreBtn = new QPushButton(tr("Revenir à cette version"), this);
     m_refreshBtn = new QPushButton(tr("Rafraîchir"), this);
     btnRow->addWidget(m_commitBtn);
     btnRow->addWidget(m_restoreBtn);
@@ -51,8 +64,8 @@ void GitPanel::buildUi() {
     repoLay->addLayout(btnRow);
     root->addWidget(repoBox);
 
-    // ── Historique ────────────────────────────────────────────────────────
-    auto* histBox = new QGroupBox(tr("Historique"), this);
+    // ── Versions enregistrées ──────────────────────────────────────────────
+    auto* histBox = new QGroupBox(tr("Versions enregistrées"), this);
     auto* histLay = new QVBoxLayout(histBox);
 
     m_table = new QTableWidget(this);
@@ -76,11 +89,15 @@ void GitPanel::buildUi() {
     connect(m_commitBtn,  &QPushButton::clicked, this, &GitPanel::commitCurrent);
     connect(m_restoreBtn, &QPushButton::clicked, this, &GitPanel::restoreSelected);
     connect(m_refreshBtn, &QPushButton::clicked, this, &GitPanel::refresh);
+    connect(m_newVariantBtn, &QPushButton::clicked, this, &GitPanel::createVariant);
+    connect(m_variantCombo,
+            qOverload<int>(&QComboBox::activated),
+            this, &GitPanel::switchVariant);
     connect(m_table, &QTableWidget::itemSelectionChanged,
             this, &GitPanel::updateActionStates);
 
 #ifndef ECU_GIT_AVAILABLE
-    setStatus(tr("Support Git indisponible (libgit2 non compilé)"), true);
+    setStatus(tr("Versions indisponibles (libgit2 non compilé)"), true);
 #endif
 }
 
@@ -115,6 +132,8 @@ void GitPanel::updateActionStates() {
     m_commitBtn->setEnabled(hasRepo);
     m_refreshBtn->setEnabled(hasRepo);
     m_restoreBtn->setEnabled(hasSelection);
+    if (m_variantCombo)  m_variantCombo->setEnabled(hasRepo);
+    if (m_newVariantBtn) m_newVariantBtn->setEnabled(hasRepo);
 }
 
 void GitPanel::setRepoPath(const QString& dir) {
@@ -135,17 +154,18 @@ void GitPanel::setRepoPath(const QString& dir) {
         // S'assure qu'un dépôt existe (init est idempotent côté ouverture).
         auto r = m_git->init();
         if (!r) {
-            setStatus(tr("Erreur dépôt : %1")
+            setStatus(tr("Erreur projet : %1")
                           .arg(QString::fromStdString(r.error())), true);
         } else {
-            setStatus(tr("Dépôt prêt"));
+            setStatus(tr("Projet prêt"));
         }
     }
 #else
     if (!dir.isEmpty())
-        setStatus(tr("Support Git indisponible (libgit2 non compilé)"), true);
+        setStatus(tr("Versions indisponibles (libgit2 non compilé)"), true);
 #endif
 
+    refreshVariants();
     refresh();
     updateActionStates();
 }
@@ -185,9 +205,9 @@ void GitPanel::refresh() {
     }
 
     if (commits.empty())
-        setStatus(tr("Aucun commit"));
+        setStatus(tr("Aucune version enregistrée"));
     else
-        setStatus(tr("%1 commit(s)").arg(commits.size()));
+        setStatus(tr("%1 version(s)").arg(commits.size()));
 #endif
 
     updateActionStates();
@@ -200,11 +220,11 @@ void GitPanel::commitCurrent() {
         return;
     }
 
-    // Flush la ROM en mémoire sur disque AVANT de committer.
+    // Flush la ROM en mémoire sur disque AVANT d'enregistrer la version.
     if (m_doc && m_doc->isLoaded() && m_doc->isModified() && !m_doc->path().isEmpty()) {
         if (!m_doc->saveToFile(m_doc->path())) {
-            QMessageBox::warning(this, tr("Commit"),
-                tr("Impossible de sauvegarder la ROM avant le commit.\n"
+            QMessageBox::warning(this, tr("Enregistrer une version"),
+                tr("Impossible de sauvegarder la ROM avant l'enregistrement.\n"
                    "Vérifiez que le fichier est accessible en écriture."));
             return;
         }
@@ -217,29 +237,31 @@ void GitPanel::commitCurrent() {
 
     bool ok = false;
     const QString message = QInputDialog::getText(
-        this, tr("Nouveau commit"), tr("Message du commit :"),
+        this, tr("Enregistrer une version"), tr("Description de la version :"),
         QLineEdit::Normal, suggested, &ok);
     if (!ok) return;
     if (message.trimmed().isEmpty()) {
-        setStatus(tr("Message vide : commit annulé"), true);
+        setStatus(tr("Description vide : enregistrement annulé"), true);
         return;
     }
 
     ecu::CommitResult result = m_git->commit(message.toStdString());
     if (result.nothing) {
-        setStatus(tr("Aucune modification à committer"));
+        setStatus(tr("Aucune modification à enregistrer"));
         return;
     }
     if (!result.hash) {
-        setStatus(tr("Échec du commit"), true);
-        QMessageBox::warning(this, tr("Commit"), tr("Le commit a échoué."));
+        setStatus(tr("Échec de l'enregistrement"), true);
+        QMessageBox::warning(this, tr("Enregistrer une version"),
+                             tr("L'enregistrement de la version a échoué."));
         return;
     }
 
-    setStatus(tr("Commit %1 créé").arg(QString::fromStdString(*result.hash).left(8)));
+    setStatus(tr("Version %1 enregistrée")
+                  .arg(QString::fromStdString(*result.hash).left(8)));
     refresh();
 #else
-    setStatus(tr("Support Git indisponible (libgit2 non compilé)"), true);
+    setStatus(tr("Versions indisponibles (libgit2 non compilé)"), true);
 #endif
 }
 
@@ -252,52 +274,162 @@ void GitPanel::restoreSelected() {
 
     const QString hash = selectedHash();
     if (hash.isEmpty()) {
-        setStatus(tr("Aucun commit sélectionné"), true);
+        setStatus(tr("Aucune version sélectionnée"), true);
         return;
     }
 
     if (QMessageBox::question(
-            this, tr("Restaurer"),
-            tr("Restaurer la ROM au commit %1 ?\n"
-               "L'état actuel sera remplacé (un commit de restauration est créé).")
+            this, tr("Revenir à cette version"),
+            tr("Revenir à la version %1 ?\n"
+               "L'état actuel sera remplacé (une version de restauration est créée).")
                 .arg(hash.left(8)),
             QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes)
         return;
 
     auto r = m_git->restore(hash.toStdString());
     if (!r) {
-        setStatus(tr("Erreur restauration : %1")
+        setStatus(tr("Erreur lors du retour à la version : %1")
                       .arg(QString::fromStdString(r.error())), true);
-        QMessageBox::warning(this, tr("Restaurer"),
-            tr("La restauration a échoué :\n%1")
+        QMessageBox::warning(this, tr("Revenir à cette version"),
+            tr("Le retour à la version a échoué :\n%1")
                 .arg(QString::fromStdString(r.error())));
         return;
     }
 
-    // restore() a réécrit rom.bin dans le dossier du dépôt : on le recharge.
-    bool reloaded = false;
-    if (m_doc) {
-        const QString romPath = QDir(m_repoPath).filePath("rom.bin");
-        if (QFileInfo::exists(romPath)) {
-            reloaded = m_doc->loadFromFile(romPath);
-        } else {
-            // Repli : relire le blob directement depuis le commit.
-            auto buf = m_git->readFileAtCommit(hash.toStdString(), "rom.bin");
-            if (buf) {
-                QByteArray data(reinterpret_cast<const char*>(buf->data()),
-                                static_cast<qsizetype>(buf->size()));
-                reloaded = m_doc->loadFromData(data, QStringLiteral("rom.bin"));
-            }
+    // restore() a réécrit rom.bin dans le dossier de travail : on le recharge.
+    // En repli, on relit le blob directement depuis la version sélectionnée.
+    bool reloaded = reloadWorkingRom();
+    if (!reloaded && m_doc) {
+        auto buf = m_git->readFileAtCommit(hash.toStdString(), "rom.bin");
+        if (buf) {
+            QByteArray data(reinterpret_cast<const char*>(buf->data()),
+                            static_cast<qsizetype>(buf->size()));
+            reloaded = m_doc->loadFromData(data, QStringLiteral("rom.bin"));
         }
     }
 
     setStatus(reloaded
-                  ? tr("Restauré au commit %1").arg(hash.left(8))
-                  : tr("Restauré, mais rechargement de la ROM impossible"),
+                  ? tr("Revenu à la version %1").arg(hash.left(8))
+                  : tr("Version restaurée, mais rechargement de la ROM impossible"),
               !reloaded);
     refresh();
 #else
-    setStatus(tr("Support Git indisponible (libgit2 non compilé)"), true);
+    setStatus(tr("Versions indisponibles (libgit2 non compilé)"), true);
+#endif
+}
+
+// ── Variantes (branches) ───────────────────────────────────────────────────
+
+bool GitPanel::reloadWorkingRom() {
+    if (!m_doc) return false;
+    const QString romPath = QDir(m_repoPath).filePath("rom.bin");
+    if (!QFileInfo::exists(romPath)) return false;
+    return m_doc->loadFromFile(romPath);
+}
+
+void GitPanel::refreshVariants() {
+    if (!m_variantCombo) return;
+
+    QSignalBlocker block(m_variantCombo); // évite de déclencher switchVariant()
+    m_variantCombo->clear();
+
+#ifdef ECU_GIT_AVAILABLE
+    if (m_repoPath.isEmpty() || !m_git) {
+        updateActionStates();
+        return;
+    }
+
+    auto branches = m_git->listBranches();
+    if (!branches) {
+        updateActionStates();
+        return;
+    }
+
+    int currentIndex = -1;
+    for (const auto& name : branches->all) {
+        const QString qname = QString::fromStdString(name);
+        m_variantCombo->addItem(qname);
+        if (name == branches->current)
+            currentIndex = m_variantCombo->count() - 1;
+    }
+    if (currentIndex >= 0)
+        m_variantCombo->setCurrentIndex(currentIndex);
+#endif
+
+    updateActionStates();
+}
+
+void GitPanel::switchVariant(int index) {
+#ifdef ECU_GIT_AVAILABLE
+    if (index < 0 || !m_variantCombo || m_repoPath.isEmpty() || !m_git)
+        return;
+
+    const QString name = m_variantCombo->itemText(index);
+    if (name.isEmpty()) return;
+
+    // Flush la ROM en mémoire sur disque AVANT de basculer : switchBranch()
+    // auto-committe le travail en cours (WIP) de la variante quittée, donc on
+    // veut que les modifications non sauvegardées y soient capturées.
+    if (m_doc && m_doc->isLoaded() && m_doc->isModified() && !m_doc->path().isEmpty())
+        m_doc->saveToFile(m_doc->path());
+
+    auto r = m_git->switchBranch(name.toStdString());
+    if (!r) {
+        setStatus(tr("Erreur de bascule de variante : %1")
+                      .arg(QString::fromStdString(r.error())), true);
+        QMessageBox::warning(this, tr("Variante"),
+            tr("Le changement de variante a échoué :\n%1")
+                .arg(QString::fromStdString(r.error())));
+        refreshVariants(); // resélectionne la variante réellement active
+        return;
+    }
+
+    const bool reloaded = reloadWorkingRom();
+    setStatus(reloaded
+                  ? tr("Variante « %1 » active").arg(name)
+                  : tr("Variante « %1 » active (ROM non rechargée)").arg(name),
+              !reloaded);
+    refresh();
+#else
+    Q_UNUSED(index);
+    setStatus(tr("Versions indisponibles (libgit2 non compilé)"), true);
+#endif
+}
+
+void GitPanel::createVariant() {
+#ifdef ECU_GIT_AVAILABLE
+    if (m_repoPath.isEmpty() || !m_git) {
+        setStatus(tr("Aucun projet ouvert"), true);
+        return;
+    }
+
+    bool ok = false;
+    const QString name = QInputDialog::getText(
+        this, tr("Nouvelle variante"), tr("Nom de la variante :"),
+        QLineEdit::Normal, QString(), &ok);
+    if (!ok) return;
+    if (name.trimmed().isEmpty()) {
+        setStatus(tr("Nom vide : variante non créée"), true);
+        return;
+    }
+
+    auto r = m_git->createBranch(name.trimmed().toStdString());
+    if (!r) {
+        setStatus(tr("Erreur de création de variante : %1")
+                      .arg(QString::fromStdString(r.error())), true);
+        QMessageBox::warning(this, tr("Nouvelle variante"),
+            tr("La création de la variante a échoué :\n%1")
+                .arg(QString::fromStdString(r.error())));
+        return;
+    }
+
+    // createBranch() bascule déjà sur la nouvelle variante : on recharge l'état.
+    reloadWorkingRom();
+    setStatus(tr("Variante « %1 » créée").arg(QString::fromStdString(*r)));
+    refreshVariants();
+    refresh();
+#else
+    setStatus(tr("Versions indisponibles (libgit2 non compilé)"), true);
 #endif
 }
 

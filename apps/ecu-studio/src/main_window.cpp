@@ -136,7 +136,7 @@ void MainWindow::setupUi() {
     m_sidebar->addPanel("\xe2\x9a\x99",      tr("AutoMods"),  m_autoMods);
     m_sidebar->addPanel("\xe2\x9c\x85",      tr("Checksum"),  m_checksumPanel);
     m_sidebar->addPanel("\xe2\x89\xa0",      tr("Compare"),   m_comparePanel);
-    m_sidebar->addPanel("\xe2\x93\x96",      tr("Git"),       m_gitPanel);
+    m_sidebar->addPanel("\xe2\x93\x96",      tr("Versions"),  m_gitPanel);
     m_sidebar->addPanel("A2L",               tr("A2L"),       m_a2lPanel);
     // 🚌 (U+1F68C, bus) — moniteur CAN intégré (cancore de SocketSpy)
     m_sidebar->addPanel("\xf0\x9f\x9a\x8c",  tr("CAN"),        m_canPanel);
