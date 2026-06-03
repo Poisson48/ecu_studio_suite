@@ -13,6 +13,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 namespace ecu {
@@ -177,6 +178,124 @@ std::string modeName(AxisMatchMode m) {
     return "n/a";
 }
 
+// ---------------------------------------------------------------------------
+// COM_AXIS support (PSA Valeo, Continental SID): the axes live in separate
+// AXIS_PTS blocks and the data block has no inline header. We fingerprint the
+// referenced axes, find the delta on which both axes agree, and anchor the
+// headerless data block at the same delta.
+// ---------------------------------------------------------------------------
+
+// Every ROM offset where `fp` matches as a standalone sequence (no header).
+std::vector<std::pair<std::int64_t, double>>
+scanStandaloneAxis(QByteArrayView rom, const std::vector<int64_t>& fp,
+                   DamosDataType dt, const AxisTolerance& tol) {
+    std::vector<std::pair<std::int64_t, double>> out;
+    const std::int64_t sz = static_cast<std::int64_t>(damosTypeSize(dt));
+    const std::int64_t n  = static_cast<std::int64_t>(fp.size());
+    if (n < 2) return out;
+    const std::int64_t end = static_cast<std::int64_t>(rom.size()) - n * sz;
+    const double tol0 = std::max(tol.absTol, std::abs(static_cast<double>(fp[0])) * tol.relTol);
+    std::vector<int64_t> buf(static_cast<std::size_t>(n));
+    for (std::int64_t off = 0; off <= end; ++off) {
+        // Quick reject on the first element before reading the whole window.
+        const auto v0 = readInt(rom, off, dt);
+        if (!v0 || std::abs(static_cast<double>(*v0 - fp[0])) > tol0) continue;
+        bool ok = true;
+        for (std::int64_t i = 0; i < n; ++i) {
+            const auto v = readInt(rom, off + i * sz, dt);
+            if (!v) { ok = false; break; }
+            buf[static_cast<std::size_t>(i)] = *v;
+        }
+        if (!ok) continue;
+        const AxisMatchResult r = axisMatches(buf, fp, tol);
+        if (r.match) out.emplace_back(off, r.score);
+    }
+    return out;
+}
+
+// A headerless data block is plausible if it is in bounds and not entirely
+// padding (all 0xFF or all 0x00).
+bool dataBlockPlausible(QByteArrayView rom, std::int64_t addr, std::int64_t cells,
+                        DamosDataType dt) {
+    const std::int64_t sz = static_cast<std::int64_t>(damosTypeSize(dt));
+    const std::int64_t bytes = cells * sz;
+    if (addr < 0 || cells <= 0 || addr + bytes > static_cast<std::int64_t>(rom.size()))
+        return false;
+    const std::uint8_t* b = romPtr(rom) + addr;
+    bool allFF = true, all00 = true;
+    for (std::int64_t i = 0; i < bytes; ++i) {
+        if (b[i] != 0xFF) allFF = false;
+        if (b[i] != 0x00) all00 = false;
+        if (!allFF && !all00) return true;
+    }
+    return !(allFF || all00);
+}
+
+// Relocate a COM_AXIS map/curve: returns candidate data-block addresses.
+std::vector<FingerprintCandidate>
+findComAxis(QByteArrayView rom, const DamosEntry& entry, const RelocateOptions& opts) {
+    const bool isMap = entry.type == DamosType::Map;
+    if (entry.axes.empty() || !entry.axes[0].address ||
+        entry.axes[0].fingerprint.empty())
+        return {};
+
+    const std::int64_t dataDefault = parseAddr(entry.defaultAddress);
+    const std::int64_t cells =
+        isMap ? static_cast<std::int64_t>(entry.dims.nx) * entry.dims.ny
+              : entry.dims.nx;
+    const DamosAxis& X = entry.axes[0];
+    const auto Xc = scanStandaloneAxis(rom, X.fingerprint, X.dataType, opts.axisTol);
+    if (Xc.empty()) return {};
+
+    std::unordered_map<std::int64_t, double> byDelta;  // delta -> best score
+    const bool haveY = isMap && entry.axes.size() > 1 && entry.axes[1].address &&
+                       !entry.axes[1].fingerprint.empty();
+    if (haveY) {
+        const DamosAxis& Y = entry.axes[1];
+        const auto Yc = scanStandaloneAxis(rom, Y.fingerprint, Y.dataType, opts.axisTol);
+        std::unordered_map<std::int64_t, double> xset;
+        for (const auto& [off, sc] : Xc) {
+            auto it = xset.find(off);
+            if (it == xset.end() || sc > it->second) xset[off] = sc;
+        }
+        const std::int64_t shift = *X.address - *Y.address;
+        for (const auto& [yoff, ysc] : Yc) {
+            const auto it = xset.find(yoff + shift);  // X offset sharing this delta
+            if (it == xset.end()) continue;
+            const std::int64_t delta = yoff - *Y.address;
+            const double score = std::min(1.0, (it->second + ysc) / 2.0);
+            auto s = byDelta.find(delta);
+            if (s == byDelta.end() || score > s->second) byDelta[delta] = score;
+        }
+    } else {
+        // Single distinctive axis (curve, or map missing the Y address).
+        for (const auto& [xoff, xsc] : Xc) {
+            const std::int64_t delta = xoff - *X.address;
+            auto s = byDelta.find(delta);
+            if (s == byDelta.end() || xsc * 0.9 > s->second) byDelta[delta] = xsc * 0.9;
+        }
+    }
+
+    std::vector<FingerprintCandidate> out;
+    for (const auto& [delta, score] : byDelta) {
+        const std::int64_t dataAddr = dataDefault + delta;
+        if (!dataBlockPlausible(rom, dataAddr, cells, entry.data.dataType)) continue;
+        FingerprintCandidate c;
+        c.address = static_cast<std::size_t>(dataAddr);
+        c.score   = score;
+        c.xMode   = AxisMatchMode::Strict;
+        c.yMode   = haveY ? AxisMatchMode::Strict : AxisMatchMode::None;
+        out.push_back(c);
+    }
+    std::sort(out.begin(), out.end(),
+              [&](const FingerprintCandidate& a, const FingerprintCandidate& b) {
+                  if (std::abs(a.score - b.score) > 0.01) return a.score > b.score;
+                  return std::abs(static_cast<std::int64_t>(a.address) - dataDefault) <
+                         std::abs(static_cast<std::int64_t>(b.address) - dataDefault);
+              });
+    return out;
+}
+
 }  // namespace
 
 // ---------------------------------------------------------------------------
@@ -190,6 +309,9 @@ OpenDamos::findMapByFingerprint(QByteArrayView rom, const DamosEntry& entry,
     const bool isCurve = entry.type == DamosType::Curve;
     if (!isMap && !isCurve) return {};
     if (entry.axes.empty()) return {};
+
+    // COM_AXIS layout (separate axis blocks, no inline header): different scan.
+    if (entry.comAxis) return findComAxis(rom, entry, opts);
 
     const std::int64_t headerBytes = isMap ? 4 : 2;
     const DamosDataType axisDT = entry.axes[0].dataType;

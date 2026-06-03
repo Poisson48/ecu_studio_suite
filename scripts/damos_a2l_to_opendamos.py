@@ -106,14 +106,24 @@ def dtype_from_name(rl, order):
     return dtype('SWORD', order)
 
 
-def parse_char(a2l, label, compu, layouts, order):
+def parse_axis_pts(a2l):
+    """AXIS_PTS name -> dict(address, rl). The point count comes from the map's
+    AXIS_DESCR, not from here (the AXIS_PTS field is a max-points allocation)."""
+    out = {}
+    for m in re.finditer(r'/begin AXIS_PTS\s+(\S+)\s+"[^"]*"\s+(0x[0-9A-Fa-f]+)\s+\S+\s+(\S+)', a2l):
+        name, addr, rl = m.groups()
+        out[name] = dict(address=int(addr, 16), rl=rl)
+    return out
+
+
+def parse_char(a2l, label, compu, layouts, order, axis_pts=None):
     m = re.search(r'/begin CHARACTERISTIC\s+' + re.escape(label) + r'\b.*?/end CHARACTERISTIC',
                   a2l, re.S)
     if not m:
         return None
     blk = m.group(0)
     if 'COM_AXIS' in blk:
-        return ('skip', 'COM_AXIS')
+        return parse_comaxis(blk, label, compu, layouts, order, axis_pts or {})
     h = re.search(r'/begin CHARACTERISTIC\s+' + re.escape(label) +
                   r'\s+"([^"]*)"\s+(\w+)\s+(0x[0-9A-Fa-f]+)\s+(\S+)\s+([-\d.eE]+)\s+(\S+)', blk)
     if not h:
@@ -138,6 +148,45 @@ def parse_char(a2l, label, compu, layouts, order):
                 ny=axes[1]['count'] if len(axes) > 1 else 0, axes=axes)
 
 
+def parse_comaxis(blk, label, compu, layouts, order, axis_pts):
+    """COM_AXIS map: data block (no header) + separate AXIS_PTS axis blocks."""
+    h = re.search(r'\b(MAP|CURVE)\s+(0x[0-9A-Fa-f]+)\s+(\S+)', blk)
+    if not h:
+        return ('skip', 'unparsable COM_AXIS header')
+    ctype, addr, rl = h.group(1), int(h.group(2), 16), h.group(3)
+    lay = layouts.get(rl)
+    fdt = dtype(lay['fnc'], order) if lay and lay['fnc'] else dtype('UWORD', order)
+    desc = re.search(r'/begin CHARACTERISTIC\s+\S+\s+"([^"]*)"', blk)
+    axes = []
+    for am in re.finditer(r'COM_AXIS\s+(\S+)\s+(\S+)\s+(\d+).*?AXIS_PTS_REF\s+(\S+)', blk, re.S):
+        inq, ac, cnt, ref = am.groups()
+        ap = axis_pts.get(ref)
+        if not ap:
+            return ('skip', f'missing AXIS_PTS {ref}')
+        alay = layouts.get(ap['rl'])
+        adt = dtype(alay['axis'], order) if alay and alay['axis'] else dtype('SWORD', order)
+        af, aoff, aunit = compu.get(ac, (1.0, 0.0, ""))
+        axes.append(dict(inputQuantity=(ref if inq == 'NO_INPUT_QUANTITY' else inq),
+                         unit=aunit, factor=af, offset=aoff, count=int(cnt),
+                         dataType=adt, address=ap['address']))
+    if not axes:
+        return ('skip', 'no COM_AXIS axes')
+    return dict(name=label, type=ctype, description=desc.group(1) if desc else "",
+                address=addr, recordLayout=rl, dataType=fdt, comAxis=True,
+                data=dict(factor=1.0, offset=0.0, unit=""),
+                nx=axes[0]['count'], ny=axes[1]['count'] if len(axes) > 1 else 0, axes=axes)
+
+
+def read_axis(img, lo, addr, count, dt):
+    sz = 1 if 'BYTE' in dt else (4 if 'LONG' in dt else 2)
+    le = dt.endswith('_LE')
+    fmt = {'SBYTE': 'b', 'UBYTE': 'B', 'SWORD': '<h' if le else '>h',
+           'UWORD': '<H' if le else '>H', 'SLONG': '<i' if le else '>i',
+           'ULONG': '<I' if le else '>I'}[dt.replace('_LE', '').replace('_BE', '')]
+    o = addr - lo
+    return [struct.unpack_from(fmt, img, o + sz * k)[0] for k in range(count)]
+
+
 def read_fp(img, lo, addr, ctype, nx, ny, dt):
     o = addr - lo
     sz = 1 if 'BYTE' in dt else (4 if 'LONG' in dt else 2)
@@ -160,29 +209,41 @@ def build(a2l_path, hex_path, labels):
     order = detect_byteorder(a2l)
     compu = parse_compu(a2l)
     layouts = parse_record_layouts(a2l)
+    axis_pts = parse_axis_pts(a2l)
     lo, img = load_ihex(hex_path)
     chars = []
     for lab in labels:
-        c = parse_char(a2l, lab, compu, layouts, order)
+        c = parse_char(a2l, lab, compu, layouts, order, axis_pts)
         if not c:
             print(f"  ! {lab}: not found in A2L", file=sys.stderr)
             continue
         if isinstance(c, tuple):
             print(f"  - {lab}: skipped ({c[1]})", file=sys.stderr)
             continue
-        x, y = read_fp(img, lo, c['address'], c['type'], c['nx'], c['ny'], c['dataType'])
         axes = []
-        for i, ax in enumerate(c['axes']):
-            axes.append(dict(inputQuantity=ax['inputQuantity'], unit=ax['unit'],
-                             factor=ax['factor'], offset=ax['offset'],
-                             dataType=ax['dataType'], fingerprint=(x if i == 0 else y)))
+        if c.get('comAxis'):
+            for ax in c['axes']:                       # axes live in their own blocks
+                fp = read_axis(img, lo, ax['address'], ax['count'], ax['dataType'])
+                axes.append(dict(inputQuantity=ax['inputQuantity'], unit=ax['unit'],
+                                 factor=ax['factor'], offset=ax['offset'],
+                                 dataType=ax['dataType'], address=f"0x{ax['address'] - lo:X}",
+                                 fingerprint=fp))
+        else:
+            x, y = read_fp(img, lo, c['address'], c['type'], c['nx'], c['ny'], c['dataType'])
+            for i, ax in enumerate(c['axes']):
+                axes.append(dict(inputQuantity=ax['inputQuantity'], unit=ax['unit'],
+                                 factor=ax['factor'], offset=ax['offset'],
+                                 dataType=ax['dataType'], fingerprint=(x if i == 0 else y)))
         dims = ({'nx': c['nx'], 'ny': c['ny']} if c['type'] == 'MAP'
                 else {'nx': c['nx']} if c['type'] == 'CURVE' else {})
-        chars.append(dict(name=c['name'], type=c['type'], description=c['description'],
-                          recordLayout=c['recordLayout'],
-                          defaultAddress=f"0x{c['address'] - lo:X}", dims=dims, axes=axes,
-                          data=dict(dataType=c['dataType'], factor=c['data']['factor'],
-                                    offset=c['data']['offset'], unit=c['data']['unit'])))
+        entry = dict(name=c['name'], type=c['type'], description=c['description'],
+                     recordLayout=c['recordLayout'],
+                     defaultAddress=f"0x{c['address'] - lo:X}", dims=dims, axes=axes,
+                     data=dict(dataType=c['dataType'], factor=c['data']['factor'],
+                               offset=c['data']['offset'], unit=c['data']['unit']))
+        if c.get('comAxis'):
+            entry['comAxis'] = True
+        chars.append(entry)
     return order, lo, chars
 
 

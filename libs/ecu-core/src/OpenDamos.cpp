@@ -121,6 +121,18 @@ DamosEntry parseEntry(const json& c) {
                 for (const auto& v : a["fingerprint"])
                     if (v.is_number())
                         ax.fingerprint.push_back(v.get<std::int64_t>());
+            // COM_AXIS: the axis's own block address (hex string or integer).
+            if (a.contains("address")) {
+                const auto& av = a["address"];
+                if (av.is_string()) {
+                    std::string s = av.get<std::string>();
+                    std::size_t pos = (s.rfind("0x", 0) == 0 || s.rfind("0X", 0) == 0) ? 2 : 0;
+                    ax.address = static_cast<std::int64_t>(
+                        std::strtoll(s.c_str() + pos, nullptr, 16));
+                } else if (av.is_number_integer()) {
+                    ax.address = av.get<std::int64_t>();
+                }
+            }
             e.axes.push_back(std::move(ax));
         }
     }
@@ -154,6 +166,13 @@ DamosEntry parseEntry(const json& c) {
         e.stockRawValue = c["stockRawValue"].get<std::int64_t>();
     if (c.contains("stockPhysValue") && c["stockPhysValue"].is_number())
         e.stockPhysValue = c["stockPhysValue"].get<double>();
+
+    // COM_AXIS: explicit flag, or inferred when the axes carry their own address.
+    if (c.contains("comAxis") && c["comAxis"].is_boolean())
+        e.comAxis = c["comAxis"].get<bool>();
+    else
+        e.comAxis = std::any_of(e.axes.begin(), e.axes.end(),
+                                [](const DamosAxis& a) { return a.address.has_value(); });
 
     e.hasStage1 = c.contains("stage1");
     // egrOff peut être un booléen simple ou un objet {recommendedRawValue, note}.

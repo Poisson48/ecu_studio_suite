@@ -95,6 +95,12 @@ json entryToJson(const DamosEntry& e) {
                 for (auto v : ax.fingerprint) fp.push_back(v);
                 a["fingerprint"] = std::move(fp);
             }
+            if (ax.address) {
+                char buf[20];
+                std::snprintf(buf, sizeof(buf), "0x%llX",
+                              static_cast<unsigned long long>(*ax.address));
+                a["address"] = buf;
+            }
             arr.push_back(std::move(a));
         }
         c["axes"] = std::move(arr);
@@ -109,6 +115,7 @@ json entryToJson(const DamosEntry& e) {
         c["data"] = std::move(d);
     }
 
+    if (e.comAxis)        c["comAxis"]        = true;
     if (e.stockRawValue)  c["stockRawValue"]  = *e.stockRawValue;
     if (e.stockPhysValue) c["stockPhysValue"] = *e.stockPhysValue;
     if (e.hasStage1)      c["stage1"]         = true;

@@ -1,0 +1,902 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "psa_valeo_v46",
+  "name": "open_damos — PSA Valeo V46 (1.6 essence, COM_AXIS)",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "homepage": "https://github.com/Poisson48/open_car_reprog/wiki/Open-DAMOS",
+  "description": "Open DAMOS for PSA Valeo V46 (1.6 essence EB SERIE, big-endian). COM_AXIS layout: the axes are separate AXIS_PTS blocks (no inline header) and the data block is anchored on a fingerprinted axis (delta consensus). Generated from EC_02_84_SERIE.a2l + EC_02_84.HEX via scripts/damos_a2l_to_opendamos.py.",
+  "byteOrder": "BE",
+  "baseline": {
+    "source": "EC_02_84.HEX",
+    "damos": "EC_02_84_SERIE.a2l (Genebase 5.5, ASAP2 1.51, MSB_FIRST)",
+    "note": "COM_AXIS: chaque axe (AXIS_PTS) porte son adresse ; le bloc de données est relocalisé via le delta de l'axe. Adresses = offsets image (addr - 0)."
+  },
+  "recordLayouts": {
+    "ComAxis_BE": {
+      "type": "MAP",
+      "byteOrder": "BE",
+      "headerBytes": 0,
+      "axisMode": "COM_AXIS",
+      "dataType": "UWORD_BE"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "AFA_bInVlvAdp_M",
+      "type": "MAP",
+      "description": "Table de booléens d'inhibition de l'adaptation du VVTadmission par AFA",
+      "recordLayout": "AFA_RL_Lookup2D_UBYTE",
+      "defaultAddress": "0x3AFF5",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Eng_rAirLd_A",
+          "unit": "-",
+          "factor": 6.103515625e-05,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x2F546",
+          "fingerprint": [
+            1638,
+            2458,
+            3277,
+            4096,
+            4915,
+            5734,
+            6554,
+            7373,
+            8192,
+            9011,
+            9830,
+            10650,
+            11469,
+            13107,
+            14746,
+            16384
+          ]
+        },
+        {
+          "inputQuantity": "Ext_nEng_A",
+          "unit": "Rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x2F526",
+          "fingerprint": [
+            750,
+            850,
+            1050,
+            1250,
+            1400,
+            1650,
+            2000,
+            2700,
+            3100,
+            3500,
+            4000,
+            4350,
+            5150,
+            5600,
+            6000,
+            6500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "misc"
+    },
+    {
+      "name": "AFA_facCorAtmGrdSlopEfc_M",
+      "type": "MAP",
+      "description": "cartographie de sensibilité de correction acoustique de la pression repartiteur admission moyenne en zone atmosphérique par rapport à l'angle de fermeture admission",
+      "recordLayout": "AFA_RL_Lookup2D_LONG",
+      "defaultAddress": "0x3896C",
+      "dims": {
+        "nx": 12,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AFA_agCkGrdClsInVlvX_A",
+          "unit": "°Vil",
+          "factor": 0.09374999999970704,
+          "offset": 83.99999999973751,
+          "dataType": "UWORD_BE",
+          "address": "0x3ADAE",
+          "fingerprint": [
+            1156,
+            1212,
+            1264,
+            1316,
+            1372,
+            1424,
+            1476,
+            1532,
+            1584,
+            1636,
+            1692,
+            1744
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x2F760",
+          "fingerprint": [
+            600,
+            750,
+            850,
+            1050,
+            1250,
+            1400,
+            1650,
+            2000,
+            2350,
+            2700,
+            3100,
+            3500,
+            4000,
+            4350,
+            5150,
+            5600,
+            6000,
+            6500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SLONG_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "air"
+    },
+    {
+      "name": "AFA_facCorBoostGrdSlopEfc_M",
+      "type": "MAP",
+      "description": "cartographie de sensibilité de correction acoustique de la pression repartiteur admission moyenne en zone suralimentée par rapport à l'angle VVT de fermeture admission",
+      "recordLayout": "AFA_RL_Lookup2D_LONG",
+      "defaultAddress": "0x38CCC",
+      "dims": {
+        "nx": 12,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AFA_agCkGrdClsInVlvX_A",
+          "unit": "°Vil",
+          "factor": 0.09374999999970704,
+          "offset": 83.99999999973751,
+          "dataType": "UWORD_BE",
+          "address": "0x3ADAE",
+          "fingerprint": [
+            1156,
+            1212,
+            1264,
+            1316,
+            1372,
+            1424,
+            1476,
+            1532,
+            1584,
+            1636,
+            1692,
+            1744
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x2F760",
+          "fingerprint": [
+            600,
+            750,
+            850,
+            1050,
+            1250,
+            1400,
+            1650,
+            2000,
+            2350,
+            2700,
+            3100,
+            3500,
+            4000,
+            4350,
+            5150,
+            5600,
+            6000,
+            6500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SLONG_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "boost"
+    },
+    {
+      "name": "AFAMgt_tiDlyLstObsThd_M",
+      "type": "MAP",
+      "description": "Table des délais d'attente entre les observations",
+      "recordLayout": "LIB_CALIB_RL_Lookup2D_UWORD",
+      "defaultAddress": "0x2D4F0",
+      "dims": {
+        "nx": 9,
+        "ny": 9
+      },
+      "axes": [
+        {
+          "inputQuantity": "Inj_concFuStm_A",
+          "unit": "-",
+          "factor": 1.52587890625e-05,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x2F7D6",
+          "fingerprint": [
+            0,
+            4096,
+            8192,
+            12288,
+            16384,
+            20480,
+            24576,
+            28672,
+            32768
+          ]
+        },
+        {
+          "inputQuantity": "Inj_concFuStmErr_A",
+          "unit": "-",
+          "factor": 1.52587890625e-05,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x2F7E8",
+          "fingerprint": [
+            0,
+            8192,
+            16384,
+            24576,
+            32768,
+            40960,
+            49152,
+            57344,
+            65535
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "injection"
+    },
+    {
+      "name": "Afr_target_reinst_aps_corr_map",
+      "type": "MAP",
+      "description": "Table de correction de richesse au réattelage par reprise pédale",
+      "recordLayout": "DATA_RECORD_UWORD",
+      "defaultAddress": "0x50674",
+      "dims": {
+        "nx": 9,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Afr_tgt_reinst_time_in_fco_count",
+          "unit": "s",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x50A98",
+          "fingerprint": [
+            0,
+            1,
+            250,
+            501,
+            750,
+            1000,
+            1499,
+            2000,
+            3000
+          ]
+        },
+        {
+          "inputQuantity": "Regime_moteur",
+          "unit": "tr/min",
+          "factor": 0.125,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x50614",
+          "fingerprint": [
+            6000,
+            6800,
+            8400,
+            10000,
+            11200,
+            13200,
+            16000,
+            21600,
+            24800,
+            28000,
+            32000,
+            34800,
+            41200,
+            44800,
+            48000,
+            52000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "misc"
+    },
+    {
+      "name": "AirEfc_facCorAtmSlopEfc_M",
+      "type": "MAP",
+      "description": "cartographie de correction acoustique de la pression repartiteur admission moyenne en zone atmosphérique",
+      "recordLayout": "LIB_CALIB_RL_Lookup2D_UWORD",
+      "defaultAddress": "0x2D642",
+      "dims": {
+        "nx": 13,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirEfc_agCkClsInVlvX_A",
+          "unit": "°Ck",
+          "factor": 0.09374999999970704,
+          "offset": 83.99999999973751,
+          "dataType": "UWORD_BE",
+          "address": "0x2F680",
+          "fingerprint": [
+            1128,
+            1184,
+            1240,
+            1288,
+            1344,
+            1400,
+            1448,
+            1504,
+            1560,
+            1608,
+            1664,
+            1720,
+            1768
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x2F760",
+          "fingerprint": [
+            600,
+            750,
+            850,
+            1050,
+            1250,
+            1400,
+            1650,
+            2000,
+            2350,
+            2700,
+            3100,
+            3500,
+            4000,
+            4350,
+            5150,
+            5600,
+            6000,
+            6500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "air"
+    },
+    {
+      "name": "AirEfc_facCorBoostSlopEfc_M",
+      "type": "MAP",
+      "description": "cartographie de correction acoustique de la pression repartiteur admission moyenne en zone suralimentée",
+      "recordLayout": "LIB_CALIB_RL_Lookup2D_UWORD",
+      "defaultAddress": "0x2D816",
+      "dims": {
+        "nx": 13,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirEfc_agCkClsInVlvX_A",
+          "unit": "°Ck",
+          "factor": 0.09374999999970704,
+          "offset": 83.99999999973751,
+          "dataType": "UWORD_BE",
+          "address": "0x2F680",
+          "fingerprint": [
+            1128,
+            1184,
+            1240,
+            1288,
+            1344,
+            1400,
+            1448,
+            1504,
+            1560,
+            1608,
+            1664,
+            1720,
+            1768
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x2F760",
+          "fingerprint": [
+            600,
+            750,
+            850,
+            1050,
+            1250,
+            1400,
+            1650,
+            2000,
+            2350,
+            2700,
+            3100,
+            3500,
+            4000,
+            4350,
+            5150,
+            5600,
+            6000,
+            6500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "boost"
+    },
+    {
+      "name": "AirEfc_facTAirUsInVlv_M",
+      "type": "MAP",
+      "description": "table de correction en densité de la pente et de l'offset de remplissage en air",
+      "recordLayout": "LIB_CALIB_RL_Lookup2D_UWORD",
+      "defaultAddress": "0x2DD92",
+      "dims": {
+        "nx": 16,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirEfc_tAirUsInVlv_A",
+          "unit": "K",
+          "factor": 0.0078125,
+          "offset": 223.0,
+          "dataType": "UWORD_BE",
+          "address": "0x2F784",
+          "fingerprint": [
+            1299,
+            2665,
+            4030,
+            5395,
+            6761,
+            8126,
+            9491,
+            10857,
+            12222,
+            13587,
+            14953,
+            16318,
+            17683,
+            19049,
+            20414,
+            21779
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x2F760",
+          "fingerprint": [
+            600,
+            750,
+            850,
+            1050,
+            1250,
+            1400,
+            1650,
+            2000,
+            2350,
+            2700,
+            3100,
+            3500,
+            4000,
+            4350,
+            5150,
+            5600,
+            6000,
+            6500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "air"
+    },
+    {
+      "name": "AirEfc_mfBurnRspgRedBas_M",
+      "type": "MAP",
+      "description": "cartographie de débit réduit de gaz brulé reaspiré de base",
+      "recordLayout": "LIB_CALIB_RL_Lookup2D_UWORD",
+      "defaultAddress": "0x2E2CA",
+      "dims": {
+        "nx": 25,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirEfc_agCkVlvOvlpX_A",
+          "unit": "°Ck",
+          "factor": 0.09374999999970704,
+          "offset": -191.99999999940002,
+          "dataType": "UWORD_BE",
+          "address": "0x2F6CE",
+          "fingerprint": [
+            1760,
+            1776,
+            1808,
+            1824,
+            1840,
+            1872,
+            1888,
+            1904,
+            1936,
+            1952,
+            1968,
+            2000,
+            2016,
+            2032,
+            2064,
+            2080,
+            2096,
+            2128,
+            2144,
+            2160,
+            2192,
+            2208,
+            2224,
+            2256,
+            2272
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x2F760",
+          "fingerprint": [
+            600,
+            750,
+            850,
+            1050,
+            1250,
+            1400,
+            1650,
+            2000,
+            2350,
+            2700,
+            3100,
+            3500,
+            4000,
+            4350,
+            5150,
+            5600,
+            6000,
+            6500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "air"
+    },
+    {
+      "name": "AirEfc_mfBurnRspgRedCor_M",
+      "type": "MAP",
+      "description": "cartographie de débit réduit de gaz brulé reaspiré corrigé",
+      "recordLayout": "LIB_CALIB_RL_Lookup2D_UWORD",
+      "defaultAddress": "0x2E64E",
+      "dims": {
+        "nx": 25,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirEfc_agCkVlvOvlpX_A",
+          "unit": "°Ck",
+          "factor": 0.09374999999970704,
+          "offset": -191.99999999940002,
+          "dataType": "UWORD_BE",
+          "address": "0x2F6CE",
+          "fingerprint": [
+            1760,
+            1776,
+            1808,
+            1824,
+            1840,
+            1872,
+            1888,
+            1904,
+            1936,
+            1952,
+            1968,
+            2000,
+            2016,
+            2032,
+            2064,
+            2080,
+            2096,
+            2128,
+            2144,
+            2160,
+            2192,
+            2208,
+            2224,
+            2256,
+            2272
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x2F760",
+          "fingerprint": [
+            600,
+            750,
+            850,
+            1050,
+            1250,
+            1400,
+            1650,
+            2000,
+            2350,
+            2700,
+            3100,
+            3500,
+            4000,
+            4350,
+            5150,
+            5600,
+            6000,
+            6500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "air"
+    },
+    {
+      "name": "AirEfc_pBegCorBoostSlopEfc_M",
+      "type": "MAP",
+      "description": "cartographie de pression à partir de laquelle la prise en compte de la correction acoustique en zone suralimenté est considérée",
+      "recordLayout": "LIB_CALIB_RL_Lookup2D_UWORD",
+      "defaultAddress": "0x2E9D2",
+      "dims": {
+        "nx": 13,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirEfc_agCkClsInVlvX_A",
+          "unit": "°Ck",
+          "factor": 0.09374999999970704,
+          "offset": 83.99999999973751,
+          "dataType": "UWORD_BE",
+          "address": "0x2F680",
+          "fingerprint": [
+            1128,
+            1184,
+            1240,
+            1288,
+            1344,
+            1400,
+            1448,
+            1504,
+            1560,
+            1608,
+            1664,
+            1720,
+            1768
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x2F760",
+          "fingerprint": [
+            600,
+            750,
+            850,
+            1050,
+            1250,
+            1400,
+            1650,
+            2000,
+            2350,
+            2700,
+            3100,
+            3500,
+            4000,
+            4350,
+            5150,
+            5600,
+            6000,
+            6500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "boost"
+    },
+    {
+      "name": "AirSys_effCyc_M",
+      "type": "MAP",
+      "description": "Calibration du coef K= pi*14.7/(PCI*rendement_de_cycle)",
+      "recordLayout": "AirSysMair_RL_Lookup2D_UWORD",
+      "defaultAddress": "0x3B440",
+      "dims": {
+        "nx": 20,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Ext_nEngRef4_A",
+          "unit": "Rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x2F566",
+          "fingerprint": [
+            450,
+            650,
+            750,
+            850,
+            1050,
+            1250,
+            1400,
+            1650,
+            2000,
+            2350,
+            2700,
+            3100,
+            3500,
+            4000,
+            4350,
+            4800,
+            5150,
+            5600,
+            6000,
+            6500
+          ]
+        },
+        {
+          "inputQuantity": "Eng_rAirLd_A",
+          "unit": "-",
+          "factor": 6.103515625e-05,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x2F546",
+          "fingerprint": [
+            1638,
+            2458,
+            3277,
+            4096,
+            4915,
+            5734,
+            6554,
+            7373,
+            8192,
+            9011,
+            9830,
+            10650,
+            11469,
+            13107,
+            14746,
+            16384
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "air"
+    }
+  ]
+}

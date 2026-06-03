@@ -310,7 +310,14 @@ Chaque résultat porte un `addressSource` ∈ {`fingerprint`, `anchor`, `default
 
 **Limites :** cartes sans en-tête de dimensions inline → non détectables par fingerprint (utiliser un ancrage) ; firmwares très divergents (axes redessinés) → ajouter une variante de fingerprint ou un DAMOS custom.
 
-**Mode COM_AXIS (axes séparés, ECU little-endian type SID807).** Certains ECU (Continental SID807, MEDC17…) ne stockent **pas** d'en-tête `(nx, ny)` inline devant la carte : les axes vivent dans des blocs `AXIS_PTS` indépendants (COM_AXIS), partagés entre plusieurs cartes, précédés de leur propre compte. Le scan inline ci-dessus ne s'y applique pas. Le **mode COM_AXIS** (distinct) consiste à : (1) scanner les blocs d'axes autonomes en lisant les points au `dataType` LE de la recette, (2) matcher les `fingerprint` sur ces blocs, (3) retrouver les cartes qui les référencent via les adresses d'axes comme ancres (ou via l'A2L source). Les types de données LE (`SWORD_LE`…) et le `byteOrder` de la recette sont en place ; l'orchestration COM_AXIS complète est un mode à part entière (hors v1 du scan inline).
+**Mode COM_AXIS (axes séparés — PSA Valeo, Continental SID, certains EDC17).** Ces ECU ne stockent **pas** d'en-tête `(nx, ny)` inline devant la carte : les axes vivent dans des blocs `AXIS_PTS` indépendants (COM_AXIS), souvent partagés entre plusieurs cartes, et le bloc de données est une simple grille `nx·ny` sans signature propre. Une caractéristique COM_AXIS porte `comAxis: true` et chaque axe porte son propre `address` (+ son `fingerprint`).
+
+Algorithme (implémenté, `findComAxis`) :
+1. Pour chaque axe référencé, scan de la ROM pour son `fingerprint` (séquence autonome, sans en-tête), à son `dataType` et son endianness.
+2. **Consensus de delta** : on cherche le couple (offset axe X, offset axe Y) qui partage le **même delta** d'adresse (`offsetX − address_X == offsetY − address_Y`). Ce delta commun lève l'ambiguïté des axes courts/génériques.
+3. Le bloc de données headerless est **ancré** au même delta : `data = defaultAddress + delta`, avec sanity-check (bloc ni tout-`FF` ni tout-`00`).
+
+Limite : une carte dont les axes sont trop courts/génériques **et** dont les données sont uniformes (carte « plate ») ne peut pas être confirmée par le contenu → retombe sur `default-fallback`. Vérifié sur PSA Valeo V46 : 11/12 cartes distinctes relocalisées (score 1.0).
 
 ---
 
