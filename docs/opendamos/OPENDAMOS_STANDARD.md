@@ -297,7 +297,7 @@ Pour situer le rôle de chaque champ. Implémentation : `OpenDamos::relocate` (C
 
 Pour chaque **MAP / CURVE** :
 1. Scan de la ROM par pas de 2 octets.
-2. À chaque offset, l'en-tête `(nx[, ny])` en `UWORD_BE` doit matcher `dims`.
+2. À chaque offset, l'en-tête `(nx[, ny])` doit matcher `dims`. Il est lu dans l'**endianness des axes** : `UWORD_BE` pour un ECU big-endian (Bosch EDC16), `UWORD_LE` pour un ECU little-endian (Bosch EDC17 TriCore). Les deux familles utilisent un en-tête de dimensions inline (`NO_AXIS_PTS` dans le RECORD_LAYOUT A2L) et sont donc relocalisables par ce scan.
 3. Si oui, lecture des axes et comparaison au `fingerprint` via un matcher à **deux passes** :
    - **Strict** : chaque point lu doit être à `max(absTol=100, relTol=5%·attendu)` de l'attendu ; **≥ 85 %** de matchs ⇒ match strict.
    - **Bag-of-values** (fallback) : combien de valeurs du fingerprint existent *quelque part* dans l'axe (à tolérance) ; **≥ 70 %** + min/max cohérents (±15 %) ⇒ match bag (score plus bas).

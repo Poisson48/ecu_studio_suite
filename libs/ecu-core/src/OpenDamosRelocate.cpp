@@ -195,6 +195,15 @@ OpenDamos::findMapByFingerprint(QByteArrayView rom, const DamosEntry& entry,
     const DamosDataType axisDT = entry.axes[0].dataType;
     const std::int64_t axisSize = static_cast<std::int64_t>(damosTypeSize(axisDT));
 
+    // The inline (nx, ny) dimension header is stored in the same endianness as
+    // the axes: big-endian for Bosch EDC16, little-endian for EDC17 (TriCore).
+    const bool axisLE = axisDT == DamosDataType::SWordLE ||
+                        axisDT == DamosDataType::UWordLE ||
+                        axisDT == DamosDataType::SLongLE ||
+                        axisDT == DamosDataType::ULongLE;
+    const DamosDataType headerDT =
+        axisLE ? DamosDataType::UWordLE : DamosDataType::UWordBE;
+
     const std::vector<int64_t>& xFp = entry.axes[0].fingerprint;
     const std::vector<int64_t>* yFp =
         (isMap && entry.axes.size() > 1) ? &entry.axes[1].fingerprint : nullptr;
@@ -211,10 +220,10 @@ OpenDamos::findMapByFingerprint(QByteArrayView rom, const DamosEntry& entry,
             rom.size());
 
     for (std::int64_t off = start; off <= end - headerBytes; off += step) {
-        const auto nx = readInt(rom, off, DamosDataType::UWordBE);
+        const auto nx = readInt(rom, off, headerDT);
         if (!nx || *nx != expectedNx) continue;
         if (isMap) {
-            const auto ny = readInt(rom, off + 2, DamosDataType::UWordBE);
+            const auto ny = readInt(rom, off + 2, headerDT);
             if (!ny || *ny != expectedNy) continue;
         }
 

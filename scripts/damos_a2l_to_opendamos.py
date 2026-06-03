@@ -4,17 +4,19 @@
 Reference implementation of docs/opendamos/CONVENTION_DAMOS_VERS_OPENDAMOS.md.
 For each requested CHARACTERISTIC it pulls type / address / record layout /
 conversions / axes from the A2L, and reads the raw axis values (the fingerprint)
-from the ROM at that address. The emitted recipe validates against
-ressources/open_damos.schema.json and relocates by fingerprint onto any firmware
-of the same family.
+from the ROM at that address.
+
+Handles both families that store an inline (nx, ny) dimension header
+(NO_AXIS_PTS in the RECORD_LAYOUT):
+  * Bosch EDC16  — big-endian (MSB_FIRST / DAMOS++ exports without RECORD_LAYOUT)
+  * Bosch EDC17  — little-endian (MSB_LAST), TriCore 0x80000000 addressing
+
+COM_AXIS characteristics (separate AXIS_PTS blocks, no inline header — PSA Valeo,
+Continental SID) are skipped: they need the COM_AXIS relocation mode (see
+docs/opendamos/OPENDAMOS_STANDARD.md §13), not the inline-header scan.
 
 Usage:
     damos_a2l_to_opendamos.py <damos.a2l> <rom.hex> <out.json> <Label1,Label2,...>
-
-Notes:
-  * COMPU_METHOD RAT_FUNC "0 b 0 0 0 f" (linear) -> phys = raw*(f/b) - c/b.
-  * Only inline-header Bosch layouts (Kf/Kl, big-endian) are handled here; group
-    maps (_GMAP) and separate-axis (COM_AXIS) ECUs need a different reader.
 """
 import re, json, sys, struct
 
@@ -50,6 +52,10 @@ def load_ihex(path):
     return lo, bytes(img)
 
 
+def detect_byteorder(a2l):
+    return 'LE' if 'MSB_LAST' in a2l else 'BE'
+
+
 def parse_compu(a2l):
     """COMPU_METHOD name -> (factor, offset, unit), phys = raw*factor + offset."""
     out = {}
@@ -58,43 +64,75 @@ def parse_compu(a2l):
         cm = re.search(r'COEFFS\s+' + r'\s+'.join([r'([-\d.eE]+)'] * 6), blk)
         unit = re.search(r'RAT_FUNC\s+"[^"]*"\s+"([^"]*)"', blk)
         if not cm:
+            out[name] = (1.0, 0.0, "")   # non-linear (TAB_INTP/FORM): identity
             continue
         a, b, c, d, e, f = (float(x) for x in cm.groups())
         factor = f / b if b else 1.0
         offset = -c / b if b else 0.0
-        if offset == 0:
-            offset = 0.0  # normalise -0.0
-        out[name] = (factor, offset, unit.group(1) if unit else "")
+        out[name] = (factor, 0.0 if offset == 0 else offset, unit.group(1) if unit else "")
     return out
 
 
-def dtype_of(rl):
+_TYPE = {'SBYTE': 'SBYTE', 'UBYTE': 'UBYTE', 'SWORD': 'SWORD', 'UWORD': 'UWORD',
+         'SLONG': 'SLONG', 'ULONG': 'ULONG'}
+
+
+def parse_record_layouts(a2l):
+    """name -> dict(inline=bool, axis=<TYPE>, fnc=<TYPE>)."""
+    out = {}
+    for m in re.finditer(r'/begin RECORD_LAYOUT\s+(\S+).*?/end RECORD_LAYOUT', a2l, re.S):
+        blk, name = m.group(0), m.group(1)
+        inline = 'NO_AXIS_PTS_X' in blk
+        ax = re.search(r'AXIS_PTS_X\s+\d+\s+(\w+)', blk)
+        fn = re.search(r'FNC_VALUES\s+\d+\s+(\w+)', blk)
+        out[name] = dict(inline=inline,
+                         axis=_TYPE.get(ax.group(1)) if ax else None,
+                         fnc=_TYPE.get(fn.group(1)) if fn else None)
+    return out
+
+
+def dtype(base, order):
+    """'SWORD' + 'LE' -> 'SWORD_LE'; bytes have no endianness suffix."""
+    if base in ('SBYTE', 'UBYTE'):
+        return base
+    return f'{base}_{order}'
+
+
+def dtype_from_name(rl, order):
     if 'Ws8' in rl or 'Xs8' in rl:
         return 'SBYTE'
-    if 'Wu16' in rl:
-        return 'UWORD_BE'
-    return 'SWORD_BE'
+    if 'Wu16' in rl or 'Xu16' in rl:
+        return dtype('UWORD', order)
+    return dtype('SWORD', order)
 
 
-def parse_char(a2l, label, compu):
+def parse_char(a2l, label, compu, layouts, order):
     m = re.search(r'/begin CHARACTERISTIC\s+' + re.escape(label) + r'\b.*?/end CHARACTERISTIC',
                   a2l, re.S)
     if not m:
         return None
     blk = m.group(0)
+    if 'COM_AXIS' in blk:
+        return ('skip', 'COM_AXIS')
     h = re.search(r'/begin CHARACTERISTIC\s+' + re.escape(label) +
                   r'\s+"([^"]*)"\s+(\w+)\s+(0x[0-9A-Fa-f]+)\s+(\S+)\s+([-\d.eE]+)\s+(\S+)', blk)
     if not h:
         return None
     desc, ctype, addr, rl, _maxdiff, dcompu = h.groups()
+    lay = layouts.get(rl)
+    if lay and not lay['inline'] and ctype in ('MAP', 'CURVE'):
+        return ('skip', 'fixed-dim (no inline header)')
+    adt = dtype(lay['axis'], order) if lay and lay['axis'] else dtype_from_name(rl, order)
+    fdt = dtype(lay['fnc'], order) if lay and lay['fnc'] else dtype_from_name(rl, order)
     df, doff, dunit = compu.get(dcompu, (1.0, 0.0, ""))
     axes = []
     for am in re.finditer(r'/begin AXIS_DESCR\s+\w+\s+(\S+)\s+(\S+)\s+(\d+)', blk):
         q, ac, cnt = am.groups()
         af, aoff, aunit = compu.get(ac, (1.0, 0.0, ""))
-        axes.append(dict(inputQuantity=q, unit=aunit, factor=af, offset=aoff, count=int(cnt)))
+        axes.append(dict(inputQuantity=q, unit=aunit, factor=af, offset=aoff,
+                         count=int(cnt), dataType=adt))
     return dict(name=label, type=ctype, description=desc, address=int(addr, 16),
-                recordLayout=rl, dataType=dtype_of(rl),
+                recordLayout=rl, dataType=fdt,
                 data=dict(factor=df, offset=doff, unit=dunit),
                 nx=axes[0]['count'] if axes else 0,
                 ny=axes[1]['count'] if len(axes) > 1 else 0, axes=axes)
@@ -102,16 +140,15 @@ def parse_char(a2l, label, compu):
 
 def read_fp(img, lo, addr, ctype, nx, ny, dt):
     o = addr - lo
-    sz = 1 if 'BYTE' in dt else 2
+    sz = 1 if 'BYTE' in dt else (4 if 'LONG' in dt else 2)
     hdr = 4 if ctype == 'MAP' else (2 if ctype == 'CURVE' else 0)
+    le = dt.endswith('_LE')
+    fmt = {'SBYTE': 'b', 'UBYTE': 'B', 'SWORD': '<h' if le else '>h',
+           'UWORD': '<H' if le else '>H', 'SLONG': '<i' if le else '>i',
+           'ULONG': '<I' if le else '>I'}[dt.replace('_LE', '').replace('_BE', '')]
 
     def rd(off):
-        if dt == 'SBYTE':
-            v = img[off]
-            return v - 256 if v >= 128 else v
-        if dt == 'UBYTE':
-            return img[off]
-        return struct.unpack_from('>h' if dt == 'SWORD_BE' else '>H', img, off)[0]
+        return struct.unpack_from(fmt, img, off)[0]
     xo = o + hdr
     x = [rd(xo + sz * k) for k in range(nx)] if nx else []
     y = [rd(xo + sz * nx + sz * k) for k in range(ny)] if ny else []
@@ -120,28 +157,33 @@ def read_fp(img, lo, addr, ctype, nx, ny, dt):
 
 def build(a2l_path, hex_path, labels):
     a2l = load_a2l(a2l_path)
+    order = detect_byteorder(a2l)
     compu = parse_compu(a2l)
+    layouts = parse_record_layouts(a2l)
     lo, img = load_ihex(hex_path)
     chars = []
     for lab in labels:
-        c = parse_char(a2l, lab, compu)
+        c = parse_char(a2l, lab, compu, layouts, order)
         if not c:
             print(f"  ! {lab}: not found in A2L", file=sys.stderr)
+            continue
+        if isinstance(c, tuple):
+            print(f"  - {lab}: skipped ({c[1]})", file=sys.stderr)
             continue
         x, y = read_fp(img, lo, c['address'], c['type'], c['nx'], c['ny'], c['dataType'])
         axes = []
         for i, ax in enumerate(c['axes']):
             axes.append(dict(inputQuantity=ax['inputQuantity'], unit=ax['unit'],
                              factor=ax['factor'], offset=ax['offset'],
-                             dataType=c['dataType'], fingerprint=(x if i == 0 else y)))
+                             dataType=ax['dataType'], fingerprint=(x if i == 0 else y)))
         dims = ({'nx': c['nx'], 'ny': c['ny']} if c['type'] == 'MAP'
                 else {'nx': c['nx']} if c['type'] == 'CURVE' else {})
         chars.append(dict(name=c['name'], type=c['type'], description=c['description'],
                           recordLayout=c['recordLayout'],
-                          defaultAddress=f"0x{c['address']:X}", dims=dims, axes=axes,
+                          defaultAddress=f"0x{c['address'] - lo:X}", dims=dims, axes=axes,
                           data=dict(dataType=c['dataType'], factor=c['data']['factor'],
                                     offset=c['data']['offset'], unit=c['data']['unit'])))
-    return chars
+    return order, lo, chars
 
 
 if __name__ == '__main__':
@@ -149,6 +191,7 @@ if __name__ == '__main__':
         print(__doc__)
         sys.exit(2)
     a2l, hexf, out, labels = sys.argv[1:5]
-    chars = build(a2l, hexf, labels.split(','))
-    json.dump({"characteristics": chars}, open(out, 'w'), indent=2, ensure_ascii=False)
-    print(f"wrote {len(chars)} characteristics -> {out}")
+    order, lo, chars = build(a2l, hexf, labels.split(','))
+    json.dump({"byteOrder": order, "characteristics": chars}, open(out, 'w'),
+              indent=2, ensure_ascii=False)
+    print(f"wrote {len(chars)} characteristics (byteOrder={order}) -> {out}")
