@@ -1210,28 +1210,36 @@ To enable it, build the suite with -DECU_BUILD_SOCKETSPY=ON (requires Qt6 Serial
 <context>
     <name>ecu_studio::GitPanel</name>
     <message>
-        <source>Dépôt</source>
-        <translation>Repository</translation>
+        <source>Versions</source>
+        <translation>Versions</translation>
     </message>
     <message>
         <source>Aucun projet ouvert</source>
         <translation>No project open</translation>
     </message>
     <message>
-        <source>Commit...</source>
-        <translation>Commit...</translation>
+        <source>Variante :</source>
+        <translation>Variant:</translation>
     </message>
     <message>
-        <source>Restaurer</source>
-        <translation>Restore</translation>
+        <source>Nouvelle variante…</source>
+        <translation>New variant…</translation>
+    </message>
+    <message>
+        <source>Enregistrer une version</source>
+        <translation>Save a version</translation>
+    </message>
+    <message>
+        <source>Revenir à cette version</source>
+        <translation>Revert to this version</translation>
     </message>
     <message>
         <source>Rafraîchir</source>
         <translation>Refresh</translation>
     </message>
     <message>
-        <source>Historique</source>
-        <translation>History</translation>
+        <source>Versions enregistrées</source>
+        <translation>Saved versions</translation>
     </message>
     <message>
         <source>Hash</source>
@@ -1246,89 +1254,129 @@ To enable it, build the suite with -DECU_BUILD_SOCKETSPY=ON (requires Qt6 Serial
         <translation>Message</translation>
     </message>
     <message>
-        <source>Support Git indisponible (libgit2 non compilé)</source>
-        <translation>Git support unavailable (libgit2 not compiled)</translation>
+        <source>Versions indisponibles (libgit2 non compilé)</source>
+        <translation>Versions unavailable (libgit2 not compiled)</translation>
     </message>
     <message>
-        <source>Erreur dépôt : %1</source>
-        <translation>Repository error: %1</translation>
+        <source>Erreur projet : %1</source>
+        <translation>Project error: %1</translation>
     </message>
     <message>
-        <source>Dépôt prêt</source>
-        <translation>Repository ready</translation>
+        <source>Projet prêt</source>
+        <translation>Project ready</translation>
     </message>
     <message>
-        <source>Aucun commit</source>
-        <translation>No commit</translation>
+        <source>Aucune version enregistrée</source>
+        <translation>No version saved</translation>
     </message>
     <message>
-        <source>%1 commit(s)</source>
-        <translation>%1 commit(s)</translation>
+        <source>%1 version(s)</source>
+        <translation>%1 version(s)</translation>
     </message>
     <message>
-        <source>Nouveau commit</source>
-        <translation>New commit</translation>
+        <source>Description de la version :</source>
+        <translation>Version description:</translation>
     </message>
     <message>
-        <source>Message du commit :</source>
-        <translation>Commit message:</translation>
+        <source>Description vide : enregistrement annulé</source>
+        <translation>Empty description: save cancelled</translation>
     </message>
     <message>
-        <source>Message vide : commit annulé</source>
-        <translation>Empty message: commit cancelled</translation>
+        <source>Aucune modification à enregistrer</source>
+        <translation>No changes to save</translation>
     </message>
     <message>
-        <source>Aucune modification à committer</source>
-        <translation>No changes to commit</translation>
+        <source>Échec de l&apos;enregistrement</source>
+        <translation>Save failed</translation>
     </message>
     <message>
-        <source>Échec du commit</source>
-        <translation>Commit failed</translation>
+        <source>L&apos;enregistrement de la version a échoué.</source>
+        <translation>Saving the version failed.</translation>
     </message>
     <message>
-        <source>Commit</source>
-        <translation>Commit</translation>
+        <source>Version %1 enregistrée</source>
+        <translation>Version %1 saved</translation>
     </message>
     <message>
-        <source>Le commit a échoué.</source>
-        <translation>The commit failed.</translation>
+        <source>Aucune version sélectionnée</source>
+        <translation>No version selected</translation>
     </message>
     <message>
-        <source>Commit %1 créé</source>
-        <translation>Commit %1 created</translation>
+        <source>Revenir à la version %1 ?
+L&apos;état actuel sera remplacé (une version de restauration est créée).</source>
+        <translation>Revert to version %1?
+The current state will be replaced (a restore version is created).</translation>
     </message>
     <message>
-        <source>Aucun commit sélectionné</source>
-        <translation>No commit selected</translation>
+        <source>Erreur lors du retour à la version : %1</source>
+        <translation>Error reverting to version: %1</translation>
     </message>
     <message>
-        <source>Restaurer la ROM au commit %1 ?
-L&apos;état actuel sera remplacé (un commit de restauration est créé).</source>
-        <translation>Restore the ROM to commit %1?
-The current state will be replaced (a restore commit is created).</translation>
-    </message>
-    <message>
-        <source>Erreur restauration : %1</source>
-        <translation>Restore error: %1</translation>
-    </message>
-    <message>
-        <source>La restauration a échoué :
+        <source>Le retour à la version a échoué :
 %1</source>
-        <translation>The restore failed:
+        <translation>Reverting to the version failed:
 %1</translation>
     </message>
     <message>
-        <source>Restauré au commit %1</source>
-        <translation>Restored to commit %1</translation>
+        <source>Revenu à la version %1</source>
+        <translation>Reverted to version %1</translation>
     </message>
     <message>
-        <source>Restauré, mais rechargement de la ROM impossible</source>
-        <translation>Restored, but reloading the ROM failed</translation>
+        <source>Version restaurée, mais rechargement de la ROM impossible</source>
+        <translation>Version restored, but reloading the ROM failed</translation>
     </message>
     <message>
-        <source>Impossible de sauvegarder la ROM avant le commit.
+        <source>Erreur de bascule de variante : %1</source>
+        <translation>Variant switch error: %1</translation>
+    </message>
+    <message>
+        <source>Variante</source>
+        <translation>Variant</translation>
+    </message>
+    <message>
+        <source>Le changement de variante a échoué :
+%1</source>
+        <translation>Switching variant failed:
+%1</translation>
+    </message>
+    <message>
+        <source>Variante « %1 » active</source>
+        <translation>Variant “%1” active</translation>
+    </message>
+    <message>
+        <source>Variante « %1 » active (ROM non rechargée)</source>
+        <translation>Variant “%1” active (ROM not reloaded)</translation>
+    </message>
+    <message>
+        <source>Nouvelle variante</source>
+        <translation>New variant</translation>
+    </message>
+    <message>
+        <source>Nom de la variante :</source>
+        <translation>Variant name:</translation>
+    </message>
+    <message>
+        <source>Nom vide : variante non créée</source>
+        <translation>Empty name: variant not created</translation>
+    </message>
+    <message>
+        <source>Erreur de création de variante : %1</source>
+        <translation>Variant creation error: %1</translation>
+    </message>
+    <message>
+        <source>La création de la variante a échoué :
+%1</source>
+        <translation>Creating the variant failed:
+%1</translation>
+    </message>
+    <message>
+        <source>Variante « %1 » créée</source>
+        <translation>Variant “%1” created</translation>
+    </message>
+    <message>
+        <source>Impossible de sauvegarder la ROM avant l&apos;enregistrement.
 Vérifiez que le fichier est accessible en écriture.</source>
-        <translation>Cannot save the ROM before the commit.
+        <translation>Cannot save the ROM before saving the version.
 Check that the file is writable.</translation>
     </message>
     <message>
@@ -1549,8 +1597,8 @@ Check that the file is writable.</translation>
         <translation>Compare</translation>
     </message>
     <message>
-        <source>Git</source>
-        <translation>Git</translation>
+        <source>Versions</source>
+        <translation>Versions</translation>
     </message>
     <message>
         <source>A2L</source>
