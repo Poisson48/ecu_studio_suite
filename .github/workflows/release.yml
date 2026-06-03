@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - 'v*'
+  # Permet de lancer un build téléchargeable à la demande (sans créer de tag) :
+  # l'AppImage est alors publiée comme artifact du run, pas comme Release.
+  workflow_dispatch:
 
 jobs:
   appimage:
@@ -67,6 +70,12 @@ jobs:
           QT_PLUGIN_DIR="$(qmake6 -query QT_INSTALL_PLUGINS 2>/dev/null || echo /usr/lib/x86_64-linux-gnu/qt6/plugins)"
           mkdir -p /tmp/appdir/usr/plugins/tls
           cp "${QT_PLUGIN_DIR}/tls/"*.so /tmp/appdir/usr/plugins/tls/ 2>/dev/null || true
+          # libusb-1.0 est une dépendance directe du binaire (driver MPPS) mais
+          # figure sur l'excludelist de linuxdeploy — donc NON bundlée par défaut.
+          # On la force avec --library pour que l'AppImage tourne sur un PC vierge
+          # (sans libusb-1.0-0 installé). Sinon : "libusb-1.0.so.0: cannot open".
+          LIBUSB="$(ldconfig -p | awk '/libusb-1.0\.so\.0/{print $NF; exit}')"
+          echo "Bundling libusb: ${LIBUSB:-INTROUVABLE}"
           EXTRA_QT_MODULES="charts;serialbus;serialport;concurrent;sql;network;opengl" \
           QMAKE="$(command -v qmake6)" \
           /tmp/linuxdeploy \
@@ -74,6 +83,7 @@ jobs:
             --executable /tmp/appdir/usr/bin/ecu_studio \
             --desktop-file scripts/dist/ecu_studio.desktop \
             --icon-file scripts/dist/ecu_studio.png \
+            ${LIBUSB:+--library "$LIBUSB"} \
             --plugin qt \
             --output appimage
           # linuxdeploy peut déjà produire le bon nom : ne renomme que si besoin.
@@ -83,7 +93,17 @@ jobs:
           fi
           ls -la ECU_Studio-x86_64.AppImage
 
+      # Toujours publier l'AppImage comme artifact du run : permet de la
+      # télécharger même pour un build workflow_dispatch (sans tag/Release).
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ECU_Studio-x86_64.AppImage
+          path: ECU_Studio-x86_64.AppImage
+          if-no-files-found: error
+
       - name: Sign release manifest
+        if: startsWith(github.ref, 'refs/tags/')
         env:
           UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
         run: |
@@ -111,6 +131,7 @@ jobs:
           cat release-manifest.json
 
       - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
