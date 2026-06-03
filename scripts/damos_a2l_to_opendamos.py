@@ -121,10 +121,16 @@ def load_srec(path):
 
 
 def load_rom(path):
-    """Auto-detect Intel HEX (':') vs Motorola S-record ('S')."""
+    """Auto-detect Intel HEX (':'), Motorola S-record ('S') or a raw .bin dump.
+    A raw binary is taken as a full-flash image based at 0 (A2L addresses are
+    mirror-normalised to physical, so they index straight in for 0-based dumps)."""
     with open(path, 'rb') as f:
         head = f.read(1)
-    return load_srec(path) if head == b'S' else load_ihex(path)
+    if head == b'S':
+        return load_srec(path)
+    if head == b':':
+        return load_ihex(path)
+    return 0, open(path, 'rb').read()   # raw binary
 
 
 def detect_byteorder(a2l):
@@ -189,9 +195,9 @@ def dtype_from_name(rl, order):
         return dtype('UWORD', order)
     # Continental: type encoded as trailing tokens, e.g. _REC_A1MAP_20_u1_u1_u1
     # (axisX, axisY, value). The last token is the value/axis element type.
-    toks = re.findall(r'_([us][124])(?=_|$)', rl)
+    toks = re.findall(r'_([usUS][124])(?=_|$)', rl)
     if toks:
-        return dtype(_CONT[toks[-1]], order)
+        return dtype(_CONT[toks[-1].lower()], order)
     return dtype('SWORD', order)
 
 
@@ -205,12 +211,26 @@ def parse_axis_pts(a2l):
     return out
 
 
-def parse_char(a2l, label, compu, layouts, order, axis_pts=None):
-    m = re.search(r'/begin CHARACTERISTIC\s+' + re.escape(label) + r'\b.*?/end CHARACTERISTIC',
-                  a2l, re.S)
-    if not m:
-        return None
-    blk = m.group(0)
+def index_chars(a2l):
+    """One pass -> {name: block}. Lets a batch avoid re-scanning a huge A2L per
+    characteristic (O(n) instead of O(n^2))."""
+    idx = {}
+    for m in re.finditer(r'/begin CHARACTERISTIC\s+(\S+).*?/end CHARACTERISTIC', a2l, re.S):
+        idx.setdefault(m.group(1), m.group(0))
+    return idx
+
+
+def parse_char(a2l, label, compu, layouts, order, axis_pts=None, block=None):
+    if block is not None:
+        blk = block
+    else:
+        # `\s` after the name (not `\b`) so array-style names like foo[4] match
+        # (a `]` has no word boundary before whitespace).
+        m = re.search(r'/begin CHARACTERISTIC\s+' + re.escape(label) + r'\s.*?/end CHARACTERISTIC',
+                      a2l, re.S)
+        if not m:
+            return None
+        blk = m.group(0)
     if 'COM_AXIS' in blk:
         return parse_comaxis(blk, label, compu, layouts, order, axis_pts or {})
     h = re.search(r'/begin CHARACTERISTIC\s+' + re.escape(label) +
