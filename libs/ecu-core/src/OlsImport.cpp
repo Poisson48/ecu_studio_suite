@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -21,6 +22,7 @@ namespace {
 constexpr std::int64_t kMinRomSize = 0x40000;     // 256 KiB
 
 std::uint32_t u32le(const QByteArray& d, std::int64_t o) {
+    if (o < 0 || o + 4 > d.size()) return 0;
     const auto* b = reinterpret_cast<const std::uint8_t*>(d.constData()) + o;
     return static_cast<std::uint32_t>(b[0]) |
            (static_cast<std::uint32_t>(b[1]) << 8) |
@@ -125,6 +127,8 @@ extract(const QByteArray& ols, const QString& filename) {
     if (prefix < 0)
         return std::unexpected("ols: no in-bounds eprom block for size " +
                                std::to_string(size));
+    if (size > std::numeric_limits<int>::max())
+        return std::unexpected("ols: eprom size exceeds addressable range");
 
     QByteArray rom = ols.mid(prefix + 4, static_cast<int>(size));
     if (rom.size() != static_cast<int>(size))

@@ -20,6 +20,30 @@
       "headerType": "UWORD_LE",
       "axisDataType": "SWORD_LE",
       "dataType": "SWORD_LE"
+    },
+    "Kf_Xs16_Ys16_Ws16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "headerType": "UWORD_LE",
+      "axisDataType": "SWORD_LE",
+      "dataType": "SWORD_LE"
+    },
+    "Kl_Xs16_Ws16": {
+      "type": "CURVE",
+      "byteOrder": "LE",
+      "headerBytes": 2,
+      "headerType": "UWORD_LE",
+      "axisDataType": "SWORD_LE",
+      "dataType": "SWORD_LE"
+    },
+    "Cur_Xs16Ws16": {
+      "type": "CURVE",
+      "byteOrder": "LE",
+      "headerBytes": 2,
+      "headerType": "UWORD_LE",
+      "axisDataType": "SWORD_LE",
+      "dataType": "SWORD_LE"
     }
   },
   "characteristics": [

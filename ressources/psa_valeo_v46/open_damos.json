@@ -19,6 +19,41 @@
       "headerBytes": 0,
       "axisMode": "COM_AXIS",
       "dataType": "UWORD_BE"
+    },
+    "AFA_RL_Lookup2D_UBYTE": {
+      "type": "MAP",
+      "byteOrder": "BE",
+      "headerBytes": 0,
+      "axisMode": "COM_AXIS",
+      "dataType": "UBYTE"
+    },
+    "AFA_RL_Lookup2D_LONG": {
+      "type": "MAP",
+      "byteOrder": "BE",
+      "headerBytes": 0,
+      "axisMode": "COM_AXIS",
+      "dataType": "SLONG_BE"
+    },
+    "LIB_CALIB_RL_Lookup2D_UWORD": {
+      "type": "MAP",
+      "byteOrder": "BE",
+      "headerBytes": 0,
+      "axisMode": "COM_AXIS",
+      "dataType": "UWORD_BE"
+    },
+    "DATA_RECORD_UWORD": {
+      "type": "MAP",
+      "byteOrder": "BE",
+      "headerBytes": 0,
+      "axisMode": "COM_AXIS",
+      "dataType": "UWORD_BE"
+    },
+    "AirSysMair_RL_Lookup2D_UWORD": {
+      "type": "MAP",
+      "byteOrder": "BE",
+      "headerBytes": 0,
+      "axisMode": "COM_AXIS",
+      "dataType": "UWORD_BE"
     }
   },
   "characteristics": [

@@ -93,6 +93,19 @@ std::int64_t parseAddr(const std::string& s) {
     return value;
 }
 
+// True when `raw` is the all-FF padding pattern for the data type's size
+// (0xFF / 0xFFFF / 0xFFFFFFFF), or the signed -1 representation. Used to detect
+// unwritten flash cells regardless of element width.
+bool isPaddingRaw(int64_t raw, DamosDataType dt) {
+    if (raw == -1) return true;
+    switch (damosTypeSize(dt)) {
+        case 1:  return raw == 0xFF;
+        case 2:  return raw == 0xFFFF;
+        case 4:  return raw == 0xFFFFFFFFLL;
+        default: return false;
+    }
+}
+
 // Fuzzy axis matcher — two-pass: strict element-wise, then bag-of-values.
 // Tolerates small drifts between close firmwares without reorganising axes.
 AxisMatchResult axisMatches(const std::vector<int64_t>& actual,
@@ -218,8 +231,12 @@ scanStandaloneAxis(QByteArrayView rom, const std::vector<int64_t>& fp,
 bool dataBlockPlausible(QByteArrayView rom, std::int64_t addr, std::int64_t cells,
                         DamosDataType dt) {
     const std::int64_t sz = static_cast<std::int64_t>(damosTypeSize(dt));
+    // Guard the cells*sz multiplication against overflow: a block can never be
+    // larger than the ROM, so reject implausible cell counts up front.
+    if (cells <= 0 || cells > static_cast<std::int64_t>(rom.size()) / (sz ? sz : 1))
+        return false;
     const std::int64_t bytes = cells * sz;
-    if (addr < 0 || cells <= 0 || addr + bytes > static_cast<std::int64_t>(rom.size()))
+    if (addr < 0 || addr + bytes > static_cast<std::int64_t>(rom.size()))
         return false;
     const std::uint8_t* b = romPtr(rom) + addr;
     bool allFF = true, all00 = true;
@@ -240,6 +257,8 @@ findComAxis(QByteArrayView rom, const DamosEntry& entry, const RelocateOptions& 
         return {};
 
     const std::int64_t dataDefault = parseAddr(entry.defaultAddress);
+    if (dataDefault < 0 || dataDefault >= static_cast<std::int64_t>(rom.size()))
+        return {};
     const std::int64_t cells =
         isMap ? static_cast<std::int64_t>(entry.dims.nx) * entry.dims.ny
               : entry.dims.nx;
@@ -431,11 +450,12 @@ OpenDamos::findValueByAnchor(QByteArrayView rom, const DamosEntry& entry,
     const std::int64_t delta =
         static_cast<std::int64_t>(anchorAddress) - anchorDefault;
     const std::int64_t baseCandidate = defaultAddr + delta;
+    const DamosDataType dt = entry.data.dataType;
     if (baseCandidate < 0 ||
-        baseCandidate + 2 > static_cast<std::int64_t>(rom.size()))
+        baseCandidate + static_cast<std::int64_t>(damosTypeSize(dt)) >
+            static_cast<std::int64_t>(rom.size()))
         return std::nullopt;
 
-    const DamosDataType dt = entry.data.dataType;
     const double factor = entry.data.factor;
     const double offset = entry.data.offset;
 
@@ -493,7 +513,7 @@ OpenDamos::findValueByAnchor(QByteArrayView rom, const DamosEntry& entry,
 
     // "anchor-delta" (default).
     const bool isPadding =
-        baseRaw && (*baseRaw == -1 || *baseRaw == 0xFFFF ||
+        baseRaw && (isPaddingRaw(*baseRaw, dt) ||
                     (*baseRaw == 0 && entry.stockRawValue &&
                      *entry.stockRawValue != 0));
     double confidence = isPadding ? 0.0 : 0.8;
@@ -663,7 +683,7 @@ OpenDamos::relocate(const DamosRecipe& recipe, QByteArrayView rom,
         const std::int64_t defaultAddr = parseAddr(c.defaultAddress);
         const auto rawAtDefault = readInt(rom, defaultAddr, c.data.dataType);
         const bool defaultIsPadding =
-            rawAtDefault && (*rawAtDefault == -1 || *rawAtDefault == 0xFFFF);
+            rawAtDefault && isPaddingRaw(*rawAtDefault, c.data.dataType);
 
         RelocResult r;
         r.name        = c.name;

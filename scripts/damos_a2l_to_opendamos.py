@@ -26,6 +26,42 @@ def load_a2l(path):
     return open(path, 'rb').read().replace(b'\x00', b'').decode('latin1')
 
 
+# TriCore/PowerPC map the same physical flash at several segment addresses
+# (e.g. 0x80xxxxxx cached and 0xa0xxxxxx uncached). Normalising to the low 29
+# bits collapses those mirrors so A2L addresses and ROM data line up.
+ADDR_MASK = 0x1FFFFFFF
+
+
+def _phys(a):
+    return a & ADDR_MASK
+
+
+def _image_from_mem(mem, gap=0x40000):
+    """Flatten {addr: byte} into (lo, image) spanning every non-trivial flash
+    cluster. Runs are split on gaps > `gap`; tiny outlier runs (junk header
+    records like a dummy S1 at 0x0) are dropped, and the image covers from the
+    first to the last kept run (internal gaps are 0xFF-filled)."""
+    addrs = sorted(mem)
+    runs = []                                   # (start, end_inclusive, bytes)
+    run_start, prev, run_bytes = addrs[0], addrs[0], 1
+    for a in addrs[1:]:
+        if a - prev <= gap:
+            run_bytes += 1
+        else:
+            runs.append((run_start, prev, run_bytes))
+            run_start, run_bytes = a, 1
+        prev = a
+    runs.append((run_start, prev, run_bytes))
+    total = sum(r[2] for r in runs)
+    keep = [r for r in runs if r[2] >= max(4096, total * 0.005)] or runs
+    lo, hi = min(r[0] for r in keep), max(r[1] for r in keep)
+    img = bytearray(b'\xff' * (hi - lo + 1))
+    for a, v in mem.items():
+        if lo <= a <= hi:
+            img[a - lo] = v
+    return lo, bytes(img)
+
+
 def load_ihex(path):
     """Intel HEX -> (base_addr, flat_image). Honors type 0x02/0x04 segment records."""
     mem = {}
@@ -35,21 +71,60 @@ def load_ihex(path):
         if not line or line[:1] != b':':
             continue
         b = bytes.fromhex(line[1:].decode())
-        n, addr, typ, dat = b[0], (b[1] << 8) | b[2], b[3], b[4:4 + b[0]]
+        n = b[0]
+        # Need length byte + addr(2) + type(1) + n data + checksum(1).
+        if len(b) < 4 + n + 1:
+            print(f"  ! ihex: short record (skipped)", file=sys.stderr)
+            continue
+        # Intel HEX checksum: two's-complement of the sum of all preceding bytes.
+        if (sum(b[:4 + n]) + b[4 + n]) & 0xFF != 0:
+            print(f"  ! ihex: bad checksum (skipped)", file=sys.stderr)
+            continue
+        addr, typ, dat = (b[1] << 8) | b[2], b[3], b[4:4 + n]
         if typ == 0:
             for k, v in enumerate(dat):
-                mem[base + addr + k] = v
+                mem[_phys(base + addr + k)] = v
         elif typ == 4:
             base = ((dat[0] << 8) | dat[1]) << 16
         elif typ == 2:
             base = ((dat[0] << 8) | dat[1]) << 4
         elif typ == 1:
             break
-    lo, hi = min(mem), max(mem)
-    img = bytearray(b'\xff' * (hi - lo + 1))
-    for a, v in mem.items():
-        img[a - lo] = v
-    return lo, bytes(img)
+    return _image_from_mem(mem)
+
+
+def load_srec(path):
+    """Motorola S-record -> (base_addr, flat_image). Handles S1/S2/S3 data."""
+    mem = {}
+    alen = {'1': 2, '2': 3, '3': 4}
+    for line in open(path, 'rb'):
+        line = line.strip()
+        if line[:1] != b'S' or len(line) < 4:
+            continue
+        t = chr(line[1])
+        if t not in alen:
+            continue
+        b = bytes.fromhex(line[2:].decode())
+        cnt, n = b[0], alen[t]
+        # Need count byte + cnt payload bytes (cnt counts addr+data+checksum).
+        if len(b) < 1 + cnt:
+            print(f"  ! srec: short record (skipped)", file=sys.stderr)
+            continue
+        # S-record checksum: ones-complement of the sum of count + addr + data.
+        if (sum(b[:cnt]) + b[cnt]) & 0xFF != 0xFF:
+            print(f"  ! srec: bad checksum (skipped)", file=sys.stderr)
+            continue
+        addr = int.from_bytes(b[1:1 + n], 'big')
+        for k, v in enumerate(b[1 + n:cnt]):          # b[cnt] is the checksum
+            mem[_phys(addr + k)] = v
+    return _image_from_mem(mem)
+
+
+def load_rom(path):
+    """Auto-detect Intel HEX (':') vs Motorola S-record ('S')."""
+    with open(path, 'rb') as f:
+        head = f.read(1)
+    return load_srec(path) if head == b'S' else load_ihex(path)
 
 
 def detect_byteorder(a2l):
@@ -67,6 +142,11 @@ def parse_compu(a2l):
             out[name] = (1.0, 0.0, "")   # non-linear (TAB_INTP/FORM): identity
             continue
         a, b, c, d, e, f = (float(x) for x in cm.groups())
+        if not b:
+            print(f"  ! {name}: non-linear COMPU_METHOD (b==0), using identity",
+                  file=sys.stderr)
+        # ASAP2 RAT_FUNC stores the inverse map INT = (b*P + c) / f, so the
+        # forward physical conversion is P = INT * f/b - c/b (verified empirically).
         factor = f / b if b else 1.0
         offset = -c / b if b else 0.0
         out[name] = (factor, 0.0 if offset == 0 else offset, unit.group(1) if unit else "")
@@ -98,11 +178,20 @@ def dtype(base, order):
     return f'{base}_{order}'
 
 
+_CONT = {'u1': 'UBYTE', 's1': 'SBYTE', 'u2': 'UWORD', 's2': 'SWORD',
+         'u4': 'ULONG', 's4': 'SLONG'}
+
+
 def dtype_from_name(rl, order):
     if 'Ws8' in rl or 'Xs8' in rl:
         return 'SBYTE'
     if 'Wu16' in rl or 'Xu16' in rl:
         return dtype('UWORD', order)
+    # Continental: type encoded as trailing tokens, e.g. _REC_A1MAP_20_u1_u1_u1
+    # (axisX, axisY, value). The last token is the value/axis element type.
+    toks = re.findall(r'_([us][124])(?=_|$)', rl)
+    if toks:
+        return dtype(_CONT[toks[-1]], order)
     return dtype('SWORD', order)
 
 
@@ -155,7 +244,7 @@ def parse_comaxis(blk, label, compu, layouts, order, axis_pts):
         return ('skip', 'unparsable COM_AXIS header')
     ctype, addr, rl = h.group(1), int(h.group(2), 16), h.group(3)
     lay = layouts.get(rl)
-    fdt = dtype(lay['fnc'], order) if lay and lay['fnc'] else dtype('UWORD', order)
+    fdt = dtype(lay['fnc'], order) if lay and lay['fnc'] else dtype_from_name(rl, order)
     desc = re.search(r'/begin CHARACTERISTIC\s+\S+\s+"([^"]*)"', blk)
     axes = []
     for am in re.finditer(r'COM_AXIS\s+(\S+)\s+(\S+)\s+(\d+).*?AXIS_PTS_REF\s+(\S+)', blk, re.S):
@@ -164,7 +253,7 @@ def parse_comaxis(blk, label, compu, layouts, order, axis_pts):
         if not ap:
             return ('skip', f'missing AXIS_PTS {ref}')
         alay = layouts.get(ap['rl'])
-        adt = dtype(alay['axis'], order) if alay and alay['axis'] else dtype('SWORD', order)
+        adt = dtype(alay['axis'], order) if alay and alay['axis'] else dtype_from_name(ap['rl'], order)
         af, aoff, aunit = compu.get(ac, (1.0, 0.0, ""))
         axes.append(dict(inputQuantity=(ref if inq == 'NO_INPUT_QUANTITY' else inq),
                          unit=aunit, factor=af, offset=aoff, count=int(cnt),
@@ -177,6 +266,11 @@ def parse_comaxis(blk, label, compu, layouts, order, axis_pts):
                 nx=axes[0]['count'], ny=axes[1]['count'] if len(axes) > 1 else 0, axes=axes)
 
 
+class OutOfBounds(Exception):
+    """Raised when a ROM read would run past the loaded image; build() catches
+    this and skips the characteristic with a warning instead of crashing."""
+
+
 def read_axis(img, lo, addr, count, dt):
     sz = 1 if 'BYTE' in dt else (4 if 'LONG' in dt else 2)
     le = dt.endswith('_LE')
@@ -184,21 +278,28 @@ def read_axis(img, lo, addr, count, dt):
            'UWORD': '<H' if le else '>H', 'SLONG': '<i' if le else '>i',
            'ULONG': '<I' if le else '>I'}[dt.replace('_LE', '').replace('_BE', '')]
     o = addr - lo
+    if o < 0 or o + sz * count > len(img):
+        raise OutOfBounds(f"axis read at 0x{addr:X} ({count}x{sz}B) out of bounds")
     return [struct.unpack_from(fmt, img, o + sz * k)[0] for k in range(count)]
 
 
 def read_fp(img, lo, addr, ctype, nx, ny, dt):
     o = addr - lo
     sz = 1 if 'BYTE' in dt else (4 if 'LONG' in dt else 2)
-    hdr = 4 if ctype == 'MAP' else (2 if ctype == 'CURVE' else 0)
+    # Inline (nx, ny) header is stored as element-sized fields: one field for a
+    # CURVE, two for a MAP. So its byte size scales with the element size.
+    hdr = (2 * sz if ctype == 'MAP' else (sz if ctype == 'CURVE' else 0))
     le = dt.endswith('_LE')
     fmt = {'SBYTE': 'b', 'UBYTE': 'B', 'SWORD': '<h' if le else '>h',
            'UWORD': '<H' if le else '>H', 'SLONG': '<i' if le else '>i',
            'ULONG': '<I' if le else '>I'}[dt.replace('_LE', '').replace('_BE', '')]
+    xo = o + hdr
+    need = xo + sz * nx + sz * ny
+    if o < 0 or need > len(img):
+        raise OutOfBounds(f"fingerprint read at 0x{addr:X} out of bounds")
 
     def rd(off):
         return struct.unpack_from(fmt, img, off)[0]
-    xo = o + hdr
     x = [rd(xo + sz * k) for k in range(nx)] if nx else []
     y = [rd(xo + sz * nx + sz * k) for k in range(ny)] if ny else []
     return x, y
@@ -210,7 +311,7 @@ def build(a2l_path, hex_path, labels):
     compu = parse_compu(a2l)
     layouts = parse_record_layouts(a2l)
     axis_pts = parse_axis_pts(a2l)
-    lo, img = load_ihex(hex_path)
+    lo, img = load_rom(hex_path)
     chars = []
     for lab in labels:
         c = parse_char(a2l, lab, compu, layouts, order, axis_pts)
@@ -220,20 +321,29 @@ def build(a2l_path, hex_path, labels):
         if isinstance(c, tuple):
             print(f"  - {lab}: skipped ({c[1]})", file=sys.stderr)
             continue
+        # Normalise A2L addresses to physical (mirror-collapse), same as the ROM.
+        c['address'] = _phys(c['address'])
+        for ax in c['axes']:
+            if ax.get('address') is not None:
+                ax['address'] = _phys(ax['address'])
         axes = []
-        if c.get('comAxis'):
-            for ax in c['axes']:                       # axes live in their own blocks
-                fp = read_axis(img, lo, ax['address'], ax['count'], ax['dataType'])
-                axes.append(dict(inputQuantity=ax['inputQuantity'], unit=ax['unit'],
-                                 factor=ax['factor'], offset=ax['offset'],
-                                 dataType=ax['dataType'], address=f"0x{ax['address'] - lo:X}",
-                                 fingerprint=fp))
-        else:
-            x, y = read_fp(img, lo, c['address'], c['type'], c['nx'], c['ny'], c['dataType'])
-            for i, ax in enumerate(c['axes']):
-                axes.append(dict(inputQuantity=ax['inputQuantity'], unit=ax['unit'],
-                                 factor=ax['factor'], offset=ax['offset'],
-                                 dataType=ax['dataType'], fingerprint=(x if i == 0 else y)))
+        try:
+            if c.get('comAxis'):
+                for ax in c['axes']:                   # axes live in their own blocks
+                    fp = read_axis(img, lo, ax['address'], ax['count'], ax['dataType'])
+                    axes.append(dict(inputQuantity=ax['inputQuantity'], unit=ax['unit'],
+                                     factor=ax['factor'], offset=ax['offset'],
+                                     dataType=ax['dataType'], address=f"0x{ax['address'] - lo:X}",
+                                     fingerprint=fp))
+            else:
+                x, y = read_fp(img, lo, c['address'], c['type'], c['nx'], c['ny'], c['dataType'])
+                for i, ax in enumerate(c['axes']):
+                    axes.append(dict(inputQuantity=ax['inputQuantity'], unit=ax['unit'],
+                                     factor=ax['factor'], offset=ax['offset'],
+                                     dataType=ax['dataType'], fingerprint=(x if i == 0 else y)))
+        except OutOfBounds as e:
+            print(f"  - {lab}: skipped ({e})", file=sys.stderr)
+            continue
         dims = ({'nx': c['nx'], 'ny': c['ny']} if c['type'] == 'MAP'
                 else {'nx': c['nx']} if c['type'] == 'CURVE' else {})
         entry = dict(name=c['name'], type=c['type'], description=c['description'],
