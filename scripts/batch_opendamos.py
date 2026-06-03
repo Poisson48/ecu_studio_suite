@@ -139,8 +139,13 @@ def process(item):
         recipe = {"$schema": "../open_damos.schema.json", "ecu": eid,
                   "name": f"open_damos — {item['dir'].split('/')[-1]}",
                   "version": "0.1.0", "license": "CC0-1.0", "byteOrder": order,
+                  "addressMode": "physical",
+                  "maturity": "beta",
+                  "generated": {"tool": "scripts/batch_opendamos.py",
+                                "sourcePack": os.path.basename(ARCHIVE),
+                                "autoSelectedMaps": True},
                   "baseline": {"source": os.path.basename(ROM), "damos": os.path.basename(A2L),
-                               "note": f"Auto-generated from the 2020 DAMOS pack. Family dir: {item['dir']}"},
+                               "note": f"Auto-generated from the DAMOS pack. Family dir: {item['dir']}"},
                   "recordLayouts": collect_layouts(chars, order),
                   "characteristics": [dict(c, category="auto") for c in chars]}
         os.makedirs(outdir, exist_ok=True)
@@ -151,6 +156,8 @@ def process(item):
             os.remove(rp); os.rmdir(outdir) if not os.listdir(outdir) else None
             shutil.rmtree(WORK, ignore_errors=True)
             return ('no-reloc', eid, total, matched)
+        recipe["generated"]["relocated"] = f"{matched}/{total}"      # record the proof
+        json.dump(recipe, open(rp, 'w'), indent=2, ensure_ascii=False)
         shutil.rmtree(WORK, ignore_errors=True)
         return ('OK', eid, total, matched)
     except Exception as e:

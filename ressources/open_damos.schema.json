@@ -31,6 +31,28 @@
     "homepage": { "type": "string" },
     "description": { "type": "string" },
     "byteOrder": { "$ref": "#/$defs/byteOrder" },
+    "addressMode": {
+      "type": "string",
+      "enum": ["flat", "physical"],
+      "default": "flat",
+      "description": "Convention d'adressage des defaultAddress/address. \"flat\" = offset direct dans l'image ROM. \"physical\" = les adresses sont normalisées sur les bits de poids faible (29 bits, & 0x1FFFFFFF) pour replier les miroirs cache/uncache des cœurs TriCore/PowerPC (0x80xxxxxx ↔ 0xA0xxxxxx) sur une même adresse physique. Défaut \"flat\"."
+    },
+    "maturity": {
+      "type": "string",
+      "enum": ["proven", "beta", "incoming"],
+      "description": "Maturité de la recette : proven (vérifiée sur plusieurs firmwares de la famille), beta (auto-générée ou validée sur un seul firmware), incoming (brouillon). Alimente le badge de maturité de l'app et le board du site."
+    },
+    "generated": {
+      "type": "object",
+      "description": "Provenance d'une recette auto-générée (convertisseur DAMOS→OpenDAMOS). Absent pour les recettes écrites/vérifiées à la main.",
+      "properties": {
+        "tool": { "type": "string", "description": "Outil générateur, ex: scripts/batch_opendamos.py." },
+        "sourcePack": { "type": "string", "description": "Archive/source DAMOS d'origine." },
+        "autoSelectedMaps": { "type": "boolean", "description": "true si les cartes ont été choisies par heuristique (à revoir/nommer à la main)." },
+        "relocated": { "type": "string", "description": "Résultat de la relocation de validation, ex: \"14/14\"." }
+      },
+      "additionalProperties": true
+    },
     "baseline": {
       "type": "object",
       "description": "Firmware de référence d'où sont tirées les adresses (defaultAddress) et les empreintes (fingerprint). Purement documentaire.",

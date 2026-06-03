@@ -367,7 +367,23 @@ Limite : une carte dont les axes sont trop courts/génériques **et** dont les d
 
 ---
 
-## 16. Versionnement du standard
+## 16. Champs terrain (v1.1 — additifs)
 
-- **Standard** : ce document, v1. Tout ajout rétro-compatible (nouveau champ optionnel) reste v1. Une rupture (champ obligatoire, sémantique changée) ⇒ v2.
+Ajouts **optionnels et rétro-compatibles** issus du traitement en masse de DAMOS réels (SIMOS, MG1, MD1, MED17, EDC17… — TriCore little-endian, COM_AXIS dominant). Tous facultatifs : une recette v1 reste valide.
+
+- **`addressMode`** (`"flat"` | `"physical"`, défaut `flat`). Les cœurs TriCore/PowerPC exposent la **même flash physique à plusieurs adresses segment** (ex. `0x80xxxxxx` cache et `0xA0xxxxxx` non-cache). Un DAMOS écrit en `0xA0…` ne s'aligne pas sur une image ROM basée plus bas. Convention : normaliser les adresses sur les **29 bits de poids faible** (`& 0x1FFFFFFF`) → adresse **physique** unique. Une recette dérivée d'un tel ECU **DEVRAIT** porter `"addressMode": "physical"`, et ses `defaultAddress`/`address` sont alors des offsets physiques (image chargée elle aussi normalisée). `flat` = offset direct (EDC16/EDC17 dont l'A2L et la ROM partagent déjà la même base).
+
+- **`maturity`** (`"proven"` | `"beta"` | `"incoming"`). Maturité de la recette, pour le badge de l'app et le board du site : **proven** = relocalisée sur ≥ 2 firmwares de la famille ; **beta** = auto-générée ou validée sur un seul firmware ; **incoming** = brouillon. Une recette auto-générée est **beta** par défaut tant qu'un humain n'a pas nommé/vérifié les cartes.
+
+- **`generated`** (objet) — provenance d'une recette **auto-générée** : `tool`, `sourcePack`, `autoSelectedMaps` (bool : cartes choisies par heuristique, à renommer/épurer à la main), `relocated` (ex. `"14/14"`). Absent pour les recettes écrites à la main.
+
+**Clarification per-axe (corrige une hypothèse de v1).** Chaque axe porte son propre `dataType` (donc sa propre endianness). L'en-tête inline `(nx, ny)` est lu dans l'endianness de **`axes[0]`**. **Limite connue** : une MAP dont les axes mélangent les endianness (X en BE, Y en LE) n'est pas gérée par le moteur actuel — non rencontré en pratique, mais à formaliser si le cas surgit.
+
+**Piste v2 — catalogue d'axes partagés.** En COM_AXIS, un même bloc `AXIS_PTS` est référencé par **N cartes** (jusqu'à plusieurs dizaines). Aujourd'hui chaque carte duplique le `fingerprint` + `address` de ses axes. Une v2 **DEVRAIT** introduire un catalogue d'axes au niveau recette (indexé par nom, comme `recordLayouts`) que les cartes référencent — recettes plus compactes, et relocation de l'axe **une seule fois** réutilisée par toutes ses cartes.
+
+---
+
+## 17. Versionnement du standard
+
+- **Standard** : ce document, **v1.1**. Tout ajout rétro-compatible (nouveau champ optionnel : `addressMode`, `maturity`, `generated`, `comAxis`, `axes[].address`, types `*_LE`…) reste v1.x. Une rupture (champ obligatoire, sémantique changée) ⇒ v2.
 - **Recette** : champ `version` (semver) propre à chaque `open_damos.json`, indépendant de la version du standard.
