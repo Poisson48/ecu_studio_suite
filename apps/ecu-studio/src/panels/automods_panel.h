@@ -34,7 +34,10 @@ private slots:
 
 private:
     // Catégorie d'une entrée listée.
-    enum class Kind { Template, Pattern, Address, Recipe };
+    //   Template / Pattern / Address : auto-mods du catalogue C++ (legacy)
+    //   Recipe                       : recettes haut-niveau (OpenDamosRecipes)
+    //   DamosAutoMod                 : auto-mods embarqués dans open_damos.json
+    enum class Kind { Template, Pattern, Address, Recipe, DamosAutoMod };
 
     struct Entry {
         Kind    kind;
@@ -52,6 +55,11 @@ private:
     // Applique une recette open_damos (OpenDamosRecipes) : relocalise les
     // caractéristiques nommées puis applique chaque opération in-place.
     bool applyRecipe(const QString& recipeId);
+
+    // Applique / restaure un auto-mod embarqué dans open_damos.json (DamosAutoMod).
+    // L'id est celui défini dans le recipe.
+    bool applyDamosAutoMod(const QString& autoModId);
+    bool restoreDamosAutoMod(const QString& autoModId);
 
     // Restaure une entrée (pattern/address) si des octets de restauration existent.
     bool restorePattern(const QString& patternId);

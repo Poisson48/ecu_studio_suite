@@ -28,6 +28,7 @@ signals:
     void openProjectRequested();
     void openRecentProjectRequested(const QString& projectId);
     void scanMppsRequested();
+    void languageChanged(const QString& code);
 
 private slots:
     void onItemDoubleClicked(QListWidgetItem* item);

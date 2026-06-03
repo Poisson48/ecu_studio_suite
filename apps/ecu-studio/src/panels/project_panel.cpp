@@ -5,11 +5,15 @@
 
 #include <QColor>
 #include <QComboBox>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QDir>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFormLayout>
+#include <QJsonObject>
+#include <QTextEdit>
 #include <QFrame>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -171,15 +175,20 @@ void ProjectPanel::buildUi() {
                              "QPushButton#accentBtn:disabled{background:#1f2937;color:#4b5563;}");
     m_importBtn    = new QPushButton(tr("Importer ROM..."), listPage);
     m_duplicateBtn = new QPushButton(tr("Dupliquer"), listPage);
+    m_renameBtn    = new QPushButton(tr("Modifier…"), listPage);
+    m_renameBtn->setToolTip(tr("Éditer les métadonnées du projet (nom, ECU, "
+                               "véhicule, immat, année, description)."));
     m_deleteBtn    = new QPushButton(tr("Supprimer"), listPage);
     m_deleteBtn->setStyleSheet("QPushButton{color:#fca5a5;}");
     m_openBtn->setEnabled(false);
     m_importBtn->setEnabled(false);
     m_duplicateBtn->setEnabled(false);
+    m_renameBtn->setEnabled(false);
     m_deleteBtn->setEnabled(false);
     actRow->addWidget(m_openBtn);
     actRow->addWidget(m_importBtn);
     actRow->addWidget(m_duplicateBtn);
+    actRow->addWidget(m_renameBtn);
     actRow->addWidget(m_deleteBtn);
     actRow->addStretch();
     boxLay->addLayout(actRow);
@@ -254,6 +263,10 @@ void ProjectPanel::buildUi() {
         const QString id = selectedProjectId();
         if (!id.isEmpty()) duplicateProject(id);
     });
+    connect(m_renameBtn, &QPushButton::clicked, this, [this]() {
+        const QString id = selectedProjectId();
+        if (!id.isEmpty()) editProject(id);
+    });
     connect(m_deleteBtn, &QPushButton::clicked, this, [this]() {
         const QString id = selectedProjectId();
         if (!id.isEmpty()) deleteProject(id);
@@ -268,6 +281,7 @@ void ProjectPanel::buildUi() {
         m_openBtn->setEnabled(has);
         m_importBtn->setEnabled(has);
         m_duplicateBtn->setEnabled(has);
+        m_renameBtn->setEnabled(has);
         m_deleteBtn->setEnabled(has);
         m_addSlotBtn->setEnabled(has);
         updateDetails(id);
@@ -344,6 +358,7 @@ void ProjectPanel::refreshList() {
     m_openBtn->setEnabled(has);
     m_importBtn->setEnabled(has);
     m_duplicateBtn->setEnabled(has);
+    m_renameBtn->setEnabled(has);
     m_deleteBtn->setEnabled(has);
     m_addSlotBtn->setEnabled(has);
     updateDetails(id);
@@ -450,6 +465,7 @@ void ProjectPanel::showContextMenu(const QPoint& pos) {
     menu.addAction(tr("Importer ROM..."), this, [this, id]() { importRomFor(id); });
     menu.addAction(tr("Ajouter ROM..."),  this, [this, id]() { addRomSlotFor(id); });
     menu.addSeparator();
+    menu.addAction(tr("Modifier…"),    this, [this, id]() { editProject(id); });
     menu.addAction(tr("Dupliquer"),    this, [this, id]() { duplicateProject(id); });
     menu.addAction(tr("Supprimer"),    this, [this, id]() { deleteProject(id); });
     menu.exec(m_list->mapToGlobal(pos));
@@ -488,6 +504,83 @@ void ProjectPanel::deleteProject(const QString& id) {
         return;
     m_manager->remove(id);
     refreshList();
+}
+
+void ProjectPanel::editProject(const QString& id) {
+    auto meta = m_manager->get(id);
+    if (!meta) {
+        QMessageBox::warning(this, tr("Modifier"), tr("Projet introuvable."));
+        return;
+    }
+
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("Modifier le projet"));
+    dlg.setMinimumWidth(420);
+
+    auto* lay  = new QVBoxLayout(&dlg);
+    auto* form = new QFormLayout;
+
+    auto* nameEdit    = new QLineEdit(meta->name, &dlg);
+    auto* ecuCombo    = new QComboBox(&dlg);
+    int curIdx = -1;
+    for (const auto& s : ecu::listEcus()) {
+        const QString eid  = QString::fromUtf8(s.id.data(), (qsizetype)s.id.size());
+        const QString name = QString::fromUtf8(s.name.data(), (qsizetype)s.name.size());
+        ecuCombo->addItem(name.isEmpty() ? eid : QString("%1 (%2)").arg(name, eid), eid);
+        if (eid == meta->ecu) curIdx = ecuCombo->count() - 1;
+    }
+    if (curIdx >= 0) ecuCombo->setCurrentIndex(curIdx);
+
+    auto* vehicleEdit = new QLineEdit(meta->vehicle, &dlg);
+    auto* immatEdit   = new QLineEdit(meta->immat,   &dlg);
+    auto* yearEdit    = new QLineEdit(meta->year,    &dlg);
+    auto* descEdit    = new QTextEdit(&dlg);
+    descEdit->setPlainText(meta->description);
+    descEdit->setMaximumHeight(110);
+
+    form->addRow(tr("Nom *"),           nameEdit);
+    form->addRow(tr("ECU"),             ecuCombo);
+    form->addRow(tr("Véhicule"),        vehicleEdit);
+    form->addRow(tr("Immatriculation"), immatEdit);
+    form->addRow(tr("Année"),           yearEdit);
+    form->addRow(tr("Description"),     descEdit);
+    lay->addLayout(form);
+
+    auto* err = new QLabel(&dlg);
+    err->setStyleSheet("color:#ef4444; font-size:11px;");
+    err->hide();
+    lay->addWidget(err);
+
+    auto* buttons = new QDialogButtonBox(
+        QDialogButtonBox::Save | QDialogButtonBox::Cancel, &dlg);
+    lay->addWidget(buttons);
+    connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    connect(buttons, &QDialogButtonBox::accepted, &dlg, [&]() {
+        const QString trimmed = nameEdit->text().trimmed();
+        if (trimmed.isEmpty()) { err->setText(tr("Le nom est obligatoire.")); err->show(); return; }
+        QJsonObject fields;
+        fields["name"]        = trimmed;
+        fields["ecu"]         = ecuCombo->currentData().toString();
+        fields["vehicle"]     = vehicleEdit->text().trimmed();
+        fields["immat"]       = immatEdit->text().trimmed();
+        fields["year"]        = yearEdit->text().trimmed();
+        fields["description"] = descEdit->toPlainText();
+        auto res = m_manager->update(id, fields);
+        if (!res) {
+            err->setText(tr("Échec : %1").arg(res.error())); err->show(); return;
+        }
+        dlg.accept();
+    });
+
+    if (dlg.exec() == QDialog::Accepted) {
+        refreshList();
+        // Restaure la sélection sur le projet renommé.
+        for (int i = 0; i < m_list->count(); ++i) {
+            if (m_list->item(i)->data(IdRole).toString() == id) {
+                m_list->setCurrentRow(i); break;
+            }
+        }
+    }
 }
 
 void ProjectPanel::duplicateProject(const QString& id) {

@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=ECU Studio
+GenericName=ECU Reprogramming
+Comment=Reprogrammation et tuning d'ECU (Bosch EDC16C34 et autres)
+Exec=ecu_studio %f
+Icon=ecu-studio
+Terminal=false
+Categories=Development;Engineering;
+StartupNotify=true
+StartupWMClass=ecu_studio
+MimeType=application/octet-stream;
+Keywords=ECU;tuning;reprogramming;OBD;DAMOS;

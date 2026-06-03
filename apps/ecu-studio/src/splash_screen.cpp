@@ -2,7 +2,9 @@
 
 #include <QApplication>
 #include <QFont>
+#include <QHBoxLayout>
 #include <QLabel>
+#include <QPixmap>
 #include <QProgressBar>
 #include <QScreen>
 #include <QTimer>
@@ -29,34 +31,43 @@ SplashScreen::SplashScreen(QWidget* parent)
 }
 
 void SplashScreen::buildUi() {
-    setFixedSize(480, 260);
+    setFixedSize(520, 280);
     setStyleSheet("QWidget { background: #0f1623; }");
 
     auto* root = new QVBoxLayout(this);
-    root->setContentsMargins(40, 32, 40, 28);
+    root->setContentsMargins(32, 28, 32, 24);
     root->setSpacing(0);
 
-    // Nom de l'application.
-    auto* nameLbl = new QLabel("ECU Studio", this);
-    {
-        QFont f = nameLbl->font();
-        f.setPointSize(f.pointSize() + 22);
-        f.setBold(true);
-        nameLbl->setFont(f);
-        nameLbl->setStyleSheet("color: #6366f1; letter-spacing: -1px;");
-    }
-    root->addWidget(nameLbl);
+    // Bandeau : logo à gauche + accroche/version à droite. Le logo contient
+    // déjà le wordmark "ECU STUDIO" donc on ne le redouble pas en texte.
+    auto* head = new QHBoxLayout;
+    head->setSpacing(20);
 
-    // Version + accroche.
-    auto* versionLbl = new QLabel(
-        QString("v%1  \xc2\xb7  %2").arg(APP_VERSION, tr("Reprogrammation ECU")), this);
+    auto* logoLbl = new QLabel(this);
+    QPixmap pm(":/ecu_studio_logo.png");
+    if (!pm.isNull())
+        logoLbl->setPixmap(pm.scaled(120, 120, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    head->addWidget(logoLbl, 0, Qt::AlignTop);
+
+    auto* textCol = new QVBoxLayout;
+    textCol->setSpacing(4);
+    auto* tagLbl = new QLabel(tr("Reprogrammation ECU"), this);
     {
-        QFont f = versionLbl->font();
-        f.setPointSize(f.pointSize() + 1);
-        versionLbl->setFont(f);
-        versionLbl->setStyleSheet("color: #4b5563; margin-top: 4px;");
+        QFont f = tagLbl->font();
+        f.setPointSize(f.pointSize() + 6);
+        f.setBold(true);
+        tagLbl->setFont(f);
+        tagLbl->setStyleSheet("color: #e5e7eb;");
     }
-    root->addWidget(versionLbl);
+    textCol->addWidget(tagLbl);
+
+    auto* versionLbl = new QLabel(QString("v%1").arg(APP_VERSION), this);
+    versionLbl->setStyleSheet("color: #6366f1; font-size: 12px;");
+    textCol->addWidget(versionLbl);
+    textCol->addStretch();
+    head->addLayout(textCol, 1);
+
+    root->addLayout(head);
 
     root->addStretch(1);
 

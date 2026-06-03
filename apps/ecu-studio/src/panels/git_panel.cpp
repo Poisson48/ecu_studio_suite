@@ -200,10 +200,25 @@ void GitPanel::commitCurrent() {
         return;
     }
 
+    // Flush la ROM en mémoire sur disque AVANT de committer.
+    if (m_doc && m_doc->isLoaded() && m_doc->isModified() && !m_doc->path().isEmpty()) {
+        if (!m_doc->saveToFile(m_doc->path())) {
+            QMessageBox::warning(this, tr("Commit"),
+                tr("Impossible de sauvegarder la ROM avant le commit.\n"
+                   "Vérifiez que le fichier est accessible en écriture."));
+            return;
+        }
+    }
+
+    // Message suggéré : basé sur le nom du fichier ROM.
+    const QString suggested = m_doc && !m_doc->name().isEmpty()
+        ? tr("chg: %1").arg(m_doc->name())
+        : tr("chg: rom");
+
     bool ok = false;
     const QString message = QInputDialog::getText(
         this, tr("Nouveau commit"), tr("Message du commit :"),
-        QLineEdit::Normal, {}, &ok);
+        QLineEdit::Normal, suggested, &ok);
     if (!ok) return;
     if (message.trimmed().isEmpty()) {
         setStatus(tr("Message vide : commit annulé"), true);
@@ -217,13 +232,11 @@ void GitPanel::commitCurrent() {
     }
     if (!result.hash) {
         setStatus(tr("Échec du commit"), true);
-        QMessageBox::warning(this, tr("Commit"),
-                             tr("Le commit a échoué."));
+        QMessageBox::warning(this, tr("Commit"), tr("Le commit a échoué."));
         return;
     }
 
-    setStatus(tr("Commit %1 créé")
-                  .arg(QString::fromStdString(*result.hash).left(8)));
+    setStatus(tr("Commit %1 créé").arg(QString::fromStdString(*result.hash).left(8)));
     refresh();
 #else
     setStatus(tr("Support Git indisponible (libgit2 non compilé)"), true);

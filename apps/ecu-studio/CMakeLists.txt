@@ -53,6 +53,7 @@ set(ECU_STUDIO_SOURCES
     src/panels/mpps_panel.cpp
     src/panels/hex_view_panel.cpp
     src/panels/map_editor_panel.cpp
+    src/panels/damos_editor_panel.cpp
     src/panels/map3d_panel.cpp
     src/panels/map3d_view.cpp
     src/panels/project_panel.cpp
@@ -127,11 +128,19 @@ configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/theme.qss
     COPYONLY
 )
+# Logo de l'app : copié dans le binary dir pour que qt_add_resources le voie via BASE.
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources/ecu_studio_logo.png
+    ${CMAKE_CURRENT_BINARY_DIR}/ecu_studio_logo.png
+    COPYONLY
+)
 
 qt_add_resources(ecu_studio "ecu_studio_resources"
     PREFIX "/"
     BASE ${CMAKE_CURRENT_BINARY_DIR}
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/theme.qss
+    FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/theme.qss
+        ${CMAKE_CURRENT_BINARY_DIR}/ecu_studio_logo.png
 )
 
 # ── i18n ─────────────────────────────────────────────────────────────────────
@@ -144,3 +153,15 @@ qt_add_translations(ecu_studio
 )
 
 install(TARGETS ecu_studio RUNTIME DESTINATION bin)
+
+# ── Intégration desktop Linux (taskbar / dock / menu) ────────────────────────
+# Sans ces fichiers, GNOME/Wayland affiche une icône vide même si l'app appelle
+# setWindowIcon(). Le compositeur associe la fenêtre au .desktop via
+# StartupWMClass=ecu_studio et lit Icon= depuis le thème hicolor.
+if(UNIX AND NOT APPLE)
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/resources/ecu-studio.desktop
+            DESTINATION share/applications)
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/resources/ecu_studio_logo.png
+            DESTINATION share/icons/hicolor/256x256/apps
+            RENAME ecu-studio.png)
+endif()

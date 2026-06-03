@@ -30,6 +30,23 @@ public:
     QString             ecuId()    const { return m_ecuId; }
     bool                isModified() const { return m_modified; }
 
+    // ── Baseline (mode fantôme) ────────────────────────────────────────────
+    // Snapshot capturé au chargement (et figé jusqu'à un nouveau load ou un
+    // resetBaseline()). Les panels 2D/3D s'en servent pour superposer la ROM
+    // d'origine en transparence sous l'édition courante.
+    bool                hasBaseline() const { return !m_baseline.isEmpty(); }
+    const QByteArray&   baseline()    const { return m_baseline; }
+    // Force la baseline = état actuel — à appeler après un commit / save afin
+    // que les modifications suivantes soient comparées au nouvel état "stable".
+    void                resetBaseline();
+    // Définit la baseline depuis des octets explicites (ex. ROM extraite d'un
+    // commit git spécifique via `git show <sha>:<path>`).
+    void                setBaselineFromBytes(const QByteArray& bytes,
+                                              const QString&    label = {});
+    // Étiquette descriptive de la baseline (pour la barre d'info) : "au chargement",
+    // "commit abc1234 (il y a 2 jours)", "fichier maRom.bak"...
+    QString             baselineLabel() const { return m_baselineLabel; }
+
     void setEcuId(const QString& id);
 
     // À appeler après une modification in-place de romMutable() pour notifier
@@ -41,9 +58,12 @@ signals:
     void romModified(qsizetype offset, qsizetype length); // octets modifiés
     void ecuChanged(const QString& ecuId);
     void modifiedStateChanged(bool modified);
+    void baselineChanged();                            // resetBaseline() / nouvelle baseline
 
 private:
     QByteArray m_rom;
+    QByteArray m_baseline;   // copie figée au load (mode fantôme)
+    QString    m_baselineLabel;
     QString    m_path;
     QString    m_name;
     QString    m_ecuId;

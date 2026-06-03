@@ -82,17 +82,71 @@ void Map3dViewPainter::setHeatmap(bool on) {
 }
 
 void Map3dViewPainter::mousePressEvent(QMouseEvent* e) {
-    m_lastPos  = e->pos();
-    m_dragging = true;
+    m_lastPos    = e->pos();
+    m_pressPos   = e->pos();
+    m_dragging   = true;
+    m_dragMoved  = false;
 }
 
 void Map3dViewPainter::mouseMoveEvent(QMouseEvent* e) {
-    if (!m_dragging || m_heatmap) return;
+    if (!m_dragging) return;
     const QPoint d = e->pos() - m_lastPos;
     m_lastPos = e->pos();
+    // Seuil de glissement : 4 px → clic court ne devient pas une rotation parasite.
+    if ((e->pos() - m_pressPos).manhattanLength() > 4) m_dragMoved = true;
+    if (m_heatmap) return;
     m_yaw   += d.x() * 0.5;
     m_pitch  = std::clamp(m_pitch + d.y() * 0.4, 5.0, 85.0);
-    update();
+    if (m_dragMoved) update();
+}
+
+void Map3dViewPainter::mouseReleaseEvent(QMouseEvent* e) {
+    const bool wasClick = m_dragging && !m_dragMoved;
+    m_dragging  = false;
+    m_dragMoved = false;
+    if (!wasClick || !m_hasData) return;
+
+    // Re-projette tous les sommets pour trouver le plus proche du clic.
+    const int nx = m_data.nx, ny = m_data.ny;
+    if (nx <= 0 || ny <= 0) return;
+    const double zRange = (m_zMax - m_zMin);
+    const double cx = width()  * 0.5;
+    const double cy = height() * 0.55;
+    const double scale = std::min(width(), height()) * 0.012 * m_zoom;
+    const double yawR   = m_yaw   * M_PI / 180.0;
+    const double pitchR = m_pitch * M_PI / 180.0;
+    const double cosY = std::cos(yawR), sinY = std::sin(yawR);
+    const double sinP = std::sin(pitchR);
+    const double spanX = std::max(1, nx - 1);
+    const double spanY = std::max(1, ny - 1);
+    const double zHeight = std::min(width(), height()) * 0.35 * m_zoom;
+
+    int bestGx = -1, bestGy = -1;
+    double bestD2 = std::numeric_limits<double>::max();
+    for (int gy = 0; gy < ny; ++gy) {
+        for (int gx = 0; gx < nx; ++gx) {
+            const double xL = (double(gx) / spanX - 0.5) * spanX;
+            const double yL = (double(gy) / spanY - 0.5) * spanY;
+            const double rx = xL * cosY - yL * sinY;
+            const double ry = xL * sinY + yL * cosY;
+            const double v  = m_data.z[static_cast<std::size_t>(gy) *
+                                       static_cast<std::size_t>(nx) +
+                                       static_cast<std::size_t>(gx)];
+            const double t  = zRange > 0 ? (v - m_zMin) / zRange : 0.0;
+            const double sx = cx + rx * scale * 6.0;
+            const double sy = cy + ry * scale * sinP * 6.0 - t * zHeight;
+            const double dx = sx - e->pos().x(), dy = sy - e->pos().y();
+            const double d2 = dx*dx + dy*dy;
+            if (d2 < bestD2) { bestD2 = d2; bestGx = gx; bestGy = gy; }
+        }
+    }
+    // Tolérance : 18 px (cible facile à manipuler à la souris).
+    if (bestGx >= 0 && bestD2 < 18.0 * 18.0) {
+        const double val = m_data.z[static_cast<std::size_t>(bestGy) *
+                                    static_cast<std::size_t>(nx) +
+                                    static_cast<std::size_t>(bestGx)];
+        emit cellClicked(bestGx, bestGy, val);
+    }
 }
 
 void Map3dViewPainter::wheelEvent(QWheelEvent* e) {
@@ -196,7 +250,105 @@ void Map3dViewPainter::paint3d(QPainter& p) {
         p.drawPolygon(q.poly);
     }
 
-    // Titre + plage de valeurs + repère d'interaction.
+    // ── Mode fantôme : wireframe de la baseline par-dessus la surface ─────────
+    // On dessine seulement les arêtes (pas de remplissage) en cyan transparent
+    // pour pouvoir comparer visuellement l'origine et l'édition.
+    if (!m_data.baselineZ.empty() &&
+        static_cast<int>(m_data.baselineZ.size()) == nx * ny) {
+        auto bz = [&](int gx, int gy) -> double {
+            return m_data.baselineZ[static_cast<std::size_t>(gy) *
+                                    static_cast<std::size_t>(nx) +
+                                    static_cast<std::size_t>(gx)];
+        };
+        auto projectBase = [&](double gx, double gy, double val) -> QPointF {
+            const double x = (gx / spanX - 0.5) * spanX;
+            const double y = (gy / spanY - 0.5) * spanY;
+            const double rx = x * cosY - y * sinY;
+            const double ry = x * sinY + y * cosY;
+            const double t = zRange > 0 ? (val - m_zMin) / zRange : 0.0;
+            return QPointF(cx + rx * scale * 6.0,
+                           cy + ry * scale * sinP * 6.0 - t * zHeight);
+        };
+        QPen ghost(QColor(125, 211, 252, 180));   // cyan clair, semi-transparent
+        ghost.setWidthF(1.0);
+        p.setPen(ghost);
+        p.setBrush(Qt::NoBrush);
+        for (int gy = 0; gy + 1 < ny; ++gy) {
+            for (int gx = 0; gx + 1 < nx; ++gx) {
+                const QPointF a = projectBase(gx,     gy,     bz(gx,     gy));
+                const QPointF b = projectBase(gx + 1, gy,     bz(gx + 1, gy));
+                const QPointF c = projectBase(gx + 1, gy + 1, bz(gx + 1, gy + 1));
+                const QPointF d = projectBase(gx,     gy + 1, bz(gx,     gy + 1));
+                p.drawLine(a, b);
+                p.drawLine(b, c);
+                p.drawLine(c, d);
+                p.drawLine(d, a);
+            }
+        }
+    }
+
+    // ── Axes 3D : labels d'axes le long des bords inférieurs du volume ────────
+    // On projette à la valeur zMin (« sol ») pour suivre la base de la surface.
+    // Ticks répartis : jusqu'à 5 par axe pour ne pas surcharger.
+    p.setPen(QColor("#9ca3af"));
+    QFont af = p.font();
+    af.setBold(false);
+    af.setPointSize(8);
+    p.setFont(af);
+
+    auto pickTickIdx = [](int count, int maxTicks) {
+        std::vector<int> out;
+        if (count <= 0) return out;
+        const int ticks = std::min(count, maxTicks);
+        for (int i = 0; i < ticks; ++i) {
+            const int idx = (ticks == 1) ? 0
+                          : static_cast<int>(std::round(double(i) * (count - 1) / (ticks - 1)));
+            out.push_back(idx);
+        }
+        return out;
+    };
+    const auto xTicks = pickTickIdx(nx, 5);
+    const auto yTicks = pickTickIdx(ny, 5);
+
+    // Axe X : le long de gy=0, valeur=zMin (bord arrière de la base).
+    for (int idx : xTicks) {
+        const QPointF pt = project(idx, 0, m_zMin);
+        const QString lbl = (idx < m_data.xLabels.size()) ? m_data.xLabels[idx]
+                                                          : QString::number(idx);
+        p.drawText(QRectF(pt.x() - 40, pt.y() + 4, 80, 14), Qt::AlignCenter, lbl);
+    }
+    // Axe Y : le long de gx=0, valeur=zMin (bord gauche).
+    for (int idx : yTicks) {
+        const QPointF pt = project(0, idx, m_zMin);
+        const QString lbl = (idx < m_data.yLabels.size()) ? m_data.yLabels[idx]
+                                                          : QString::number(idx);
+        p.drawText(QRectF(pt.x() - 80, pt.y() - 7, 70, 14), Qt::AlignRight, lbl);
+    }
+
+    // Titres d'axes (suivent les bords du sol).
+    if (!m_data.xAxisTitle.isEmpty() && nx > 1) {
+        const QPointF pt = project((nx - 1) * 0.5, 0, m_zMin);
+        p.setPen(QColor("#6366f1"));
+        QFont tf2 = p.font();
+        tf2.setBold(true);
+        p.setFont(tf2);
+        p.drawText(QRectF(pt.x() - 80, pt.y() + 18, 160, 14),
+                   Qt::AlignCenter, m_data.xAxisTitle);
+    }
+    if (!m_data.yAxisTitle.isEmpty() && ny > 1) {
+        const QPointF pt = project(0, (ny - 1) * 0.5, m_zMin);
+        p.setPen(QColor("#6366f1"));
+        QFont tf2 = p.font();
+        tf2.setBold(true);
+        p.setFont(tf2);
+        p.save();
+        p.translate(pt.x() - 80, pt.y());
+        p.rotate(-30);   // suit l'inclinaison de l'arête Y projetée
+        p.drawText(QRectF(-60, -7, 120, 14), Qt::AlignCenter, m_data.yAxisTitle);
+        p.restore();
+    }
+
+    // Titre principal (nom de la map + unité data) + ticks Z et repère interaction.
     p.setPen(QColor("#e6edf3"));
     QFont tf = p.font();
     tf.setPointSize(10);
@@ -204,11 +356,31 @@ void Map3dViewPainter::paint3d(QPainter& p) {
     p.setFont(tf);
     p.drawText(QRectF(8, 6, width() - 16, 20), Qt::AlignLeft, m_data.title);
 
+    // Échelle Z : min/max projetés sur l'arête verticale (coin avant-gauche).
+    if (nx > 0 && ny > 0) {
+        p.setPen(QColor("#9ca3af"));
+        QFont sf = p.font();
+        sf.setBold(false);
+        sf.setPointSize(8);
+        p.setFont(sf);
+        const QPointF zBot = project(0, ny - 1, m_zMin);
+        const QPointF zTop = project(0, ny - 1, m_zMax);
+        p.drawText(QRectF(zBot.x() - 78, zBot.y() - 7, 70, 14),
+                   Qt::AlignRight, QString::number(m_zMin, 'f', 0));
+        p.drawText(QRectF(zTop.x() - 78, zTop.y() - 7, 70, 14),
+                   Qt::AlignRight, QString::number(m_zMax, 'f', 0));
+        // ligne discrète entre les deux pour matérialiser l'axe Z
+        QPen zPen(QColor(255, 255, 255, 60));
+        zPen.setWidthF(0.8);
+        p.setPen(zPen);
+        p.drawLine(zBot, zTop);
+    }
+
     p.setPen(QColor("#7c8fa6"));
-    QFont sf = p.font();
-    sf.setBold(false);
-    sf.setPointSize(9);
-    p.setFont(sf);
+    QFont sf2 = p.font();
+    sf2.setBold(false);
+    sf2.setPointSize(9);
+    p.setFont(sf2);
     p.drawText(QRectF(8, height() - 22, width() - 16, 18), Qt::AlignLeft,
                tr("min %1   max %2   —   glisser : rotation, molette : zoom")
                    .arg(m_zMin, 0, 'f', 0).arg(m_zMax, 0, 'f', 0));

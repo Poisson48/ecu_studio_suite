@@ -19,6 +19,15 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QColor>
+#include <QComboBox>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QDir>
+#include <QFileDialog>
+#include <QFileInfo>
+#include <QPainter>
+#include <QProcess>
+#include <QStyledItemDelegate>
 
 #include <algorithm>
 #include <cmath>
@@ -40,6 +49,98 @@ namespace {
 QString hex32(quint32 v) {
     return QString("0x%1").arg(v, 6, 16, QChar('0')).toUpper().replace("0X", "0x");
 }
+
+// Delegate qui peint manuellement le fond depuis Qt::BackgroundRole. Contourne
+// le piège Qt classique : dès qu'une stylesheet global stylise QTableWidget::item,
+// les setBackground() programmatiques sont ignorés. On peint nous-mêmes.
+//
+// Rôles supplémentaires :
+//   Qt::UserRole       -> bool, cellule modifiée vs stock (liseré jaune)
+//   Qt::UserRole + 1   -> double, valeur baseline si mode fantôme actif (NaN sinon)
+//   Qt::UserRole + 2   -> bool, mode fantôme activé pour cette cellule
+class HeatmapDelegate : public QStyledItemDelegate {
+public:
+    using QStyledItemDelegate::QStyledItemDelegate;
+    void paint(QPainter* p, const QStyleOptionViewItem& opt,
+               const QModelIndex& idx) const override {
+        const QVariant bg = idx.data(Qt::BackgroundRole);
+        if (bg.canConvert<QBrush>())
+            p->fillRect(opt.rect, bg.value<QBrush>());
+        // Cellule modifiée vs stock : liseré jaune.
+        if (idx.data(Qt::UserRole).toBool()) {
+            p->save();
+            QPen pen(QColor("#fbbf24"));
+            pen.setWidth(2);
+            p->setPen(pen);
+            p->drawRect(opt.rect.adjusted(1, 1, -1, -1));
+            p->restore();
+        }
+        // Sélection : voile semi-transparent par-dessus.
+        if (opt.state & QStyle::State_Selected)
+            p->fillRect(opt.rect, QColor(99, 102, 241, 90));
+
+        // Texte centré, couleur depuis ForegroundRole.
+        const QVariant fg = idx.data(Qt::ForegroundRole);
+        if (fg.canConvert<QBrush>())
+            p->setPen(fg.value<QBrush>().color());
+        else
+            p->setPen(QColor(0xe5, 0xe7, 0xeb));
+
+        const bool ghost = idx.data(Qt::UserRole + 2).toBool();
+        const QVariant baseVar = idx.data(Qt::UserRole + 1);
+        const QString curText = idx.data(Qt::DisplayRole).toString();
+
+        if (!ghost || !baseVar.isValid()) {
+            p->drawText(opt.rect, Qt::AlignCenter, curText);
+        } else {
+            // Mode fantôme : valeur courante centrée, baseline en petit sous la
+            // valeur courante, et un triangle de delta (↑/↓) à droite.
+            const double base = baseVar.toDouble();
+            const double cur  = curText.toDouble();
+            const bool changed = (cur != base);
+
+            QRect topRect    = opt.rect.adjusted(0, 0, 0, -opt.rect.height() / 2);
+            QRect bottomRect = opt.rect.adjusted(0, opt.rect.height() / 2, 0, 0);
+
+            QFont curFont = opt.font;
+            curFont.setBold(changed);
+            p->save();
+            p->setFont(curFont);
+            p->drawText(topRect, Qt::AlignCenter, curText);
+            p->restore();
+
+            // Baseline en bas, gris translucide.
+            p->save();
+            QFont baseFont = opt.font;
+            baseFont.setPointSizeF(std::max(7.0, baseFont.pointSizeF() - 1.5));
+            baseFont.setItalic(true);
+            p->setFont(baseFont);
+            p->setPen(QColor(160, 174, 192, 180));
+            p->drawText(bottomRect, Qt::AlignCenter,
+                        QString::number(base, 'f', 0));
+            p->restore();
+
+            // Triangle delta (↑ rouge si > / ↓ vert si <) en haut-droite.
+            if (changed) {
+                p->save();
+                const int s = std::max(4, opt.rect.height() / 6);
+                QPolygon tri;
+                const int x = opt.rect.right() - s - 2;
+                const int y = opt.rect.top() + s + 1;
+                if (cur > base) {
+                    tri << QPoint(x, y) << QPoint(x + 2*s, y) << QPoint(x + s, y - s);
+                    p->setBrush(QColor(239, 68, 68));
+                } else {
+                    tri << QPoint(x, y - s) << QPoint(x + 2*s, y - s) << QPoint(x + s, y);
+                    p->setBrush(QColor(34, 197, 94));
+                }
+                p->setPen(Qt::NoPen);
+                p->drawPolygon(tri);
+                p->restore();
+            }
+        }
+    }
+};
 
 // Couleur froid→chaud (bleu → cyan → vert → jaune → rouge) pour t∈[0,1].
 // Teintes assombries pour rester lisibles sur le thème sombre.
@@ -82,6 +183,9 @@ void MapEditorPanel::buildUi() {
     m_pctSpin->setSingleStep(0.5);
     m_pctSpin->setValue(15.0);
     m_pctSpin->setSuffix(" %");
+    // PlusMinus : Qt dessine du texte "+/−" à la place de flèches (les flèches
+    // QSS rendaient mal sur le thème sombre). Stylable via la couleur du widget.
+    m_pctSpin->setButtonSymbols(QAbstractSpinBox::PlusMinus);
     stageLay->addWidget(m_pctSpin);
 
     m_applyPctBtn = new QPushButton(tr("Appliquer %"), this);
@@ -98,14 +202,32 @@ void MapEditorPanel::buildUi() {
     m_view3dBtn->setToolTip(tr("Affiche la map sélectionnée en surface 3D (panneau 3D)."));
     stageLay->addWidget(m_view3dBtn);
 
+    stageLay->addStretch();
+    root->addWidget(stageBox);
+
+    // ── Auto-localisation DAMOS (séparé pour bien le voir) ────────────────
+    auto* damosBox = new QGroupBox(tr("Auto-localisation DAMOS"), this);
+    auto* damosLay = new QHBoxLayout(damosBox);
+    damosLay->addWidget(new QLabel(tr("Source :"), this));
+
     m_openDamosBtn = new QPushButton(tr("open_damos (auto-localiser)"), this);
     m_openDamosBtn->setObjectName("accentBtn");
     m_openDamosBtn->setToolTip(tr("Relocalise automatiquement les maps connues par "
                                   "empreinte d'axe (aucun DAMOS dédié requis)."));
-    stageLay->addWidget(m_openDamosBtn);
+    damosLay->addWidget(m_openDamosBtn);
 
-    stageLay->addStretch();
-    root->addWidget(stageBox);
+    m_importRecipeBtn = new QPushButton(tr("Importer recipe DAMOS…"), this);
+    m_importRecipeBtn->setToolTip(tr("Charge un fichier open_damos.json externe."));
+    damosLay->addWidget(m_importRecipeBtn);
+
+    auto* findMapsBtn = new QPushButton(tr("Auto-détection heuristique"), this);
+    findMapsBtn->setToolTip(tr("Scanne la ROM avec ecu::findMaps : détecte les maps "
+                               "inconnues par signature d'en-tête (sans DAMOS)."));
+    connect(findMapsBtn, &QPushButton::clicked, this, &MapEditorPanel::runMapFinder);
+    damosLay->addWidget(findMapsBtn);
+
+    damosLay->addStretch();
+    root->addWidget(damosBox);
 
     // ── Listes / grille ───────────────────────────────────────────────────
     auto* splitter = new QSplitter(Qt::Horizontal, this);
@@ -127,8 +249,17 @@ void MapEditorPanel::buildUi() {
     m_mapTable->setSelectionMode(QAbstractItemView::SingleSelection);
     m_mapTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_mapTable->verticalHeader()->setVisible(false);
-    m_mapTable->horizontalHeader()->setStretchLastSection(true);
-    m_mapTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    // Toutes les colonnes redimensionnables par l'utilisateur (drag des bordures
+    // d'en-tête). Largeurs initiales pour lire le nom complet par défaut.
+    m_mapTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
+    m_mapTable->horizontalHeader()->setStretchLastSection(false);
+    m_mapTable->setColumnWidth(0, 220);  // Nom
+    m_mapTable->setColumnWidth(1, 90);   // Adresse
+    m_mapTable->setColumnWidth(2, 70);   // Taille
+    m_mapTable->setColumnWidth(3, 110);  // Score
+    m_mapTable->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+    m_mapTable->setWordWrap(false);
+    m_mapTable->setTextElideMode(Qt::ElideRight);
     listLay->addWidget(m_mapTable);
     splitter->addWidget(listBox);
 
@@ -136,6 +267,11 @@ void MapEditorPanel::buildUi() {
     auto* gridLay = new QVBoxLayout(gridBox);
     m_infoLabel = new QLabel(tr("Aucune map sélectionnée"), this);
     m_infoLabel->setStyleSheet("color:#7c8fa6;");
+    // Wrap : un commentaire long ne doit pas élargir le panneau (donc pas pousser la
+    // limite du splitter), il doit passer à la ligne.
+    m_infoLabel->setWordWrap(true);
+    m_infoLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+    m_infoLabel->setMinimumWidth(0);
     gridLay->addWidget(m_infoLabel);
 
     // ── Barre d'opérations sur la sélection ────────────────────────────────
@@ -145,6 +281,16 @@ void MapEditorPanel::buildUi() {
     m_heatmapChk->setChecked(true);
     m_heatmapChk->setToolTip(tr("Colore chaque cellule selon sa valeur (froid→chaud)."));
     opRow->addWidget(m_heatmapChk);
+
+    m_ghostChk = new QCheckBox(tr("Fantôme"), this);
+    m_ghostChk->setChecked(false);
+    m_ghostChk->setToolTip(tr("Superpose la valeur de la ROM d'origine sous la "
+                              "valeur courante (en italique) + triangle de delta."));
+    opRow->addWidget(m_ghostChk);
+    m_baselineBtn = new QPushButton(tr("Baseline…"), this);
+    m_baselineBtn->setToolTip(tr("Choisir la ROM de référence du mode fantôme : "
+                                 "commit git, fichier .bin externe ou snapshot d'origine."));
+    opRow->addWidget(m_baselineBtn);
     opRow->addSpacing(8);
 
     auto mkOp = [&](const QString& txt, const QString& tip, void (MapEditorPanel::*slot)()) {
@@ -170,7 +316,45 @@ void MapEditorPanel::buildUi() {
     m_grid->horizontalHeader()->setVisible(true);
     m_grid->verticalHeader()->setVisible(true);
     m_grid->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    // Cellules redimensionnables par l'utilisateur (drag des bordures d'en-tête).
+    // La taille choisie est mémorisée dans m_colWidth/m_rowHeight et réappliquée
+    // à chaque map pour ne pas changer entre deux sélections.
+    m_grid->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
+    m_grid->horizontalHeader()->setDefaultSectionSize(m_colWidth);
+    m_grid->horizontalHeader()->setMinimumSectionSize(24);
+    m_grid->verticalHeader()->setSectionResizeMode(QHeaderView::Interactive);
+    m_grid->verticalHeader()->setDefaultSectionSize(m_rowHeight);
+    m_grid->verticalHeader()->setMinimumSectionSize(14);
+    // Largeur de l'en-tête vertical figée : empêche le grid de "glisser" quand les
+    // labels d'axe Y changent de longueur entre deux maps.
+    m_grid->verticalHeader()->setFixedWidth(72);
+    m_grid->setShowGrid(true);
+    // Delegate custom — peint les fonds heatmap (le QSS global les masquerait).
+    m_grid->setItemDelegate(new HeatmapDelegate(m_grid));
     gridLay->addWidget(m_grid, 1);
+
+    // Quand l'utilisateur drag une bordure d'en-tête, propage la nouvelle taille à
+    // toutes les colonnes/lignes du grid et mémorise comme défaut pour les futures maps.
+    connect(m_grid->horizontalHeader(), &QHeaderView::sectionResized, this,
+            [this](int /*idx*/, int /*oldSize*/, int newSize) {
+                if (m_applyingCellSize || newSize <= 0) return;
+                m_colWidth = newSize;
+                m_applyingCellSize = true;
+                m_grid->horizontalHeader()->setDefaultSectionSize(newSize);
+                for (int c = 0; c < m_grid->columnCount(); ++c)
+                    m_grid->setColumnWidth(c, newSize);
+                m_applyingCellSize = false;
+            });
+    connect(m_grid->verticalHeader(), &QHeaderView::sectionResized, this,
+            [this](int /*idx*/, int /*oldSize*/, int newSize) {
+                if (m_applyingCellSize || newSize <= 0) return;
+                m_rowHeight = newSize;
+                m_applyingCellSize = true;
+                m_grid->verticalHeader()->setDefaultSectionSize(newSize);
+                for (int r = 0; r < m_grid->rowCount(); ++r)
+                    m_grid->setRowHeight(r, newSize);
+                m_applyingCellSize = false;
+            });
 
     m_selLabel = new QLabel(tr("Sélection : —"), this);
     m_selLabel->setStyleSheet("color:#9ca3af; font-size:11px; font-family:monospace;");
@@ -195,11 +379,21 @@ void MapEditorPanel::buildUi() {
             this, &MapEditorPanel::onGridSelectionChanged);
     connect(m_mapFilter, &QLineEdit::textChanged, this, [this](const QString&) { applyMapFilter(); });
     connect(m_heatmapChk, &QCheckBox::toggled, this, [this](bool) { recolorHeatmap(); });
+    connect(m_ghostChk,   &QCheckBox::toggled, this, [this](bool) {
+        if (m_currentAddr != 0) loadGrid(m_currentAddr);
+    });
+    connect(m_baselineBtn, &QPushButton::clicked, this, &MapEditorPanel::pickBaseline);
+    if (m_doc)
+        connect(m_doc, &RomDocument::baselineChanged, this, [this]() {
+            if (m_currentAddr != 0 && m_ghostChk && m_ghostChk->isChecked())
+                loadGrid(m_currentAddr);
+        });
     connect(m_applyPctBtn,    &QPushButton::clicked, this, &MapEditorPanel::applyPercent);
     connect(m_applyStage1Btn, &QPushButton::clicked, this, &MapEditorPanel::applyFullStage1);
     connect(m_gotoHexBtn,     &QPushButton::clicked, this, &MapEditorPanel::gotoHex);
     connect(m_view3dBtn,      &QPushButton::clicked, this, &MapEditorPanel::view3d);
-    connect(m_openDamosBtn,   &QPushButton::clicked, this, &MapEditorPanel::runOpenDamos);
+    connect(m_openDamosBtn,    &QPushButton::clicked, this, &MapEditorPanel::runOpenDamos);
+    connect(m_importRecipeBtn, &QPushButton::clicked, this, &MapEditorPanel::importOpenDamosRecipe);
 }
 
 void MapEditorPanel::setStatus(const QString& msg, bool error) {
@@ -211,38 +405,96 @@ void MapEditorPanel::setStatus(const QString& msg, bool error) {
 void MapEditorPanel::refreshMaps() {
     m_entries.clear();
 
-    if (m_doc && m_doc->isLoaded()) {
-        const QByteArray& rom = m_doc->rom();
-        auto span = constByteSpan(rom);
+    if (!m_doc || !m_doc->isLoaded()) {
+        rebuildMapTable();
+        setStatus(tr("Aucune ROM chargée."));
+        return;
+    }
 
-        // (a) Maps connues du catalogue Stage 1 pour l'ECU du document.
-        auto ecu = ecu::getEcu(m_doc->ecuId().toStdString());
-        if (ecu && ecu->stage1Maps) {
-            for (const auto& m : *ecu->stage1Maps) {
-                MapEntry e;
-                e.name       = QString::fromUtf8(m.name.data(), static_cast<int>(m.name.size()));
-                e.address    = m.address;
-                e.score      = -1.0;
-                e.stage1     = true;
-                e.defaultPct = m.defaultPct;
-                // Lit les dimensions si l'adresse est valide.
-                auto md = ecu::readMapData(span, m.address);
-                if (md) { e.nx = md->nx; e.ny = md->ny; }
-                m_entries.push_back(std::move(e));
+    const QByteArray& rom = m_doc->rom();
+    auto span = constByteSpan(rom);
+
+    // Priorité : open_damos — relocalise par empreinte et fournit factor/offset/stock.
+    auto recipe = ecu::OpenDamos::loadRecipe(m_doc->ecuId());
+    if (recipe) {
+        QByteArrayView view(rom.constData(), rom.size());
+        auto results = ecu::OpenDamos{}.relocate(*recipe, view);
+
+        int byFingerprint = 0;
+        for (const auto& r : results) {
+            const bool fallback = (r.addressSource == ecu::AddressSource::DefaultFallback);
+            if (!fallback) ++byFingerprint;
+
+            MapEntry e;
+            e.name      = QString::fromStdString(r.name);
+            e.address   = static_cast<quint32>(r.address);
+            e.score     = r.score;
+            e.openDamos = true;
+            e.fallback  = fallback;
+
+            if (auto md = ecu::readMapData(span, e.address)) {
+                e.nx = md->nx;
+                e.ny = md->ny;
             }
+
+            // Récupère factor/offset/stock depuis l'entrée du recipe.
+            auto it = std::find_if(recipe->characteristics.begin(),
+                                   recipe->characteristics.end(),
+                                   [&](const ecu::DamosEntry& de) {
+                                       return de.name == r.name;
+                                   });
+            if (it != recipe->characteristics.end()) {
+                e.factor         = it->data.factor;
+                e.offset         = it->data.offset;
+                e.hasConversion  = (e.factor != 1.0 || e.offset != 0.0);
+                e.stockRaw       = it->stockRawValue;
+                e.stockPhys      = it->stockPhysValue;
+                e.description    = it->description;
+                e.unit           = it->data.unit;
+                if (!it->axes.empty()) e.xAxisUnit = it->axes[0].unit;
+                if (it->axes.size() > 1) e.yAxisUnit = it->axes[1].unit;
+            }
+
+            QString src;
+            switch (r.addressSource) {
+                case ecu::AddressSource::Fingerprint:    src = tr("empreinte"); break;
+                case ecu::AddressSource::Anchor:         src = tr("ancre");     break;
+                case ecu::AddressSource::DefaultFallback: src = tr("défaut");   break;
+            }
+            const QString mode = QString::fromStdString(r.matchMode);
+            e.matchInfo = mode.isEmpty()
+                ? QString("%1 (%2)").arg(src).arg(r.score, 0, 'f', 2)
+                : QString("%1 %2 (%3)").arg(src, mode).arg(r.score, 0, 'f', 2);
+
+            m_entries.push_back(std::move(e));
+        }
+
+        rebuildMapTable();
+        setStatus(tr("open_damos : %1/%2 maps relocalisées par empreinte.")
+                      .arg(byFingerprint).arg(results.size()));
+        return;
+    }
+
+    // Repli : maps Stage 1 du catalogue ECU (adresses fixes).
+    auto ecu = ecu::getEcu(m_doc->ecuId().toStdString());
+    if (ecu && ecu->stage1Maps) {
+        for (const auto& m : *ecu->stage1Maps) {
+            MapEntry e;
+            e.name       = QString::fromUtf8(m.name.data(), static_cast<int>(m.name.size()));
+            e.address    = m.address;
+            e.score      = -1.0;
+            e.stage1     = true;
+            e.defaultPct = m.defaultPct;
+            auto md = ecu::readMapData(span, m.address);
+            if (md) { e.nx = md->nx; e.ny = md->ny; }
+            m_entries.push_back(std::move(e));
         }
     }
 
     rebuildMapTable();
-
-    if (m_entries.empty()) {
-        if (m_doc && m_doc->isLoaded())
-            setStatus(tr("Aucune map connue pour cet ECU — utilisez « Chercher maps »."));
-        else
-            setStatus(tr("Aucune ROM chargée."));
-    } else {
-        setStatus(tr("%1 map(s) listée(s).").arg(m_entries.size()));
-    }
+    setStatus(m_entries.empty()
+        ? tr("Aucune map connue — utilisez « Chercher maps » ou importez un recipe DAMOS.")
+        : tr("%1 map(s) Stage 1.").arg(m_entries.size()));
 }
 
 void MapEditorPanel::rebuildMapTable() {
@@ -303,7 +555,7 @@ void MapEditorPanel::loadGrid(quint32 address) {
     auto md   = ecu::readMapData(span, address);
     if (!md) {
         m_loadingGrid = true;
-        m_grid->clear();
+        m_grid->clearContents();
         m_grid->setRowCount(0);
         m_grid->setColumnCount(0);
         m_loadingGrid = false;
@@ -319,37 +571,130 @@ void MapEditorPanel::loadGrid(quint32 address) {
     m_curNy       = md->ny;
 
     m_loadingGrid = true;
-    m_grid->clear();
+    // clearContents() (vs clear()) préserve la config des en-têtes — sinon les
+    // tailles utilisateur seraient remises à zéro à chaque sélection.
+    m_grid->clearContents();
     m_grid->setRowCount(md->ny);
     m_grid->setColumnCount(md->nx);
+    // Réapplique la taille de cellule mémorisée pour que toutes les maps
+    // s'affichent avec la même grille.
+    m_applyingCellSize = true;
+    for (int c = 0; c < md->nx; ++c) m_grid->setColumnWidth(c, m_colWidth);
+    for (int r = 0; r < md->ny; ++r) m_grid->setRowHeight(r, m_rowHeight);
+    m_applyingCellSize = false;
 
-    // En-têtes = valeurs d'axes.
+    const MapEntry& entry = m_entries[static_cast<std::size_t>(m_currentRow)];
+    const bool hasConv = entry.hasConversion;
+    const double factor = entry.factor;
+    const double offset = entry.offset;
+    const QString xUnit = QString::fromStdString(entry.xAxisUnit);
+    const QString yUnit = QString::fromStdString(entry.yAxisUnit);
+    const QString dUnit = QString::fromStdString(entry.unit);
+
+    // En-têtes = valeurs d'axes + unité (rpm, %, …) en suffixe.
     QStringList hHeaders, vHeaders;
-    for (int x = 0; x < md->nx; ++x)
-        hHeaders << QString::number(md->xAxis[static_cast<std::size_t>(x)]);
-    for (int y = 0; y < md->ny; ++y)
-        vHeaders << QString::number(md->yAxis[static_cast<std::size_t>(y)]);
+    for (int x = 0; x < md->nx; ++x) {
+        const QString v = QString::number(md->xAxis[static_cast<std::size_t>(x)]);
+        hHeaders << (xUnit.isEmpty() ? v : QString("%1 %2").arg(v, xUnit));
+    }
+    for (int y = 0; y < md->ny; ++y) {
+        const QString v = QString::number(md->yAxis[static_cast<std::size_t>(y)]);
+        vHeaders << (yUnit.isEmpty() ? v : QString("%1 %2").arg(v, yUnit));
+    }
     m_grid->setHorizontalHeaderLabels(hHeaders);
     m_grid->setVerticalHeaderLabels(vHeaders);
+
+    // Min/max pour la heatmap, calculés depuis md->data directement.
+    const bool useHeat = m_heatmapChk && m_heatmapChk->isChecked();
+    int16_t mn = std::numeric_limits<int16_t>::max();
+    int16_t mx = std::numeric_limits<int16_t>::lowest();
+    if (useHeat) {
+        for (int16_t v : md->data) {
+            if (v < mn) mn = v;
+            if (v > mx) mx = v;
+        }
+    }
+    const double heatRange = (mx > mn) ? double(mx - mn) : 1.0;
+    const QColor plainBg(0x11, 0x18, 0x27);
+    const QColor plainFg(0xe5, 0xe7, 0xeb);
+
+    // Mode fantôme : lit la même map à la même adresse depuis la baseline pour
+    // injecter les valeurs d'origine dans UserRole+1 (le delegate les peint).
+    const bool ghost = m_ghostChk && m_ghostChk->isChecked() && m_doc->hasBaseline();
+    std::optional<ecu::MapData> baseMd;
+    if (ghost) {
+        auto bspan = constByteSpan(m_doc->baseline());
+        if (auto bmd = ecu::readMapData(bspan, address)) baseMd = std::move(*bmd);
+    }
 
     for (int y = 0; y < md->ny; ++y) {
         for (int x = 0; x < md->nx; ++x) {
             const std::size_t idx = static_cast<std::size_t>(y) * static_cast<std::size_t>(md->nx)
                                   + static_cast<std::size_t>(x);
-            auto* item = new QTableWidgetItem(QString::number(md->data[idx]));
+            const int16_t raw = md->data[idx];
+            auto* item = new QTableWidgetItem(QString::number(raw));
             item->setTextAlignment(Qt::AlignCenter);
+
+            // Mode fantôme : pousse la valeur baseline + flag d'activation.
+            if (ghost && baseMd && idx < baseMd->data.size()) {
+                item->setData(Qt::UserRole + 1, double(baseMd->data[idx]));
+                item->setData(Qt::UserRole + 2, true);
+            }
+
+            // Tooltip : valeur physique si conversion disponible + stock si connu.
+            if (hasConv) {
+                const double phys = raw * factor + offset;
+                const QString unitSuf = dUnit.isEmpty() ? QString() : QString(" %1").arg(dUnit);
+                QString tip = QString("raw=%1  phys=%2%3").arg(raw).arg(phys, 0, 'f', 3).arg(unitSuf);
+                if (entry.stockRaw) {
+                    const double stockP = *entry.stockRaw * factor + offset;
+                    tip += QString("\nstock raw=%1  phys=%2%3")
+                               .arg(*entry.stockRaw).arg(stockP, 0, 'f', 3).arg(unitSuf);
+                }
+                item->setToolTip(tip);
+            }
+
+            // Heatmap inline — applique le fond avant insertion dans le grid.
+            if (useHeat) {
+                const double t = (double(raw) - mn) / heatRange;
+                const QColor bg = heatColor(t);
+                item->setBackground(bg);
+                const double lum = 0.299 * bg.red() + 0.587 * bg.green() + 0.114 * bg.blue();
+                item->setForeground(lum > 110 ? QColor(0x11, 0x18, 0x27) : QColor(0xf3, 0xf4, 0xf6));
+            } else {
+                item->setBackground(plainBg);
+                item->setForeground(plainFg);
+            }
+            // Marqueur cellule modifiée (bordure jaune via icône) — visible quel que soit le fond.
+            if (hasConv && entry.stockRaw && raw != *entry.stockRaw)
+                item->setData(Qt::UserRole, true);
+
             m_grid->setItem(y, x, item);
         }
     }
     m_loadingGrid = false;
 
-    m_infoLabel->setText(tr("%1 — %2 — %3×%4 — données @ %5")
-        .arg(m_entries[static_cast<std::size_t>(m_currentRow)].name)
+    // Info label enrichi : nom + adresse + dimensions + formule de conversion.
+    QString info = tr("%1 — %2 — %3×%4 — données @ %5")
+        .arg(entry.name)
         .arg(hex32(address))
         .arg(md->nx).arg(md->ny)
-        .arg(hex32(static_cast<quint32>(md->dataOff))));
+        .arg(hex32(static_cast<quint32>(md->dataOff)));
+    if (hasConv) {
+        info += QString("   |   phys = raw × %1 + %2").arg(factor).arg(offset);
+        if (!dUnit.isEmpty())
+            info += QString(" %1").arg(dUnit);
+        if (entry.stockRaw)
+            info += tr("   |   stock raw=%1").arg(*entry.stockRaw);
+    }
+    if (!xUnit.isEmpty() || !yUnit.isEmpty())
+        info += QString("   |   axes : X=%1  Y=%2")
+                    .arg(xUnit.isEmpty() ? QStringLiteral("—") : xUnit,
+                         yUnit.isEmpty() ? QStringLiteral("—") : yUnit);
+    if (!entry.description.empty())
+        info += QString("   |   %1").arg(QString::fromStdString(entry.description));
+    m_infoLabel->setText(info);
 
-    recolorHeatmap();
     m_selLabel->setText(tr("Sélection : —"));
     setStatus(tr("Map chargée."));
 }
@@ -481,7 +826,177 @@ void MapEditorPanel::view3d() {
         setStatus(tr("Sélectionnez une map d'abord."), true);
         return;
     }
-    emit view3dRequested(m_entries[static_cast<std::size_t>(m_currentRow)].address);
+    const MapEntry& e = m_entries[static_cast<std::size_t>(m_currentRow)];
+    emit view3dRequested(e.address, e.name,
+                         QString::fromStdString(e.xAxisUnit),
+                         QString::fromStdString(e.yAxisUnit),
+                         QString::fromStdString(e.unit));
+}
+
+// ── Sélecteur de baseline (mode fantôme) ──────────────────────────────────────
+
+namespace {
+
+// Retourne le toplevel git de répertoire de la ROM, ou "" si pas de repo.
+QString gitToplevelFor(const QString& romPath) {
+    if (romPath.isEmpty()) return {};
+    QFileInfo fi(romPath);
+    QProcess p;
+    p.setWorkingDirectory(fi.absolutePath());
+    p.start("git", { "rev-parse", "--show-toplevel" });
+    if (!p.waitForFinished(2000)) return {};
+    if (p.exitCode() != 0) return {};
+    return QString::fromUtf8(p.readAllStandardOutput()).trimmed();
+}
+
+struct CommitInfo {
+    QString sha;
+    QString summary;   // first line of commit message + ago
+};
+
+// Renvoie les N derniers commits du dépôt contenant la ROM.
+QList<CommitInfo> gitRecentCommits(const QString& repoRoot, int max = 40) {
+    QList<CommitInfo> out;
+    QProcess p;
+    p.setWorkingDirectory(repoRoot);
+    p.start("git", { "log", "--pretty=format:%H|%s|%ar",
+                     QString("-n%1").arg(max) });
+    if (!p.waitForFinished(3000)) return out;
+    if (p.exitCode() != 0) return out;
+    const QStringList lines = QString::fromUtf8(p.readAllStandardOutput())
+                                  .split('\n', Qt::SkipEmptyParts);
+    for (const auto& ln : lines) {
+        const auto parts = ln.split('|');
+        if (parts.size() < 3) continue;
+        out.push_back({ parts[0], QString("%1  (%2)").arg(parts[1], parts[2]) });
+    }
+    return out;
+}
+
+// `git show <sha>:<relpath>` → bytes. relpath est le chemin de la ROM relatif
+// au repo toplevel.
+QByteArray gitBlobAt(const QString& repoRoot, const QString& sha,
+                     const QString& relPath) {
+    QProcess p;
+    p.setWorkingDirectory(repoRoot);
+    p.start("git", { "show", QString("%1:%2").arg(sha, relPath) });
+    if (!p.waitForFinished(5000)) return {};
+    if (p.exitCode() != 0) return {};
+    return p.readAllStandardOutput();
+}
+
+} // namespace
+
+void MapEditorPanel::pickBaseline() {
+    if (!m_doc || !m_doc->isLoaded()) {
+        setStatus(tr("Chargez une ROM avant de choisir une baseline."), true);
+        return;
+    }
+
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("Baseline du mode fantôme"));
+    dlg.setMinimumWidth(560);
+    auto* lay = new QVBoxLayout(&dlg);
+
+    lay->addWidget(new QLabel(tr("La baseline est la ROM \"de référence\" comparée "
+                                 "à l'édition courante en mode fantôme.")));
+
+    // Option 1 : snapshot d'origine.
+    auto* originBtn = new QPushButton(tr("Snapshot d'origine (à l'ouverture)"), &dlg);
+    lay->addWidget(originBtn);
+
+    // Option 2 : commit git.
+    const QString romPath  = m_doc->path();
+    const QString repoRoot = gitToplevelFor(romPath);
+    auto* gitGroup = new QGroupBox(tr("Depuis un commit git"), &dlg);
+    auto* gitLay   = new QVBoxLayout(gitGroup);
+    auto* commitCombo = new QComboBox(gitGroup);
+    auto* gitApplyBtn = new QPushButton(tr("Charger ce commit"), gitGroup);
+    gitLay->addWidget(commitCombo);
+    gitLay->addWidget(gitApplyBtn);
+    QString relPath;
+    if (repoRoot.isEmpty()) {
+        commitCombo->setEnabled(false);
+        gitApplyBtn->setEnabled(false);
+        gitLay->addWidget(new QLabel(tr("(la ROM n'est pas dans un dépôt git — option indisponible)"),
+                                     gitGroup));
+    } else {
+        QDir d(repoRoot);
+        relPath = d.relativeFilePath(romPath);
+        const auto commits = gitRecentCommits(repoRoot, 40);
+        if (commits.isEmpty()) {
+            commitCombo->setEnabled(false);
+            gitApplyBtn->setEnabled(false);
+            gitLay->addWidget(new QLabel(tr("(aucun commit listable — repo vide ?)"), gitGroup));
+        } else {
+            for (const auto& c : commits)
+                commitCombo->addItem(QString("%1  %2").arg(c.sha.left(8), c.summary),
+                                     c.sha);
+        }
+    }
+    lay->addWidget(gitGroup);
+
+    // Option 3 : fichier .bin externe.
+    auto* fileBtn = new QPushButton(tr("Depuis un fichier .bin externe…"), &dlg);
+    lay->addWidget(fileBtn);
+
+    auto* info = new QLabel(tr("Baseline actuelle : %1").arg(m_doc->baselineLabel()), &dlg);
+    info->setStyleSheet("color:#7c8fa6;");
+    lay->addWidget(info);
+
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, &dlg);
+    lay->addWidget(buttons);
+    connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+
+    connect(originBtn, &QPushButton::clicked, this, [this, &dlg]() {
+        // On retourne au "snapshot à l'ouverture" : on relit la ROM depuis le
+        // disque pour reproduire l'état du load. Si non possible, on garde le
+        // contenu actuel comme nouvelle baseline (resetBaseline).
+        const QString p = m_doc->path();
+        QFile f(p);
+        if (!p.isEmpty() && f.open(QIODevice::ReadOnly)) {
+            m_doc->setBaselineFromBytes(f.readAll(), tr("fichier d'origine"));
+        } else {
+            m_doc->resetBaseline();
+        }
+        setStatus(tr("Baseline : snapshot d'origine."));
+        dlg.accept();
+    });
+    connect(gitApplyBtn, &QPushButton::clicked, this, [&]() {
+        if (repoRoot.isEmpty() || commitCombo->currentIndex() < 0) return;
+        const QString sha = commitCombo->currentData().toString();
+        const QByteArray bytes = gitBlobAt(repoRoot, sha, relPath);
+        if (bytes.isEmpty()) {
+            QMessageBox::warning(&dlg, tr("Baseline git"),
+                tr("Impossible d'extraire %1 du commit %2 — vérifie que le "
+                   "fichier était versionné à ce moment.").arg(relPath, sha.left(8)));
+            return;
+        }
+        m_doc->setBaselineFromBytes(
+            bytes, tr("commit %1").arg(sha.left(8)));
+        setStatus(tr("Baseline : commit %1 (%2 octets).").arg(sha.left(8)).arg(bytes.size()));
+        dlg.accept();
+    });
+    connect(fileBtn, &QPushButton::clicked, this, [&]() {
+        const QString p = QFileDialog::getOpenFileName(
+            &dlg, tr("Choisir une ROM de référence"), {},
+            tr("ROM (*.bin *.hex);;Tous (*.*)"),
+            nullptr, QFileDialog::DontUseNativeDialog);
+        if (p.isEmpty()) return;
+        QFile f(p);
+        if (!f.open(QIODevice::ReadOnly)) {
+            QMessageBox::warning(&dlg, tr("Baseline"),
+                tr("Impossible d'ouvrir %1").arg(p));
+            return;
+        }
+        const QByteArray bytes = f.readAll();
+        m_doc->setBaselineFromBytes(bytes, QFileInfo(p).fileName());
+        setStatus(tr("Baseline : fichier %1 (%2 octets).")
+                      .arg(QFileInfo(p).fileName()).arg(bytes.size()));
+        dlg.accept();
+    });
+
+    dlg.exec();
 }
 
 // ── Filtre de la liste des maps ───────────────────────────────────────────────
@@ -892,6 +1407,22 @@ void MapEditorPanel::runOpenDamos() {
             e.ny = md->ny;
         }
 
+        // Conversion physique et unités issues du recipe (même logique que refreshMaps).
+        auto it = std::find_if(recipe->characteristics.begin(),
+                               recipe->characteristics.end(),
+                               [&](const ecu::DamosEntry& de) { return de.name == r.name; });
+        if (it != recipe->characteristics.end()) {
+            e.factor        = it->data.factor;
+            e.offset        = it->data.offset;
+            e.hasConversion = (e.factor != 1.0 || e.offset != 0.0);
+            e.stockRaw      = it->stockRawValue;
+            e.stockPhys     = it->stockPhysValue;
+            e.description   = it->description;
+            e.unit          = it->data.unit;
+            if (!it->axes.empty()) e.xAxisUnit = it->axes[0].unit;
+            if (it->axes.size() > 1) e.yAxisUnit = it->axes[1].unit;
+        }
+
         // Libellé de la colonne « Score » : source + mode + confiance.
         QString src;
         switch (r.addressSource) {
@@ -912,6 +1443,94 @@ void MapEditorPanel::runOpenDamos() {
     setStatus(tr("open_damos : %1/%2 maps relocalisées par empreinte.")
                   .arg(byFingerprint)
                   .arg(total));
+}
+
+void MapEditorPanel::importOpenDamosRecipe() {
+    if (!m_doc || !m_doc->isLoaded()) {
+        setStatus(tr("Chargez une ROM d'abord."), true);
+        return;
+    }
+
+    const QString path = QFileDialog::getOpenFileName(
+        this, tr("Importer un recipe open_damos"),
+        {}, tr("Recipe DAMOS (*.json);;Tous (*.*)"),
+        nullptr, QFileDialog::DontUseNativeDialog);
+    if (path.isEmpty()) return;
+
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        setStatus(tr("Impossible d'ouvrir : %1").arg(path), true);
+        return;
+    }
+    const std::string text = f.readAll().toStdString();
+
+    auto recipe = ecu::OpenDamos::parseRecipe(text);
+    if (!recipe) {
+        setStatus(tr("Recipe invalide : %1")
+                      .arg(QString::fromStdString(recipe.error())), true);
+        return;
+    }
+
+    // Relocalise avec le recipe importé.
+    const QByteArray& rom = m_doc->rom();
+    QByteArrayView view(rom.constData(), rom.size());
+    auto results = ecu::OpenDamos{}.relocate(*recipe, view);
+
+    std::vector<MapEntry> kept;
+    for (auto& e : m_entries)
+        if (e.stage1 && !e.openDamos) kept.push_back(e);
+    m_entries = std::move(kept);
+
+    auto span = constByteSpan(rom);
+    int byFingerprint = 0;
+    for (const auto& r : results) {
+        const bool fallback = (r.addressSource == ecu::AddressSource::DefaultFallback);
+        if (!fallback) ++byFingerprint;
+
+        MapEntry e;
+        e.name      = QString::fromStdString(r.name);
+        e.address   = static_cast<quint32>(r.address);
+        e.score     = r.score;
+        e.openDamos = true;
+        e.fallback  = fallback;
+
+        if (auto md = ecu::readMapData(span, e.address)) {
+            e.nx = md->nx;
+            e.ny = md->ny;
+        }
+
+        auto it = std::find_if(recipe->characteristics.begin(),
+                               recipe->characteristics.end(),
+                               [&](const ecu::DamosEntry& de) { return de.name == r.name; });
+        if (it != recipe->characteristics.end()) {
+            e.factor        = it->data.factor;
+            e.offset        = it->data.offset;
+            e.hasConversion = (e.factor != 1.0 || e.offset != 0.0);
+            e.stockRaw      = it->stockRawValue;
+            e.stockPhys     = it->stockPhysValue;
+            e.description   = it->description;
+            e.unit          = it->data.unit;
+            if (!it->axes.empty()) e.xAxisUnit = it->axes[0].unit;
+            if (it->axes.size() > 1) e.yAxisUnit = it->axes[1].unit;
+        }
+
+        QString src;
+        switch (r.addressSource) {
+            case ecu::AddressSource::Fingerprint:     src = tr("empreinte"); break;
+            case ecu::AddressSource::Anchor:          src = tr("ancre");     break;
+            case ecu::AddressSource::DefaultFallback: src = tr("défaut");    break;
+        }
+        const QString mode = QString::fromStdString(r.matchMode);
+        e.matchInfo = mode.isEmpty()
+            ? QString("%1 (%2)").arg(src).arg(r.score, 0, 'f', 2)
+            : QString("%1 %2 (%3)").arg(src, mode).arg(r.score, 0, 'f', 2);
+
+        m_entries.push_back(std::move(e));
+    }
+
+    rebuildMapTable();
+    setStatus(tr("Recipe importé : %1/%2 maps relocalisées par empreinte.")
+                  .arg(byFingerprint).arg(results.size()));
 }
 
 } // namespace ecu_studio

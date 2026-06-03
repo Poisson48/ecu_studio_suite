@@ -1,5 +1,6 @@
 #include "welcome_screen.h"
 
+#include <QButtonGroup>
 #include <QCheckBox>
 #include <QDir>
 #include <QFont>
@@ -8,6 +9,7 @@
 #include <QLabel>
 #include <QListWidget>
 #include <QListWidgetItem>
+#include <QPixmap>
 #include <QPushButton>
 #include <QSettings>
 #include <QStandardPaths>
@@ -99,14 +101,20 @@ QWidget* WelcomeScreen::buildLeftPanel() {
     lay->setContentsMargins(28, 28, 28, 20);
     lay->setSpacing(0);
 
-    auto* logoLbl = new QLabel("ECU Studio", w);
-    {
+    auto* logoLbl = new QLabel(w);
+    QPixmap pm(":/ecu_studio_logo.png");
+    if (!pm.isNull()) {
+        logoLbl->setPixmap(pm.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    } else {
+        // Repli texte si la ressource manque.
+        logoLbl->setText("ECU Studio");
         QFont f = logoLbl->font();
         f.setPointSize(f.pointSize() + 16);
         f.setBold(true);
         logoLbl->setFont(f);
         logoLbl->setStyleSheet("color: #6366f1; background: transparent;");
     }
+    logoLbl->setStyleSheet(logoLbl->styleSheet() + "background: transparent;");
     lay->addWidget(logoLbl);
 
     auto* tagLbl = new QLabel(tr("Reprogrammation ECU \xc2\xb7 MPPS"), w);
@@ -142,6 +150,54 @@ QWidget* WelcomeScreen::buildLeftPanel() {
     }
 
     lay->addStretch();
+    lay->addWidget(makeSep(w));
+    lay->addSpacing(12);
+
+    // ── Sélecteur de langue ──────────────────────────────────────────────────
+    lay->addWidget(makeSectionTitle(tr("Langue / Language"), w));
+    lay->addSpacing(8);
+
+    QSettings langSet;
+    const QString curLang = langSet.value("language", "fr").toString();
+
+    const QString btnStyle = R"(
+        QPushButton {
+            background: #1a2235; color: #9ca3af;
+            border: 1px solid #1f2d42; border-radius: 4px;
+            padding: 4px 14px; font-size: 11px; font-weight: 600;
+        }
+        QPushButton:checked {
+            background: #3730a3; color: #e0e7ff;
+            border-color: #6366f1;
+        }
+        QPushButton:hover:!checked { border-color: #6366f1; color: #e5e7eb; }
+    )";
+
+    auto* langGroup = new QButtonGroup(w);
+    auto* langRow   = new QHBoxLayout;
+    langRow->setSpacing(6);
+
+    for (const auto& [label, code] : {
+             std::pair<const char*, const char*>{"FR  Fran\xc3\xa7" "ais", "fr"},
+             std::pair<const char*, const char*>{"EN  English",            "en"},
+         }) {
+        auto* btn = new QPushButton(QString::fromUtf8(label), w);
+        btn->setCheckable(true);
+        btn->setChecked(curLang == code);
+        btn->setStyleSheet(btnStyle);
+        langGroup->addButton(btn);
+        const QString codeStr = QString::fromUtf8(code);
+        connect(btn, &QPushButton::clicked, this, [this, codeStr]() {
+            QSettings s;
+            s.setValue("language", codeStr);
+            emit languageChanged(codeStr);
+        });
+        langRow->addWidget(btn);
+    }
+    langRow->addStretch();
+    lay->addLayout(langRow);
+
+    lay->addSpacing(12);
     lay->addWidget(makeSep(w));
     lay->addSpacing(12);
 
@@ -203,8 +259,11 @@ QWidget* WelcomeScreen::buildRightPanel() {
             border-radius: 8px;
             padding: 4px;
         }
-        QListWidget::item { padding: 0px; border-radius: 6px; }
-        QListWidget::item:selected { background: rgba(99,102,241,0.2); }
+        QListWidget::item { padding: 0px; border-radius: 6px; margin: 1px 0px; }
+        QListWidget::item:selected {
+            background: rgba(99,102,241,0.35);
+            border: 1px solid #6366f1;
+        }
         QListWidget::item:hover:!selected { background: #1f2d42; }
     )");
     refreshRecentProjects();
@@ -337,6 +396,8 @@ void WelcomeScreen::refreshRecentProjects() {
         item->setData(kIdRole, e.id);
 
         auto* row = new QWidget;
+        row->setAttribute(Qt::WA_TranslucentBackground);
+        row->setStyleSheet("background: transparent;");
         auto* rl  = new QHBoxLayout(row);
         rl->setContentsMargins(12, 8, 12, 8);
         rl->setSpacing(12);

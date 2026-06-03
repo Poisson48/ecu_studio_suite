@@ -1,10 +1,13 @@
 #include <QApplication>
 #include <QCoreApplication>
+#include <QDir>
 #include <QFile>
+#include <QIcon>
+#include <QProcess>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QString>
 #include <QTimer>
-#include <QTranslator>
 
 #include <cstdint>
 #include <cstring>
@@ -60,6 +63,64 @@ int runMcp(int argc, char* argv[], bool useTcp, uint16_t tcpPort) {
     return 0;
 }
 
+// Installe l'icône + le .desktop dans ~/.local/share au premier lancement Linux.
+// Sans ça, le compositeur Wayland (GNOME, KDE…) affiche une icône vide même si
+// QApplication::setWindowIcon() est appelé : il associe les fenêtres à leur
+// .desktop via StartupWMClass / AppID, et lit l'icône depuis le thème hicolor.
+// On écrit le .desktop avec un Exec= pointant sur l'exécutable courant pour que
+// l'entrée du menu d'apps marche aussi en mode dev.
+void ensureLinuxDesktopIntegration() {
+#ifdef Q_OS_LINUX
+    const QString dataHome = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+    if (dataHome.isEmpty()) return;
+
+    const QString iconDir   = dataHome + QStringLiteral("/icons/hicolor/256x256/apps");
+    const QString appsDir   = dataHome + QStringLiteral("/applications");
+    const QString iconPath  = iconDir  + QStringLiteral("/ecu-studio.png");
+    const QString desktopPath = appsDir + QStringLiteral("/ecu-studio.desktop");
+
+    QDir().mkpath(iconDir);
+    QDir().mkpath(appsDir);
+
+    // Icône : extrait de la ressource embarquée. Réécrit à chaque lancement pour
+    // qu'une nouvelle version du logo soit prise en compte sans réinstall.
+    if (QFile::exists(iconPath)) QFile::remove(iconPath);
+    QFile::copy(QStringLiteral(":/ecu_studio_logo.png"), iconPath);
+    QFile::setPermissions(iconPath, QFileDevice::ReadOwner | QFileDevice::WriteOwner |
+                                    QFileDevice::ReadGroup | QFileDevice::ReadOther);
+
+    // .desktop : régénéré à chaque lancement (Exec= peut changer entre dev et prod).
+    const QString exePath = QCoreApplication::applicationFilePath();
+    const QString desktopContent = QStringLiteral(
+        "[Desktop Entry]\n"
+        "Type=Application\n"
+        "Name=ECU Studio\n"
+        "GenericName=ECU Reprogramming\n"
+        "Comment=Reprogrammation et tuning d'ECU\n"
+        "Exec=%1 %u\n"
+        "Icon=ecu-studio\n"
+        "Terminal=false\n"
+        "Categories=Development;Engineering;\n"
+        "StartupNotify=true\n"
+        "StartupWMClass=ecu_studio\n"
+        "Keywords=ECU;tuning;reprogramming;OBD;DAMOS;\n"
+    ).arg(exePath);
+
+    QFile df(desktopPath);
+    if (df.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        df.write(desktopContent.toUtf8());
+        df.close();
+    }
+
+    // Rafraîchit les caches XDG (best-effort, silencieux si binaires absents).
+    QProcess::startDetached(QStringLiteral("update-desktop-database"),
+                            { appsDir });
+    QProcess::startDetached(QStringLiteral("gtk-update-icon-cache"),
+                            { QStringLiteral("-q"), QStringLiteral("-t"),
+                              dataHome + QStringLiteral("/icons/hicolor") });
+#endif
+}
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -91,13 +152,15 @@ int main(int argc, char* argv[]) {
     app.setApplicationName("ECU Studio");
     app.setApplicationVersion(APP_VERSION);
     app.setOrganizationName("ecu-studio-suite");
-
-    // Langue : préférence enregistrée d'abord, sinon français (langue de base).
-    QSettings settings;
-    QTranslator translator;
-    const QString lang = settings.value("language", QString()).toString();
-    if (!lang.isEmpty() && translator.load(":/i18n/ecu_studio_" + lang))
-        app.installTranslator(&translator);
+    // setDesktopFileName : indispensable sur Linux/Wayland — le compositeur
+    // associe la fenêtre au .desktop installé via StartupWMClass/AppID.
+    app.setDesktopFileName(QStringLiteral("ecu-studio"));
+    // Icône d'application (X11, certains compositeurs, fenêtres enfants).
+    app.setWindowIcon(QIcon(":/ecu_studio_logo.png"));
+    // Installe le .desktop + l'icône dans ~/.local/share au premier lancement
+    // (Linux uniquement). Permet à GNOME/KDE d'afficher l'icône dans la barre
+    // des tâches via StartupWMClass=ecu_studio.
+    ensureLinuxDesktopIntegration();
 
     // Réutilise le thème SocketSpy directement
     QFile qss(":/theme.qss");

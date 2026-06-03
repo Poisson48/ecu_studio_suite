@@ -51,6 +51,9 @@ private:
     void openProjectById(const QString& id);
     void deleteProject(const QString& id);
     void duplicateProject(const QString& id);
+    // Ouvre une boîte de dialogue d'édition des métadonnées : nom, ECU,
+    // véhicule, immatriculation, année, description.
+    void editProject(const QString& id);
     void updateDetails(const QString& id);
     void showContextMenu(const QPoint& pos);
     QString selectedProjectId() const;
@@ -69,6 +72,7 @@ private:
     QPushButton* m_openBtn{nullptr};
     QPushButton* m_importBtn{nullptr};
     QPushButton* m_duplicateBtn{nullptr};
+    QPushButton* m_renameBtn{nullptr};
     QPushButton* m_deleteBtn{nullptr};
     QPushButton* m_refreshBtn{nullptr};
 
