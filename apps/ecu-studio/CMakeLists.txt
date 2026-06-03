@@ -75,6 +75,12 @@ set(ECU_STUDIO_SOURCES
     src/panels/a2l_panel.cpp
     src/panels/can_panel.cpp
 
+    # Hub ECU Studio : lanceur de sous-programmes + vérification sur bus
+    src/hub/sub_program_registry.cpp
+    src/hub/maturity_badge.cpp
+    src/hub/hub_launcher_panel.cpp
+    src/hub/verify_on_bus_dialog.cpp
+
     # Système de mise à jour intégré (vérifie les releases GitHub)
     src/updater.cpp
     src/update_dialog.cpp
@@ -89,6 +95,7 @@ target_include_directories(ecu_studio
     PRIVATE
         src
         src/panels
+        src/hub
         # SocketSpy: gui_palette, dbc_compat (headers seulement)
         ${SOCKETSPY_GUI_DIR}/include
         ${SOCKETSPY_GUI_DIR}/src
