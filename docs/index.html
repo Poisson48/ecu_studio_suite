@@ -3,648 +3,391 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ECU Studio Suite — Linux ECU tuning &amp; diagnostics platform</title>
-  <meta name="description" content="Open automotive software suite for Linux. ECU reflashing via MPPS, map editor, A2L/DAMOS parsing, checksum correction, CAN bus analysis. 100% local, no cloud." />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg:      #0f1623;
-      --card:    #1a2235;
-      --input:   #111827;
-      --hover:   #232f45;
-      --border:  #2a3a55;
-      --accent:  #6366f1;
-      --accent2: #818cf8;
-      --green:   #22c55e;
-      --text:    #f1f5f9;
-      --muted:   #7c8fa6;
-      --radius:  10px;
-    }
-
-    html { scroll-behavior: smooth; }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      line-height: 1.6;
-    }
-
-    /* ── NAV ── */
-    nav {
-      position: sticky; top: 0; z-index: 100;
-      background: rgba(15,22,35,.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
-      padding: .75rem 2rem;
-    }
-    .nav-logo { display: flex; align-items: center; gap: .6rem; font-weight: 700; font-size: 1.05rem; text-decoration: none; color: var(--text); }
-    .nav-logo svg { flex-shrink: 0; }
-    .nav-links { display: flex; gap: 1.5rem; list-style: none; }
-    .nav-links a { color: var(--muted); text-decoration: none; font-size: .9rem; transition: color .15s; }
-    .nav-links a:hover { color: var(--text); }
-
-    /* ── HERO ── */
-    .hero {
-      text-align: center;
-      padding: 6rem 1.5rem 5rem;
-      max-width: 820px; margin: 0 auto;
-    }
-    .badge {
-      display: inline-flex; align-items: center; gap: .4rem;
-      background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.35);
-      color: var(--accent2); border-radius: 99px;
-      padding: .25rem .85rem; font-size: .78rem; font-weight: 600;
-      margin-bottom: 1.5rem; letter-spacing: .04em;
-    }
-    .badge::before { content: "●"; color: var(--green); font-size: .6rem; }
-    h1 {
-      font-size: clamp(2.2rem, 5vw, 3.6rem);
-      font-weight: 800; line-height: 1.15;
-      background: linear-gradient(135deg, #f1f5f9 30%, var(--accent2));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 1.1rem;
-    }
-    .hero-sub {
-      font-size: 1.15rem; color: var(--muted);
-      max-width: 580px; margin: 0 auto 2.5rem;
-    }
-    .cta-row { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
-    .btn {
-      display: inline-flex; align-items: center; gap: .5rem;
-      padding: .75rem 1.75rem; border-radius: var(--radius);
-      font-size: .95rem; font-weight: 600; text-decoration: none;
-      transition: filter .15s, transform .1s;
-      cursor: pointer; border: none;
-    }
-    .btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
-    .btn-primary { background: var(--accent); color: #fff; }
-    .btn-ghost   { background: transparent; color: var(--text); border: 1px solid var(--border); }
-    .btn svg { flex-shrink: 0; }
-
-    /* ── SCREEN SHOWCASE ── */
-    .screen-wrap {
-      max-width: 960px; margin: 0 auto 5rem;
-      padding: 0 1.5rem;
-    }
-    .screen-mock {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 24px 80px rgba(0,0,0,.55);
-      position: relative;
-    }
-
-    /* panel tab strip */
-    .panel-tabs {
-      display: flex; flex-wrap: wrap; gap: .4rem;
-      margin-top: .9rem; justify-content: center;
-    }
-    .panel-tab {
-      background: var(--card); color: var(--muted);
-      border: 1px solid var(--border); border-radius: 99px;
-      padding: .28rem .85rem; font-size: .78rem; font-weight: 600;
-      cursor: pointer; transition: background .15s, color .15s, border-color .15s;
-    }
-    .panel-tab:hover { background: var(--hover); color: var(--text); border-color: var(--accent); }
-    .panel-tab.active {
-      background: rgba(99,102,241,.18); color: var(--accent2);
-      border-color: var(--accent);
-    }
-
-    /* animated live-stats strip */
-    .live-stats {
-      display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap;
-      margin: 0 auto 4rem; max-width: 700px; padding: 0 1.5rem;
-    }
-    .stat-item { text-align: center; }
-    .stat-num {
-      display: block; font-size: 2rem; font-weight: 800;
-      background: linear-gradient(135deg, #f1f5f9 30%, var(--accent2));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text; font-variant-numeric: tabular-nums;
-    }
-    .stat-label { font-size: .75rem; color: var(--muted); font-weight: 600;
-      text-transform: uppercase; letter-spacing: .07em; }
-
-    /* feature card hover glow */
-    .feat-card { transition: border-color .2s, transform .15s, box-shadow .2s; }
-    .feat-card:hover {
-      border-color: var(--accent); transform: translateY(-2px);
-      box-shadow: 0 8px 32px rgba(99,102,241,.15);
-    }
-    .mock-titlebar {
-      background: var(--input);
-      padding: .6rem 1rem;
-      display: flex; align-items: center; gap: .5rem;
-      border-bottom: 1px solid var(--border);
-    }
-    .dot { width: 12px; height: 12px; border-radius: 50%; }
-    .dot-red   { background: #ef4444; }
-    .dot-yel   { background: #eab308; }
-    .dot-grn   { background: #22c55e; }
-    .mock-title { margin-left: .5rem; font-size: .82rem; color: var(--muted); }
-    .mock-body  { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
-
-    /* toolbar */
-    .mock-toolbar {
-      display: flex; align-items: center; gap: .75rem;
-      background: var(--input); border: 1px solid var(--border);
-      border-radius: 8px; padding: .45rem .75rem; font-size: .8rem; color: var(--muted);
-      flex-wrap: wrap;
-    }
-    .mock-select {
-      background: var(--hover); border: 1px solid var(--border);
-      border-radius: 6px; padding: .25rem .6rem; color: var(--text); font-size: .8rem;
-    }
-    .mock-btn-sm {
-      background: var(--accent); color: #fff; border: none; border-radius: 6px;
-      padding: .25rem .65rem; font-size: .78rem; font-weight: 600; cursor: default;
-    }
-    .mock-btn-stop {
-      background: #ef4444; color: #fff; border: none; border-radius: 6px;
-      padding: .25rem .65rem; font-size: .78rem; font-weight: 600; cursor: default;
-    }
-    .mock-spacer { flex: 1; }
-
-    /* hex editor mock */
-    .mock-hex {
-      width: 100%; border-collapse: collapse;
-      font-size: .76rem; font-family: monospace;
-      background: var(--input); border: 1px solid var(--border);
-      border-radius: 8px; overflow: hidden;
-    }
-    .mock-hex th {
-      text-align: left; color: var(--muted); font-weight: 600; font-family: sans-serif;
-      padding: .35rem .55rem; border-bottom: 1px solid var(--border); font-size: .72rem;
-    }
-    .mock-hex td { padding: .22rem .55rem; border-bottom: 1px solid rgba(42,58,85,.4); white-space: nowrap; }
-    .mock-hex tr:hover td { background: var(--hover); }
-    .addr  { color: var(--accent2); }
-    .bytes { color: #cbd5e1; letter-spacing: .04em; }
-    .ascii { color: var(--muted); }
-    .map-a { background: rgba(99,102,241,.16); color: #c7d2fe; border-radius: 3px; }
-    .map-b { background: rgba(34,197,94,.16);  color: #bbf7d0; border-radius: 3px; }
-    .map-tag {
-      display: inline-block; font-size: .68rem; font-weight: 700; font-family: sans-serif;
-      padding: .05rem .45rem; border-radius: 99px; margin-left: .4rem;
-    }
-    .tag-a { background: rgba(99,102,241,.2); color: var(--accent2); border: 1px solid rgba(99,102,241,.4); }
-    .tag-b { background: rgba(34,197,94,.18);  color: #4ade80;     border: 1px solid rgba(34,197,94,.4); }
-
-    /* side-by-side hex + map */
-    .mock-split { display: flex; gap: 1rem; align-items: flex-start; }
-    .mock-split > .hex-col { flex: 2; min-width: 0; overflow-x: auto; }
-    .mock-split > .map-col { flex: 1; min-width: 0; }
-    .map-panel {
-      background: var(--input); border: 1px solid var(--border); border-radius: 8px;
-      padding: .75rem; font-family: monospace; font-size: .74rem;
-    }
-    .map-panel-head {
-      font-family: sans-serif; font-size: .76rem; font-weight: 700; color: var(--text);
-      margin-bottom: .6rem; display: flex; align-items: center; justify-content: space-between;
-    }
-    .map-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
-    .map-cell {
-      text-align: center; padding: .28rem 0; border-radius: 4px;
-      background: var(--hover); color: #cbd5e1;
-    }
-    .map-cell.hot  { background: rgba(239,68,68,.22);  color: #fca5a5; }
-    .map-cell.warm { background: rgba(245,158,11,.20); color: #fcd34d; }
-    .map-cell.cool { background: rgba(99,102,241,.20); color: #c7d2fe; }
-    @media (max-width: 720px) { .mock-split { flex-direction: column; } .map-col { width: 100%; } }
-
-    /* ── FEATURES ── */
-    section { padding: 5rem 1.5rem; max-width: 1060px; margin: 0 auto; }
-    .section-label {
-      text-transform: uppercase; letter-spacing: .1em; font-size: .72rem;
-      color: var(--accent2); font-weight: 700; margin-bottom: .75rem;
-    }
-    h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 700; margin-bottom: .5rem; }
-    .section-sub { color: var(--muted); max-width: 520px; margin-bottom: 3rem; }
-
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
-      gap: 1.25rem;
-    }
-    .feat-card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 1.4rem 1.5rem;
-      transition: border-color .2s, transform .15s;
-    }
-    .feat-card:hover { border-color: var(--accent); transform: translateY(-2px); }
-    .feat-icon {
-      width: 40px; height: 40px; border-radius: 9px;
-      background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.25);
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 1rem; font-size: 1.2rem;
-    }
-    .feat-card h3 { font-size: .95rem; font-weight: 700; margin-bottom: .35rem; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
-    .feat-card p  { font-size: .83rem; color: var(--muted); line-height: 1.55; }
-    .feat-badge {
-      font-size: .62rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
-      padding: .1rem .45rem; border-radius: 99px; line-height: 1.4;
-    }
-    .badge-new  { background: rgba(34,197,94,.18);  color: #4ade80; border: 1px solid rgba(34,197,94,.4); }
-    .badge-beta { background: rgba(245,158,11,.18); color: #fcd34d; border: 1px solid rgba(245,158,11,.4); }
-    /* status legend under the section heading */
-    .status-legend { display: flex; gap: 1.25rem; flex-wrap: wrap; margin-bottom: 2rem; font-size: .78rem; color: var(--muted); }
-    .status-legend span { display: inline-flex; align-items: center; gap: .4rem; }
-    .dot-legend { width: 9px; height: 9px; border-radius: 50%; }
-
-    /* ── DOWNLOAD ── */
-    .download-section {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 14px; padding: 3rem 2.5rem;
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 2rem; flex-wrap: wrap;
-    }
-    .dl-left h2 { font-size: 1.7rem; margin-bottom: .5rem; }
-    .dl-left p  { color: var(--muted); font-size: .9rem; max-width: 460px; }
-    .dl-meta { display: flex; gap: 1.2rem; margin-top: 1.25rem; flex-wrap: wrap; }
-    .dl-pill {
-      background: var(--hover); border: 1px solid var(--border);
-      border-radius: 99px; padding: .25rem .9rem;
-      font-size: .78rem; color: var(--muted);
-    }
-    .dl-pill span { color: var(--text); font-weight: 600; }
-    .dl-right { display: flex; flex-direction: column; gap: .75rem; min-width: 220px; }
-    .code-block {
-      background: var(--input); border: 1px solid var(--border);
-      border-radius: 8px; padding: .75rem 1rem;
-      font-family: monospace; font-size: .8rem; color: #7dd3fc;
-    }
-
-    /* ── ADAPTERS ── */
-    .adapters-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;
-    }
-    .adapter-card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 1rem 1.2rem;
-    }
-    .adapter-card h4 { font-size: .88rem; font-weight: 700; margin-bottom: .25rem; }
-    .adapter-card p  { font-size: .78rem; color: var(--muted); }
-
-    /* ── FOOTER ── */
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 2rem 1.5rem; text-align: center;
-      color: var(--muted); font-size: .82rem;
-    }
-    footer a { color: var(--muted); text-decoration: none; }
-    footer a:hover { color: var(--text); }
-    .footer-links { display: flex; gap: 1.5rem; justify-content: center; margin-bottom: .75rem; flex-wrap: wrap; }
-
-    @media (max-width: 640px) {
-      nav { padding: .75rem 1rem; }
-      .nav-links { display: none; }
-      .download-section { flex-direction: column; }
-    }
-  </style>
+  <title>ECU Studio Suite — Local ECU tuning &amp; CAN diagnostics for Linux</title>
+  <meta name="description" content="A 100% local, Qt6 automotive software suite for Linux. A hub that launches ECU Studio (reflash, map editor, DAMOS, OpenDAMOS) and SocketSpy (live CAN analysis) — and interconnects them: flash a map, then verify it on the bus. No cloud, no telemetry." />
+  <meta name="color-scheme" content="dark" />
+  <meta property="og:title" content="ECU Studio Suite" />
+  <meta property="og:description" content="Local Qt6 automotive suite for Linux: ECU reflashing, map editor, DAMOS/OpenDAMOS, and SocketSpy CAN analysis. Flash a map, then verify it live on the bus." />
+  <meta property="og:type" content="website" />
+  <link rel="stylesheet" href="suite.css" />
 </head>
-<body>
+<body data-lang="en">
 
-<!-- ── NAV ──────────────────────────────────────────────────────── -->
+<!-- ── NAV ──────────────────────────────────────────────────────────── -->
 <nav>
-  <a class="nav-logo" href="#">
-    <svg width="28" height="28" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-      <rect width="64" height="64" rx="12" fill="#0f1623"/>
-      <!-- ECU chip body -->
-      <rect x="18" y="18" width="28" height="28" rx="4" fill="#1a2235" stroke="#6366f1" stroke-width="2.5"/>
-      <!-- die / core -->
-      <rect x="26" y="26" width="12" height="12" rx="2" fill="#6366f1"/>
-      <circle cx="32" cy="32" r="2.4" fill="#22c55e"/>
-      <!-- pins -->
-      <line x1="24" y1="18" x2="24" y2="10" stroke="#3d5270" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="32" y1="18" x2="32" y2="10" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="40" y1="18" x2="40" y2="10" stroke="#3d5270" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="24" y1="46" x2="24" y2="54" stroke="#3d5270" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="32" y1="46" x2="32" y2="54" stroke="#3d5270" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="40" y1="46" x2="40" y2="54" stroke="#3d5270" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="18" y1="24" x2="10" y2="24" stroke="#3d5270" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="18" y1="40" x2="10" y2="40" stroke="#3d5270" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="46" y1="24" x2="54" y2="24" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="46" y1="40" x2="54" y2="40" stroke="#3d5270" stroke-width="2.5" stroke-linecap="round"/>
+  <a class="nav-logo" href="#top" aria-label="ECU Studio Suite home">
+    <svg width="28" height="28" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="64" height="64" rx="12" fill="#0c1118"/>
+      <rect x="18" y="18" width="28" height="28" rx="4" fill="#141b26" stroke="#f97316" stroke-width="2.5"/>
+      <rect x="26" y="26" width="12" height="12" rx="2" fill="#f97316"/>
+      <circle cx="32" cy="32" r="2.4" fill="#22d3ee"/>
+      <line x1="24" y1="18" x2="24" y2="10" stroke="#3d4d63" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="32" y1="18" x2="32" y2="10" stroke="#f97316" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="40" y1="18" x2="40" y2="10" stroke="#3d4d63" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="24" y1="46" x2="24" y2="54" stroke="#3d4d63" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="32" y1="46" x2="32" y2="54" stroke="#3d4d63" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="40" y1="46" x2="40" y2="54" stroke="#3d4d63" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="18" y1="24" x2="10" y2="24" stroke="#3d4d63" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="18" y1="40" x2="10" y2="40" stroke="#3d4d63" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="46" y1="24" x2="54" y2="24" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="46" y1="40" x2="54" y2="40" stroke="#3d4d63" stroke-width="2.5" stroke-linecap="round"/>
     </svg>
-    ECU Studio Suite
+    <span>ECU Studio <b>Suite</b></span>
   </a>
+
   <ul class="nav-links">
-    <li><a href="#features">Features</a></li>
-    <li><a href="demo.html">Demo</a></li>
-    <li><a href="#download">Download</a></li>
-    <li><a href="#adapters">Hardware</a></li>
-    <li><a href="https://github.com/Poisson48/SocketSpy">SocketSpy</a></li>
-    <li><a href="https://github.com/Poisson48/ecu_studio_suite">GitHub</a></li>
+    <li><a href="#suite" data-en="The Suite" data-fr="La suite">The Suite</a></li>
+    <li><a href="#loop" data-en="Flash → Verify" data-fr="Flash → Vérif">Flash → Verify</a></li>
+    <li><a href="#status" data-en="Features" data-fr="Fonctions">Features</a></li>
+    <li><a href="#opendamos">OpenDAMOS</a></li>
+    <li><a href="https://github.com/Poisson48/ecu_studio_suite/wiki" data-en="Wiki" data-fr="Wiki">Wiki</a></li>
   </ul>
+
+  <div class="nav-actions">
+    <div class="lang-toggle" role="group" aria-label="Language">
+      <button type="button" data-setlang="en" class="lang-btn active" aria-pressed="true">EN</button>
+      <button type="button" data-setlang="fr" class="lang-btn" aria-pressed="false">FR</button>
+    </div>
+    <a class="btn btn-primary btn-sm" href="https://github.com/Poisson48/ecu_studio_suite">GitHub</a>
+  </div>
 </nav>
 
-<!-- ── HERO ──────────────────────────────────────────────────────── -->
-<div class="hero">
-  <div class="badge">Qt6 · C++23 · Linux x86_64</div>
-  <h1>ECU tuning &amp; diagnostics,<br/>built for Linux</h1>
-  <p class="hero-sub">
-    Read and reflash your ECU over MPPS, edit Bosch maps, parse A2L/DAMOS,
-    auto-correct checksums — bundled with SocketSpy for live CAN analysis.
-    100% local, no cloud.
+<!-- ── HERO ─────────────────────────────────────────────────────────── -->
+<header class="hero" id="top">
+  <div class="hero-glow" aria-hidden="true"></div>
+  <div class="badge">
+    <span data-en="Qt6 · C++ · Linux x86_64 · 100% local" data-fr="Qt6 · C++ · Linux x86_64 · 100% local">Qt6 · C++ · Linux x86_64 · 100% local</span>
+  </div>
+  <h1>
+    <span data-en="One hub for ECU tuning" data-fr="Un hub pour le tuning ECU">One hub for ECU tuning</span><br/>
+    <span class="grad" data-en="and live CAN diagnostics" data-fr="et le diagnostic CAN en direct">and live CAN diagnostics</span>
+  </h1>
+  <p class="hero-sub"
+     data-en="ECU Studio Suite is a single launcher that ties together specialized tools. Flash a map with ECU Studio, then SocketSpy verifies — live on the CAN bus — that the change actually took effect at the right operating point. Fully local. No cloud, no account, no telemetry."
+     data-fr="ECU Studio Suite est un lanceur unique qui relie des outils spécialisés. Vous flashez une cartographie avec ECU Studio, puis SocketSpy vérifie — en direct sur le bus CAN — que la modification a bien pris effet au bon point de fonctionnement. 100% local. Pas de cloud, pas de compte, pas de télémétrie.">
+    ECU Studio Suite is a single launcher that ties together specialized tools. Flash a map with ECU Studio, then SocketSpy verifies — live on the CAN bus — that the change actually took effect at the right operating point. Fully local. No cloud, no account, no telemetry.
   </p>
+
   <div class="cta-row">
     <a class="btn btn-primary" href="https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Download AppImage
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span data-en="Download AppImage" data-fr="Télécharger l'AppImage">Download AppImage</span>
     </a>
-    <a class="btn btn-ghost" href="https://github.com/Poisson48/ecu_studio_suite">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
-      View on GitHub
+    <a class="btn btn-ghost" href="https://github.com/Poisson48/ecu_studio_suite/wiki/Getting-Started">
+      <span data-en="Getting started →" data-fr="Bien démarrer →">Getting started →</span>
+    </a>
+    <a class="btn btn-ghost" href="https://poisson48.github.io/SocketSpy">
+      <span data-en="SocketSpy site →" data-fr="Site SocketSpy →">SocketSpy site →</span>
     </a>
   </div>
-</div>
 
-<!-- ── LIVE STATS ─────────────────────────────────────────────────── -->
-<div class="live-stats">
-  <div class="stat-item">
-    <span class="stat-num" id="stat-panels">12</span>
-    <span class="stat-label">Panels</span>
+  <div class="hero-stats">
+    <div class="stat"><span class="stat-num">2</span><span class="stat-label" data-en="Sub-programs, one hub" data-fr="Sous-programmes, un hub">Sub-programs, one hub</span></div>
+    <div class="stat"><span class="stat-num">2</span><span class="stat-label" data-en="ECU families proven" data-fr="Familles ECU prouvées">ECU families proven</span></div>
+    <div class="stat"><span class="stat-num">100%</span><span class="stat-label" data-en="Local — no cloud" data-fr="Local — pas de cloud">Local — no cloud</span></div>
   </div>
-  <div class="stat-item">
-    <span class="stat-num" id="stat-ecus">14</span>
-    <span class="stat-label">Supported ECUs</span>
-  </div>
-  <div class="stat-item">
-    <span class="stat-num" id="stat-chipsets">6</span>
-    <span class="stat-label">MPPS chipsets</span>
-  </div>
-  <div class="stat-item">
-    <span class="stat-num">100%</span>
-    <span class="stat-label">Local — no cloud</span>
-  </div>
-</div>
+</header>
 
-<!-- ── SCREENSHOT SHOWCASE ────────────────────────────────────────── -->
-<div class="screen-wrap">
-  <div class="screen-mock">
-    <div class="mock-titlebar">
-      <div class="dot dot-red"></div>
-      <div class="dot dot-yel"></div>
-      <div class="dot dot-grn"></div>
-      <span class="mock-title">ECU Studio v1.3.0 — EDC16C34</span>
-    </div>
-    <div class="mock-body" style="padding:0">
-      <img id="showcase-img"
-           src="screenshots/es_hex.png"
-           alt="ECU Studio - Hex editor"
-           style="display:block;width:100%;height:auto;background:#0f1623" />
-    </div>
-  </div>
-  <div class="panel-tabs">
-    <button class="panel-tab active" data-shot="screenshots/es_hex.png"      data-label="Hex editor"      onclick="switchTab(this)">Hex</button>
-    <button class="panel-tab"        data-shot="screenshots/es_maps.png"     data-label="Map editor"      onclick="switchTab(this)">Maps</button>
-    <button class="panel-tab"        data-shot="screenshots/es_checksum.png" data-label="Checksum"        onclick="switchTab(this)">Checksum</button>
-    <button class="panel-tab"        data-shot="screenshots/es_compare.png"  data-label="ROM compare"     onclick="switchTab(this)">Compare</button>
-    <button class="panel-tab"        data-shot="screenshots/es_automods.png" data-label="AutoMods"        onclick="switchTab(this)">AutoMods</button>
-    <button class="panel-tab"        data-shot="screenshots/es_git.png"      data-label="Git versioning"  onclick="switchTab(this)">Git</button>
-    <button class="panel-tab"        data-shot="screenshots/es_a2l.png"      data-label="A2L browser"     onclick="switchTab(this)">A2L</button>
-    <button class="panel-tab"        data-shot="screenshots/es_mpps.png"     data-label="MPPS flashing"   onclick="switchTab(this)">MPPS</button>
-    <button class="panel-tab"        data-shot="screenshots/es_project.png"  data-label="Project manager" onclick="switchTab(this)">Project</button>
-  </div>
-  <p style="text-align:center;margin-top:1.1rem">
-    <a class="btn btn-ghost" href="demo.html">See the full demo gallery &rarr;</a>
+<!-- ── THE SUITE: HUB + SUB-PROGRAMS ───────────────────────────────── -->
+<section id="suite">
+  <p class="kicker" data-en="The architecture" data-fr="L'architecture">The architecture</p>
+  <h2 data-en="A hub that launches and interconnects" data-fr="Un hub qui lance et interconnecte">A hub that launches and interconnects</h2>
+  <p class="section-sub"
+     data-en="The Suite is not one monolithic app. It is a hub launcher that starts focused sub-programs sharing one theme and sidebar — and, increasingly, talking to each other."
+     data-fr="La Suite n'est pas une application monolithique. C'est un hub qui lance des sous-programmes ciblés partageant un même thème et une même barre latérale — et qui, de plus en plus, communiquent entre eux.">
+    The Suite is not one monolithic app. It is a hub launcher that starts focused sub-programs sharing one theme and sidebar — and, increasingly, talking to each other.
   </p>
-</div>
-<script>
-// panel tabs — swap real screenshots + light auto-rotation
-const tabs = Array.from(document.querySelectorAll('.panel-tab'));
-const showcaseImg = document.getElementById('showcase-img');
-let activeTab = 0;
-let tabTimer = null;
 
-function setActive(idx) {
-  activeTab = ((idx % tabs.length) + tabs.length) % tabs.length;
-  tabs.forEach((b, i) => b.classList.toggle('active', i === activeTab));
-  const btn = tabs[activeTab];
-  if (showcaseImg && btn.dataset.shot) {
-    showcaseImg.src = btn.dataset.shot;
-    showcaseImg.alt = 'ECU Studio - ' + (btn.dataset.label || '');
-  }
-}
-function switchTab(btn) {
-  setActive(tabs.indexOf(btn));
-  clearInterval(tabTimer);
-  tabTimer = setInterval(() => setActive(activeTab + 1), 4500);
-}
-// préchargement des captures pour des transitions fluides
-tabs.forEach(b => { if (b.dataset.shot) { const i = new Image(); i.src = b.dataset.shot; } });
-// auto-rotate
-tabTimer = setInterval(() => setActive(activeTab + 1), 4500);
+  <div class="suite-grid">
 
-// keyboard navigation
-document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowRight') { setActive(activeTab + 1); clearInterval(tabTimer); tabTimer = setInterval(() => setActive(activeTab + 1), 4000); }
-  if (e.key === 'ArrowLeft')  { setActive(activeTab - 1); clearInterval(tabTimer); tabTimer = setInterval(() => setActive(activeTab + 1), 4000); }
-});
+    <article class="prog-card prog-hub">
+      <div class="prog-head">
+        <div class="prog-icon hub">⬡</div>
+        <div>
+          <h3 data-en="The Hub" data-fr="Le Hub">The Hub</h3>
+          <span class="pill pill-beta">Beta</span>
+        </div>
+      </div>
+      <p data-en="A single launcher to open ECU Studio or SocketSpy, share configuration, and route the flash → verify workflow between them. The interconnection layer is young and growing."
+         data-fr="Un lanceur unique pour ouvrir ECU Studio ou SocketSpy, partager la configuration et orchestrer le flux flash → vérification entre eux. La couche d'interconnexion est jeune et en pleine croissance.">
+        A single launcher to open ECU Studio or SocketSpy, share configuration, and route the flash → verify workflow between them. The interconnection layer is young and growing.
+      </p>
+    </article>
 
-// count-up animation for stats
-function countUp(el, target, duration) {
-  let start = 0; const step = duration / target;
-  const t = setInterval(() => {
-    start++;
-    el.textContent = start;
-    if (start >= target) clearInterval(t);
-  }, step);
-}
-const obs = new IntersectionObserver(entries => {
-  entries.forEach(e => {
-    if (e.isIntersecting) {
-      obs.unobserve(e.target);
-      countUp(document.getElementById('stat-panels'),    12, 700);
-      countUp(document.getElementById('stat-ecus'),      14, 900);
-      countUp(document.getElementById('stat-chipsets'),   6, 600);
-    }
-  });
-});
-obs.observe(document.querySelector('.live-stats'));
-</script>
+    <article class="prog-card">
+      <div class="prog-head">
+        <div class="prog-icon es">🛠️</div>
+        <div>
+          <h3>ECU Studio</h3>
+          <span class="pill pill-proven" data-en="Proven" data-fr="Prouvé">Proven</span>
+        </div>
+      </div>
+      <p data-en="ECU reprogramming and map editing: 2D + 3D map editor, DAMOS editor, A2L parsing, hex view, checksum correction, MPPS flash, ROM compare, git versioning, one-click AutoMods, and OpenDAMOS recipes."
+         data-fr="Reprogrammation ECU et édition de cartographies : éditeur 2D + 3D, éditeur DAMOS, analyse A2L, vue hexadécimale, correction de checksum, flash MPPS, comparaison de ROM, versionnage git, AutoMods en un clic et recettes OpenDAMOS.">
+        ECU reprogramming and map editing: 2D + 3D map editor, DAMOS editor, A2L parsing, hex view, checksum correction, MPPS flash, ROM compare, git versioning, one-click AutoMods, and OpenDAMOS recipes.
+      </p>
+      <div class="prog-links">
+        <a href="#status" data-en="Feature board ↓" data-fr="Tableau des fonctions ↓">Feature board ↓</a>
+        <a href="demo.html" data-en="Demo gallery →" data-fr="Galerie démo →">Demo gallery →</a>
+      </div>
+    </article>
 
-<!-- ── FEATURES ──────────────────────────────────────────────────── -->
-<section id="features">
-  <div class="section-label">What's inside</div>
-  <h2>Everything you need to read, tune &amp; reflash an ECU</h2>
-  <p class="section-sub">Two apps, one theme and sidebar: ECU Studio for reflashing and map editing, SocketSpy for CAN analysis. Everything runs on your machine.</p>
+    <article class="prog-card">
+      <div class="prog-head">
+        <div class="prog-icon ss">📡</div>
+        <div>
+          <h3>SocketSpy</h3>
+          <span class="pill pill-proven" data-en="Proven" data-fr="Prouvé">Proven</span>
+          <span class="ver">v0.8.7</span>
+        </div>
+      </div>
+      <p data-en="Linux SocketCAN analysis: live monitor, DBC decode, signal graphs, transmit, protocol decoders (CANopen / J1939 / ISO-TP / UDS / OBD-II / NMEA2000), Lua scripting, CAN simulator, MCP/JSON-RPC API, io_uring capture, frame fuzzer, UDS tester + ECU simulator, BLF/MDF4 export, capture diff, multi-bus, Signal Detective."
+         data-fr="Analyse SocketCAN Linux : moniteur live, décodage DBC, graphes de signaux, émission, décodeurs de protocoles (CANopen / J1939 / ISO-TP / UDS / OBD-II / NMEA2000), scripts Lua, simulateur CAN, API MCP/JSON-RPC, capture io_uring, fuzzer de trames, testeur UDS + simulateur d'ECU, export BLF/MDF4, diff de captures, multi-bus, Signal Detective.">
+        Linux SocketCAN analysis: live monitor, DBC decode, signal graphs, transmit, protocol decoders (CANopen / J1939 / ISO-TP / UDS / OBD-II / NMEA2000), Lua scripting, CAN simulator, MCP/JSON-RPC API, io_uring capture, frame fuzzer, UDS tester + ECU simulator, BLF/MDF4 export, capture diff, multi-bus, Signal Detective.
+      </p>
+      <div class="prog-links">
+        <a href="https://poisson48.github.io/SocketSpy" data-en="Website →" data-fr="Site web →">Website →</a>
+        <a href="https://github.com/Poisson48/SocketSpy" data-en="GitHub →" data-fr="GitHub →">GitHub →</a>
+      </div>
+    </article>
 
-  <div class="status-legend">
-    <span><span class="dot-legend" style="background:#22c55e"></span>Stable</span>
-    <span><span class="dot-legend" style="background:#4ade80"></span>New in v1.3.0</span>
-    <span><span class="dot-legend" style="background:#fcd34d"></span>Beta / coming soon</span>
   </div>
+</section>
 
-  <div class="features-grid">
+<!-- ── FLAGSHIP LOOP: FLASH → VERIFY ───────────────────────────────── -->
+<section id="loop" class="loop-section">
+  <p class="kicker" data-en="The flagship loop" data-fr="La boucle phare">The flagship loop</p>
+  <h2 data-en="Flash a map, then prove it on the bus" data-fr="Flashez une carto, puis prouvez-le sur le bus">Flash a map, then prove it on the bus</h2>
+  <p class="section-sub"
+     data-en="The reason the Suite exists. ECU Studio writes the change; SocketSpy watches the CAN bus and confirms it landed — at the right RPM, the right load, the right operating point."
+     data-fr="La raison d'être de la Suite. ECU Studio écrit la modification ; SocketSpy observe le bus CAN et confirme qu'elle a pris effet — au bon régime, à la bonne charge, au bon point de fonctionnement.">
+    The reason the Suite exists. ECU Studio writes the change; SocketSpy watches the CAN bus and confirms it landed — at the right RPM, the right load, the right operating point.
+  </p>
 
-    <div class="feat-card">
-      <div class="feat-icon">🔌</div>
-      <h3>MPPS Flashing</h3>
-      <p>Read &amp; write ECU ROM over MPPS V21 (FTDI/CH340/CP2102). libusb on Linux, no proprietary driver needed. Background-threaded with live progress.</p>
+  <div class="loop-steps">
+    <div class="loop-step">
+      <span class="loop-n">1</span>
+      <h4 data-en="Edit the map" data-fr="Éditer la carto">Edit the map</h4>
+      <p data-en="Open the ROM in ECU Studio, locate the map (A2L, DAMOS, or an OpenDAMOS axis-fingerprint recipe) and apply your change in the 2D/3D editor."
+         data-fr="Ouvrez la ROM dans ECU Studio, repérez la carte (A2L, DAMOS ou une recette OpenDAMOS par empreinte d'axe) et appliquez votre modification dans l'éditeur 2D/3D.">
+        Open the ROM in ECU Studio, locate the map (A2L, DAMOS, or an OpenDAMOS axis-fingerprint recipe) and apply your change in the 2D/3D editor.
+      </p>
+    </div>
+    <div class="loop-arrow" aria-hidden="true">→</div>
+    <div class="loop-step">
+      <span class="loop-n">2</span>
+      <h4 data-en="Flash the ECU" data-fr="Flasher l'ECU">Flash the ECU</h4>
+      <p data-en="Checksums are corrected automatically and the ROM is written over MPPS, with read-back verification and git history so any state can be restored."
+         data-fr="Les checksums sont corrigés automatiquement et la ROM est écrite via MPPS, avec vérification par relecture et historique git permettant de restaurer n'importe quel état.">
+        Checksums are corrected automatically and the ROM is written over MPPS, with read-back verification and git history so any state can be restored.
+      </p>
+    </div>
+    <div class="loop-arrow" aria-hidden="true">→</div>
+    <div class="loop-step">
+      <span class="loop-n">3</span>
+      <h4 data-en="Verify live on CAN" data-fr="Vérifier en direct sur CAN">Verify live on CAN</h4>
+      <p data-en="SocketSpy decodes the live bus and confirms the new behavior at the targeted operating point — closing the loop between what you wrote and what the engine does."
+         data-fr="SocketSpy décode le bus en direct et confirme le nouveau comportement au point de fonctionnement visé — bouclant la boucle entre ce que vous avez écrit et ce que fait le moteur.">
+        SocketSpy decodes the live bus and confirms the new behavior at the targeted operating point — closing the loop between what you wrote and what the engine does.
+      </p>
+    </div>
+  </div>
+  <p class="loop-note">
+    <span class="pill pill-beta">Beta</span>
+    <span data-en="The end-to-end automated loop is new and being hardened — each step already works on its own today."
+          data-fr="La boucle automatisée de bout en bout est récente et en cours de fiabilisation — chaque étape fonctionne déjà séparément aujourd'hui.">
+      The end-to-end automated loop is new and being hardened — each step already works on its own today.
+    </span>
+  </p>
+</section>
+
+<!-- ── OPENDAMOS ───────────────────────────────────────────────────── -->
+<section id="opendamos" class="opendamos-section">
+  <div class="od-text">
+    <p class="kicker">OpenDAMOS</p>
+    <h2 data-en="One recipe, many firmwares" data-fr="Une recette, plusieurs firmwares">One recipe, many firmwares</h2>
+    <p class="section-sub"
+       data-en="A free, CC0 DAMOS that relocates ECU maps by AXIS FINGERPRINT instead of hardcoded addresses — so a single recipe works across firmware variants. A converter turns a manufacturer DAMOS (A2L) plus a ROM into an open, shareable recipe."
+       data-fr="Un DAMOS libre, sous CC0, qui localise les cartes ECU par EMPREINTE D'AXE plutôt que par adresses figées — une seule recette fonctionne ainsi sur plusieurs variantes de firmware. Un convertisseur transforme un DAMOS constructeur (A2L) plus une ROM en une recette ouverte et partageable.">
+      A free, CC0 DAMOS that relocates ECU maps by AXIS FINGERPRINT instead of hardcoded addresses — so a single recipe works across firmware variants. A converter turns a manufacturer DAMOS (A2L) plus a ROM into an open, shareable recipe.
+    </p>
+    <ul class="od-cov">
+      <li><span class="pill pill-proven" data-en="Proven" data-fr="Prouvé">Proven</span> <b>Bosch EDC16</b> <span data-en="(big-endian inline)" data-fr="(inline big-endian)">(big-endian inline)</span> <span data-en="— verified across firmware variants." data-fr="— vérifié sur plusieurs variantes de firmware.">— verified across firmware variants.</span></li>
+      <li><span class="pill pill-proven" data-en="Proven" data-fr="Prouvé">Proven</span> <b>Bosch EDC17</b> <span data-en="(little-endian inline)" data-fr="(inline little-endian)">(little-endian inline)</span> <span data-en="— verified across firmware variants." data-fr="— vérifié sur plusieurs variantes de firmware.">— verified across firmware variants.</span></li>
+      <li><span class="pill pill-beta">Beta</span> <b>COM_AXIS ECUs</b> <span data-en="(PSA Valeo, Continental SID807) — works 11/12 on Valeo; no cross-firmware test yet." data-fr="(PSA Valeo, Continental SID807) — fonctionne 11/12 sur Valeo ; pas encore de test inter-firmware.">(PSA Valeo, Continental SID807) — works 11/12 on Valeo; no cross-firmware test yet.</span></li>
+    </ul>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://github.com/Poisson48/ecu_studio_suite/wiki/OpenDAMOS"><span data-en="OpenDAMOS on the wiki →" data-fr="OpenDAMOS sur le wiki →">OpenDAMOS on the wiki →</span></a>
+      <a class="btn btn-ghost" href="opendamos/OPENDAMOS_STANDARD.md"><span data-en="Read the standard" data-fr="Lire le standard">Read the standard</span></a>
+    </div>
+  </div>
+  <div class="od-card" aria-hidden="true">
+    <div class="od-row"><span class="od-k">recipe</span><span class="od-v">stage1_edc16</span></div>
+    <div class="od-row"><span class="od-k">match</span><span class="od-v od-fp">axis_fingerprint</span></div>
+    <div class="od-row od-dim"><span class="od-k">x_axis</span><span class="od-v">800·1200·1600·2000·2400·2800</span></div>
+    <div class="od-row od-dim"><span class="od-k">y_axis</span><span class="od-v">20·40·60·80·100</span></div>
+    <div class="od-row"><span class="od-k">edc16</span><span class="od-v od-ok">✓ matched @ 0x1A480</span></div>
+    <div class="od-row"><span class="od-k">edc16_v2</span><span class="od-v od-ok">✓ matched @ 0x1B2C0</span></div>
+    <div class="od-row"><span class="od-k">apply</span><span class="od-v">+12% &nbsp;·&nbsp; checksum ✓</span></div>
+  </div>
+</section>
+
+<!-- ── STATUS BOARD ─────────────────────────────────────────────────── -->
+<section id="status">
+  <p class="kicker" data-en="Where things stand" data-fr="État d'avancement">Where things stand</p>
+  <h2 data-en="Feature status board" data-fr="Tableau d'état des fonctions">Feature status board</h2>
+  <p class="section-sub"
+     data-en="Honest maturity, three columns. Shipped &amp; Proven means verified and stable. Beta means it works but is unproven. Incoming is on the roadmap."
+     data-fr="Maturité honnête, trois colonnes. Livré &amp; prouvé signifie vérifié et stable. Beta signifie que ça marche mais n'est pas éprouvé. À venir, c'est sur la feuille de route.">
+    Honest maturity, three columns. Shipped &amp; Proven means verified and stable. Beta means it works but is unproven. Incoming is on the roadmap.
+  </p>
+
+  <div class="board">
+
+    <!-- SHIPPED / PROVEN -->
+    <div class="board-col col-proven">
+      <header class="board-head">
+        <span class="board-dot dot-proven"></span>
+        <h3 data-en="Shipped · Proven" data-fr="Livré · Prouvé">Shipped · Proven</h3>
+      </header>
+      <p class="board-cap" data-en="Verified, shipped, stable." data-fr="Vérifié, livré, stable.">Verified, shipped, stable.</p>
+      <ul class="board-list">
+        <li><b>MPPS</b> <span data-en="read &amp; write ECU ROM (FTDI / CH340 / CP2102, libusb)" data-fr="lecture &amp; écriture de la ROM ECU (FTDI / CH340 / CP2102, libusb)">read &amp; write ECU ROM (FTDI / CH340 / CP2102, libusb)</span></li>
+        <li><span data-en="2D map editor — Bosch Kf maps, percentage scaling" data-fr="éditeur de cartes 2D — cartes Bosch Kf, mise à l'échelle en %">2D map editor — Bosch Kf maps, percentage scaling</span></li>
+        <li><span data-en="A2L / DAMOS parser (Bosch &amp; PSA dialects)" data-fr="analyseur A2L / DAMOS (dialectes Bosch &amp; PSA)">A2L / DAMOS parser (Bosch &amp; PSA dialects)</span></li>
+        <li><span data-en="DAMOS editor — edit recipes, detect maps, export A2L" data-fr="éditeur DAMOS — éditer des recettes, détecter des cartes, exporter A2L">DAMOS editor — edit recipes, detect maps, export A2L</span></li>
+        <li><span data-en="Checksum correction with read-back verification" data-fr="correction de checksum avec vérification par relecture">Checksum correction with read-back verification</span></li>
+        <li><span data-en="Heuristic map finder (no A2L needed)" data-fr="détecteur heuristique de cartes (sans A2L)">Heuristic map finder (no A2L needed)</span></li>
+        <li><span data-en="ROM compare — byte diff grouped into map intervals" data-fr="comparaison de ROM — diff octet regroupé par intervalles de carte">ROM compare — byte diff grouped into map intervals</span></li>
+        <li><span data-en="Git versioning of ROM history (libgit2)" data-fr="versionnage git de l'historique des ROM (libgit2)">Git versioning of ROM history (libgit2)</span></li>
+        <li><span data-en="AutoMods — one-click Stage 1 / Pop&amp;Bang / depollution" data-fr="AutoMods — Stage 1 / Pop&amp;Bang / dépollution en un clic">AutoMods — one-click Stage 1 / Pop&amp;Bang / depollution</span></li>
+        <li><span data-en="Hex view with map-region overlays" data-fr="vue hexadécimale avec surlignage des zones de carte">Hex view with map-region overlays</span></li>
+        <li><span data-en="In-app auto-update (Ed25519-signed, SHA-256)" data-fr="mise à jour intégrée (signée Ed25519, SHA-256)">In-app auto-update (Ed25519-signed, SHA-256)</span></li>
+        <li><b>OpenDAMOS</b> <span data-en="Bosch EDC16 &amp; EDC17 (axis fingerprint)" data-fr="Bosch EDC16 &amp; EDC17 (empreinte d'axe)">Bosch EDC16 &amp; EDC17 (axis fingerprint)</span></li>
+        <li><b>SocketSpy</b> <span data-en="live monitor, DBC decode, signal graphs, transmit" data-fr="moniteur live, décodage DBC, graphes de signaux, émission">live monitor, DBC decode, signal graphs, transmit</span></li>
+        <li><span data-en="Protocol decoders: CANopen / J1939 / ISO-TP / UDS / OBD-II / NMEA2000" data-fr="décodeurs : CANopen / J1939 / ISO-TP / UDS / OBD-II / NMEA2000">Protocol decoders: CANopen / J1939 / ISO-TP / UDS / OBD-II / NMEA2000</span></li>
+        <li><span data-en="Lua scripting, CAN simulator, MCP/JSON-RPC API" data-fr="scripts Lua, simulateur CAN, API MCP/JSON-RPC">Lua scripting, CAN simulator, MCP/JSON-RPC API</span></li>
+        <li><span data-en="io_uring capture, frame fuzzer, BLF/MDF4 export, capture diff, multi-bus" data-fr="capture io_uring, fuzzer de trames, export BLF/MDF4, diff de captures, multi-bus">io_uring capture, frame fuzzer, BLF/MDF4 export, capture diff, multi-bus</span></li>
+        <li><span data-en="UDS tester + ECU simulator, Signal Detective, i18n" data-fr="testeur UDS + simulateur d'ECU, Signal Detective, i18n">UDS tester + ECU simulator, Signal Detective, i18n</span></li>
+      </ul>
     </div>
 
-    <div class="feat-card">
-      <div class="feat-icon">🗃️</div>
-      <h3>Virtual Hex Editor</h3>
-      <p>Smooth hex view for 2–6 MB ROMs with map-region overlays (planned: 60fps QPainter virtual scrolling).</p>
+    <!-- BETA -->
+    <div class="board-col col-beta">
+      <header class="board-head">
+        <span class="board-dot dot-beta"></span>
+        <h3>Beta</h3>
+      </header>
+      <p class="board-cap" data-en="Works, but unproven." data-fr="Fonctionne, mais non éprouvé.">Works, but unproven.</p>
+      <ul class="board-list">
+        <li><b>OpenDAMOS COM_AXIS</b> <span data-en="— PSA Valeo &amp; Continental SID807 (11/12 on Valeo)" data-fr="— PSA Valeo &amp; Continental SID807 (11/12 sur Valeo)">— PSA Valeo &amp; Continental SID807 (11/12 on Valeo)</span></li>
+        <li><span data-en="The hub launcher — open &amp; share config across sub-programs" data-fr="le lanceur hub — ouvrir &amp; partager la config entre sous-programmes">The hub launcher — open &amp; share config across sub-programs</span></li>
+        <li><span data-en="Flash → verify loop (ECU Studio ↔ SocketSpy)" data-fr="boucle flash → vérification (ECU Studio ↔ SocketSpy)">Flash → verify loop (ECU Studio ↔ SocketSpy)</span></li>
+        <li><span data-en="3D map view — pseudo-3D surface + heatmap with ghost baseline" data-fr="vue 3D — surface pseudo-3D + heatmap avec base fantôme">3D map view — pseudo-3D surface + heatmap with ghost baseline</span></li>
+        <li><span data-en="Brand-new SocketSpy panels still being hardened" data-fr="tout nouveaux panneaux SocketSpy en cours de fiabilisation">Brand-new SocketSpy panels still being hardened</span></li>
+      </ul>
     </div>
 
-    <div class="feat-card">
-      <div class="feat-icon">📊</div>
-      <h3>Bosch Map Editor</h3>
-      <p>Read/write Kf_Xs16_Ys16_Ws16 maps, apply percentage changes to Stage 1 maps with positive-only scaling.</p>
-    </div>
-
-    <div class="feat-card">
-      <div class="feat-icon">📝</div>
-      <h3>DAMOS Editor <span class="feat-badge badge-new">New</span></h3>
-      <p>Create and edit <code>open_damos</code> definitions in-app: add/remove characteristics, edit fields, detect maps straight from a ROM, manage one-click AutoMods, and export to A2L.</p>
-    </div>
-
-    <div class="feat-card">
-      <div class="feat-icon">🧊</div>
-      <h3>3D Map View <span class="feat-badge badge-beta">Beta</span></h3>
-      <p>Pseudo-3D surface + heatmap with a <em>ghost</em> baseline overlay to compare original vs modified. Native OpenGL (Q3DSurface) rendering is coming soon.</p>
-    </div>
-
-    <div class="feat-card">
-      <div class="feat-icon">⬆️</div>
-      <h3>In-app Auto-update <span class="feat-badge badge-new">New</span></h3>
-      <p>The AppImage checks GitHub for new releases and updates itself in place — Ed25519-signed manifest with SHA-256 verification. No package manager, no reinstall.</p>
-    </div>
-
-    <div class="feat-card">
-      <div class="feat-icon">🔎</div>
-      <h3>Heuristic Map Finder</h3>
-      <p>Detect 2D maps in a ROM without an A2L, scored by axis monotonicity and data smoothness.</p>
-    </div>
-
-    <div class="feat-card">
-      <div class="feat-icon">📄</div>
-      <h3>A2L / DAMOS Parser</h3>
-      <p>Parse ASAP2 CHARACTERISTIC/AXIS_PTS/RECORD_LAYOUT, resolve cross-references (Bosch &amp; PSA dialects).</p>
-    </div>
-
-    <div class="feat-card">
-      <div class="feat-icon">✅</div>
-      <h3>Checksum Correction</h3>
-      <p>Auto-correct ECU checksums before writing, with read-back verification.</p>
-    </div>
-
-    <div class="feat-card">
-      <div class="feat-icon">≠</div>
-      <h3>ROM Compare</h3>
-      <p>Byte-level diff between two ROMs, grouped into changed map intervals.</p>
-    </div>
-
-    <div class="feat-card">
-      <div class="feat-icon">Ⓖ</div>
-      <h3>Git Versioning</h3>
-      <p>libgit2-backed ROM history — commit any state, browse the log, and restore any previous version in one click. Instant rollback, no cloud.</p>
-    </div>
-
-    <div class="feat-card">
-      <div class="feat-icon">🚗</div>
-      <h3>ECU Catalog &amp; Vehicle Templates</h3>
-      <p>Built-in catalog (EDC16C34, EDC17, ME7, MED17…) and one-click Stage 1 / Pop&amp;Bang / depollution presets per vehicle.</p>
-    </div>
-
-    <div class="feat-card">
-      <div class="feat-icon">📡</div>
-      <h3>SocketSpy CAN Analysis</h3>
-      <p>Bundled SocketSpy app: live CAN monitor, DBC decoding, UDS, Lua scripting — watch the bus during a flash.</p>
-    </div>
-
-    <div class="feat-card">
-      <div class="feat-icon">🪟</div>
-      <h3>Detachable Panels</h3>
-      <p>Same icon-sidebar UX as SocketSpy: drag or right-click any panel to float it as its own window.</p>
-    </div>
-
-    <div class="feat-card">
-      <div class="feat-icon">🔒</div>
-      <h3>100% Local</h3>
-      <p>No account, no telemetry, no cloud. Everything runs on your machine.</p>
+    <!-- INCOMING -->
+    <div class="board-col col-incoming">
+      <header class="board-head">
+        <span class="board-dot dot-incoming"></span>
+        <h3 data-en="Incoming" data-fr="À venir">Incoming</h3>
+      </header>
+      <p class="board-cap" data-en="On the roadmap." data-fr="Sur la feuille de route.">On the roadmap.</p>
+      <ul class="board-list">
+        <li><span data-en="Full hub interconnection between all sub-programs" data-fr="interconnexion complète du hub entre tous les sous-programmes">Full hub interconnection between all sub-programs</span></li>
+        <li><span data-en="More ECUs covered by OpenDAMOS recipes" data-fr="davantage d'ECU couverts par les recettes OpenDAMOS">More ECUs covered by OpenDAMOS recipes</span></li>
+        <li><span data-en="Cross-firmware proof for COM_AXIS ECUs" data-fr="preuve inter-firmware pour les ECU COM_AXIS">Cross-firmware proof for COM_AXIS ECUs</span></li>
+        <li><span data-en="EDC16CP33 complete coverage" data-fr="couverture complète EDC16CP33">EDC16CP33 complete coverage</span></li>
+        <li><span data-en="Native OpenGL 3D map rendering (Q3DSurface)" data-fr="rendu 3D natif OpenGL (Q3DSurface)">Native OpenGL 3D map rendering (Q3DSurface)</span></li>
+        <li><span data-en="60fps QPainter virtual-scrolling hex view" data-fr="vue hex à défilement virtuel QPainter 60 fps">60fps QPainter virtual-scrolling hex view</span></li>
+      </ul>
     </div>
 
   </div>
 </section>
 
-<!-- ── DOWNLOAD / BUILD ───────────────────────────────────────────── -->
-<section id="download" style="padding-top:0">
-  <div class="download-section">
+<!-- ── DOWNLOAD ─────────────────────────────────────────────────────── -->
+<section id="download">
+  <div class="download-card">
     <div class="dl-left">
-      <h2>Download ECU Studio</h2>
-      <p>Self-contained AppImage — Qt6, libusb and every runtime library bundled. Runs on a clean PC with nothing installed, no root needed. Just download, make it executable, and run.</p>
+      <h2 data-en="Get the Suite" data-fr="Obtenir la Suite">Get the Suite</h2>
+      <p data-en="A self-contained AppImage — Qt6, libusb and every runtime library bundled. Runs on a clean Linux PC with nothing installed, no root needed."
+         data-fr="Une AppImage autonome — Qt6, libusb et toutes les bibliothèques d'exécution incluses. Tourne sur un PC Linux vierge sans rien installer, sans root.">
+        A self-contained AppImage — Qt6, libusb and every runtime library bundled. Runs on a clean Linux PC with nothing installed, no root needed.
+      </p>
       <div class="dl-meta">
-        <div class="dl-pill">Version <span>1.3.0</span></div>
-        <div class="dl-pill">Size <span>~37 MB</span></div>
-        <div class="dl-pill">Platform <span>Linux x86_64</span></div>
-        <div class="dl-pill">License <span>GPL-3.0</span></div>
+        <span class="dl-pill" data-en="Platform: Linux x86_64" data-fr="Plateforme : Linux x86_64">Platform: Linux x86_64</span>
+        <span class="dl-pill">License: GPL-3.0</span>
+        <span class="dl-pill" data-en="No account · No telemetry" data-fr="Sans compte · Sans télémétrie">No account · No telemetry</span>
       </div>
     </div>
     <div class="dl-right">
       <a class="btn btn-primary" href="https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage" style="justify-content:center">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download AppImage
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span data-en="Download AppImage" data-fr="Télécharger l'AppImage">Download AppImage</span>
       </a>
       <div class="code-block">chmod +x ECU_Studio-x86_64.AppImage<br>./ECU_Studio-x86_64.AppImage</div>
-      <a class="btn btn-ghost" href="https://github.com/Poisson48/ecu_studio_suite#build-from-source-developers" style="justify-content:center;font-size:.85rem">Build from source (developers) →</a>
+      <a class="btn btn-ghost" href="https://github.com/Poisson48/ecu_studio_suite#build-from-source-developers" style="justify-content:center;font-size:.85rem">
+        <span data-en="Build from source →" data-fr="Compiler depuis les sources →">Build from source →</span>
+      </a>
     </div>
   </div>
 </section>
 
-<!-- ── ADAPTERS / HARDWARE ────────────────────────────────────────── -->
-<section id="adapters">
-  <div class="section-label">Hardware</div>
-  <h2>Works with common MPPS clones</h2>
-  <p class="section-sub">Any FTDI or serial-bridge MPPS interface the Linux kernel enumerates.</p>
-
-  <div class="adapters-grid">
-    <div class="adapter-card">
-      <h4>FTDI FT232R/BM</h4>
-      <p>ftdi_sio (0403:6001)</p>
-    </div>
-    <div class="adapter-card">
-      <h4>FTDI FT2232H</h4>
-      <p>dual channel (0403:6010)</p>
-    </div>
-    <div class="adapter-card">
-      <h4>FTDI FTX series</h4>
-      <p>(0403:6015)</p>
-    </div>
-    <div class="adapter-card">
-      <h4>WCH CH340</h4>
-      <p>low-cost clones (1a86:7523)</p>
-    </div>
-    <div class="adapter-card">
-      <h4>WCH CH341</h4>
-      <p>(1a86:5523)</p>
-    </div>
-    <div class="adapter-card">
-      <h4>SiLabs CP2102</h4>
-      <p>(10c4:ea60)</p>
-    </div>
+<!-- ── DOCS / WIKI LINKS ───────────────────────────────────────────── -->
+<section id="learn">
+  <p class="kicker" data-en="Learn more" data-fr="En savoir plus">Learn more</p>
+  <h2 data-en="Documentation &amp; wiki" data-fr="Documentation &amp; wiki">Documentation &amp; wiki</h2>
+  <p class="section-sub"
+     data-en="Deep dives, guides and references live in the wiki and the OpenDAMOS standard."
+     data-fr="Guides approfondis, tutoriels et références se trouvent dans le wiki et le standard OpenDAMOS.">
+    Deep dives, guides and references live in the wiki and the OpenDAMOS standard.
+  </p>
+  <div class="learn-grid">
+    <a class="learn-card" href="https://github.com/Poisson48/ecu_studio_suite/wiki">
+      <h4 data-en="Wiki Home" data-fr="Accueil du wiki">Wiki Home</h4>
+      <p data-en="Start here — overview and map of everything." data-fr="Commencez ici — vue d'ensemble et plan.">Start here — overview and map of everything.</p>
+    </a>
+    <a class="learn-card" href="https://github.com/Poisson48/ecu_studio_suite/wiki/Getting-Started">
+      <h4 data-en="Getting Started" data-fr="Bien démarrer">Getting Started</h4>
+      <p data-en="Install, connect an adapter, read your first ROM." data-fr="Installer, brancher un adaptateur, lire sa première ROM.">Install, connect an adapter, read your first ROM.</p>
+    </a>
+    <a class="learn-card" href="https://github.com/Poisson48/ecu_studio_suite/wiki/OpenDAMOS">
+      <h4>OpenDAMOS</h4>
+      <p data-en="Axis-fingerprint recipes that span firmware variants." data-fr="Recettes par empreinte d'axe couvrant plusieurs firmwares.">Axis-fingerprint recipes that span firmware variants.</p>
+    </a>
+    <a class="learn-card" href="https://github.com/Poisson48/ecu_studio_suite/wiki/Architecture">
+      <h4>Architecture</h4>
+      <p data-en="How the hub, sub-programs and modules fit together." data-fr="Comment le hub, les sous-programmes et les modules s'assemblent.">How the hub, sub-programs and modules fit together.</p>
+    </a>
+    <a class="learn-card" href="https://github.com/Poisson48/ecu_studio_suite/wiki/FAQ">
+      <h4>FAQ</h4>
+      <p data-en="Common questions about hardware, ECUs and safety." data-fr="Questions fréquentes sur le matériel, les ECU et la sécurité.">Common questions about hardware, ECUs and safety.</p>
+    </a>
+    <a class="learn-card" href="https://poisson48.github.io/SocketSpy">
+      <h4>SocketSpy</h4>
+      <p data-en="The CAN-analysis sub-program and its own site." data-fr="Le sous-programme d'analyse CAN et son propre site.">The CAN-analysis sub-program and its own site.</p>
+    </a>
   </div>
 </section>
 
-<!-- ── FOOTER ─────────────────────────────────────────────────────── -->
+<!-- ── FOOTER ───────────────────────────────────────────────────────── -->
 <footer>
   <div class="footer-links">
     <a href="https://github.com/Poisson48/ecu_studio_suite">GitHub</a>
-    <a href="https://github.com/Poisson48/SocketSpy">SocketSpy</a>
-    <a href="https://github.com/Poisson48/ecu_studio_suite#readme">Documentation</a>
-    <a href="https://github.com/Poisson48/ecu_studio_suite/blob/main/LICENSE">GPL-3.0 License</a>
+    <a href="https://github.com/Poisson48/SocketSpy">SocketSpy GitHub</a>
+    <a href="https://poisson48.github.io/SocketSpy">SocketSpy site</a>
+    <a href="https://github.com/Poisson48/ecu_studio_suite/wiki">Wiki</a>
+    <a href="opendamos/OPENDAMOS_STANDARD.md">OpenDAMOS standard</a>
+    <a href="https://github.com/Poisson48/ecu_studio_suite/blob/main/LICENSE">GPL-3.0</a>
   </div>
-  <p>ECU Studio Suite — 100% local, no telemetry, no cloud.</p>
+  <p data-en="ECU Studio Suite — 100% local. No account, no telemetry, no cloud." data-fr="ECU Studio Suite — 100% local. Pas de compte, pas de télémétrie, pas de cloud.">
+    ECU Studio Suite — 100% local. No account, no telemetry, no cloud.
+  </p>
 </footer>
 
+<script src="suite.js"></script>
 </body>
 </html>
