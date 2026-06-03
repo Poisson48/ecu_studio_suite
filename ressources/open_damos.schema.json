@@ -1,0 +1,262 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ecu-studio-suite/open_damos.schema.json",
+  "title": "OpenDAMOS recipe",
+  "description": "Standard OpenDAMOS — DAMOS libre, relocalisable par empreinte d'axes, dérivé d'un DAMOS Bosch / A2L. Une recette décrit, pour une famille d'ECU, un jeu de caractéristiques (MAP / CURVE / VALUE) repérées par l'empreinte de leurs axes plutôt que par une adresse absolue, plus des AutoMods (patches) optionnels. Voir docs/opendamos/OPENDAMOS_STANDARD.md.",
+  "type": "object",
+  "required": ["characteristics"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "ecu": {
+      "type": "string",
+      "description": "Identifiant de la famille d'ECU, en minuscules (ex: \"edc16c34\"). Alias accepté: ecuId."
+    },
+    "ecuId": {
+      "type": "string",
+      "description": "Alias historique de \"ecu\". Utiliser \"ecu\" de préférence."
+    },
+    "name": {
+      "type": "string",
+      "description": "Nom lisible de la recette."
+    },
+    "version": {
+      "type": "string",
+      "description": "Version semver de la recette (x.y.z).",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+].*)?$"
+    },
+    "license": {
+      "type": "string",
+      "description": "Licence de la recette. Recommandé: \"CC0-1.0\" (domaine public)."
+    },
+    "homepage": { "type": "string" },
+    "description": { "type": "string" },
+    "baseline": {
+      "type": "object",
+      "description": "Firmware de référence d'où sont tirées les adresses (defaultAddress) et les empreintes (fingerprint). Purement documentaire.",
+      "properties": {
+        "source": { "type": "string", "description": "Chemin de la ROM de référence (ex: ressources/edc16c34/ori.BIN)." },
+        "damos":  { "type": "string", "description": "Chemin du DAMOS / A2L source dont la recette est dérivée." },
+        "note":   { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "recordLayouts": {
+      "type": "object",
+      "description": "Catalogue de layouts mémoire réutilisables, indexés par nom. Chaque caractéristique référence un layout via \"recordLayout\". Décrit comment l'octet brut est agencé en ROM (en-tête de dimensions inline + axes + valeurs).",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type":         { "$ref": "#/$defs/charType" },
+          "headerBytes":  { "type": "integer", "minimum": 0, "description": "Taille de l'en-tête inline portant les dimensions (nx[, ny]). 0 si pas d'en-tête." },
+          "headerType":   { "$ref": "#/$defs/dataType", "description": "Type des champs de dimension de l'en-tête (typiquement UWORD_BE)." },
+          "axisDataType": { "$ref": "#/$defs/dataType", "description": "Type par défaut des points d'axe." },
+          "dataType":     { "$ref": "#/$defs/dataType", "description": "Type par défaut des cellules de données." }
+        },
+        "additionalProperties": true
+      }
+    },
+    "characteristics": {
+      "type": "array",
+      "description": "Liste des caractéristiques de la recette (MAP / CURVE / VALUE).",
+      "items": { "$ref": "#/$defs/characteristic" }
+    },
+    "autoMods": {
+      "type": "array",
+      "description": "Patches « en un clic » versionnés avec la recette (optionnel).",
+      "items": { "$ref": "#/$defs/autoMod" }
+    }
+  },
+  "additionalProperties": true,
+
+  "$defs": {
+    "dataType": {
+      "type": "string",
+      "description": "Encodage binaire d'une valeur. BE = big-endian. S/U = signé/non-signé.",
+      "enum": ["SBYTE", "UBYTE", "SWORD_BE", "UWORD_BE", "SLONG_BE", "ULONG_BE"]
+    },
+    "charType": {
+      "type": "string",
+      "description": "MAP = table 2D (2 axes), CURVE = courbe 1D (1 axe), VALUE = scalaire (0 axe).",
+      "enum": ["MAP", "CURVE", "VALUE"]
+    },
+    "hexBytes": {
+      "type": "string",
+      "description": "Suite d'octets en hexadécimal, ex: \"AA BB CC\" ou \"AABBCC\". Tout caractère non hexadécimal est ignoré au parsing.",
+      "pattern": "^[0-9A-Fa-f\\s]*$"
+    },
+    "address": {
+      "description": "Adresse mémoire. Chaîne hex (\"0x1C1448\") ou entier décimal.",
+      "oneOf": [
+        { "type": "string", "pattern": "^(0[xX][0-9A-Fa-f]+|[0-9]+)$" },
+        { "type": "integer", "minimum": 0 }
+      ]
+    },
+
+    "axis": {
+      "type": "object",
+      "description": "Un axe d'une MAP/CURVE, avec son empreinte (valeurs attendues lues dans la ROM de référence). C'est l'empreinte qui permet de retrouver la carte dans n'importe quel firmware de la famille.",
+      "properties": {
+        "inputQuantity": {
+          "type": "string",
+          "description": "Grandeur d'entrée de l'axe (ex: Eng_nAvrg, AccPed_rChkdVal). Informatif, repris du DAMOS."
+        },
+        "unit":     { "type": "string", "description": "Unité physique de l'axe (rpm, %, kg/h, …)." },
+        "dataType": { "$ref": "#/$defs/dataType" },
+        "factor":   { "type": "number", "description": "phys = raw * factor + offset. Défaut 1." },
+        "offset":   { "type": "number", "description": "Défaut 0." },
+        "fingerprint": {
+          "type": "array",
+          "description": "Valeurs brutes (raw) des points d'axe telles que lues dans la ROM de référence. C'est l'empreinte recherchée lors de la relocalisation.",
+          "items": { "type": "integer" }
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "dataInfo": {
+      "type": "object",
+      "description": "Conversion et encodage des cellules de données (la valeur de la carte).",
+      "properties": {
+        "dataType": { "$ref": "#/$defs/dataType" },
+        "factor":   { "type": "number", "description": "phys = raw * factor + offset. Défaut 1." },
+        "offset":   { "type": "number", "description": "Défaut 0." },
+        "unit":     { "type": "string", "description": "Unité physique des cellules (Nm, mg/cyc, hPa, …)." }
+      },
+      "additionalProperties": true
+    },
+
+    "relocation": {
+      "type": "object",
+      "description": "Indications de relocalisation pour une VALUE scalaire (sans axe à fingerprinter). On l'ancre sur une MAP voisine déjà relocalisée et/ou on cherche dans une plage de valeurs physiques plausibles.",
+      "properties": {
+        "anchorMap": {
+          "type": "string",
+          "description": "Nom de la MAP servant d'ancre : le delta d'adresse trouvé pour cette MAP est appliqué à la VALUE."
+        },
+        "method": {
+          "type": "string",
+          "description": "Méthode de relocalisation.",
+          "examples": ["anchor-delta", "value-range-search"]
+        },
+        "valueRange": {
+          "type": "array",
+          "description": "Plage physique plausible [min, max] servant de sanity-check après ancrage / de cible pour value-range-search.",
+          "items": { "type": "number" },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "searchWindow": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Taille (octets) de la fenêtre de recherche autour de l'ancre."
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "stage1": {
+      "description": "Recommandations de tuning Stage 1 appliquables directement (en %). Présence = la carte fait partie d'un Stage 1.",
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "type": "object",
+          "properties": {
+            "defaultPct": { "type": "number", "description": "Gain conseillé par défaut (%)." },
+            "safePct":    { "type": "number", "description": "Gain prudent (%)." },
+            "sportPct":   { "type": "number", "description": "Gain agressif (%)." }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+
+    "egrOff": {
+      "description": "Marque une carte/valeur liée à la désactivation EGR. Booléen, ou objet documentaire {recommendedRawValue, note}. La présence d'un objet vaut true.",
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "type": "object",
+          "properties": {
+            "recommendedRawValue": { "type": "integer" },
+            "note": { "type": "string" }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+
+    "characteristic": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name":         { "type": "string", "description": "Identifiant unique de la caractéristique (repris du DAMOS, ex: AccPed_trqEngHiGear_MAP)." },
+        "type":         { "$ref": "#/$defs/charType" },
+        "category":     { "type": "string", "description": "Classement libre (stage1, safety, smoke, timing, air, fuel, driver, egr, popbang, info, …)." },
+        "description":  { "type": "string" },
+        "recordLayout": { "type": "string", "description": "Nom d'un layout déclaré dans recordLayouts." },
+        "defaultAddress": { "$ref": "#/$defs/address", "description": "Adresse dans le firmware de référence (baseline). Sert de point de départ et de désambiguïsation, pas de vérité absolue." },
+        "dims": {
+          "type": "object",
+          "description": "Dimensions. nx pour CURVE, nx+ny pour MAP, absent/0 pour VALUE.",
+          "properties": {
+            "nx": { "type": "integer", "minimum": 0 },
+            "ny": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "axes": {
+          "type": "array",
+          "description": "0 axe pour VALUE, 1 pour CURVE (X), 2 pour MAP (X puis Y).",
+          "items": { "$ref": "#/$defs/axis" },
+          "maxItems": 2
+        },
+        "data":           { "$ref": "#/$defs/dataInfo" },
+        "relocation":     { "$ref": "#/$defs/relocation" },
+        "stockRawValue":  { "type": "integer", "description": "Valeur brute d'origine (VALUE), pour vérification." },
+        "stockPhysValue": { "type": "number",  "description": "Valeur physique d'origine (VALUE), pour vérification." },
+        "stage1":         { "$ref": "#/$defs/stage1" },
+        "egrOff":         { "$ref": "#/$defs/egrOff" }
+      },
+      "allOf": [
+        {
+          "if":   { "properties": { "type": { "const": "MAP" } } },
+          "then": { "properties": { "axes": { "minItems": 2, "maxItems": 2 } } }
+        },
+        {
+          "if":   { "properties": { "type": { "const": "CURVE" } } },
+          "then": { "properties": { "axes": { "minItems": 1, "maxItems": 1 } } }
+        }
+      ],
+      "additionalProperties": true
+    },
+
+    "autoMod": {
+      "type": "object",
+      "description": "Patch embarqué. Deux saveurs: \"pattern\" (cherche/remplace une séquence d'octets) ou \"address\" (écrit des octets à une adresse fixe).",
+      "required": ["id", "type"],
+      "properties": {
+        "id":          { "type": "string" },
+        "type":        { "type": "string", "enum": ["pattern", "address"] },
+        "description": { "type": "string" },
+        "note":        { "type": "string" },
+        "search":      { "$ref": "#/$defs/hexBytes", "description": "pattern: séquence à trouver." },
+        "replace":     { "$ref": "#/$defs/hexBytes", "description": "pattern: séquence de remplacement." },
+        "address":     { "$ref": "#/$defs/address",  "description": "address: où écrire." },
+        "bytes":       { "$ref": "#/$defs/hexBytes", "description": "address: octets à écrire (alias de replace)." },
+        "restore":     { "$ref": "#/$defs/hexBytes", "description": "Octets d'origine, pour annuler le patch (optionnel)." }
+      },
+      "allOf": [
+        {
+          "if":   { "properties": { "type": { "const": "pattern" } } },
+          "then": { "required": ["search", "replace"] }
+        },
+        {
+          "if":   { "properties": { "type": { "const": "address" } } },
+          "then": { "required": ["address"] }
+        }
+      ],
+      "additionalProperties": true
+    }
+  }
+}
