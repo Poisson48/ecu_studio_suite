@@ -42,6 +42,11 @@ enum class DamosDataType {
     UWordBE,
     SLongBE,
     ULongBE,
+    // Little-endian variants (Continental SID807, MEDC17, …).
+    SWordLE,
+    UWordLE,
+    SLongLE,
+    ULongLE,
 };
 
 // Size in bytes of a DamosDataType.

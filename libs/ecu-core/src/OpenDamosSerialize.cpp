@@ -58,6 +58,10 @@ const char* damosDataTypeToString(DamosDataType t) {
         case DamosDataType::UWordBE: return "UWORD_BE";
         case DamosDataType::SLongBE: return "SLONG_BE";
         case DamosDataType::ULongBE: return "ULONG_BE";
+        case DamosDataType::SWordLE: return "SWORD_LE";
+        case DamosDataType::UWordLE: return "UWORD_LE";
+        case DamosDataType::SLongLE: return "SLONG_LE";
+        case DamosDataType::ULongLE: return "ULONG_LE";
     }
     return "SWORD_BE";
 }

@@ -30,6 +30,7 @@
     },
     "homepage": { "type": "string" },
     "description": { "type": "string" },
+    "byteOrder": { "$ref": "#/$defs/byteOrder" },
     "baseline": {
       "type": "object",
       "description": "Firmware de référence d'où sont tirées les adresses (defaultAddress) et les empreintes (fingerprint). Purement documentaire.",
@@ -48,6 +49,7 @@
         "required": ["type"],
         "properties": {
           "type":         { "$ref": "#/$defs/charType" },
+          "byteOrder":    { "$ref": "#/$defs/byteOrder", "description": "Endianness des types non suffixés de ce layout. Hérite du byteOrder de la recette si absent." },
           "headerBytes":  { "type": "integer", "minimum": 0, "description": "Taille de l'en-tête inline portant les dimensions (nx[, ny]). 0 si pas d'en-tête." },
           "headerType":   { "$ref": "#/$defs/dataType", "description": "Type des champs de dimension de l'en-tête (typiquement UWORD_BE)." },
           "axisDataType": { "$ref": "#/$defs/dataType", "description": "Type par défaut des points d'axe." },
@@ -72,8 +74,16 @@
   "$defs": {
     "dataType": {
       "type": "string",
-      "description": "Encodage binaire d'une valeur. BE = big-endian. S/U = signé/non-signé.",
-      "enum": ["SBYTE", "UBYTE", "SWORD_BE", "UWORD_BE", "SLONG_BE", "ULONG_BE"]
+      "description": "Encodage binaire d'une valeur. BE = big-endian (Bosch EDC16/EDC17), LE = little-endian (Continental SID, MEDC17…). S/U = signé/non-signé. Un type sans suffixe d'endianness hérite du byteOrder de la recette / du recordLayout (défaut BE).",
+      "enum": ["SBYTE", "UBYTE",
+               "SWORD_BE", "UWORD_BE", "SLONG_BE", "ULONG_BE",
+               "SWORD_LE", "UWORD_LE", "SLONG_LE", "ULONG_LE"]
+    },
+    "byteOrder": {
+      "type": "string",
+      "description": "Endianness par défaut des types non suffixés (SWORD, UWORD…). BE = big-endian (défaut), LE = little-endian.",
+      "enum": ["BE", "LE"],
+      "default": "BE"
     },
     "charType": {
       "type": "string",

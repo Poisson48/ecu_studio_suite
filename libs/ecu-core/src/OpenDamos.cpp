@@ -29,9 +29,13 @@ std::size_t damosTypeSize(DamosDataType t) {
         case DamosDataType::SByte:
         case DamosDataType::UByte:   return 1;
         case DamosDataType::SWordBE:
-        case DamosDataType::UWordBE: return 2;
+        case DamosDataType::UWordBE:
+        case DamosDataType::SWordLE:
+        case DamosDataType::UWordLE: return 2;
         case DamosDataType::SLongBE:
-        case DamosDataType::ULongBE: return 4;
+        case DamosDataType::ULongBE:
+        case DamosDataType::SLongLE:
+        case DamosDataType::ULongLE: return 4;
     }
     return 2;
 }
@@ -43,6 +47,10 @@ DamosDataType parseDamosDataType(const std::string& s) {
     if (s == "UWORD_BE") return DamosDataType::UWordBE;
     if (s == "SLONG_BE") return DamosDataType::SLongBE;
     if (s == "ULONG_BE") return DamosDataType::ULongBE;
+    if (s == "SWORD_LE") return DamosDataType::SWordLE;
+    if (s == "UWORD_LE") return DamosDataType::UWordLE;
+    if (s == "SLONG_LE") return DamosDataType::SLongLE;
+    if (s == "ULONG_LE") return DamosDataType::ULongLE;
     return DamosDataType::SWordBE;
 }
 

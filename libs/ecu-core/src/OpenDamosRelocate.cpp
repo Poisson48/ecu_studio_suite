@@ -57,6 +57,24 @@ std::optional<int64_t> readInt(QByteArrayView rom, std::int64_t off,
                              static_cast<int64_t>(b[3]);
             return (u & 0x80000000LL) ? u - 0x100000000LL : u;
         }
+        case DamosDataType::UWordLE:
+            return static_cast<int64_t>((b[1] << 8) | b[0]);
+        case DamosDataType::SWordLE: {
+            int v = (b[1] << 8) | b[0];
+            return static_cast<int64_t>(v & 0x8000 ? v - 0x10000 : v);
+        }
+        case DamosDataType::ULongLE:
+            return (static_cast<int64_t>(b[3]) << 24) |
+                   (static_cast<int64_t>(b[2]) << 16) |
+                   (static_cast<int64_t>(b[1]) << 8) |
+                   static_cast<int64_t>(b[0]);
+        case DamosDataType::SLongLE: {
+            std::int64_t u = (static_cast<int64_t>(b[3]) << 24) |
+                             (static_cast<int64_t>(b[2]) << 16) |
+                             (static_cast<int64_t>(b[1]) << 8) |
+                             static_cast<int64_t>(b[0]);
+            return (u & 0x80000000LL) ? u - 0x100000000LL : u;
+        }
     }
     return std::nullopt;
 }

@@ -280,8 +280,14 @@ Patches « en un clic » versionnés avec la recette. Deux saveurs.
 | `UWORD_BE` | 2      | non   | big    | `UWordBE` |
 | `SLONG_BE` | 4      | oui   | big    | `SLongBE` |
 | `ULONG_BE` | 4      | non   | big    | `ULongBE` |
+| `SWORD_LE` | 2      | oui   | little | `SWordLE` |
+| `UWORD_LE` | 2      | non   | little | `UWordLE` |
+| `SLONG_LE` | 4      | oui   | little | `SLongLE` |
+| `ULONG_LE` | 4      | non   | little | `ULongLE` |
 
-Tout type inconnu **DOIT** être traité comme `SWORD_BE` (comportement de `parseDamosDataType`). Seul le big-endian est standardisé en v1.
+Tout type inconnu **DOIT** être traité comme `SWORD_BE` (comportement de `parseDamosDataType`).
+
+**Endianness.** Les ECU Bosch EDC16/EDC17 sont **big-endian** (`*_BE`). Les Continental SID/MEDC17 sont **little-endian** (`*_LE`). Une recette **PEUT** déclarer un `byteOrder` (`"BE"` | `"LE"`, défaut `"BE"`) à la racine et/ou par `recordLayout`, qui fixe l'endianness des types non suffixés ; un `dataType` explicitement suffixé (`SWORD_LE`…) prime toujours.
 
 ---
 
@@ -303,6 +309,8 @@ Pour chaque **VALUE** : ancrage via `relocation.anchorMap` (delta de l'ancre), s
 Chaque résultat porte un `addressSource` ∈ {`fingerprint`, `anchor`, `default-fallback`} et un score 0…1.
 
 **Limites :** cartes sans en-tête de dimensions inline → non détectables par fingerprint (utiliser un ancrage) ; firmwares très divergents (axes redessinés) → ajouter une variante de fingerprint ou un DAMOS custom.
+
+**Mode COM_AXIS (axes séparés, ECU little-endian type SID807).** Certains ECU (Continental SID807, MEDC17…) ne stockent **pas** d'en-tête `(nx, ny)` inline devant la carte : les axes vivent dans des blocs `AXIS_PTS` indépendants (COM_AXIS), partagés entre plusieurs cartes, précédés de leur propre compte. Le scan inline ci-dessus ne s'y applique pas. Le **mode COM_AXIS** (distinct) consiste à : (1) scanner les blocs d'axes autonomes en lisant les points au `dataType` LE de la recette, (2) matcher les `fingerprint` sur ces blocs, (3) retrouver les cartes qui les référencent via les adresses d'axes comme ancres (ou via l'A2L source). Les types de données LE (`SWORD_LE`…) et le `byteOrder` de la recette sont en place ; l'orchestration COM_AXIS complète est un mode à part entière (hors v1 du scan inline).
 
 ---
 
