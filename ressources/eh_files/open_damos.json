@@ -1,0 +1,853 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "eh_files",
+  "name": "open_damos — EH_Files",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "SC8L60R1_C.S19",
+    "damos": "SC8L6031_C_OEM_EH.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/SIMOS 18.1 Basisdaten_MSG/Basis_PST/Basisdaten_MSG/EH_Files"
+  },
+  "recordLayouts": {
+    "_REC_A1MAP_20_U1_U1_U2": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_U2_U2_U2": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UWORD_LE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_U1_U1_U1": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_U2_U1_U1": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UWORD_LE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_U1_U2_U1": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_U2_U2_U1": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UWORD_LE",
+      "axisMode": "COM_AXIS"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "ip_fac_mff_afu_cor_eru",
+      "type": "MAP",
+      "description": "Map to define the injection correction spread between the lean and the rich cylinder",
+      "recordLayout": "_REC_A1MAP_20_U1_U1_U2",
+      "defaultAddress": "0x85497E",
+      "dims": {
+        "nx": 14,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x80AB19",
+          "fingerprint": [
+            14,
+            19,
+            25,
+            31,
+            47,
+            63,
+            78,
+            94,
+            109,
+            125,
+            141,
+            156,
+            172,
+            188
+          ]
+        },
+        {
+          "inputQuantity": "m_air_cyl_pred",
+          "unit": "mg/stk",
+          "factor": 0.02119478141451133,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x854804",
+          "fingerprint": [
+            10,
+            4010,
+            5898,
+            7077,
+            9436,
+            11795,
+            14154,
+            16513,
+            18873,
+            21232
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_lamb_sp_eru",
+      "type": "MAP",
+      "description": "Lambda setpoint for eingine running adaptation with additional warm up correction",
+      "recordLayout": "_REC_A1MAP_20_U2_U2_U2",
+      "defaultAddress": "0x854A1C",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "lamb_sp[0]",
+          "unit": "-",
+          "factor": 0.000244140625,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x80AA92",
+          "fingerprint": [
+            6,
+            3072,
+            3482,
+            3768,
+            3932,
+            4096
+          ]
+        },
+        {
+          "inputQuantity": "fac_eru_wup_cor",
+          "unit": "-",
+          "factor": 0.000244140625,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x80AA7A",
+          "fingerprint": [
+            6,
+            3277,
+            3686,
+            4096,
+            4506,
+            5325
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_pwm_wg_opl",
+      "type": "MAP",
+      "description": "Open loop wastegate control signal",
+      "recordLayout": "_REC_A1MAP_20_U2_U2_U2",
+      "defaultAddress": "0x8131BA",
+      "dims": {
+        "nx": 12,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "pq_epc_out_sp",
+          "unit": "-",
+          "factor": 0.000244140625,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x812D0A",
+          "fingerprint": [
+            12,
+            4096,
+            4301,
+            4506,
+            4710,
+            4915,
+            5120,
+            5530,
+            6144,
+            7373,
+            8192,
+            9421
+          ]
+        },
+        {
+          "inputQuantity": "pq_epc_in_sp",
+          "unit": "-",
+          "factor": 0.000244140625,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x812CE6",
+          "fingerprint": [
+            8,
+            4096,
+            5109,
+            5954,
+            6793,
+            7613,
+            8445,
+            9332
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_temp_epc_wg_bas",
+      "type": "MAP",
+      "description": "Basic wastegate EPC temperature",
+      "recordLayout": "_REC_A1MAP_20_U1_U1_U1",
+      "defaultAddress": "0x81327A",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "tco",
+          "unit": "°C",
+          "factor": 0.7500000000000002,
+          "offset": -48.000000000000014,
+          "dataType": "UBYTE",
+          "address": "0x801146",
+          "fingerprint": [
+            6,
+            24,
+            72,
+            104,
+            144,
+            184
+          ]
+        },
+        {
+          "inputQuantity": "tam",
+          "unit": "°C",
+          "factor": 0.7500000000000002,
+          "offset": -48.000000000000014,
+          "dataType": "UBYTE",
+          "address": "0x801134",
+          "fingerprint": [
+            6,
+            24,
+            44,
+            72,
+            84,
+            104
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_pq_epc_out",
+      "type": "MAP",
+      "description": "Pressure ratio at the wastegate actuator EPC",
+      "recordLayout": "_REC_A1MAP_20_U2_U2_U2",
+      "defaultAddress": "0x812FA6",
+      "dims": {
+        "nx": 6,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "pwm_wg",
+          "unit": "%",
+          "factor": 0.0015258789062500009,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x8011DC",
+          "fingerprint": [
+            6,
+            7883,
+            11942,
+            21551,
+            38147,
+            49908
+          ]
+        },
+        {
+          "inputQuantity": "pq_epc_in",
+          "unit": "-",
+          "factor": 0.000244140625,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x812CF8",
+          "fingerprint": [
+            8,
+            4096,
+            5109,
+            5954,
+            6793,
+            7613,
+            8445,
+            9332
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_fac_eol_foc_adj_bpa",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "_REC_A1MAP_20_U2_U2_U2",
+      "defaultAddress": "0x812E06",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "ldp_posn_rel_1_ip_fac_eol_bpa",
+          "unit": "%",
+          "factor": 0.006103515624994278,
+          "offset": -200.0,
+          "dataType": "UWORD_LE",
+          "address": "0x812CC2",
+          "fingerprint": [
+            8,
+            32440,
+            32522,
+            32604,
+            32686,
+            32768,
+            32850,
+            32932
+          ]
+        },
+        {
+          "inputQuantity": "ldp_posn_rel_2_ip_fac_eol_bpa",
+          "unit": "%",
+          "factor": 0.006103515624994278,
+          "offset": -200.0,
+          "dataType": "UWORD_LE",
+          "address": "0x812CD4",
+          "fingerprint": [
+            8,
+            32113,
+            32276,
+            32440,
+            32604,
+            32768,
+            32932,
+            33096
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_fac_tia_cha_down_load",
+      "type": "MAP",
+      "description": "Air Temperature increase factor through the Charger (typical value=1)",
+      "recordLayout": "_REC_A1MAP_20_U2_U2_U2",
+      "defaultAddress": "0x813F20",
+      "dims": {
+        "nx": 6,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "pq_cha_mv",
+          "unit": "-",
+          "factor": 0.000244140625,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x80177C",
+          "fingerprint": [
+            6,
+            4301,
+            6963,
+            7782,
+            8602,
+            9831
+          ]
+        },
+        {
+          "inputQuantity": "n_tcha",
+          "unit": "rpm",
+          "factor": 6.1035156249942775,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x81339C",
+          "fingerprint": [
+            8,
+            9831,
+            16384,
+            19661,
+            21300,
+            22938,
+            24576,
+            26215
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_fac_tia_cor_temp",
+      "type": "MAP",
+      "description": "Temperature Correction factor mapping (typical value=1)",
+      "recordLayout": "_REC_A1MAP_20_U2_U1_U1",
+      "defaultAddress": "0x813F80",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "tia_thr",
+          "unit": "°C",
+          "factor": 0.7500000000000002,
+          "offset": -48.000000000000014,
+          "dataType": "UBYTE",
+          "address": "0x801884",
+          "fingerprint": [
+            8,
+            24,
+            44,
+            64,
+            77,
+            91,
+            104,
+            117
+          ]
+        },
+        {
+          "inputQuantity": "tco",
+          "unit": "°C",
+          "factor": 0.7500000000000002,
+          "offset": -48.000000000000014,
+          "dataType": "UBYTE",
+          "address": "0x80188D",
+          "fingerprint": [
+            8,
+            24,
+            64,
+            91,
+            117,
+            144,
+            171,
+            191
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_tia_cmpr_up_ofs",
+      "type": "MAP",
+      "description": "Difference between ambient temperature and temperature upstream turbocharger compressor",
+      "recordLayout": "_REC_A1MAP_20_U1_U2_U1",
+      "defaultAddress": "0x81533C",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "maf_kgh_thr_tcha",
+          "unit": "kg/h",
+          "factor": 0.0625,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x80191E",
+          "fingerprint": [
+            6,
+            160,
+            800,
+            2400,
+            4800,
+            8000
+          ]
+        },
+        {
+          "inputQuantity": "ldpm_tia_thr_tam_dif_1_chrg",
+          "unit": "°C",
+          "factor": 0.7500000000000002,
+          "offset": -96.00000000000003,
+          "dataType": "UBYTE",
+          "address": "0x801A52",
+          "fingerprint": [
+            6,
+            132,
+            148,
+            168,
+            188,
+            208
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_prs_cha_down_pow_cha_min",
+      "type": "MAP",
+      "description": "Model of PRS_CHA_DOWN when minimum available charger power at wide open throttle requested",
+      "recordLayout": "_REC_A1MAP_20_U2_U2_U2",
+      "defaultAddress": "0x814988",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "n",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x80169A",
+          "fingerprint": [
+            6,
+            1000,
+            2000,
+            3000,
+            4000,
+            5000
+          ]
+        },
+        {
+          "inputQuantity": "ldp_prs_cha_up_ip_prs_cha_down",
+          "unit": "hPa",
+          "factor": 0.08291752498664837,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x8017B6",
+          "fingerprint": [
+            6,
+            7236,
+            9648,
+            10854,
+            11457,
+            12060
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_pq_cha_max",
+      "type": "MAP",
+      "description": "Maximum allowed pressure quotient at turbo charger compressor (8x8)",
+      "recordLayout": "_REC_A1MAP_20_U2_U2_U1",
+      "defaultAddress": "0x814708",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x81338A",
+          "fingerprint": [
+            8,
+            1500,
+            2000,
+            4000,
+            5000,
+            6000,
+            6800,
+            6900
+          ]
+        },
+        {
+          "inputQuantity": "tia_cha_up",
+          "unit": "°C",
+          "factor": 0.7500000000000002,
+          "offset": -48.000000000000014,
+          "dataType": "UBYTE",
+          "address": "0x80189F",
+          "fingerprint": [
+            8,
+            64,
+            91,
+            117,
+            144,
+            157,
+            171,
+            184
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "DATA_GEARADV.Eng_tqIdRed_M_VW",
+      "type": "MAP",
+      "description": "Reduction of maximum indicated torque due to influence of air density",
+      "recordLayout": "_REC_A1MAP_20_U1_U1_U1",
+      "defaultAddress": "0x87E4F1",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Eng_densAir_VW",
+          "unit": "kg/m3",
+          "factor": 0.0078125,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x87E42C",
+          "fingerprint": [
+            8,
+            90,
+            102,
+            115,
+            128,
+            141,
+            154,
+            166
+          ]
+        },
+        {
+          "inputQuantity": "DATA_GEARADV.Eng_nQuoSpdRev8_A_VW",
+          "unit": "U/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x87E493",
+          "fingerprint": [
+            8,
+            24,
+            31,
+            38,
+            44,
+            50,
+            63,
+            125
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "DATA_ThmMng.CoTE_agSafeMinRot_M_VW",
+      "type": "MAP",
+      "description": "angle safe minimal rotary slide valve",
+      "recordLayout": "_REC_A1MAP_20_U2_U2_U1",
+      "defaultAddress": "0x87E9A0",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "Eng_mAirCumStrtHld_VW",
+          "unit": "kg",
+          "factor": 0.000355555555555556,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x87EA22",
+          "fingerprint": [
+            6,
+            2813,
+            5625,
+            8438,
+            11250,
+            14063
+          ]
+        },
+        {
+          "inputQuantity": "Eng_tCoHdStrt_VW",
+          "unit": "°C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "address": "0x87EC29",
+          "fingerprint": [
+            6,
+            64,
+            65,
+            67,
+            68,
+            69
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_lamb_ampl_max_dyn_lsl_up",
+      "type": "MAP",
+      "description": "Nominal sensor expected amplitude during the Dynamic Diagnosis",
+      "recordLayout": "_REC_A1MAP_20_U2_U1_U1",
+      "defaultAddress": "0x815DBA",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x802327",
+          "fingerprint": [
+            8,
+            34,
+            39,
+            47,
+            55,
+            63,
+            70,
+            78
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x8022FA",
+          "fingerprint": [
+            8,
+            23,
+            32,
+            41,
+            50,
+            60,
+            69,
+            78
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "14/14"
+  }
+}

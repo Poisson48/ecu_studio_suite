@@ -1,0 +1,1038 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "nissan_juke_1_6_dig_t_s19_9apctdem06",
+  "name": "open_damos — Nissan Juke 1.6-dig-T S19 (9APCTDEM06)",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "BE",
+  "baseline": {
+    "source": "9APCTDEM08.s19",
+    "damos": "RFCC_2XHK19BDF1.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/Nissan Juke 1.6 DIG-T R4 Hitachi - F4M5MDTDE311 S7253331N sh7058/Nissan Juke 1.6 DIG-T R4 Hitachi - F4M5MDTDE311 S7253331N/Nissan Juke 1.6-dig-T S19 (9APCTDEM06)"
+  },
+  "recordLayouts": {
+    "REC_UWORD_C": {
+      "type": "MAP",
+      "byteOrder": "BE",
+      "headerBytes": 0,
+      "dataType": "UWORD_BE",
+      "axisMode": "COM_AXIS"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "mMBSANG",
+      "type": "MAP",
+      "description": "î{px}bv",
+      "recordLayout": "REC_UWORD_C",
+      "defaultAddress": "0xCD42",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "mLBANGN",
+          "unit": "rpm",
+          "factor": 3.125,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x130AA",
+          "fingerprint": [
+            128,
+            256,
+            384,
+            512,
+            640,
+            768,
+            896,
+            1024,
+            1152,
+            1280,
+            1408,
+            1536,
+            1664,
+            1792,
+            1920,
+            2048
+          ]
+        },
+        {
+          "inputQuantity": "mLBANGINJ",
+          "unit": "Ês",
+          "factor": 1.6,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x1308A",
+          "fingerprint": [
+            0,
+            1250,
+            2500,
+            3750,
+            5000,
+            6250,
+            7500,
+            8750,
+            10000,
+            11250,
+            12500,
+            13750,
+            15000,
+            16250,
+            17500,
+            18750
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "mMNSENV",
+      "type": "MAP",
+      "description": "R¿æsp¬¬äÏ¯Ìß",
+      "recordLayout": "REC_UWORD_C",
+      "defaultAddress": "0xDA42",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "mNSENPP",
+          "unit": "-",
+          "factor": 0.00012207,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x13834",
+          "fingerprint": [
+            0,
+            819,
+            1638,
+            2458,
+            3277,
+            3686,
+            4096,
+            4915,
+            5325,
+            5734,
+            6144,
+            6554,
+            6963,
+            7373,
+            7782,
+            8192
+          ]
+        },
+        {
+          "inputQuantity": "mNSENRR",
+          "unit": "rpm",
+          "factor": 12.5,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x13854",
+          "fingerprint": [
+            32,
+            48,
+            64,
+            80,
+            96,
+            128,
+            160,
+            192,
+            224,
+            256,
+            288,
+            320,
+            352,
+            384,
+            416,
+            512
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "mMPCHS",
+      "type": "MAP",
+      "description": "^[{dscyÑß³§äÚWß³}bv",
+      "recordLayout": "REC_UWORD_C",
+      "defaultAddress": "0xDCC2",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "mTNPCHS",
+          "unit": "rpm",
+          "factor": 3.125,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x14932",
+          "fingerprint": [
+            256,
+            320,
+            384,
+            512,
+            640,
+            768,
+            896,
+            1024,
+            1152,
+            1280,
+            1408,
+            1536,
+            1664,
+            1792,
+            1920,
+            2048
+          ]
+        },
+        {
+          "inputQuantity": "mTVAPCHS",
+          "unit": "deg",
+          "factor": 0.11,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x154D0",
+          "fingerprint": [
+            45,
+            92,
+            137,
+            167,
+            181,
+            226,
+            274,
+            318,
+            363,
+            410,
+            455,
+            500,
+            544,
+            592,
+            636,
+            729
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "mMRHVTEHH",
+      "type": "MAP",
+      "description": "rCVTCM[»èÚWì®pxZo}bv",
+      "recordLayout": "REC_UWORD_C",
+      "defaultAddress": "0xE1C2",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "mTVKNEENH",
+          "unit": "rpm",
+          "factor": 1.5625,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x15510",
+          "fingerprint": [
+            512,
+            640,
+            768,
+            1024,
+            1280,
+            1536,
+            1792,
+            2048,
+            2304,
+            2560,
+            2816,
+            3072,
+            3328,
+            3584,
+            3840,
+            4096
+          ]
+        },
+        {
+          "inputQuantity": "mTVTHITEN",
+          "unit": "%",
+          "factor": 0.78125,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x155B0",
+          "fingerprint": [
+            13,
+            18,
+            29,
+            48,
+            77,
+            83,
+            90,
+            115,
+            118,
+            128,
+            131,
+            141,
+            145,
+            192,
+            205,
+            218
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "mMRHVTIHH",
+      "type": "MAP",
+      "description": "zCVTCM[»èÚWì®pxZo}bv",
+      "recordLayout": "REC_UWORD_C",
+      "defaultAddress": "0xE5C2",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "mTVKNEINH",
+          "unit": "rpm",
+          "factor": 1.5625,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x15530",
+          "fingerprint": [
+            512,
+            640,
+            768,
+            1024,
+            1280,
+            1536,
+            1792,
+            2048,
+            2304,
+            2560,
+            2816,
+            3072,
+            3328,
+            3584,
+            3840,
+            4096
+          ]
+        },
+        {
+          "inputQuantity": "mTVTHITIN",
+          "unit": "%",
+          "factor": 0.78125,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x155D0",
+          "fingerprint": [
+            16,
+            32,
+            48,
+            64,
+            80,
+            90,
+            96,
+            102,
+            109,
+            115,
+            118,
+            122,
+            128,
+            192,
+            205,
+            218
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "mMRHVTILH",
+      "type": "MAP",
+      "description": "zCVTCM[»èÚWì®pxZo}bviá·j",
+      "recordLayout": "REC_UWORD_C",
+      "defaultAddress": "0xE7C2",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "mTVKNEINH",
+          "unit": "rpm",
+          "factor": 1.5625,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x15530",
+          "fingerprint": [
+            512,
+            640,
+            768,
+            1024,
+            1280,
+            1536,
+            1792,
+            2048,
+            2304,
+            2560,
+            2816,
+            3072,
+            3328,
+            3584,
+            3840,
+            4096
+          ]
+        },
+        {
+          "inputQuantity": "mTVTHITIN",
+          "unit": "%",
+          "factor": 0.78125,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x155D0",
+          "fingerprint": [
+            16,
+            32,
+            48,
+            64,
+            80,
+            90,
+            96,
+            102,
+            109,
+            115,
+            118,
+            122,
+            128,
+            192,
+            205,
+            218
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "mMTFDD",
+      "type": "MAP",
+      "description": "cÚÝ¼ÞÚWì®ÍÏ¯Ìß",
+      "recordLayout": "REC_UWORD_C",
+      "defaultAddress": "0xEBC2",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "mMTFKAPO",
+          "unit": "deg",
+          "factor": 0.11,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x13794",
+          "fingerprint": [
+            0,
+            9,
+            18,
+            36,
+            55,
+            73,
+            91,
+            136,
+            182,
+            227,
+            273,
+            364,
+            455,
+            545,
+            636,
+            727
+          ]
+        },
+        {
+          "inputQuantity": "mMTFKVSP",
+          "unit": "km/h",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x137B4",
+          "fingerprint": [
+            0,
+            30,
+            60,
+            100,
+            140,
+            180,
+            220,
+            260,
+            300,
+            350,
+            400,
+            500,
+            600,
+            800,
+            1000,
+            2000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "mMVTGHENH",
+      "type": "MAP",
+      "description": "rCVTCî{ÚWì®pxZoÏ¯Ìß",
+      "recordLayout": "REC_UWORD_C",
+      "defaultAddress": "0xF3C2",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "mTVKNEENH",
+          "unit": "rpm",
+          "factor": 1.5625,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x15510",
+          "fingerprint": [
+            512,
+            640,
+            768,
+            1024,
+            1280,
+            1536,
+            1792,
+            2048,
+            2304,
+            2560,
+            2816,
+            3072,
+            3328,
+            3584,
+            3840,
+            4096
+          ]
+        },
+        {
+          "inputQuantity": "mTVTHITEN",
+          "unit": "%",
+          "factor": 0.78125,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x155B0",
+          "fingerprint": [
+            13,
+            18,
+            29,
+            48,
+            77,
+            83,
+            90,
+            115,
+            118,
+            128,
+            131,
+            141,
+            145,
+            192,
+            205,
+            218
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "mMVTGHINH",
+      "type": "MAP",
+      "description": "zCVTCî{ÚWì®pxZoÏ¯Ìß",
+      "recordLayout": "REC_UWORD_C",
+      "defaultAddress": "0xF5C2",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "mTVKNEINH",
+          "unit": "rpm",
+          "factor": 1.5625,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x15530",
+          "fingerprint": [
+            512,
+            640,
+            768,
+            1024,
+            1280,
+            1536,
+            1792,
+            2048,
+            2304,
+            2560,
+            2816,
+            3072,
+            3328,
+            3584,
+            3840,
+            4096
+          ]
+        },
+        {
+          "inputQuantity": "mTVTHITIN",
+          "unit": "%",
+          "factor": 0.78125,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x155D0",
+          "fingerprint": [
+            16,
+            32,
+            48,
+            64,
+            80,
+            90,
+            96,
+            102,
+            109,
+            115,
+            118,
+            122,
+            128,
+            192,
+            205,
+            218
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "mMVTGLINH",
+      "type": "MAP",
+      "description": "zCVTCî{ÚWì®pxZo}bv(á·)",
+      "recordLayout": "REC_UWORD_C",
+      "defaultAddress": "0xF9C2",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "mTVKNEINH",
+          "unit": "rpm",
+          "factor": 1.5625,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x15530",
+          "fingerprint": [
+            512,
+            640,
+            768,
+            1024,
+            1280,
+            1536,
+            1792,
+            2048,
+            2304,
+            2560,
+            2816,
+            3072,
+            3328,
+            3584,
+            3840,
+            4096
+          ]
+        },
+        {
+          "inputQuantity": "mTVTHITIN",
+          "unit": "%",
+          "factor": 0.78125,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x155D0",
+          "fingerprint": [
+            16,
+            32,
+            48,
+            64,
+            80,
+            90,
+            96,
+            102,
+            109,
+            115,
+            118,
+            122,
+            128,
+            192,
+            205,
+            218
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "mMVTRGHEN",
+      "type": "MAP",
+      "description": "rCVTCî{ÚWì®pxZoÏ¯ÌßiExhaust_VTC_basis_target_operation_angle_calculation_mapj",
+      "recordLayout": "REC_UWORD_C",
+      "defaultAddress": "0xFC42",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "mTVTHNEE2",
+          "unit": "rpm",
+          "factor": 50.0,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x155F0",
+          "fingerprint": [
+            16,
+            20,
+            24,
+            32,
+            40,
+            48,
+            56,
+            64,
+            72,
+            80,
+            88,
+            96,
+            104,
+            112,
+            120,
+            128
+          ]
+        },
+        {
+          "inputQuantity": "mTVTHITEN",
+          "unit": "%",
+          "factor": 0.78125,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x155B0",
+          "fingerprint": [
+            13,
+            18,
+            29,
+            48,
+            77,
+            83,
+            90,
+            115,
+            118,
+            128,
+            131,
+            141,
+            145,
+            192,
+            205,
+            218
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "mMVTRGHIN",
+      "type": "MAP",
+      "description": "zCVTCî{ÚWì®pxZoÏ¯Ìß(Suction_VTC_basic_target_operation_angle_calculation_mapj",
+      "recordLayout": "REC_UWORD_C",
+      "defaultAddress": "0xFE42",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "mTVTHNEIN",
+          "unit": "rpm",
+          "factor": 50.0,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x15610",
+          "fingerprint": [
+            16,
+            20,
+            24,
+            32,
+            40,
+            48,
+            56,
+            64,
+            72,
+            80,
+            88,
+            96,
+            104,
+            112,
+            120,
+            128
+          ]
+        },
+        {
+          "inputQuantity": "mTVTHITIN",
+          "unit": "%",
+          "factor": 0.78125,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x155D0",
+          "fingerprint": [
+            16,
+            32,
+            48,
+            64,
+            80,
+            90,
+            96,
+            102,
+            109,
+            115,
+            118,
+            122,
+            128,
+            192,
+            205,
+            218
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "mMWGDUTY",
+      "type": "MAP",
+      "description": "3û\\mChouÁ«}bv",
+      "recordLayout": "REC_UWORD_C",
+      "defaultAddress": "0x100C2",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "mLPWGACT",
+          "unit": "kPa",
+          "factor": 0.03125,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x133AA",
+          "fingerprint": [
+            0,
+            240,
+            480,
+            720,
+            960,
+            1200,
+            1440,
+            1680,
+            1920,
+            2160,
+            2400,
+            2880,
+            3360,
+            3840,
+            4320,
+            4800
+          ]
+        },
+        {
+          "inputQuantity": "mLPCOUT",
+          "unit": "kPa",
+          "factor": 0.25,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x1338A",
+          "fingerprint": [
+            80,
+            120,
+            160,
+            200,
+            240,
+            260,
+            280,
+            300,
+            320,
+            340,
+            360,
+            380,
+            400,
+            440,
+            480,
+            600
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "mMABFSFT1",
+      "type": "MAP",
+      "description": "AFSAFZopN~TPVtg}bv(bank1)",
+      "recordLayout": "REC_UWORD_C",
+      "defaultAddress": "0xC9C2",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "mMXABFSFT",
+          "unit": "rpm",
+          "factor": 12.5,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x137D4",
+          "fingerprint": [
+            48,
+            64,
+            96,
+            128,
+            160,
+            192,
+            224,
+            256
+          ]
+        },
+        {
+          "inputQuantity": "mMYABFSFT",
+          "unit": "ms",
+          "factor": 0.000488281,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x137F4",
+          "fingerprint": [
+            6144,
+            8192,
+            10240,
+            12288,
+            14336,
+            18432,
+            22528,
+            26624
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "14/14"
+  }
+}

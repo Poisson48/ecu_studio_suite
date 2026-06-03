@@ -1,0 +1,806 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "v6_3_0l_tfsi_06m907309e_971907559a_0003",
+  "name": "open_damos — V6 3.0l TFSI_06M907309E_971907559A_0003",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "I43_971907559A_0003g.hex",
+    "damos": "I43_971907559A_0003g.A2L",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/V6 3.0l TFSI_06M907309E_971907559A_0003"
+  },
+  "recordLayouts": {
+    "Map_Xs16Ys16Ws16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "SWORD_LE"
+    },
+    "Map_Xs32Ys32Ws32": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "SLONG_LE"
+    },
+    "RB_Map_U16U16_U16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "UWORD_LE"
+    },
+    "RB_Map_S16U16_U16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "UWORD_LE"
+    },
+    "RB_Map_U8U8_U8": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "UBYTE"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "BasSvrAppl_CodEngCodLComb_MAP",
+      "type": "MAP",
+      "description": "Matrix für Kodierkombinationen",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x9095008",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "BasSvrAppl_CodEngCodlColIndx_mp",
+          "unit": "-",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            256,
+            512,
+            768,
+            1024,
+            1280,
+            1536,
+            1792
+          ]
+        },
+        {
+          "inputQuantity": "BasSvrAppl_CodEngCodlRowIndx_mp",
+          "unit": "-",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            256,
+            512,
+            768,
+            1024,
+            1280,
+            1536,
+            1792
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "BasSvrAppl_StTStd6_1.BasSvrAppl_StTStdStep.ActrVal_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Map_Xs32Ys32Ws32",
+      "defaultAddress": "0x902D330",
+      "dims": {
+        "nx": 6,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "BasSvrApplStd_ActrValx",
+          "unit": "-",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SLONG_LE",
+          "fingerprint": [
+            0,
+            16777216,
+            33554432,
+            50331648,
+            67108864,
+            83886080
+          ]
+        },
+        {
+          "inputQuantity": "BasSvrApplStd_ActrValy",
+          "unit": "-",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SLONG_LE",
+          "fingerprint": [
+            0,
+            16777216,
+            33554432,
+            50331648,
+            67108864,
+            83886080,
+            100663296,
+            117440512,
+            134217728,
+            150994944
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SLONG_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "BasSvrAppl_StTStd6_2.BasSvrAppl_StTStdStep.ActrVal_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Map_Xs32Ys32Ws32",
+      "defaultAddress": "0x902D5C8",
+      "dims": {
+        "nx": 6,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "BasSvrApplStd_ActrValx",
+          "unit": "-",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SLONG_LE",
+          "fingerprint": [
+            0,
+            16777216,
+            33554432,
+            50331648,
+            67108864,
+            83886080
+          ]
+        },
+        {
+          "inputQuantity": "BasSvrApplStd_ActrValy",
+          "unit": "-",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SLONG_LE",
+          "fingerprint": [
+            0,
+            16777216,
+            33554432,
+            50331648,
+            67108864,
+            83886080,
+            100663296,
+            117440512,
+            134217728,
+            150994944
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SLONG_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "BasSvrAppl_StTStd6_3.BasSvrAppl_StTStdStep.ActrVal_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Map_Xs32Ys32Ws32",
+      "defaultAddress": "0x902D860",
+      "dims": {
+        "nx": 6,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "BasSvrApplStd_ActrValx",
+          "unit": "-",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SLONG_LE",
+          "fingerprint": [
+            0,
+            16777216,
+            33554432,
+            50331648,
+            67108864,
+            83886080
+          ]
+        },
+        {
+          "inputQuantity": "BasSvrApplStd_ActrValy",
+          "unit": "-",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SLONG_LE",
+          "fingerprint": [
+            0,
+            16777216,
+            33554432,
+            50331648,
+            67108864,
+            83886080,
+            100663296,
+            117440512,
+            134217728,
+            150994944
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SLONG_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "BasSvrAppl_StTStd6_4.BasSvrAppl_StTStdStep.ActrVal_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Map_Xs32Ys32Ws32",
+      "defaultAddress": "0x902DAF8",
+      "dims": {
+        "nx": 6,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "BasSvrApplStd_ActrValx",
+          "unit": "-",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SLONG_LE",
+          "fingerprint": [
+            0,
+            16777216,
+            33554432,
+            50331648,
+            67108864,
+            83886080
+          ]
+        },
+        {
+          "inputQuantity": "BasSvrApplStd_ActrValy",
+          "unit": "-",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SLONG_LE",
+          "fingerprint": [
+            0,
+            16777216,
+            33554432,
+            50331648,
+            67108864,
+            83886080,
+            100663296,
+            117440512,
+            134217728,
+            150994944
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SLONG_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ChrCtl_tiAgSpThrVlv_M",
+      "type": "MAP",
+      "description": "Kennfeld Verzögerungszeit der DK Winkelsolwerts",
+      "recordLayout": "RB_Map_U16U16_U16",
+      "defaultAddress": "0x9050092",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            0,
+            512,
+            1024,
+            1536,
+            2048,
+            2560
+          ]
+        },
+        {
+          "inputQuantity": "PEnv_p",
+          "unit": "hPa",
+          "factor": 0.0390625,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            0,
+            6656,
+            13056,
+            19712,
+            26112,
+            32768
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.01,
+        "offset": 0.0,
+        "unit": "s"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "CILCN_facEnaCorr_MAP",
+      "type": "MAP",
+      "description": "Drehzahl- und lastabhängiges Kennfeld zur Festlegung des Anwendungsbereiches der Adaptionswerte",
+      "recordLayout": "RB_Map_S16U16_U16",
+      "defaultAddress": "0x903D17C",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            512,
+            1024,
+            1536,
+            2048,
+            2560,
+            3072,
+            3584
+          ]
+        },
+        {
+          "inputQuantity": "CILCN_rLoad",
+          "unit": "%",
+          "factor": 0.0234375,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            11008,
+            21760,
+            32768,
+            43776,
+            54528
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.52587890625e-05,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "CILCN_mAirMInitRed_MAP",
+      "type": "MAP",
+      "description": "Wert um das das Luftmassenintegral im neuen Fahrzyklus reduziert wird",
+      "recordLayout": "RB_Map_S16U16_U16",
+      "defaultAddress": "0x9041F62",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "EnvT_t",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            128,
+            13235,
+            26342,
+            39193,
+            52300,
+            65407
+          ]
+        },
+        {
+          "inputQuantity": "CILCN_tengsz",
+          "unit": "s",
+          "factor": 4.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            13107,
+            26214,
+            39321,
+            52428,
+            65535
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.0017777777777777779,
+        "offset": 0.0,
+        "unit": "kg"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "Engstrt_facFuIdxCatHeatIdleSpd_M",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "RB_Map_U8U8_U8",
+      "defaultAddress": "0x903933C",
+      "dims": {
+        "nx": 9,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEngLRes",
+          "unit": "rpm",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            18,
+            38,
+            55,
+            72,
+            90,
+            113,
+            133,
+            155,
+            156
+          ]
+        },
+        {
+          "inputQuantity": "BGSPRITNUM_rl",
+          "unit": "%",
+          "factor": 0.75,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            21,
+            48,
+            72,
+            96,
+            120,
+            144,
+            174,
+            204
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 0.03125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "Engstrt_facFuIdxCatHeat_M",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "RB_Map_U8U8_U8",
+      "defaultAddress": "0x9039397",
+      "dims": {
+        "nx": 9,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEngLRes",
+          "unit": "rpm",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            18,
+            38,
+            55,
+            72,
+            90,
+            113,
+            133,
+            155,
+            156
+          ]
+        },
+        {
+          "inputQuantity": "BGSPRITNUM_rl",
+          "unit": "%",
+          "factor": 0.75,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            21,
+            48,
+            72,
+            96,
+            120,
+            144,
+            174,
+            204
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 0.03125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "Engstrt_facFuIdxIdleSpd_M",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "RB_Map_U8U8_U8",
+      "defaultAddress": "0x90393F2",
+      "dims": {
+        "nx": 9,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEngLRes",
+          "unit": "rpm",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            18,
+            38,
+            55,
+            72,
+            90,
+            113,
+            133,
+            155,
+            156
+          ]
+        },
+        {
+          "inputQuantity": "BGSPRITNUM_rl",
+          "unit": "%",
+          "factor": 0.75,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            27,
+            48,
+            72,
+            96,
+            120,
+            144,
+            174,
+            204
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 0.03125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "Engstrt_facFuIdx_M",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "RB_Map_U8U8_U8",
+      "defaultAddress": "0x903944D",
+      "dims": {
+        "nx": 9,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEngLRes",
+          "unit": "rpm",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            18,
+            38,
+            55,
+            72,
+            90,
+            113,
+            133,
+            155,
+            156
+          ]
+        },
+        {
+          "inputQuantity": "BGSPRITNUM_rl",
+          "unit": "%",
+          "factor": 0.75,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            21,
+            48,
+            72,
+            96,
+            120,
+            144,
+            174,
+            204
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 0.03125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ExhMgT_facDeltaScav_M",
+      "type": "MAP",
+      "description": "Kennfeld für Interpolationsfaktor zur Bestimmung des maximal zulässigen Brennraumlambdas für Bauteileschutz bei Scavenging in Abhängigkeit von der Temperatur ExhMgT_tDifExhCat1und Massenstrom",
+      "recordLayout": "RB_Map_S16U16_U16",
+      "defaultAddress": "0x9042128",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "ExhMgT_tDifExhCat1",
+          "unit": "K",
+          "factor": 0.0234375,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            11008,
+            21760,
+            32768,
+            43776,
+            54528
+          ]
+        },
+        {
+          "inputQuantity": "ExhMgT_msabg_w",
+          "unit": "kg/h",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            2560,
+            5120,
+            7680,
+            10240,
+            12800
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.00030517578125,
+        "offset": 0.0,
+        "unit": "1/s"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ExhMod_htcWallEnvB1_M",
+      "type": "MAP",
+      "description": "Wärmeübergangskoeffizient Wand Umgebung Bank 1",
+      "recordLayout": "RB_Map_U16U16_U16",
+      "defaultAddress": "0x904F7DA",
+      "dims": {
+        "nx": 7,
+        "ny": 14
+      },
+      "axes": [
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "km/h",
+          "factor": 0.0078125,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            0,
+            10,
+            20,
+            40,
+            60,
+            80,
+            125
+          ]
+        },
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            0,
+            256,
+            512,
+            768,
+            1024,
+            1280,
+            1536,
+            1792,
+            2048,
+            2304,
+            2560,
+            6400,
+            6912,
+            7424
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.001736111111111111,
+        "offset": 0.0,
+        "unit": "J/sK"
+      },
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "4/14"
+  }
+}

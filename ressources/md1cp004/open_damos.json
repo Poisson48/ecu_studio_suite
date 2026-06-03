@@ -1,0 +1,857 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "md1cp004",
+  "name": "open_damos — MD1CP004 3,0 V6TDI EVO, MLB53A, Gen3 LK2 210 kW, EU6plus, MJ18 (IS-M)_760907401_Z709",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "TXATR7P6RMK7_Z709.hex",
+    "damos": "C1551DUK5_201216.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/MD1CP004 3,0 V6TDI EVO, MLB53A, Gen3 LK2 210 kW, EU6plus, MJ18 (IS-M)_760907401_Z709"
+  },
+  "recordLayouts": {
+    "Map_Xs16Ys16Ws16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "SWORD_LE"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "ActMod_pStyPres_MAP",
+      "type": "MAP",
+      "description": "Kennfeld zur Ermittlung des stationären Spülgefälles",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x7477B0",
+      "dims": {
+        "nx": 12,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1700,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            8000,
+            10000
+          ]
+        },
+        {
+          "inputQuantity": "ActMod_trqInr",
+          "unit": "Nm",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            5000,
+            6000,
+            6600
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": "hPa"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AFS_dmAirSubsVal_MAP",
+      "type": "MAP",
+      "description": "Kennlinie zur Berechnung der Luftmasse im Fehlerfall des Luftstromsystems.",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x771618",
+      "dims": {
+        "nx": 12,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1600,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000
+          ]
+        },
+        {
+          "inputQuantity": "Air_pIntkVUs",
+          "unit": "hPa",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            900,
+            1000,
+            1200,
+            1400,
+            1600,
+            1800,
+            2000,
+            2200,
+            2400,
+            2500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Kg/h"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_facDesEngTCorrn03_MAP",
+      "type": "MAP",
+      "description": "Faktor Gewuenscht Motor Temperatur Korrektur 03",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x6EAE5E",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirCtl_nEng0",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1300,
+            1600,
+            1820,
+            1900,
+            3000,
+            3500,
+            4000,
+            4400
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_tEngDesVal_mp",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2631,
+            3031,
+            3131,
+            3181,
+            3231,
+            3281,
+            3331,
+            3381
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0001220703125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_facDesEngTCorrn10_MAP",
+      "type": "MAP",
+      "description": "Faktor Gewuenscht Motor Temperatur Korrektur 10",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x6EB2DA",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirCtl_nEng0",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            1000,
+            2000,
+            3000,
+            4500,
+            5500,
+            6500,
+            7500
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_tEngDesVal_mp",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2431,
+            2732,
+            2882,
+            3131,
+            3231,
+            3331,
+            3782,
+            4082
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0001220703125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_facEGRLPTCACUsLim_MAP",
+      "type": "MAP",
+      "description": "Korrekturfaktor fuer Soll ND-AGR Rate zum ATL Schutz abhaengig von Temperatur vor Verdichter",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x70F39C",
+      "dims": {
+        "nx": 10,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "ASMod_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            1000,
+            2000,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_tCmprDs_mp",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            3731,
+            3931,
+            4131,
+            4331,
+            4531,
+            4631,
+            4731,
+            4781,
+            4831,
+            4931
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0001220703125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_mAirNorm_MAP",
+      "type": "MAP",
+      "description": "Basiskennfeld für die Bereitstellung des maximalen Luftmassenwerts ohne AGR",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x77667C",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            6500,
+            7000,
+            7500
+          ]
+        },
+        {
+          "inputQuantity": "Air_pIntkVUs",
+          "unit": "hPa",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            250,
+            500,
+            750,
+            1000,
+            1250,
+            1500,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3100,
+            3250,
+            3500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "mg/Hub"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_mAirTCorrnBas02_MAP",
+      "type": "MAP",
+      "description": "Masse Luft Temperatur Korrektur Basis 02",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x6ED16C",
+      "dims": {
+        "nx": 12,
+        "ny": 13
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirCtl_nEng0",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1400,
+            1500,
+            1700,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_qDesVal",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            800,
+            1000,
+            1200,
+            1400,
+            1800,
+            2000,
+            2400,
+            2800,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "mg/Hub"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_mAirTCorrnBas11_MAP",
+      "type": "MAP",
+      "description": "Masse Luft Temperatur Korrektur Basis 11",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x6EE170",
+      "dims": {
+        "nx": 10,
+        "ny": 7
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirCtl_nEng0",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1800,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            6500,
+            7500,
+            8000
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_qDesVal",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            250,
+            750,
+            1250,
+            1500,
+            1750,
+            2000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "mg/Hub"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_mAirTCorrnBas12_MAP",
+      "type": "MAP",
+      "description": "Masse Luft Temperatur Korrektur Basis 12",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x6EE222",
+      "dims": {
+        "nx": 9,
+        "ny": 7
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirCtl_nEng0",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1800,
+            2000,
+            2500,
+            3500,
+            4000,
+            4500,
+            6500,
+            7500,
+            8000
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_qDesVal",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            250,
+            500,
+            750,
+            1250,
+            1500,
+            1750
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "mg/Hub"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_mAirTCorrnBas13_MAP",
+      "type": "MAP",
+      "description": "Masse Luft Temperatur Korrektur Basis 13",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x6EE2C4",
+      "dims": {
+        "nx": 9,
+        "ny": 7
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirCtl_nEng0",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1800,
+            2000,
+            2500,
+            3500,
+            4000,
+            4500,
+            6500,
+            7500,
+            8000
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_qDesVal",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            250,
+            500,
+            750,
+            1250,
+            1500,
+            1750
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "mg/Hub"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_mBstPCorrn00_MAP",
+      "type": "MAP",
+      "description": "Masse Lade Druck Korrektur 00",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x6EE7B6",
+      "dims": {
+        "nx": 6,
+        "ny": 7
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirCtl_pDesBoostPDe00_mp",
+          "unit": "hPa",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -800,
+            -400,
+            -200,
+            -100,
+            -50,
+            -30
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_pDesBoostPAct00_mp",
+          "unit": "hPa",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            500,
+            1000,
+            1200,
+            1500,
+            1800,
+            2000,
+            2500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "mg/Hub"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_mBstPCorrn01_MAP",
+      "type": "MAP",
+      "description": "Masse Lade Druck Korrektur 01",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x6EE828",
+      "dims": {
+        "nx": 6,
+        "ny": 7
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirCtl_pDesBoostPDe01_mp",
+          "unit": "hPa",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -800,
+            -400,
+            -200,
+            -100,
+            -50,
+            -30
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_pDesBoostPAct01_mp",
+          "unit": "hPa",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            500,
+            1000,
+            1200,
+            1500,
+            1800,
+            2000,
+            2500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "mg/Hub"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_mDesBas01_MAP",
+      "type": "MAP",
+      "description": "Grundkennfeld für den Luftmassen-Sollwert (01)",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x6EEB48",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirCtl_nEng0",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1300,
+            1400,
+            1600,
+            1640,
+            1800,
+            2000,
+            2200,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            6000,
+            7000,
+            8000
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_qDesVal",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            50,
+            500,
+            750,
+            1000,
+            1250,
+            1500,
+            1750,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "mg/Hub"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_mDesBas02_MAP",
+      "type": "MAP",
+      "description": "Grundkennfeld für den Luftmassen-Sollwert (02)",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x6EED8C",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirCtl_nEng0",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1300,
+            1600,
+            1700,
+            1800,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            7000,
+            7500,
+            8000
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_qDesVal",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            50,
+            500,
+            750,
+            1000,
+            1250,
+            1500,
+            1750,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "mg/Hub"
+      },
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "14/14"
+  }
+}

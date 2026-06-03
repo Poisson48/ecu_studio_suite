@@ -1,0 +1,957 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "8hp51",
+  "name": "open_damos — JLR_8HP51_3G",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "C350_F_70_X_18_X760_PP_2AT_SS_AJ200_DMTT_TS4C_L1F_17_AB0120.hex",
+    "damos": "C350_3_70_eh.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/jaguar f-pace smedg17.9-3.20 JLR_8HP51_3G/JLR_8HP51_3G"
+  },
+  "recordLayouts": {
+    "Map_Xs16Ys16Ws16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "SWORD_LE"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "AFS_dmAirSubsVal_MAP",
+      "type": "MAP",
+      "description": "Map to calculate the substitute value for air flow signal in case of errors",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x86FA1E",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            750,
+            1500,
+            2250,
+            3000,
+            3750,
+            4500,
+            5250,
+            6000,
+            6750,
+            7500,
+            8250,
+            9000,
+            9750,
+            10500,
+            11250
+          ]
+        },
+        {
+          "inputQuantity": "ASMod_pIndVol",
+          "unit": "hPa",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            6,
+            12,
+            18,
+            24,
+            30,
+            36,
+            42,
+            48,
+            54,
+            60,
+            66,
+            72,
+            78,
+            84,
+            90
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Kg/h"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AFS_facPlsCorBasEGRShOff_MAP",
+      "type": "MAP",
+      "description": "Pulsation correction map when EGR is shut off.",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x86FCD6",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1600,
+            2000,
+            2400,
+            2800,
+            3200,
+            3600,
+            4000,
+            4400,
+            4800,
+            5200,
+            5600,
+            6000,
+            6400,
+            6800,
+            7200,
+            8000
+          ]
+        },
+        {
+          "inputQuantity": "InjCtl_qSetUnBal",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            400,
+            800,
+            1200,
+            1600,
+            2000,
+            2400,
+            2800,
+            3200,
+            3600,
+            4000,
+            4400,
+            4800,
+            5200,
+            5600,
+            6000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0001220703125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AFS_facPlsCorBasEOM0_MAP",
+      "type": "MAP",
+      "description": "Pulsation correction map0 based on engine speed and injection quantity.",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x86FF1A",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1600,
+            2000,
+            2400,
+            2800,
+            3200,
+            3600,
+            4000,
+            4400,
+            4800,
+            5200,
+            5600,
+            6000,
+            6400,
+            6800,
+            7200,
+            8000
+          ]
+        },
+        {
+          "inputQuantity": "InjCtl_qSetUnBal",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            400,
+            800,
+            1200,
+            1600,
+            2000,
+            2400,
+            2800,
+            3200,
+            3600,
+            4000,
+            4400,
+            4800,
+            5200,
+            5600,
+            6000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0001220703125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_AirTempCorBasEOM0_MAP",
+      "type": "MAP",
+      "description": "Basic map for the air temperature correction",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x901314",
+      "dims": {
+        "nx": 14,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            1200,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            7000,
+            7500,
+            8000
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_qDesVal_mp",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            250,
+            500,
+            750,
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            4000,
+            6000,
+            8000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "mg/Hub"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_AirTempCorBasEOMQnt1_MAP",
+      "type": "MAP",
+      "description": "Basic map for the air temperature in the first injection-quantity-based operating mode",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x90149C",
+      "dims": {
+        "nx": 14,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            1000,
+            1500,
+            2000,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            6500,
+            7000,
+            7500
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_qDesVal_mp",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            750,
+            1000,
+            1500,
+            2000,
+            2500,
+            2750,
+            3000,
+            3250,
+            3500,
+            3750
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "mg/Hub"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_AirTempCorBasEOMQnt2_MAP",
+      "type": "MAP",
+      "description": "Basic map for the air temperature in the second injection-quantity-based operating mode",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x901624",
+      "dims": {
+        "nx": 14,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            1000,
+            1500,
+            2000,
+            2500,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            6500,
+            7000,
+            7500
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_qDesVal_mp",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            750,
+            1000,
+            1500,
+            2000,
+            2500,
+            2750,
+            3000,
+            3250,
+            3500,
+            3750
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "mg/Hub"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_AirTempCorBasEOMQnt3_MAP",
+      "type": "MAP",
+      "description": "Basic map for the air temperature in the third injection-quantity-based operating mode",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x9017AC",
+      "dims": {
+        "nx": 14,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            2000,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            6500,
+            7000,
+            7500
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_qDesVal_mp",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3250,
+            3500,
+            3750
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "mg/Hub"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_AirTempCorBasEOMQnt4_MAP",
+      "type": "MAP",
+      "description": "Basic map for the air temperature in the fourth injection-quantity-based operating mode",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x901934",
+      "dims": {
+        "nx": 14,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            2000,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            6500,
+            7000,
+            7500
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_qDesVal_mp",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3250,
+            3500,
+            3750
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "mg/Hub"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_AirTempCorBasEOMQnt5_MAP",
+      "type": "MAP",
+      "description": "Basic map for the air temperature in the fifth injection-quantity-based operating mode",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x901ABC",
+      "dims": {
+        "nx": 14,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            2000,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            6500,
+            7000,
+            7500
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_qDesVal_mp",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3250,
+            3500,
+            3750
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "mg/Hub"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_AirTempCorBasEOMQnt6_MAP",
+      "type": "MAP",
+      "description": "Basic map for the air temperature in the sixth injection-quantity-based operating mode",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x901C44",
+      "dims": {
+        "nx": 14,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            1000,
+            1500,
+            2000,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            6500,
+            7000,
+            7500
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_qDesVal_mp",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            750,
+            1000,
+            1500,
+            2000,
+            2500,
+            2750,
+            3000,
+            3250,
+            3500,
+            3750
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "mg/Hub"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_AirTempCorBasEOMQnt7_MAP",
+      "type": "MAP",
+      "description": "Basic map for the air temperature in the seventh injection-quantity-based operating mode",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x901DCC",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5250,
+            5500,
+            6000,
+            6500,
+            7000,
+            7500
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_qDesVal_mp",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            625,
+            750,
+            1000,
+            1500,
+            1750,
+            2000,
+            2500,
+            2625,
+            2750,
+            3000,
+            3125,
+            3250,
+            3500,
+            3750
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "mg/Hub"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_facAirTempCorEOM0_MAP",
+      "type": "MAP",
+      "description": "Map for the air temperature correction factor",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x90205E",
+      "dims": {
+        "nx": 16,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            6500,
+            7000,
+            7500
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_tAirDesVal_mp",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2181,
+            2231,
+            2331,
+            2381,
+            2481,
+            2581,
+            2681,
+            2781,
+            2831,
+            3031,
+            3231,
+            3481
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0001220703125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_facAirTempCorEOMQnt1_MAP",
+      "type": "MAP",
+      "description": "Map for the air temperature correction factor in the first injection-quantity-based operating mode",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x90221A",
+      "dims": {
+        "nx": 16,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            6500,
+            7000,
+            7500
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_tAirDesVal_mp",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2500,
+            2800,
+            2900,
+            3000,
+            3100,
+            3200,
+            3300,
+            3400,
+            3500,
+            3600,
+            3700,
+            3800
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0001220703125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirCtl_facAirTempCorEOMQnt2_MAP",
+      "type": "MAP",
+      "description": "Map for the air temperature correction factor in the second injection-quantity-based operating mode",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x9023D6",
+      "dims": {
+        "nx": 16,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            6500,
+            7000,
+            7500
+          ]
+        },
+        {
+          "inputQuantity": "AirCtl_tAirDesVal_mp",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2500,
+            2800,
+            2900,
+            3000,
+            3100,
+            3200,
+            3300,
+            3400,
+            3500,
+            3600,
+            3700,
+            3800
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0001220703125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "14/14"
+  }
+}

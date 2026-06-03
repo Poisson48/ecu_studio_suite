@@ -1,0 +1,769 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "med17_1_14tfsi",
+  "name": "open_damos — MED17.1_1.4TFSI",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "m14i22tm79g_Complete.HEX",
+    "damos": "m14i22tm79g.A2L",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/MED17.1_1.4TFSI"
+  },
+  "recordLayouts": {
+    "Map_Xs16Ys16Ws16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "SWORD_LE"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "ACCI_daNegCorr_MAP",
+      "type": "MAP",
+      "description": "Kennfeld zur Beechnung der nagativen Rampensteigungsbegrenzung für Reglerbeschleunigung",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x5EF00",
+      "dims": {
+        "nx": 6,
+        "ny": 7
+      },
+      "axes": [
+        {
+          "inputQuantity": "ACCI_daNegCtlPre_mp",
+          "unit": "m/s^2/s",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            100,
+            300,
+            500,
+            1000,
+            5000
+          ]
+        },
+        {
+          "inputQuantity": "ACCI_trqBrkRawRed_mp",
+          "unit": "Nm",
+          "factor": 1.6,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -625,
+            -63,
+            0,
+            63,
+            313,
+            625,
+            1250
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.01,
+        "offset": 0.0,
+        "unit": "m/s^2/s"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACCI_daNegCtl_MAP",
+      "type": "MAP",
+      "description": "Kennfeld für Basiswert für Rampensteigungsbegrenzung des Reglerwertes",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x5EF72",
+      "dims": {
+        "nx": 6,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "ACCI_aSetLim",
+          "unit": "m/s^2",
+          "factor": 0.001,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -3000,
+            -2000,
+            -1000,
+            0,
+            1000,
+            2000
+          ]
+        },
+        {
+          "inputQuantity": "ACCI_aSetCtl",
+          "unit": "m/s^2",
+          "factor": 0.001,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -4000,
+            -3000,
+            -2000,
+            -1000,
+            0,
+            1000,
+            2000,
+            4000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.01,
+        "offset": 0.0,
+        "unit": "m/s^2/s"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACCI_daPosCorr2_MAP",
+      "type": "MAP",
+      "description": "Kennfeld für die Berechnung der positiven Rampensteigungs-begrenzung (wenn Regler im Leerlaufbetrieb)",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x5EFF2",
+      "dims": {
+        "nx": 6,
+        "ny": 7
+      },
+      "axes": [
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "m/s^2",
+          "factor": 0.001,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -500,
+            0,
+            1000,
+            2000,
+            4000,
+            6000
+          ]
+        },
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "Nm",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -5000,
+            -4000,
+            -2000,
+            1000,
+            2500,
+            5000,
+            10000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.01,
+        "offset": 0.0,
+        "unit": "m/s^2/s"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACCI_daPosCorr_MAP",
+      "type": "MAP",
+      "description": "Kennfeld zur Beechnung der positiven Rampensteigungsbegrenzung für Reglerbeschleunigung",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x5F064",
+      "dims": {
+        "nx": 6,
+        "ny": 7
+      },
+      "axes": [
+        {
+          "inputQuantity": "ACCI_daNegCtlPre_mp",
+          "unit": "m/s^2/s",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            100,
+            300,
+            500,
+            1000,
+            2000
+          ]
+        },
+        {
+          "inputQuantity": "ACCI_trqBrkRawRed_mp",
+          "unit": "Nm",
+          "factor": 1.6,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -1250,
+            -625,
+            -313,
+            -63,
+            -31,
+            0,
+            313
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.01,
+        "offset": 0.0,
+        "unit": "m/s^2/s"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACCI_dtrqEngPos_MAP",
+      "type": "MAP",
+      "description": "Gradientenbegrenzung für Übergang in den Zugbetrieb",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x48996",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "ACCI_trqBrkRawRed_mp",
+          "unit": "Nm",
+          "factor": 1.6,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -313,
+            -125,
+            -63,
+            63,
+            125,
+            313
+          ]
+        },
+        {
+          "inputQuantity": "ACCI_aDevRaw_mp",
+          "unit": "m/s^2",
+          "factor": 0.001,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -1000,
+            -500,
+            -100,
+            100,
+            500,
+            1500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.25,
+        "offset": 0.0,
+        "unit": "Nm/s"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACCI_facEnv_MAP",
+      "type": "MAP",
+      "description": "MAP to calculate the correction Factor for normal gain",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x5ECF8",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "EnvT_t",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2631,
+            2731,
+            2831,
+            2931,
+            3031,
+            3131
+          ]
+        },
+        {
+          "inputQuantity": "EnvP_p",
+          "unit": "hPa",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            700,
+            800,
+            900,
+            1000,
+            1100,
+            1200
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0001220703125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACCI_IKiPos_MAP",
+      "type": "MAP",
+      "description": "Kennfeld zur Proportionalfaktor für I-Regler, Basiswert für Zug-betrieb",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x48AE2",
+      "dims": {
+        "nx": 6,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "AccPed_rTrq",
+          "unit": "-",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            200,
+            330,
+            470,
+            650,
+            900,
+            1200
+          ]
+        },
+        {
+          "inputQuantity": "CrCtl_nEngTyp",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1400,
+            2000,
+            3000,
+            3500,
+            4000,
+            5000,
+            6000,
+            8000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.00046566128730773926,
+        "offset": 0.0,
+        "unit": "1/s"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACCI_PKpPos_MAP",
+      "type": "MAP",
+      "description": "Kennfeld zur Proportionalfaktor für Regler, Basiswert für Zug-betrieb",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x48B9C",
+      "dims": {
+        "nx": 6,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "AccPed_rTrq",
+          "unit": "-",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            200,
+            330,
+            470,
+            650,
+            900,
+            1200
+          ]
+        },
+        {
+          "inputQuantity": "CrCtl_nEngTyp",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1400,
+            2000,
+            3000,
+            3500,
+            4000,
+            5000,
+            6000,
+            8000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0078125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACComp_trqDynPres_MAP",
+      "type": "MAP",
+      "description": "dynamic torque based on AC pressure",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x5F208",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1400,
+            2000,
+            3000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "AirC_pClnt",
+          "unit": "hPa",
+          "factor": 2.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            4500,
+            5000,
+            5500,
+            6000,
+            6500,
+            7000,
+            7500,
+            8000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACComp_trqDynTemp_MAP",
+      "type": "MAP",
+      "description": "Dynamic torque based on intake air temperature",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x5F2AC",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            2000,
+            4000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "ACComp_tEnvTrqCalc_mp",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2331,
+            2531,
+            2631,
+            2731,
+            2831,
+            2931,
+            3031,
+            3131
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACComp_trqStatPres_MAP",
+      "type": "MAP",
+      "description": "Static torque based on AC pressure",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x5F354",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1400,
+            1600,
+            1800,
+            2000,
+            4000,
+            6000,
+            8000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "AirC_pClnt",
+          "unit": "hPa",
+          "factor": 2.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            10000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACComp_trqStatTemp_MAP",
+      "type": "MAP",
+      "description": "static torque based on intake air temperature",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x5F3F8",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1400,
+            1600,
+            1800,
+            2000,
+            2400,
+            2800,
+            4000,
+            8000
+          ]
+        },
+        {
+          "inputQuantity": "ACComp_tEnvTrqCalc_mp",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2431,
+            2731,
+            2831,
+            2931,
+            3031,
+            3131,
+            3231,
+            3331
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_dnDOSetP_MAP",
+      "type": "MAP",
+      "description": "Parameter für die gewünschte Drehzahlanforderung",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x5F76E",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            410,
+            819,
+            1229,
+            2048,
+            2867,
+            4096
+          ]
+        },
+        {
+          "inputQuantity": "EnvP_p",
+          "unit": "hPa",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            700,
+            850,
+            900,
+            950,
+            1000,
+            1050
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.5,
+        "offset": 0.0,
+        "unit": "rpm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_rAPPWntrMode0_MAP",
+      "type": "MAP",
+      "description": "Map for APP ratio reevaluation in case of an active Winter drive - mode Wntr1",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x5FA1C",
+      "dims": {
+        "nx": 16,
+        "ny": 9
+      },
+      "axes": [
+        {
+          "inputQuantity": "AccPed_nEng_mp",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            500,
+            1000,
+            1500,
+            2000,
+            2453,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000,
+            14000
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            410,
+            819,
+            1638,
+            2458,
+            3686,
+            5325,
+            7782,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.01220703125,
+        "offset": 0.0,
+        "unit": "%"
+      },
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "14/14"
+  }
+}

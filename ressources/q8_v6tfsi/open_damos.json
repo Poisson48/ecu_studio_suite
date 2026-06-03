@@ -1,0 +1,857 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "q8_v6tfsi",
+  "name": "open_damos — Q8_V6TFSI",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "E8F50q2k6_X717.hex",
+    "damos": "18F50_1Flut_P1584 (IFX).a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/Q8_V6TFSI"
+  },
+  "recordLayouts": {
+    "_REC_S3MAP_55_S2_S2_S2": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "SWORD_LE"
+    },
+    "Map_Xs16Ys16Ws16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "SWORD_LE"
+    },
+    "RB_Map_S16S16_S16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "SWORD_LE"
+    },
+    "RB_Map_U16S16_U16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "UWORD_LE"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "DATA_SpdFilDes.SpdFilDes_fac_nClu00_M_VW",
+      "type": "MAP",
+      "description": "table of factor for drag speed derived from static speed difference and filtered speed gradient",
+      "recordLayout": "_REC_S3MAP_55_S2_S2_S2",
+      "defaultAddress": "0x9BB14",
+      "dims": {
+        "nx": 7,
+        "ny": 7
+      },
+      "axes": [
+        {
+          "inputQuantity": "SpdFilDes_nDifStat_VW",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -2000,
+            -1600,
+            -1200,
+            -800,
+            -400,
+            -200,
+            7
+          ]
+        },
+        {
+          "inputQuantity": "SpdFilDes_nGrdFil_nDifGrdFil_VW",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -2000,
+            -800,
+            -400,
+            -100,
+            0,
+            100,
+            400
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACComp_trqDynPres_MAP",
+      "type": "MAP",
+      "description": "Kennfeld für die dynamische Momentenbedarfsberechnung über Klimadruck",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x13DCF8",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            2000,
+            4000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "AirC_pClnt",
+          "unit": "hPa",
+          "factor": 2.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            10000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACComp_trqDynTemp_MAP",
+      "type": "MAP",
+      "description": "Kennfeld für die dynamische Momentenbedarfsberechnung über Temperatur",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x13DD9C",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            2000,
+            4000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "ACComp_tEnvTrqCalc_mp",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2331,
+            2531,
+            2631,
+            2731,
+            2831,
+            2931,
+            3031,
+            3131
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACComp_trqStatPres_MAP",
+      "type": "MAP",
+      "description": "Kennfeld für die statische Momentenbedarfsberechnung über Klimadruck",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x13DE44",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            2000,
+            4000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "AirC_pClnt",
+          "unit": "hPa",
+          "factor": 2.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            500,
+            1000,
+            1250,
+            1500,
+            1750,
+            2000,
+            2250,
+            2500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACComp_trqStatTemp_MAP",
+      "type": "MAP",
+      "description": "Kennfeld für die statische Momentenbedarfsberechnung über Temperatur",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x13DEE8",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            2000,
+            4000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "ACComp_tEnvTrqCalc_mp",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2331,
+            2531,
+            2631,
+            2731,
+            2831,
+            2931,
+            3031,
+            3131
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirMod_facCorrPOutlVlvDsWgCls2_M",
+      "type": "MAP",
+      "description": "Korrekturwert für geschlossenes Wastegate für Sondermode",
+      "recordLayout": "RB_Map_S16S16_S16",
+      "defaultAddress": "0xD7926",
+      "dims": {
+        "nx": 18,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng10ms",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            600,
+            1160,
+            1300,
+            1620,
+            2100,
+            2550,
+            3050,
+            3600,
+            4040,
+            4500,
+            5400,
+            6000,
+            6600,
+            7650,
+            8700,
+            9500,
+            10600,
+            13000
+          ]
+        },
+        {
+          "inputQuantity": "AirMod_agDeltaVlvOvlB1",
+          "unit": "Grad KW",
+          "factor": 0.015625,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -640,
+            0,
+            640,
+            1280,
+            1920,
+            2560,
+            3200,
+            3840,
+            4480,
+            5120
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 3.0517578125e-05,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirMod_facCorrPOutlVlvDsWgCls_M",
+      "type": "MAP",
+      "description": "Korrekturwert für geschlossenes Wastegate",
+      "recordLayout": "RB_Map_S16S16_S16",
+      "defaultAddress": "0xD7ACA",
+      "dims": {
+        "nx": 18,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng10ms",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            600,
+            1160,
+            1300,
+            1620,
+            2100,
+            2550,
+            3050,
+            3600,
+            4040,
+            4500,
+            5400,
+            6000,
+            6600,
+            7650,
+            8700,
+            9500,
+            10600,
+            13000
+          ]
+        },
+        {
+          "inputQuantity": "AirMod_agDeltaVlvOvlB1",
+          "unit": "Grad KW",
+          "factor": 0.015625,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -640,
+            0,
+            640,
+            1280,
+            1920,
+            2560,
+            3200,
+            3840,
+            4480,
+            5120
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 3.0517578125e-05,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirMod_facCorrPOutlVlvDsWgOpen2_M",
+      "type": "MAP",
+      "description": "Korrekturwert für offenes Wastegate fü Sondermode",
+      "recordLayout": "RB_Map_S16S16_S16",
+      "defaultAddress": "0xD7C6E",
+      "dims": {
+        "nx": 18,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng10ms",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            600,
+            1160,
+            1300,
+            1620,
+            2100,
+            2550,
+            3050,
+            3600,
+            4040,
+            4500,
+            5400,
+            6000,
+            6600,
+            7650,
+            8700,
+            9500,
+            10600,
+            13000
+          ]
+        },
+        {
+          "inputQuantity": "AirMod_agDeltaVlvOvlB1",
+          "unit": "Grad KW",
+          "factor": 0.015625,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -640,
+            0,
+            640,
+            1280,
+            1920,
+            2560,
+            3200,
+            3840,
+            4480,
+            5120
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 3.0517578125e-05,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirMod_facCorrPOutlVlvDsWgOpen_M",
+      "type": "MAP",
+      "description": "Korrekturwert für offenes Wastegate",
+      "recordLayout": "RB_Map_S16S16_S16",
+      "defaultAddress": "0xD7E12",
+      "dims": {
+        "nx": 18,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng10ms",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            600,
+            1160,
+            1300,
+            1620,
+            2100,
+            2550,
+            3050,
+            3600,
+            4040,
+            4500,
+            5400,
+            6000,
+            6600,
+            7650,
+            8700,
+            9500,
+            10600,
+            13000
+          ]
+        },
+        {
+          "inputQuantity": "AirMod_agDeltaVlvOvlB1",
+          "unit": "Grad KW",
+          "factor": 0.015625,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -640,
+            0,
+            640,
+            1280,
+            1920,
+            2560,
+            3200,
+            3840,
+            4480,
+            5120
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 3.0517578125e-05,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirMod_facInpIntegLoadCrkcsDeltaP_M",
+      "type": "MAP",
+      "description": "Integratoreingang für Modellierung Faktor der Beladung des Kurbelgeäuses (abhängig von Delta Druck)",
+      "recordLayout": "RB_Map_S16S16_S16",
+      "defaultAddress": "0xD8618",
+      "dims": {
+        "nx": 10,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng10ms",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            1500,
+            3000,
+            4500,
+            6000,
+            7500,
+            9000,
+            10500,
+            12000,
+            13500
+          ]
+        },
+        {
+          "inputQuantity": "Airmod_pDifIntkMnfldAbsltAmb",
+          "unit": "hPa",
+          "factor": 0.078125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -8960,
+            -7680,
+            -6400,
+            -5120,
+            -3840,
+            -2560,
+            -1280,
+            0,
+            1280,
+            2560
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0001220703125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AirMod_facWghtColdIntkAir_M",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "RB_Map_U16S16_U16",
+      "defaultAddress": "0xDB1D4",
+      "dims": {
+        "nx": 10,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "psr_w_msg",
+          "unit": "hPa",
+          "factor": 0.078125,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            2560,
+            5120,
+            6400,
+            8960,
+            11520,
+            12800,
+            15360,
+            17920,
+            22528,
+            29440
+          ]
+        },
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            1200,
+            1680,
+            2720,
+            3200,
+            3680,
+            4720,
+            5200,
+            7040,
+            8000,
+            9040,
+            12000,
+            14400
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 3.0517578125e-05,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AltIO_tiDlyNorm_M",
+      "type": "MAP",
+      "description": "Kennfeld für Verzögerungszeit für Normalstatus",
+      "recordLayout": "RB_Map_S16S16_S16",
+      "defaultAddress": "0xCFF6C",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "EnvP_p",
+          "unit": "hPa",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            550,
+            600,
+            650,
+            700,
+            750,
+            800,
+            850,
+            900
+          ]
+        },
+        {
+          "inputQuantity": "EngDa_tEng",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2431,
+            2481,
+            2531,
+            2581,
+            2621,
+            2631,
+            2681,
+            2731
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 10.0,
+        "offset": 0.0,
+        "unit": "ms"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "Alt_facAltDes_MAP",
+      "type": "MAP",
+      "description": "Kennfeld zur Wichtung der Generatorlast",
+      "recordLayout": "RB_Map_S16S16_S16",
+      "defaultAddress": "0xD0030",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            1600,
+            2400,
+            5000,
+            6000,
+            7000
+          ]
+        },
+        {
+          "inputQuantity": "EEM_pwrAltDes",
+          "unit": "W",
+          "factor": 9.424777960769992,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            53,
+            106,
+            159,
+            212,
+            265
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.01,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "Alt_trqCalcVar2_MAP",
+      "type": "MAP",
+      "description": "Basisgeneratormoment Leistungsvariante 2",
+      "recordLayout": "RB_Map_S16S16_S16",
+      "defaultAddress": "0xD0130",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1200,
+            1520,
+            1680,
+            2000,
+            3000,
+            4000,
+            6000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "Alt_rAltLoadTqCalcn",
+          "unit": "%",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            2000,
+            3000,
+            4000,
+            5000,
+            7000,
+            9000,
+            10000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "13/14"
+  }
+}

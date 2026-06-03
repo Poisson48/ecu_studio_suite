@@ -1,0 +1,839 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "a8ax_170406_162113_q_ajom0115_04",
+  "name": "open_damos — A8AX_170406_162113_Q_AJOM0115_04",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "A8AX_170406_162113_Q_AJOM0115_04_PS11.hex",
+    "damos": "A8AX_170406_162113_Q_AJOM0115_04.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/A8AX_170406_162113_Q_AJOM0115_04"
+  },
+  "recordLayouts": {
+    "KKV.SWORD_COL_DIRECT": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "SWORD_LE",
+      "axisMode": "COM_AXIS"
+    },
+    "SDR.SWORD_COL_DIRECT": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "SWORD_LE",
+      "axisMode": "COM_AXIS"
+    },
+    "UBYTE_COL_DIRECT": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "___SWORD_Z": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "SWORD_LE",
+      "axisMode": "COM_AXIS"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "kkv_frame_App.Kkv_QKuehl_QPumpe_kf",
+      "type": "MAP",
+      "description": "Kennfeld Kühlölvolumenstrom der Volumen-Pumpe",
+      "recordLayout": "KKV.SWORD_COL_DIRECT",
+      "defaultAddress": "0x9128",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "kkv_frame_App.Kkv_QKuehl_QPumpe_ka_N",
+          "unit": "U/min",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x924C",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            2500,
+            3700,
+            4500
+          ]
+        },
+        {
+          "inputQuantity": "kkv_frame_App.Kkv_QKuehl_QPumpe_ka_Temp",
+          "unit": "°C",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x925C",
+          "fingerprint": [
+            -30,
+            -20,
+            0,
+            20,
+            40,
+            80,
+            120,
+            140
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "kkv_frame_App.Kkv_QKuehl_QPumpeDruck_kf",
+      "type": "MAP",
+      "description": "Kennfeld Kühlölvolumenstrom aus Volumen- und Druck-Pumpe",
+      "recordLayout": "KKV.SWORD_COL_DIRECT",
+      "defaultAddress": "0x91A8",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "kkv_frame_App.Kkv_QKuehl_QPumpeDruck_ka_N",
+          "unit": "U/min",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x926C",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            2500,
+            3700,
+            4500
+          ]
+        },
+        {
+          "inputQuantity": "kkv_frame_App.Kkv_QKuehl_QPumpeDruck_ka_Temp",
+          "unit": "°C",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x927C",
+          "fingerprint": [
+            -30,
+            -20,
+            0,
+            20,
+            40,
+            80,
+            120,
+            140
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "sdr_frame_App.Sdr_pSpeicherEntnahme_Basis_K1_kf",
+      "type": "MAP",
+      "description": "Druckentnahme durch Kupplung 1",
+      "recordLayout": "SDR.SWORD_COL_DIRECT",
+      "defaultAddress": "0xDBAA",
+      "dims": {
+        "nx": 10,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "sdr_frame_App.Sdr_pSpeicherEntnahme_Basis_K1_ka_I",
+          "unit": "mA",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0xDB7E",
+          "fingerprint": [
+            0,
+            2000,
+            4000,
+            5000,
+            7000,
+            9000,
+            13000,
+            14980,
+            14990,
+            15000
+          ]
+        },
+        {
+          "inputQuantity": "sdr_frame_App.Sdr_pSpeicherEntnahme_Basis_K1_ka_Temp",
+          "unit": "°C",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0xDB92",
+          "fingerprint": [
+            -40,
+            -10,
+            5,
+            15,
+            30,
+            50,
+            105,
+            146,
+            147,
+            148,
+            149,
+            150
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "sdr_frame_App.Sdr_pSpeicherEntnahme_Basis_K2_kf",
+      "type": "MAP",
+      "description": "Druckentnahme durch Kupplung 2",
+      "recordLayout": "SDR.SWORD_COL_DIRECT",
+      "defaultAddress": "0xDCC6",
+      "dims": {
+        "nx": 10,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "sdr_frame_App.Sdr_pSpeicherEntnahme_Basis_K2_ka_I",
+          "unit": "mA",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0xDCB2",
+          "fingerprint": [
+            0,
+            2000,
+            4000,
+            5000,
+            7000,
+            9000,
+            13000,
+            14980,
+            14990,
+            15000
+          ]
+        },
+        {
+          "inputQuantity": "sdr_frame_App.Sdr_pSpeicherEntnahme_Basis_K2_ka_Temp",
+          "unit": "°C",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0xDC9A",
+          "fingerprint": [
+            -40,
+            -10,
+            5,
+            15,
+            30,
+            50,
+            105,
+            146,
+            147,
+            148,
+            149,
+            150
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Ftp_PrzFtp_AFzg_kf",
+      "type": "MAP",
+      "description": "Fahrertypkennfeld zur Bewertung von Längsbeschleunigungen (Eingangsgrößen: Svn_AFzgFil u. Svn_VFzg)",
+      "recordLayout": "UBYTE_COL_DIRECT",
+      "defaultAddress": "0x8116",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "Ftp_AFzg_ka",
+          "unit": "m/s²",
+          "factor": 0.001,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x8074",
+          "fingerprint": [
+            400,
+            800,
+            1200,
+            1600,
+            2200,
+            3500
+          ]
+        },
+        {
+          "inputQuantity": "Ftp_VFzg_ka",
+          "unit": "km/h",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x8068",
+          "fingerprint": [
+            100,
+            300,
+            500,
+            1000,
+            1400,
+            1800
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Ftp_PrzFtp_AQuer_kf",
+      "type": "MAP",
+      "description": "Fahrertypkennfeld zur Bewertung von Querbeschleunigungen (Eingangsgrößen: Svc_AQuerSensor u. Svn_VFzg)",
+      "recordLayout": "UBYTE_COL_DIRECT",
+      "defaultAddress": "0x813A",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "Ftp_AQuer_ka",
+          "unit": "m/s²",
+          "factor": 0.001,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x8080",
+          "fingerprint": [
+            2000,
+            2500,
+            3000,
+            4000,
+            5000,
+            6000
+          ]
+        },
+        {
+          "inputQuantity": "Ftp_VFzg_ka",
+          "unit": "km/h",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x8068",
+          "fingerprint": [
+            100,
+            300,
+            500,
+            1000,
+            1400,
+            1800
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "FgeAdI0.kf_nAnMinNachHs",
+      "type": "MAP",
+      "description": "Mindestdrehzahl, welche nach einer Hochschaltung nicht unterschritten werden darf",
+      "recordLayout": "___SWORD_Z",
+      "defaultAddress": "0x88AE",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "FgeAd.ka_nAn_RsHsMin_vFzg",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x5270",
+          "fingerprint": [
+            1000,
+            4000,
+            5000,
+            7500,
+            10000,
+            14000,
+            18000,
+            22000
+          ]
+        },
+        {
+          "inputQuantity": "FgeAd.ka_nAn_RsHsMin_Flast",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x5280",
+          "fingerprint": [
+            150,
+            500,
+            1000,
+            1500,
+            3000,
+            6000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "FgeAdI0.kf_nAnRsMin",
+      "type": "MAP",
+      "description": "Mindestwert der Rückschaltdrehzahl",
+      "recordLayout": "___SWORD_Z",
+      "defaultAddress": "0x890E",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "FgeAd.ka_nAn_RsHsMin_vFzg",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x5270",
+          "fingerprint": [
+            1000,
+            4000,
+            5000,
+            7500,
+            10000,
+            14000,
+            18000,
+            22000
+          ]
+        },
+        {
+          "inputQuantity": "FgeAd.ka_nAn_RsHsMin_Flast",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x5280",
+          "fingerprint": [
+            150,
+            500,
+            1000,
+            1500,
+            3000,
+            6000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "FgeAdI1.kf_nAnMinNachHs",
+      "type": "MAP",
+      "description": "Mindestdrehzahl, welche nach einer Hochschaltung nicht unterschritten werden darf",
+      "recordLayout": "___SWORD_Z",
+      "defaultAddress": "0x8F0E",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "FgeAd.ka_nAn_RsHsMin_vFzg",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x5270",
+          "fingerprint": [
+            1000,
+            4000,
+            5000,
+            7500,
+            10000,
+            14000,
+            18000,
+            22000
+          ]
+        },
+        {
+          "inputQuantity": "FgeAd.ka_nAn_RsHsMin_Flast",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x5280",
+          "fingerprint": [
+            150,
+            500,
+            1000,
+            1500,
+            3000,
+            6000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "FgeAdI1.kf_nAnRsMin",
+      "type": "MAP",
+      "description": "Mindestwert der Rückschaltdrehzahl",
+      "recordLayout": "___SWORD_Z",
+      "defaultAddress": "0x8F6E",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "FgeAd.ka_nAn_RsHsMin_vFzg",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x5270",
+          "fingerprint": [
+            1000,
+            4000,
+            5000,
+            7500,
+            10000,
+            14000,
+            18000,
+            22000
+          ]
+        },
+        {
+          "inputQuantity": "FgeAd.ka_nAn_RsHsMin_Flast",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x5280",
+          "fingerprint": [
+            150,
+            500,
+            1000,
+            1500,
+            3000,
+            6000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "FgeAdI2.kf_nAnMinNachHs",
+      "type": "MAP",
+      "description": "Mindestdrehzahl, welche nach einer Hochschaltung nicht unterschritten werden darf",
+      "recordLayout": "___SWORD_Z",
+      "defaultAddress": "0x868E",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "FgeAd.ka_nAn_RsHsMin_vFzg",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x5270",
+          "fingerprint": [
+            1000,
+            4000,
+            5000,
+            7500,
+            10000,
+            14000,
+            18000,
+            22000
+          ]
+        },
+        {
+          "inputQuantity": "FgeAd.ka_nAn_RsHsMin_Flast",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x5280",
+          "fingerprint": [
+            150,
+            500,
+            1000,
+            1500,
+            3000,
+            6000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "FgeAdI2.kf_nAnRsMin",
+      "type": "MAP",
+      "description": "Mindestwert der Rückschaltdrehzahl",
+      "recordLayout": "___SWORD_Z",
+      "defaultAddress": "0x86EE",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "FgeAd.ka_nAn_RsHsMin_vFzg",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x5270",
+          "fingerprint": [
+            1000,
+            4000,
+            5000,
+            7500,
+            10000,
+            14000,
+            18000,
+            22000
+          ]
+        },
+        {
+          "inputQuantity": "FgeAd.ka_nAn_RsHsMin_Flast",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x5280",
+          "fingerprint": [
+            150,
+            500,
+            1000,
+            1500,
+            3000,
+            6000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "FgeAdI3.kf_nAnRsMin",
+      "type": "MAP",
+      "description": "Mindestwert der Rückschaltdrehzahl",
+      "recordLayout": "___SWORD_Z",
+      "defaultAddress": "0x84CE",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "FgeAd.ka_nAn_RsHsMin_vFzg",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x5270",
+          "fingerprint": [
+            1000,
+            4000,
+            5000,
+            7500,
+            10000,
+            14000,
+            18000,
+            22000
+          ]
+        },
+        {
+          "inputQuantity": "FgeAd.ka_nAn_RsHsMin_Flast",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x5280",
+          "fingerprint": [
+            150,
+            500,
+            1000,
+            1500,
+            3000,
+            6000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "FgeAdIEmo.kf_nAnRsMin",
+      "type": "MAP",
+      "description": "Mindestwert der Rückschaltdrehzahl",
+      "recordLayout": "___SWORD_Z",
+      "defaultAddress": "0x8B2E",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "FgeAd.ka_nAn_RsHsMin_vFzg",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x5270",
+          "fingerprint": [
+            1000,
+            4000,
+            5000,
+            7500,
+            10000,
+            14000,
+            18000,
+            22000
+          ]
+        },
+        {
+          "inputQuantity": "FgeAd.ka_nAn_RsHsMin_Flast",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x5280",
+          "fingerprint": [
+            150,
+            500,
+            1000,
+            1500,
+            3000,
+            6000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "14/14"
+  }
+}

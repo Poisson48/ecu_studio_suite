@@ -1,0 +1,379 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "a8ax_170407_150630_m_7142vaa90_2",
+  "name": "open_damos — A8AX_170407_150630_M_7142VAA90_2",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "A8AX_170407_150630_M_7142VAA90_2.hex",
+    "damos": "A8AX_170407_150630_M_7142VAA90_2.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/A8AX_170407_150630_M_7142VAA90_2/A8AX_170407_150630_M_7142VAA90_2"
+  },
+  "recordLayouts": {
+    "__SWORD_Z": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "SWORD_LE",
+      "axisMode": "COM_AXIS"
+    },
+    "___SWORD_Z": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "SWORD_LE",
+      "axisMode": "COM_AXIS"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "Gss_pStellHoch_kf",
+      "type": "MAP",
+      "description": "Stelldruckkennfeld für hohen Stelldruck",
+      "recordLayout": "__SWORD_Z",
+      "defaultAddress": "0x11B44",
+      "dims": {
+        "nx": 8,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "Gss_vPStellHoch_ka",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x11F1C",
+          "fingerprint": [
+            40,
+            80,
+            200,
+            320,
+            480,
+            640,
+            800,
+            960
+          ]
+        },
+        {
+          "inputQuantity": "Gss_TempPStell_ka",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x11CAA",
+          "fingerprint": [
+            -40,
+            -30,
+            -25,
+            0,
+            15,
+            30,
+            45,
+            60,
+            80,
+            120
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Kra_dMKupMaxStSt_kf",
+      "type": "MAP",
+      "description": "Maximaler Kupplungsmomentengradient abhängig von Fahrpedal und Kupplungsmoment bei Wiederstart-Anfahrt",
+      "recordLayout": "__SWORD_Z",
+      "defaultAddress": "0xE8FC",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Kra_MKup_dMKupMax_ka",
+          "unit": "Nm",
+          "factor": 0.05,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0xE454",
+          "fingerprint": [
+            0,
+            160,
+            300,
+            700,
+            1000,
+            2000,
+            2800,
+            4000
+          ]
+        },
+        {
+          "inputQuantity": "Kra_FPdMKup_ka",
+          "unit": "%",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0xE430",
+          "fingerprint": [
+            0,
+            100,
+            200,
+            300,
+            400,
+            500,
+            700,
+            900
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Kra_dMKupMax_kf",
+      "type": "MAP",
+      "description": "Maximaler Kupplungsmomentengradient abhängig von Fahrpedal und Kupplungsmoment",
+      "recordLayout": "__SWORD_Z",
+      "defaultAddress": "0xE3B0",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Kra_MKup_dMKupMax_ka",
+          "unit": "Nm",
+          "factor": 0.05,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0xE454",
+          "fingerprint": [
+            0,
+            160,
+            300,
+            700,
+            1000,
+            2000,
+            2800,
+            4000
+          ]
+        },
+        {
+          "inputQuantity": "Kra_FPdMKup_ka",
+          "unit": "%",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0xE430",
+          "fingerprint": [
+            0,
+            100,
+            200,
+            300,
+            400,
+            500,
+            700,
+            900
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Kus_Ueb_LS_nOffs_nLl_kf",
+      "type": "MAP",
+      "description": "Offset auf Leerlaufdrehzahl Berechnung Mindestdrehzahlschwelle für Übergang in den LS-Bereich",
+      "recordLayout": "___SWORD_Z",
+      "defaultAddress": "0xBE24",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "Kus_Ueb_LS_HS_vFzg_ka",
+          "unit": "km/h",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0xBE0C",
+          "fingerprint": [
+            100,
+            150,
+            200,
+            300,
+            450,
+            600
+          ]
+        },
+        {
+          "inputQuantity": "Kus_Ueb_LS_HS_aFzg_ka",
+          "unit": "m/s²",
+          "factor": 0.001,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0xBE18",
+          "fingerprint": [
+            -5000,
+            -2000,
+            -1000,
+            -500,
+            500,
+            1500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "MdmInAd.DmmoMaxAnf_kf",
+      "type": "MAP",
+      "description": "maximaler Momentenanstieg beim Anfahren = f(NStall-Nan, Svt_TempAtf)",
+      "recordLayout": "__SWORD_Z",
+      "defaultAddress": "0x617C",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "MdmInAd.DmmoMaxAnfNDiff_ka",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x615C",
+          "fingerprint": [
+            50,
+            250,
+            500,
+            900,
+            1100,
+            1400,
+            1700,
+            2000
+          ]
+        },
+        {
+          "inputQuantity": "MdmInAd.DmmoMaxAnfTemp_ka",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x616C",
+          "fingerprint": [
+            -40,
+            0,
+            20,
+            40,
+            60,
+            80,
+            120,
+            130
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Patf2Ad.NSollPumpeAtf_kf",
+      "type": "MAP",
+      "description": "Kennfeld für Sollwunschdrehzahl der ATF2-Pumpe i.A. des Kühlwunsches und der ATF-Temperatur",
+      "recordLayout": "__SWORD_Z",
+      "defaultAddress": "0x595C",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Patf2Ad.TempATF_NSollPumpe_ka",
+          "unit": "°C",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x59EC",
+          "fingerprint": [
+            -40,
+            0,
+            50,
+            60,
+            80,
+            120,
+            140,
+            160
+          ]
+        },
+        {
+          "inputQuantity": "Patf2Ad.QOel_NSollPumpe_ka",
+          "unit": "l/min",
+          "factor": 0.04,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x59DC",
+          "fingerprint": [
+            0,
+            187,
+            375,
+            562,
+            750,
+            937,
+            1125,
+            1250
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "6/6"
+  }
+}

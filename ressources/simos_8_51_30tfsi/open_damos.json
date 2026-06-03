@@ -1,0 +1,835 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "simos_8_51_30tfsi",
+  "name": "open_damos — S8500I3000000 Simos 8.51 8R0907551D 0003 3.0TFSI Q5 8R Hex A2l",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "8R0907551D__0003.S19",
+    "damos": "S85I3031_F2_e.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/re_damos18102017/S8500I3000000 Simos 8.51 8R0907551D 0003 3.0TFSI Q5 8R Hex A2l"
+  },
+  "recordLayouts": {
+    "_REC_A1MAP_20_u2_u2_u2": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UWORD_LE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_u1_u1_u2": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_u2_u1_u1": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UWORD_LE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_u1_u1_u1": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_u2_u1_u2": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UWORD_LE",
+      "axisMode": "COM_AXIS"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "ip_r_it_iplsl",
+      "type": "MAP",
+      "description": "Internal DC resistance of WRAF sensor pump cell",
+      "recordLayout": "_REC_A1MAP_20_u2_u2_u2",
+      "defaultAddress": "0x6964",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "ldp_r_it_ls_up_ip_r_it_iplsl",
+          "unit": "Ohm",
+          "factor": 0.25,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x62C0",
+          "fingerprint": [
+            8,
+            172,
+            196,
+            232,
+            296,
+            408,
+            648,
+            1244
+          ]
+        },
+        {
+          "inputQuantity": "ldp_lamb_sp_ip_r_it_iplsl",
+          "unit": "-",
+          "factor": 0.0009765625,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x61A4",
+          "fingerprint": [
+            8,
+            717,
+            820,
+            922,
+            973,
+            1024,
+            1076,
+            1127
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_v_efc_ctl_lsh_up",
+      "type": "MAP",
+      "description": "Open loop control effective heater voltage",
+      "recordLayout": "_REC_A1MAP_20_u1_u1_u2",
+      "defaultAddress": "0x6EA4",
+      "dims": {
+        "nx": 7,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x724",
+          "fingerprint": [
+            7,
+            21,
+            47,
+            63,
+            94,
+            125,
+            156
+          ]
+        },
+        {
+          "inputQuantity": "ldpm_teg_dyn_ls_up_1_egcp",
+          "unit": "°C",
+          "factor": 0.0625,
+          "offset": -273.15,
+          "dataType": "UWORD_LE",
+          "address": "0x64C4",
+          "fingerprint": [
+            6,
+            9970,
+            10770,
+            12370,
+            14770,
+            17170
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_temp_ini_ls_up",
+      "type": "MAP",
+      "description": "Oxygen sensor temperature value after engine start",
+      "recordLayout": "_REC_A1MAP_20_u2_u1_u1",
+      "defaultAddress": "0x6E10",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "tco_st",
+          "unit": "°C",
+          "factor": 0.7500000000000002,
+          "offset": -48.000000000000014,
+          "dataType": "UBYTE",
+          "address": "0x7CA",
+          "fingerprint": [
+            6,
+            24,
+            64,
+            104,
+            144,
+            184
+          ]
+        },
+        {
+          "inputQuantity": "tia_thr_st",
+          "unit": "°C",
+          "factor": 0.7500000000000002,
+          "offset": -48.000000000000014,
+          "dataType": "UBYTE",
+          "address": "0x7F4",
+          "fingerprint": [
+            6,
+            24,
+            51,
+            64,
+            77,
+            91
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_lamb_ampl_max_dyn_lsl_up",
+      "type": "MAP",
+      "description": "Nominal sensor expected amplitude during the Dynamic Diagnosis Rem.: The same points in LDPM_N_32_2_EGTR and LDPM_MAF_HB_2_EGTR shall be used",
+      "recordLayout": "_REC_A1MAP_20_u1_u1_u1",
+      "defaultAddress": "0x6844",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x6468",
+          "fingerprint": [
+            8,
+            34,
+            39,
+            47,
+            55,
+            63,
+            70,
+            78
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x6438",
+          "fingerprint": [
+            8,
+            20,
+            27,
+            31,
+            38,
+            47,
+            56,
+            64
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_lamb_ampl_min_dyn_lsl_up",
+      "type": "MAP",
+      "description": "Limit sensor expected amplitude during the Dynamic Diagnosis Rem.: The same points in LDPM_N_32_2_EGTR and LDPM_MAF_HB_2_EGTR shall be used",
+      "recordLayout": "_REC_A1MAP_20_u1_u1_u1",
+      "defaultAddress": "0x6884",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x6468",
+          "fingerprint": [
+            8,
+            34,
+            39,
+            47,
+            55,
+            63,
+            70,
+            78
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x6438",
+          "fingerprint": [
+            8,
+            20,
+            27,
+            31,
+            38,
+            47,
+            56,
+            64
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_t_dyn_diag_comp",
+      "type": "MAP",
+      "description": "Real maximum and minimum lambda measurement time",
+      "recordLayout": "_REC_A1MAP_20_u2_u1_u1",
+      "defaultAddress": "0x6C04",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x6468",
+          "fingerprint": [
+            8,
+            34,
+            39,
+            47,
+            55,
+            63,
+            70,
+            78
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x6438",
+          "fingerprint": [
+            8,
+            20,
+            27,
+            31,
+            38,
+            47,
+            56,
+            64
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_prs_dif_estim_full",
+      "type": "MAP",
+      "description": "Table for determination of estimated differential pressure value for system in full-engine-mode and not in charged mode",
+      "recordLayout": "_REC_A1MAP_20_u2_u1_u2",
+      "defaultAddress": "0x716C",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "ldp_cppwm_ip_prs_dif_estim_full",
+          "unit": "%",
+          "factor": 0.390625,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0xDCE",
+          "fingerprint": [
+            6,
+            77,
+            102,
+            128,
+            154,
+            179
+          ]
+        },
+        {
+          "inputQuantity": "prs_dif_amp_map_diagcps",
+          "unit": "hPa",
+          "factor": 0.08291752498664837,
+          "offset": -2717.0414590000005,
+          "dataType": "UWORD_LE",
+          "address": "0x6FD8",
+          "fingerprint": [
+            6,
+            35180,
+            36386,
+            37592,
+            38798,
+            40004
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_mff_fac_ae_ini",
+      "type": "MAP",
+      "description": "initialisation value of the enrichment factor",
+      "recordLayout": "_REC_A1MAP_20_u1_u1_u2",
+      "defaultAddress": "0xEEF8",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x9DF8",
+          "fingerprint": [
+            8,
+            16,
+            31,
+            39,
+            55,
+            63,
+            94,
+            156
+          ]
+        },
+        {
+          "inputQuantity": "map_mes_cor",
+          "unit": "hPa",
+          "factor": 0.08291752498664837,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x9C94",
+          "fingerprint": [
+            6,
+            2412,
+            3618,
+            4824,
+            6030,
+            12036
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_mff_fac_ae_ini_vvl",
+      "type": "MAP",
+      "description": "Initialization value of the enrichment factor depending on variable valve lift position",
+      "recordLayout": "_REC_A1MAP_20_u1_u1_u2",
+      "defaultAddress": "0xEFA8",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x9DF8",
+          "fingerprint": [
+            8,
+            16,
+            31,
+            39,
+            55,
+            63,
+            94,
+            156
+          ]
+        },
+        {
+          "inputQuantity": "map_mes_cor",
+          "unit": "hPa",
+          "factor": 0.08291752498664837,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x9C94",
+          "fingerprint": [
+            6,
+            2412,
+            3618,
+            4824,
+            6030,
+            12036
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_ac_sp_lim_grd_max_cor_pos_dt_mng",
+      "type": "MAP",
+      "description": "Correction of positive aceleration gradient of limited acceleration setpoint of drive train manager",
+      "recordLayout": "_REC_A1MAP_20_u2_u2_u2",
+      "defaultAddress": "0xAB18",
+      "dims": {
+        "nx": 6,
+        "ny": 7
+      },
+      "axes": [
+        {
+          "inputQuantity": "ldp_ac_veh_sp_grd_ip_ac_grd",
+          "unit": "m/s³",
+          "factor": 0.0008499992370489055,
+          "offset": -27.85280000000001,
+          "dataType": "UWORD_LE",
+          "address": "0x8DC4",
+          "fingerprint": [
+            6,
+            32768,
+            32827,
+            32886,
+            33003,
+            33239
+          ]
+        },
+        {
+          "inputQuantity": "tq_clc_brake_whl",
+          "unit": "Nm",
+          "factor": 2.0,
+          "offset": -65536.0,
+          "dataType": "UWORD_LE",
+          "address": "0xA0F0",
+          "fingerprint": [
+            7,
+            32168,
+            32418,
+            32643,
+            32768,
+            32843,
+            32893
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_ac_sp_lim_grd_min_dt_mng",
+      "type": "MAP",
+      "description": "Gradient of of limited acceleration setpoint of drive train manager",
+      "recordLayout": "_REC_A1MAP_20_u2_u2_u2",
+      "defaultAddress": "0xABC0",
+      "dims": {
+        "nx": 6,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "ac_veh_sp_lim_cru",
+          "unit": "m/s²",
+          "factor": 0.0008499992370489055,
+          "offset": -27.85280000000001,
+          "dataType": "UWORD_LE",
+          "address": "0x8DD4",
+          "fingerprint": [
+            6,
+            29239,
+            30415,
+            31592,
+            32768,
+            33944
+          ]
+        },
+        {
+          "inputQuantity": "ac_veh_sp_lim_ramp",
+          "unit": "m/s²",
+          "factor": 0.0008499992370489055,
+          "offset": -27.85280000000001,
+          "dataType": "UWORD_LE",
+          "address": "0x8DE4",
+          "fingerprint": [
+            8,
+            29239,
+            30415,
+            31592,
+            32768,
+            33944,
+            35121,
+            36297
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_fac_fil_ac_ctl",
+      "type": "MAP",
+      "description": "Acceleration set point factor",
+      "recordLayout": "_REC_A1MAP_20_u2_u2_u2",
+      "defaultAddress": "0xC100",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "ac_dif_ctl_lim",
+          "unit": "m/s²",
+          "factor": 0.0008499992370489055,
+          "offset": -27.85280000000001,
+          "dataType": "UWORD_LE",
+          "address": "0x8C88",
+          "fingerprint": [
+            6,
+            23356,
+            29827,
+            31003,
+            32768,
+            33356
+          ]
+        },
+        {
+          "inputQuantity": "tq_clc_wheel_sum",
+          "unit": "Nm",
+          "factor": 2.0,
+          "offset": -65536.0,
+          "dataType": "UWORD_LE",
+          "address": "0x9764",
+          "fingerprint": [
+            6,
+            32668,
+            32768,
+            32818,
+            32893,
+            34768
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_i_kr_ratio_tq_whl",
+      "type": "MAP",
+      "description": "Integration part of acceleration controller",
+      "recordLayout": "_REC_A1MAP_20_u2_u2_u2",
+      "defaultAddress": "0xE584",
+      "dims": {
+        "nx": 7,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "ratio_n_eng_whl",
+          "unit": "-",
+          "factor": 0.000976562500038148,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x9FD0",
+          "fingerprint": [
+            7,
+            2048,
+            3379,
+            4813,
+            5939,
+            7680,
+            12288
+          ]
+        },
+        {
+          "inputQuantity": "n",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x9D00",
+          "fingerprint": [
+            8,
+            700,
+            1000,
+            1250,
+            1500,
+            1750,
+            2500,
+            3000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_ac_cru_conv",
+      "type": "MAP",
+      "description": "Cruise control acceleration setpoint",
+      "recordLayout": "_REC_A1MAP_20_u2_u2_u2",
+      "defaultAddress": "0xA8F4",
+      "dims": {
+        "nx": 9,
+        "ny": 9
+      },
+      "axes": [
+        {
+          "inputQuantity": "vs_cru",
+          "unit": "km/h",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x98C0",
+          "fingerprint": [
+            9,
+            2500,
+            3000,
+            4000,
+            5000,
+            6000,
+            12000,
+            16000,
+            20000
+          ]
+        },
+        {
+          "inputQuantity": "vs_sp_dif_cru",
+          "unit": "km/h",
+          "factor": 0.01,
+          "offset": -327.68,
+          "dataType": "UWORD_LE",
+          "address": "0x99A8",
+          "fingerprint": [
+            9,
+            29268,
+            31768,
+            32168,
+            32568,
+            32768,
+            32968,
+            33368,
+            33768
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "14/14"
+  }
+}

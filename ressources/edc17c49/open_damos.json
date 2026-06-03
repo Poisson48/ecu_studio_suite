@@ -1,0 +1,957 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "edc17c49",
+  "name": "open_damos — FREEMONT edc17c49",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "FREEMONT EDC17C49 170CV_1037519867.ori",
+    "damos": "FREEMONT EDC17C49 170CV_1037519867_P1060.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/FREEMONT edc17c49/FREEMONT edc17c49"
+  },
+  "recordLayouts": {
+    "Map_Xs16Ys16Ws16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "SWORD_LE"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "ACComp_facN_MAP",
+      "type": "MAP",
+      "description": "Map to convert AC wheel speed and compensation time into torque factor for AC torque compensation",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x243D18",
+      "dims": {
+        "nx": 8,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "ACComp_nACWheel_mp",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1900,
+            2300,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000
+          ]
+        },
+        {
+          "inputQuantity": "ACComp_tiComp_mp",
+          "unit": "ms",
+          "factor": 10.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            15,
+            20,
+            35,
+            40,
+            55,
+            60,
+            200,
+            300,
+            500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0001220703125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqASTEngB_MAP",
+      "type": "MAP",
+      "description": "Driveability map B in engine torque for conventional drive train control, for Selespeed transmission",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x24A33A",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            600,
+            1000,
+            1600,
+            2000,
+            3000,
+            4000,
+            5000,
+            5400,
+            6000,
+            6600,
+            7400,
+            8000,
+            9000,
+            10000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            410,
+            819,
+            1229,
+            1638,
+            2048,
+            2867,
+            3277,
+            3686,
+            4096,
+            4506,
+            5325,
+            5734,
+            6554,
+            7373,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqASTEngC_MAP",
+      "type": "MAP",
+      "description": "Driveability map C in engine torque for conventional drive train control, for Selespeed transmission",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x24A57E",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            600,
+            1000,
+            1600,
+            2000,
+            3000,
+            4000,
+            5000,
+            5400,
+            6000,
+            6600,
+            7400,
+            8000,
+            9000,
+            10000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            410,
+            819,
+            1229,
+            1638,
+            2048,
+            2867,
+            3277,
+            3686,
+            4096,
+            4506,
+            5325,
+            5734,
+            6554,
+            7373,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqASTEngDrvAwy_MAP",
+      "type": "MAP",
+      "description": "Driveability map driveaway in engine torque for conventional drive train control, for Selespeed transmission.",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x24A7C2",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            600,
+            1000,
+            1600,
+            2000,
+            3000,
+            4000,
+            5000,
+            5400,
+            6000,
+            6600,
+            7400,
+            8000,
+            9000,
+            10000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            410,
+            819,
+            1229,
+            1638,
+            2048,
+            2867,
+            3277,
+            3686,
+            4096,
+            4506,
+            5325,
+            5734,
+            6554,
+            7373,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqASTEng_MAP",
+      "type": "MAP",
+      "description": "Driveability map in engine torque for conventional drive train control, for Selespeed Transmission",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x24AA06",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            600,
+            1000,
+            1600,
+            2000,
+            3000,
+            4000,
+            5000,
+            5400,
+            6000,
+            6600,
+            7400,
+            8000,
+            9000,
+            10000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            410,
+            819,
+            1229,
+            1638,
+            2048,
+            2867,
+            3277,
+            3686,
+            4096,
+            4506,
+            5325,
+            5734,
+            6554,
+            7373,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqEngB_MAP",
+      "type": "MAP",
+      "description": "Drivability map for Map B. Size is 16x16",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x24AC50",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            800,
+            2000,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            9500,
+            10000,
+            10400,
+            12000,
+            12200,
+            12400
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            82,
+            410,
+            819,
+            1638,
+            2458,
+            3277,
+            4096,
+            4915,
+            5734,
+            6554,
+            7373,
+            8192,
+            8198,
+            8199,
+            8200
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqEngC_MAP",
+      "type": "MAP",
+      "description": "Drivability map for Map C. Size is 16x16",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x24AE94",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            800,
+            2000,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            9500,
+            10000,
+            10400,
+            12000,
+            12200,
+            12400
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            82,
+            410,
+            819,
+            1638,
+            2458,
+            3277,
+            4096,
+            4915,
+            5734,
+            6554,
+            7373,
+            8192,
+            8198,
+            8199,
+            8200
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqEngDrvAwy_MAP",
+      "type": "MAP",
+      "description": "Driver's behaviour map as engine torque at conventional powertrain coordination for drive away condition",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x24B0D8",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            800,
+            2000,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            9500,
+            10000,
+            10400,
+            12000,
+            12200,
+            12400
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            82,
+            410,
+            819,
+            1638,
+            2458,
+            3277,
+            4096,
+            4915,
+            5734,
+            6554,
+            7373,
+            8192,
+            8198,
+            8199,
+            8200
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqEng_MAP",
+      "type": "MAP",
+      "description": "This is the Pedal Map 1. Size is 16 * 16",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x24B31C",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            800,
+            2000,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            9500,
+            10000,
+            10400,
+            12000,
+            12200,
+            12400
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            82,
+            410,
+            819,
+            1638,
+            2458,
+            3277,
+            4096,
+            4915,
+            5734,
+            6554,
+            7373,
+            8192,
+            8198,
+            8199,
+            8200
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACCtl_nEngShutOff_MAP",
+      "type": "MAP",
+      "description": "Calculates value for instant shut-off based on engine speed and AC current",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x243F5A",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2000,
+            3000,
+            4000,
+            5000,
+            7000,
+            10000
+          ]
+        },
+        {
+          "inputQuantity": "ACCtl_iVDCOut",
+          "unit": "A",
+          "factor": 3.051850947599719e-05,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            328,
+            492,
+            655,
+            983,
+            1311
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.5,
+        "offset": 0.0,
+        "unit": "rpm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACCtl_tClntShutOff_MAP",
+      "type": "MAP",
+      "description": "Calculates value for instant shut-off based on AC current and coolant temp",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x243FD8",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "ACCtl_iVDCOut",
+          "unit": "A",
+          "factor": 3.051850947599719e-05,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            328,
+            492,
+            655,
+            983,
+            1311
+          ]
+        },
+        {
+          "inputQuantity": "CEngDsT_t",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2331,
+            2531,
+            2731,
+            3031,
+            3331,
+            3931
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": -273.14,
+        "unit": "deg C"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AFS_dmAirSubsVal_MAP",
+      "type": "MAP",
+      "description": "Map to calculate the substitute value for air flow signal in case of errors",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x24435C",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            750,
+            1500,
+            2250,
+            3000,
+            3750,
+            4500,
+            5250,
+            6000,
+            6750,
+            7500,
+            8250,
+            9000,
+            9750,
+            10500,
+            11250
+          ]
+        },
+        {
+          "inputQuantity": "InjCtl_qRaw",
+          "unit": "mm^3/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            600,
+            1200,
+            1800,
+            2400,
+            3000,
+            3600,
+            4200,
+            4800,
+            5400,
+            6000,
+            6600,
+            7200,
+            7800,
+            8400,
+            9000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Kg/h"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AFS_facPlsCorBasEGRShOff_MAP",
+      "type": "MAP",
+      "description": "Pulsation correction map when EGR is shut off.",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x244848",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            700,
+            1400,
+            2100,
+            2800,
+            3500,
+            4200,
+            4900,
+            5600,
+            6300,
+            7000,
+            7700,
+            8400,
+            9100,
+            9800,
+            10500
+          ]
+        },
+        {
+          "inputQuantity": "InjCtl_qSetUnBal",
+          "unit": "mm^3/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            200,
+            400,
+            600,
+            800,
+            1000,
+            1200,
+            1400,
+            1600,
+            1800,
+            2000,
+            2200,
+            2400,
+            2600,
+            2800,
+            3000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0001220703125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AFS_facPlsCorBasEOM0_MAP",
+      "type": "MAP",
+      "description": "Pulsation correction map depending on the either injection quantity or the torque quantity depending on SETPOINTCALC_TRQBASED_SY.",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x244A8C",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            1600,
+            2200,
+            2800,
+            3400,
+            4000,
+            4600,
+            5200,
+            5800,
+            6400,
+            7000,
+            7600,
+            8200,
+            8800,
+            9400,
+            10000
+          ]
+        },
+        {
+          "inputQuantity": "InjCtl_qSetUnBal",
+          "unit": "mm^3/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            6500,
+            7000,
+            7500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0001220703125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "14/14"
+  }
+}

@@ -1,0 +1,430 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "dq500",
+  "name": "open_damos — DQ500 - ST3A0L0000000",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "O17.s19",
+    "damos": "O17.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/DQ500 - ST3A0L0000000"
+  },
+  "recordLayouts": {
+    "__SWORD_Z": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "SWORD_LE",
+      "axisMode": "COM_AXIS"
+    },
+    "__SWORD_S": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "SWORD_LE",
+      "axisMode": "COM_AXIS"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "Kra_dMKupMax_kf",
+      "type": "MAP",
+      "description": "Maximaler Kupplungsmomentengradient abhängig von Fahrpedal und Kupplungsmoment",
+      "recordLayout": "__SWORD_Z",
+      "defaultAddress": "0x1A40",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Kra_MKup_dMKupMax_ka",
+          "unit": "Nm",
+          "factor": 0.05,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x1AF0",
+          "fingerprint": [
+            200,
+            400,
+            600,
+            800,
+            1200,
+            1600,
+            2000,
+            4000
+          ]
+        },
+        {
+          "inputQuantity": "Kra_FPdMKup_ka",
+          "unit": "%",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x1AC0",
+          "fingerprint": [
+            0,
+            100,
+            200,
+            350,
+            500,
+            600,
+            800,
+            1000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Gss_P_StellHoch_kf",
+      "type": "MAP",
+      "description": "Kennfeld mit hohem Stelldruck",
+      "recordLayout": "__SWORD_S",
+      "defaultAddress": "0x374C",
+      "dims": {
+        "nx": 8,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "Gss_V_StellHoch_ka",
+          "unit": "mm/s",
+          "factor": 0.25,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x39F8",
+          "fingerprint": [
+            60,
+            80,
+            200,
+            320,
+            480,
+            640,
+            800,
+            960
+          ]
+        },
+        {
+          "inputQuantity": "Gss_Temp_StellDruck_ka",
+          "unit": "°C",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x3A08",
+          "fingerprint": [
+            -40,
+            -30,
+            -25,
+            -20,
+            -15,
+            -10,
+            0,
+            20,
+            40,
+            120
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Kku_KuehlOelFlussKPause_kf",
+      "type": "MAP",
+      "description": "Mindeskühlölfluß in Kühlölpausen bei hohen Energieeinträgen",
+      "recordLayout": "__SWORD_Z",
+      "defaultAddress": "0x22BC",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "Kku_Reibleistung_KOP_ka",
+          "unit": "kW",
+          "factor": 0.02,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x22AC",
+          "fingerprint": [
+            0,
+            31,
+            94,
+            188,
+            281,
+            375,
+            500,
+            625
+          ]
+        },
+        {
+          "inputQuantity": "Kku_TempMechatronik_ka",
+          "unit": "°C",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x2230",
+          "fingerprint": [
+            -30,
+            -10,
+            10,
+            40,
+            80,
+            140
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Kku_KuehlOelFluss_kf",
+      "type": "MAP",
+      "description": "Kennfeld für den reibleistungsabhängigen Sollkühlölfluß",
+      "recordLayout": "__SWORD_Z",
+      "defaultAddress": "0x224C",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "Kku_Reibleistung_ka",
+          "unit": "kW",
+          "factor": 0.02,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x223C",
+          "fingerprint": [
+            0,
+            31,
+            94,
+            188,
+            281,
+            375,
+            500,
+            625
+          ]
+        },
+        {
+          "inputQuantity": "Kku_TempMechatronik_ka",
+          "unit": "°C",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x2230",
+          "fingerprint": [
+            -30,
+            -10,
+            10,
+            40,
+            80,
+            140
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Kku_TempSollKuppPIR_kf",
+      "type": "MAP",
+      "description": "Kennfeld für die Kupplungssolltemperatur in Abhängigkeit von der Mechatronik- und Kühlwassertemperatur",
+      "recordLayout": "__SWORD_Z",
+      "defaultAddress": "0x2338",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "Kku_TempMechatronik_PIR_ka",
+          "unit": "O °C",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x231C",
+          "fingerprint": [
+            -15,
+            -5,
+            25,
+            60,
+            80,
+            100,
+            120,
+            135
+          ]
+        },
+        {
+          "inputQuantity": "Kku_TempKuehlWasser_ka",
+          "unit": "W °C",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x232C",
+          "fingerprint": [
+            -30,
+            10,
+            60,
+            90,
+            120,
+            150
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Kku_Zeit_OelImpuls_AUS_kf",
+      "type": "MAP",
+      "description": "Kennfeld für die Pausenzeiten der Impulsschmierung",
+      "recordLayout": "__SWORD_Z",
+      "defaultAddress": "0x23B4",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "Kku_Reibleistung_ImpSchm_ka",
+          "unit": "kW",
+          "factor": 0.02,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x23A4",
+          "fingerprint": [
+            0,
+            31,
+            94,
+            188,
+            281,
+            375,
+            500,
+            625
+          ]
+        },
+        {
+          "inputQuantity": "Kku_TempMechatronik_ImpSchm_ka",
+          "unit": "°C",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x2398",
+          "fingerprint": [
+            -30,
+            -10,
+            10,
+            40,
+            80,
+            140
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Kku_Zeit_OelImpuls_EIN_kf",
+      "type": "MAP",
+      "description": "Kennfeld für die Schmierzeiten der Impulsschmierung",
+      "recordLayout": "__SWORD_Z",
+      "defaultAddress": "0x2414",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "Kku_Reibleistung_ImpSchm_ka",
+          "unit": "kW",
+          "factor": 0.02,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x23A4",
+          "fingerprint": [
+            0,
+            31,
+            94,
+            188,
+            281,
+            375,
+            500,
+            625
+          ]
+        },
+        {
+          "inputQuantity": "Kku_TempMechatronik_ImpSchm_ka",
+          "unit": "°C",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x2398",
+          "fingerprint": [
+            -30,
+            -10,
+            10,
+            40,
+            80,
+            140
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "7/7"
+  }
+}

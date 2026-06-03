@@ -1,0 +1,779 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "8bc2585b",
+  "name": "open_damos — 8BC2585B",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "8BC2585B.hex",
+    "damos": "8BC2585B_slave.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/MEVD17.2.8/S63TUE/8BC2585B/8BC2585B"
+  },
+  "recordLayouts": {
+    "KfAxU8AyU8SstxU16SstyU16WU16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "UWORD_LE"
+    },
+    "_REC_S5MAP_52_KF_u2_s2_s2": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "UWORD_LE"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "Cat1.KFOSCD",
+      "type": "MAP",
+      "description": "Berechnung Grenzkat OSC, 1. Kat, Bank 1 / Kennfeld Grenzkatalysator",
+      "recordLayout": "KfAxU8AyU8SstxU16SstyU16WU16",
+      "defaultAddress": "0x1CD2D0",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Cat1.tadktl_w",
+          "unit": "Grad C",
+          "factor": 0.0234375,
+          "offset": -273.15,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            28678,
+            28721,
+            32988,
+            37254,
+            41521,
+            43654,
+            45788,
+            45830
+          ]
+        },
+        {
+          "inputQuantity": "Cat1.mldkt_w",
+          "unit": "kg/h",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            200,
+            300,
+            400,
+            500,
+            600,
+            700,
+            800,
+            900
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "mg"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "CILCN_aEngRghChngBnk1_MAP",
+      "type": "MAP",
+      "description": "Drehzahl- und lastabhängige Sollkennlinie für Laufunruheänderung Bank 1",
+      "recordLayout": "KfAxU8AyU8SstxU16SstyU16WU16",
+      "defaultAddress": "0x1CBB7C",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "rl_w",
+          "unit": "%",
+          "factor": 0.0234375,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            850,
+            1280,
+            1707,
+            2133,
+            2560,
+            2987
+          ]
+        },
+        {
+          "inputQuantity": "nmot_w",
+          "unit": "1/min",
+          "factor": 0.25,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            5600,
+            7200,
+            8800,
+            10400,
+            12000,
+            12800
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.0071054520133298285,
+        "offset": 0.0,
+        "unit": "(Umdr./sec)^2"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "CILCN_aEngRghChngBnk2_MAP",
+      "type": "MAP",
+      "description": "Drehzahl- und lastabhängige Sollkennlinie für Laufunruheänderung Bank 2",
+      "recordLayout": "KfAxU8AyU8SstxU16SstyU16WU16",
+      "defaultAddress": "0x1CBBE0",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "rl_w",
+          "unit": "%",
+          "factor": 0.0234375,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            853,
+            1280,
+            1707,
+            2133,
+            2560,
+            2987
+          ]
+        },
+        {
+          "inputQuantity": "nmot_w",
+          "unit": "1/min",
+          "factor": 0.25,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            4000,
+            5600,
+            7200,
+            8800,
+            10400,
+            12000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.0071054520133298285,
+        "offset": 0.0,
+        "unit": "(Umdr./sec)^2"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "CILCN_aEngRghChngThrBnk1_MAP",
+      "type": "MAP",
+      "description": "Drehzahl- und lastabhängige Sollkennlinie für Laufunruheänderung Bank 1 (gedrosselter Betrieb)",
+      "recordLayout": "KfAxU8AyU8SstxU16SstyU16WU16",
+      "defaultAddress": "0x1CBC44",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "rl_w",
+          "unit": "%",
+          "factor": 0.0234375,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            853,
+            1280,
+            1707,
+            2133,
+            2560,
+            2987
+          ]
+        },
+        {
+          "inputQuantity": "nmot_w",
+          "unit": "1/min",
+          "factor": 0.25,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            5600,
+            7200,
+            8800,
+            10400,
+            12000,
+            12800
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.0071054520133298285,
+        "offset": 0.0,
+        "unit": "(Umdr./sec)^2"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "CILCN_facEnaCorr_MAP",
+      "type": "MAP",
+      "description": "Drehzahl- und lastabhängiges Kennfeld zur Festlegung des Anwendungsbereiches der Adaptionswerte",
+      "recordLayout": "KfAxU8AyU8SstxU16SstyU16WU16",
+      "defaultAddress": "0x1CBD3C",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "nmot_w",
+          "unit": "1/min",
+          "factor": 0.25,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            4000,
+            5600,
+            7200,
+            8800,
+            10400,
+            12000,
+            13600,
+            15200
+          ]
+        },
+        {
+          "inputQuantity": "rl_w",
+          "unit": "%",
+          "factor": 0.0234375,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            853,
+            1707,
+            2560,
+            3413,
+            4267,
+            5120
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.52587890625e-05,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "KF_DZW_KOEFF_KHKLL_PF1",
+      "type": "MAP",
+      "description": "Koeff. ZW-Wirkungsgrad bei Katheizen kalter Leerlauf Pfad 1",
+      "recordLayout": "_REC_S5MAP_52_KF_u2_s2_s2",
+      "defaultAddress": "0x1A446E",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Nkw",
+          "unit": "Upm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            736,
+            864,
+            960,
+            1056,
+            1152,
+            1248,
+            1760,
+            3000
+          ]
+        },
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "%",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            6500,
+            20185
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.000244140625,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "KF_DZW_KOEFF_KHKLL_PF2",
+      "type": "MAP",
+      "description": "Koeff. ZW-Wirkungsgrad bei Katheizen kalter Leerlauf Pfad 2",
+      "recordLayout": "_REC_S5MAP_52_KF_u2_s2_s2",
+      "defaultAddress": "0x1A41E6",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Nkw",
+          "unit": "Upm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            736,
+            864,
+            960,
+            1056,
+            1152,
+            1248,
+            1760,
+            3000
+          ]
+        },
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "%",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            3600,
+            4200,
+            4800,
+            5400,
+            6000,
+            6600,
+            7200,
+            15499
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.000244140625,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "KF_DZW_KOEFF_KHKLL_PF3",
+      "type": "MAP",
+      "description": "Koeff. ZW-Wirkungsgrad bei Katheizen kalter Leerlauf Pfad 3",
+      "recordLayout": "_REC_S5MAP_52_KF_u2_s2_s2",
+      "defaultAddress": "0x1A3F5E",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Nkw",
+          "unit": "Upm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            736,
+            864,
+            960,
+            1056,
+            1152,
+            1248,
+            1760,
+            3000
+          ]
+        },
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "%",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            3600,
+            4200,
+            4800,
+            5400,
+            6000,
+            6600,
+            7200,
+            15499
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.000244140625,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "KF_DZW_KOEFF_KHKLL_PF4",
+      "type": "MAP",
+      "description": "Koeff. ZW-Wirkungsgrad bei Katheizen kalter Leerlauf Pfad 4",
+      "recordLayout": "_REC_S5MAP_52_KF_u2_s2_s2",
+      "defaultAddress": "0x1A3CD6",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Nkw",
+          "unit": "Upm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            736,
+            864,
+            960,
+            1056,
+            1152,
+            1248,
+            1760,
+            3000
+          ]
+        },
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "%",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            3600,
+            4200,
+            4800,
+            5400,
+            6000,
+            6600,
+            7200,
+            15499
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.000244140625,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "KF_DZW_KOEFF_KHK_PF1",
+      "type": "MAP",
+      "description": "Koeff. ZW-Wirkungsgrad bei Katheizen kalte Teillast Pfad 1",
+      "recordLayout": "_REC_S5MAP_52_KF_u2_s2_s2",
+      "defaultAddress": "0x1A45B2",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Nkw",
+          "unit": "Upm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            736,
+            864,
+            960,
+            1056,
+            1152,
+            1248,
+            1504,
+            3000
+          ]
+        },
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "%",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            6500,
+            20185
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.000244140625,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "KF_DZW_KOEFF_KHK_PF2",
+      "type": "MAP",
+      "description": "Koeff. ZW-Wirkungsgrad bei Katheizen kalte Teillast Pfad 2",
+      "recordLayout": "_REC_S5MAP_52_KF_u2_s2_s2",
+      "defaultAddress": "0x1A432A",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Nkw",
+          "unit": "Upm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            736,
+            864,
+            960,
+            1056,
+            1152,
+            1248,
+            1504,
+            3000
+          ]
+        },
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "%",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            3600,
+            4200,
+            4800,
+            5400,
+            6000,
+            6600,
+            7200,
+            17121
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.000244140625,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "KF_DZW_KOEFF_KHK_PF3",
+      "type": "MAP",
+      "description": "Koeff. ZW-Wirkungsgrad bei Katheizen kalte Teillast Pfad 3",
+      "recordLayout": "_REC_S5MAP_52_KF_u2_s2_s2",
+      "defaultAddress": "0x1A40A2",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Nkw",
+          "unit": "Upm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            736,
+            864,
+            960,
+            1056,
+            1152,
+            1248,
+            1504,
+            3000
+          ]
+        },
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "%",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            3600,
+            4200,
+            4800,
+            5400,
+            6000,
+            6600,
+            7200,
+            17121
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.000244140625,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "KF_DZW_KOEFF_KHK_PF4",
+      "type": "MAP",
+      "description": "Koeff. ZW-Wirkungsgrad bei Katheizen kalte Teillast Pfad 4",
+      "recordLayout": "_REC_S5MAP_52_KF_u2_s2_s2",
+      "defaultAddress": "0x1A3E1A",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Nkw",
+          "unit": "Upm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            736,
+            864,
+            960,
+            1056,
+            1152,
+            1248,
+            1504,
+            3000
+          ]
+        },
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "%",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            3600,
+            4200,
+            4800,
+            5400,
+            6000,
+            6600,
+            7200,
+            17121
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.000244140625,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "KF_DZW_KOEFF_KHWLL_PF1",
+      "type": "MAP",
+      "description": "Koeff. ZW-Wirkungsgrad bei Katheizen warmer Leerlauf Pfad 1",
+      "recordLayout": "_REC_S5MAP_52_KF_u2_s2_s2",
+      "defaultAddress": "0x1A43CC",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Nkw",
+          "unit": "Upm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            736,
+            864,
+            960,
+            1056,
+            1152,
+            1248,
+            1760,
+            3000
+          ]
+        },
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "%",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            6500,
+            20906
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.000244140625,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "5/14"
+  }
+}

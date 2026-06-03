@@ -1,0 +1,867 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "715c450b",
+  "name": "open_damos — 715c450b",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "c45amqv1.hex",
+    "damos": "715c4500.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/ME9 N40/715c450b"
+  },
+  "recordLayouts": {
+    "GkfWUb": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "GkfWU8": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "KfAxUbAyUbSstxUbSstyUbWSb": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "SBYTE"
+    },
+    "GkfWU16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UWORD_LE",
+      "axisMode": "COM_AXIS"
+    },
+    "KfAxUbAyUbSstxUbSstyUbWUb": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "UBYTE"
+    },
+    "KfAxU8AyU8SstxU16SstyU16WU16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "UWORD_LE"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "KFABAK",
+      "type": "MAP",
+      "description": "Aufteilungsfaktor Wandfilm bei BA",
+      "recordLayout": "GkfWUb",
+      "defaultAddress": "0xD998",
+      "dims": {
+        "nx": 9,
+        "ny": 7
+      },
+      "axes": [
+        {
+          "inputQuantity": "tmot",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "address": "0xC900",
+          "fingerprint": [
+            9,
+            24,
+            44,
+            64,
+            91,
+            117,
+            144,
+            171,
+            184
+          ]
+        },
+        {
+          "inputQuantity": "nmot",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0xC850",
+          "fingerprint": [
+            7,
+            15,
+            20,
+            25,
+            38,
+            50,
+            75
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "KFAMAL",
+      "type": "MAP",
+      "description": "Kennfeld Absenkungsfaktor für Lur-Wert bei erkannten Mehrfachaussetzern",
+      "recordLayout": "GkfWU8",
+      "defaultAddress": "0x1704",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "rl",
+          "unit": "%",
+          "factor": 0.75,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x1098",
+          "fingerprint": [
+            8,
+            19,
+            27,
+            40,
+            53,
+            67,
+            80,
+            100
+          ]
+        },
+        {
+          "inputQuantity": "nmot",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0xFB8",
+          "fingerprint": [
+            8,
+            20,
+            30,
+            45,
+            65,
+            88,
+            113,
+            138
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "KFAMAL2",
+      "type": "MAP",
+      "description": "Kennfeld Absenkungsfaktor für Lur-Wert bei erkannten Mehrfachaussetzern",
+      "recordLayout": "GkfWU8",
+      "defaultAddress": "0x1784",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "rl",
+          "unit": "%",
+          "factor": 0.75,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x1098",
+          "fingerprint": [
+            8,
+            19,
+            27,
+            40,
+            53,
+            67,
+            80,
+            100
+          ]
+        },
+        {
+          "inputQuantity": "nmot",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0xFB8",
+          "fingerprint": [
+            8,
+            20,
+            30,
+            45,
+            65,
+            88,
+            113,
+            138
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "KFAVAK",
+      "type": "MAP",
+      "description": "Aufteilungsfaktor Wandfilm bei VA",
+      "recordLayout": "GkfWUb",
+      "defaultAddress": "0xD9D8",
+      "dims": {
+        "nx": 9,
+        "ny": 7
+      },
+      "axes": [
+        {
+          "inputQuantity": "tmot",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "address": "0xC900",
+          "fingerprint": [
+            9,
+            24,
+            44,
+            64,
+            91,
+            117,
+            144,
+            171,
+            184
+          ]
+        },
+        {
+          "inputQuantity": "nmot",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0xC850",
+          "fingerprint": [
+            7,
+            15,
+            20,
+            25,
+            38,
+            50,
+            75
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "KFBAKL",
+      "type": "MAP",
+      "description": "Faktor Beschleunigungsanreicherung (K+L-Anteil)",
+      "recordLayout": "GkfWUb",
+      "defaultAddress": "0xDA18",
+      "dims": {
+        "nx": 9,
+        "ny": 7
+      },
+      "axes": [
+        {
+          "inputQuantity": "tmot",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "address": "0xC900",
+          "fingerprint": [
+            9,
+            24,
+            44,
+            64,
+            91,
+            117,
+            144,
+            171,
+            184
+          ]
+        },
+        {
+          "inputQuantity": "nmot",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0xC850",
+          "fingerprint": [
+            7,
+            15,
+            20,
+            25,
+            38,
+            50,
+            75
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "KFBS",
+      "type": "MAP",
+      "description": "Kennfeld für banksel. Gemischfaktor",
+      "recordLayout": "KfAxUbAyUbSstxUbSstyUbWSb",
+      "defaultAddress": "0x4FD2",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "nmot",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            13,
+            19,
+            25,
+            31,
+            50,
+            88,
+            100,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111
+          ]
+        },
+        {
+          "inputQuantity": "rl",
+          "unit": "%",
+          "factor": 0.75,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            11,
+            14,
+            17,
+            21,
+            27,
+            40,
+            53,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SBYTE",
+        "factor": 0.001953125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "KFDLUR",
+      "type": "MAP",
+      "description": "Kennfeld für Laufunruhedifferenz dluts Referenzwert",
+      "recordLayout": "GkfWU16",
+      "defaultAddress": "0x1194",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "rl",
+          "unit": "%",
+          "factor": 0.75,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x1098",
+          "fingerprint": [
+            8,
+            19,
+            27,
+            40,
+            53,
+            67,
+            80,
+            100
+          ]
+        },
+        {
+          "inputQuantity": "nmot",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0xFB8",
+          "fingerprint": [
+            8,
+            20,
+            30,
+            45,
+            65,
+            88,
+            113,
+            138
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "KFDLUR1",
+      "type": "MAP",
+      "description": "Kennfeld für Laufunruhedifferenz dluts Referenzwert",
+      "recordLayout": "GkfWU16",
+      "defaultAddress": "0x1214",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "rl",
+          "unit": "%",
+          "factor": 0.75,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x1098",
+          "fingerprint": [
+            8,
+            19,
+            27,
+            40,
+            53,
+            67,
+            80,
+            100
+          ]
+        },
+        {
+          "inputQuantity": "nmot",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0xFB8",
+          "fingerprint": [
+            8,
+            20,
+            30,
+            45,
+            65,
+            88,
+            113,
+            138
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "KFDLURS",
+      "type": "MAP",
+      "description": "Kennfeld für Laufunruhedifferenz dluts Referenzwert",
+      "recordLayout": "GkfWU16",
+      "defaultAddress": "0x1314",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "rl",
+          "unit": "%",
+          "factor": 0.75,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x1098",
+          "fingerprint": [
+            8,
+            19,
+            27,
+            40,
+            53,
+            67,
+            80,
+            100
+          ]
+        },
+        {
+          "inputQuantity": "nmot",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0xFB8",
+          "fingerprint": [
+            8,
+            20,
+            30,
+            45,
+            65,
+            88,
+            113,
+            138
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "KFDYWVS",
+      "type": "MAP",
+      "description": "vorgesteuerter Dynamikvorhalt",
+      "recordLayout": "KfAxUbAyUbSstxUbSstyUbWUb",
+      "defaultAddress": "0xEB5C",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "tans",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            77,
+            104,
+            124,
+            144,
+            164,
+            184
+          ]
+        },
+        {
+          "inputQuantity": "nmot",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            25,
+            50,
+            75,
+            95,
+            110,
+            138
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": -0.75,
+        "offset": 0.0,
+        "unit": "Grad KW"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "KFELUPWM",
+      "type": "MAP",
+      "description": "Strom E-Lüfter über pwm und ub",
+      "recordLayout": "KfAxU8AyU8SstxU16SstyU16WU16",
+      "defaultAddress": "0x83B4",
+      "dims": {
+        "nx": 7,
+        "ny": 7
+      },
+      "axes": [
+        {
+          "inputQuantity": "taml_tmp",
+          "unit": "%",
+          "factor": 0.39215686274509803,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            0,
+            6656,
+            19712,
+            32768,
+            45824,
+            61952,
+            62720
+          ]
+        },
+        {
+          "inputQuantity": "vfzg_tmp",
+          "unit": "km/h",
+          "factor": 1.25,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            0,
+            8192,
+            16384,
+            24576,
+            32768,
+            40960,
+            49152
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.0625,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "category": "auto"
+    },
+    {
+      "name": "KFFDLBTS",
+      "type": "MAP",
+      "description": "Faktor Delta Lambdasoll für Bauteileschutz",
+      "recordLayout": "GkfWUb",
+      "defaultAddress": "0xDC40",
+      "dims": {
+        "nx": 12,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "rl",
+          "unit": "%",
+          "factor": 0.75,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0xC894",
+          "fingerprint": [
+            12,
+            40,
+            53,
+            67,
+            73,
+            80,
+            87,
+            93,
+            100,
+            107,
+            113,
+            120
+          ]
+        },
+        {
+          "inputQuantity": "nmot",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0xC864",
+          "fingerprint": [
+            16,
+            25,
+            50,
+            63,
+            75,
+            88,
+            100,
+            106,
+            113,
+            119,
+            125,
+            131,
+            138,
+            144,
+            150,
+            156
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "KFFFANZ",
+      "type": "MAP",
+      "description": "Anzahl Folgefunken",
+      "recordLayout": "KfAxUbAyUbSstxUbSstyUbWUb",
+      "defaultAddress": "0xB164",
+      "dims": {
+        "nx": 6,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "tmot",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            0,
+            41,
+            50,
+            75,
+            150,
+            197
+          ]
+        },
+        {
+          "inputQuantity": "nmot",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            0,
+            2,
+            4,
+            8,
+            13,
+            18,
+            50,
+            53
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "category": "auto"
+    },
+    {
+      "name": "KFFMSML",
+      "type": "MAP",
+      "description": "Abgasgegendruckkorrektur der Sekundärluftmasse",
+      "recordLayout": "KfAxUbAyUbSstxUbSstyUbWUb",
+      "defaultAddress": "0x105DC",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "nmot",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            22,
+            28,
+            33,
+            40,
+            50,
+            56,
+            63,
+            75
+          ]
+        },
+        {
+          "inputQuantity": "rl",
+          "unit": "%",
+          "factor": 0.75,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            20,
+            33,
+            40,
+            47,
+            53,
+            60,
+            67,
+            80
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 0.0078125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "11/14"
+  }
+}

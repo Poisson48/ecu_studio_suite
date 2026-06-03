@@ -1,0 +1,893 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "simos18_10",
+  "name": "open_damos — Simos18.10 2.0l TFSI, MQB48_, 169kW, EU6 ZDEF, DQ381-7F_81A907115__Y628",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "B00_81A907115__Y628g.hex",
+    "damos": "B00_81A907115__Y628g.A2L",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/Simos18.10 2.0l TFSI, MQB48_, 169kW, EU6 ZDEF, DQ381-7F_81A907115__Y628"
+  },
+  "recordLayouts": {
+    "Map_Xs16Ys16Ws16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "SWORD_LE"
+    },
+    "RB_Map_U8U8_U8": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "UBYTE"
+    },
+    "RB_MapGroup_U8": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "RB_Map_S16U16_U16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "UWORD_LE"
+    },
+    "RB_Map_U16U16_U16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "UWORD_LE"
+    },
+    "KfAxU8AyU8SstxU8SstyU8WU8": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "UBYTE"
+    },
+    "RB_Map_S16S16_S16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "SWORD_LE"
+    },
+    "RB_MapGroup_S16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "SWORD_LE",
+      "axisMode": "COM_AXIS"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "BasSvrAppl_CodEngCodLComb_MAP",
+      "type": "MAP",
+      "description": "Matrix für Kodierkombinationen",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x912FCCC",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "BasSvrAppl_CodEngCodlColIndx_mp",
+          "unit": "-",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            256,
+            512,
+            768,
+            1024,
+            1280,
+            1536,
+            1792
+          ]
+        },
+        {
+          "inputQuantity": "BasSvrAppl_CodEngCodlRowIndx_mp",
+          "unit": "-",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            256,
+            512,
+            768,
+            1024,
+            1280,
+            1536,
+            1792
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "EngStrt_facSpltCorrStrtEnchmtPfi_M",
+      "type": "MAP",
+      "description": "Wichtung Startanreicherung über Motortemperatur und Split-Faktor (PFI)",
+      "recordLayout": "RB_Map_U8U8_U8",
+      "defaultAddress": "0x90F66B5",
+      "dims": {
+        "nx": 7,
+        "ny": 7
+      },
+      "axes": [
+        {
+          "inputQuantity": "CEngDsT_tStrt_loc",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            24,
+            51,
+            64,
+            77,
+            104,
+            171,
+            211
+          ]
+        },
+        {
+          "inputQuantity": "InjSys_facPrtnPfi",
+          "unit": "-",
+          "factor": 0.00390625,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            0,
+            51,
+            102,
+            128,
+            154,
+            205,
+            255
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 0.0078125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ESNSWL_HOM_NST.KFFWL",
+      "type": "MAP",
+      "description": "Basisklasse / Kennfeld Warmlauffaktor",
+      "recordLayout": "RB_MapGroup_U8",
+      "defaultAddress": "0x90F56C0",
+      "dims": {
+        "nx": 12,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "tmotesnswl",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "address": "0x90F3F54",
+          "fingerprint": [
+            12,
+            17,
+            24,
+            31,
+            37,
+            51,
+            64,
+            77,
+            91,
+            117,
+            144,
+            157
+          ]
+        },
+        {
+          "inputQuantity": "tmstesnswl",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "address": "0x90F3F6A",
+          "fingerprint": [
+            12,
+            17,
+            24,
+            31,
+            37,
+            51,
+            64,
+            77,
+            91,
+            117,
+            144,
+            157
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ESNSWL_HP3_NST.KFFWL",
+      "type": "MAP",
+      "description": " / Kennfeld Warmlauffaktor",
+      "recordLayout": "RB_MapGroup_U8",
+      "defaultAddress": "0x90F4E10",
+      "dims": {
+        "nx": 12,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "tmotesnswl",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "address": "0x90F3F54",
+          "fingerprint": [
+            12,
+            17,
+            24,
+            31,
+            37,
+            51,
+            64,
+            77,
+            91,
+            117,
+            144,
+            157
+          ]
+        },
+        {
+          "inputQuantity": "tmstesnswl",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "address": "0x90F3F6A",
+          "fingerprint": [
+            12,
+            17,
+            24,
+            31,
+            37,
+            51,
+            64,
+            77,
+            91,
+            117,
+            144,
+            157
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ESNSWL_HSP_NST.KFFWL",
+      "type": "MAP",
+      "description": " / Kennfeld Warmlauffaktor",
+      "recordLayout": "RB_MapGroup_U8",
+      "defaultAddress": "0x90F4F5C",
+      "dims": {
+        "nx": 12,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "tmotesnswl",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "address": "0x90F3F54",
+          "fingerprint": [
+            12,
+            17,
+            24,
+            31,
+            37,
+            51,
+            64,
+            77,
+            91,
+            117,
+            144,
+            157
+          ]
+        },
+        {
+          "inputQuantity": "tmstesnswl",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "address": "0x90F3F6A",
+          "fingerprint": [
+            12,
+            17,
+            24,
+            31,
+            37,
+            51,
+            64,
+            77,
+            91,
+            117,
+            144,
+            157
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ESNSWL_KH_NST.KFFWL",
+      "type": "MAP",
+      "description": " / Kennfeld Warmlauffaktor",
+      "recordLayout": "RB_MapGroup_U8",
+      "defaultAddress": "0x90F50A8",
+      "dims": {
+        "nx": 12,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "tmotesnswl",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "address": "0x90F3F54",
+          "fingerprint": [
+            12,
+            17,
+            24,
+            31,
+            37,
+            51,
+            64,
+            77,
+            91,
+            117,
+            144,
+            157
+          ]
+        },
+        {
+          "inputQuantity": "tmstesnswl",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "address": "0x90F3F6A",
+          "fingerprint": [
+            12,
+            17,
+            24,
+            31,
+            37,
+            51,
+            64,
+            77,
+            91,
+            117,
+            144,
+            157
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ESNSWL_MPI_NST.KFFWL",
+      "type": "MAP",
+      "description": " / Kennfeld Warmlauffaktor",
+      "recordLayout": "RB_MapGroup_U8",
+      "defaultAddress": "0x90F51F4",
+      "dims": {
+        "nx": 12,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "tmotesnswl",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "address": "0x90F3F54",
+          "fingerprint": [
+            12,
+            17,
+            24,
+            31,
+            37,
+            51,
+            64,
+            77,
+            91,
+            117,
+            144,
+            157
+          ]
+        },
+        {
+          "inputQuantity": "tmstesnswl",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "address": "0x90F3F6A",
+          "fingerprint": [
+            12,
+            17,
+            24,
+            31,
+            37,
+            51,
+            64,
+            77,
+            91,
+            117,
+            144,
+            157
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ExhMgT_facDeltaScav_M",
+      "type": "MAP",
+      "description": "Kennfeld für Interpolationsfaktor zur Bestimmung des maximal zulässigen Brennraumlambdas für Bauteileschutz bei Scavenging in Abhängigkeit von der Temperatur ExhMgT_tDifExhCat1und Massenstrom",
+      "recordLayout": "RB_Map_S16U16_U16",
+      "defaultAddress": "0x90EED28",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "ExhMgT_tDifExhCat1",
+          "unit": "K",
+          "factor": 0.0234375,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            11008,
+            21760,
+            32768,
+            43776,
+            54528
+          ]
+        },
+        {
+          "inputQuantity": "ExhMgT_msabg_w",
+          "unit": "kg/h",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            2560,
+            5120,
+            7680,
+            10240,
+            12800
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.00030517578125,
+        "offset": 0.0,
+        "unit": "1/s"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ExhMod_htcWallEnvB1_M",
+      "type": "MAP",
+      "description": "Wärmeübergangskoeffizient Wand Umgebung Bank 1",
+      "recordLayout": "RB_Map_U16U16_U16",
+      "defaultAddress": "0x90FA968",
+      "dims": {
+        "nx": 7,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "vfzg_wloc",
+          "unit": "km/h",
+          "factor": 0.0078125,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            0,
+            10,
+            20,
+            40,
+            60,
+            80,
+            125
+          ]
+        },
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            0,
+            256,
+            512,
+            768,
+            1024,
+            1280,
+            1536,
+            1792,
+            2048,
+            2304,
+            2560,
+            2816
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.001736111111111111,
+        "offset": 0.0,
+        "unit": "J/sK"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "FZWWLRLN",
+      "type": "MAP",
+      "description": "Wichtung Delta-Zündwinkel im Warmlauf",
+      "recordLayout": "KfAxU8AyU8SstxU8SstyU8WU8",
+      "defaultAddress": "0x912EDBA",
+      "dims": {
+        "nx": 10,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "ZWWL_nEng",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            12,
+            18,
+            25,
+            37,
+            50,
+            75,
+            100,
+            125,
+            150,
+            163
+          ]
+        },
+        {
+          "inputQuantity": "ZWWL_rl",
+          "unit": "%",
+          "factor": 0.75,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            54,
+            67,
+            80,
+            94,
+            107,
+            134,
+            154,
+            174,
+            194,
+            234
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 0.0078125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "FZWWLRLTSR",
+      "type": "MAP",
+      "description": "Wichtung Delta-Zündwinkel im Warmlauf bei kalter Ansaugluft",
+      "recordLayout": "KfAxU8AyU8SstxU8SstyU8WU8",
+      "defaultAddress": "0x912EE34",
+      "dims": {
+        "nx": 10,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "ZWWL_nEng",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            12,
+            18,
+            25,
+            37,
+            50,
+            75,
+            100,
+            125,
+            150,
+            163
+          ]
+        },
+        {
+          "inputQuantity": "ZWWL_rl",
+          "unit": "%",
+          "factor": 0.75,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            54,
+            67,
+            80,
+            94,
+            107,
+            134,
+            154,
+            174,
+            194,
+            234
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 0.0078125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "HLSDem_nMinEngSprkFoul_MAP",
+      "type": "MAP",
+      "description": "Minimaldrehzahl bei Zündkerzenfehlern in Abhängigkeit der Motortemperatur.",
+      "recordLayout": "RB_Map_S16S16_S16",
+      "defaultAddress": "0x91027E6",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "EngDa_tEng",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -21750,
+            -19190,
+            -16630,
+            -14070,
+            -11510,
+            -8950
+          ]
+        },
+        {
+          "inputQuantity": "CEngDsT_tStrtFrst",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            -21750,
+            -19190,
+            -16630,
+            -14070,
+            -11510,
+            -8950
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.5,
+        "offset": 0.0,
+        "unit": "rpm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "InjSys_facAEnchmtSplt_GM",
+      "type": "MAP",
+      "description": "Faktor Beschleunigungsanreicherung (K+L-Anteil) Split",
+      "recordLayout": "RB_MapGroup_S16",
+      "defaultAddress": "0x9103008",
+      "dims": {
+        "nx": 9,
+        "ny": 7
+      },
+      "axes": [
+        {
+          "inputQuantity": "tmesuk",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "address": "0x90F6E1A",
+          "fingerprint": [
+            9,
+            24,
+            37,
+            51,
+            64,
+            77,
+            91,
+            117,
+            144
+          ]
+        },
+        {
+          "inputQuantity": "InjSys_nEngLResTraCmp10ms",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x90F6E12",
+          "fingerprint": [
+            7,
+            20,
+            25,
+            38,
+            50,
+            63,
+            85
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "InjSys_facDecelEnlnmtGdiSplt_GM",
+      "type": "MAP",
+      "description": "Faktor Verzögerungsabmagerung GDI Split (K+L-Anteil)",
+      "recordLayout": "RB_MapGroup_S16",
+      "defaultAddress": "0x910321C",
+      "dims": {
+        "nx": 9,
+        "ny": 7
+      },
+      "axes": [
+        {
+          "inputQuantity": "tmesuk",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "address": "0x90F6E1A",
+          "fingerprint": [
+            9,
+            24,
+            37,
+            51,
+            64,
+            77,
+            91,
+            117,
+            144
+          ]
+        },
+        {
+          "inputQuantity": "InjSys_nEngLResTraCmp10ms",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x90F6E12",
+          "fingerprint": [
+            7,
+            20,
+            25,
+            38,
+            50,
+            63,
+            85
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "10/14"
+  }
+}

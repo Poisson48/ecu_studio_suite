@@ -1,0 +1,1051 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "valeo_vd46_1_2t_hex_a2l",
+  "name": "open_damos — Valeo VD46_1.2T hex + a2l",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "BE",
+  "baseline": {
+    "source": "E00812_A3AMSAA_0613F.hex",
+    "damos": "E0_08_12.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/Valeo VD46_1.2T hex + a2l"
+  },
+  "recordLayouts": {
+    "LIB_CALIB_RL_Lookup2D_ULONG": {
+      "type": "MAP",
+      "byteOrder": "BE",
+      "headerBytes": 0,
+      "dataType": "ULONG_BE",
+      "axisMode": "COM_AXIS"
+    },
+    "AFAT_RL_Lookup2D_WORD": {
+      "type": "MAP",
+      "byteOrder": "BE",
+      "headerBytes": 0,
+      "dataType": "SWORD_BE",
+      "axisMode": "COM_AXIS"
+    },
+    "LIB_CALIB_RL_Lookup2D_UWORD": {
+      "type": "MAP",
+      "byteOrder": "BE",
+      "headerBytes": 0,
+      "dataType": "UWORD_BE",
+      "axisMode": "COM_AXIS"
+    },
+    "AirEfcEngCylPrmT_RL_Lookup2D_UWORD": {
+      "type": "MAP",
+      "byteOrder": "BE",
+      "headerBytes": 0,
+      "dataType": "UWORD_BE",
+      "axisMode": "COM_AXIS"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "AFAMgt_tiDlyLstObsThd_M",
+      "type": "MAP",
+      "description": "Table des délais d'attente entre les observations",
+      "recordLayout": "LIB_CALIB_RL_Lookup2D_ULONG",
+      "defaultAddress": "0x59BCC",
+      "dims": {
+        "nx": 9,
+        "ny": 9
+      },
+      "axes": [
+        {
+          "inputQuantity": "Inj_concFuStm_A",
+          "unit": "-",
+          "factor": 1.52587890625e-05,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x59F50",
+          "fingerprint": [
+            0,
+            4096,
+            8192,
+            12288,
+            16384,
+            20480,
+            24576,
+            28672,
+            32768
+          ]
+        },
+        {
+          "inputQuantity": "Inj_concFuStmErr_A",
+          "unit": "-",
+          "factor": 1.52587890625e-05,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x59F62",
+          "fingerprint": [
+            0,
+            8192,
+            16384,
+            24576,
+            32768,
+            40960,
+            49152,
+            57344,
+            65535
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "ULONG_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "AFA_facCorAtmGrdSlopEfc_M",
+      "type": "MAP",
+      "description": "cartographie de sensibilité de correction acoustique de la pression repartiteur admission moyenne en zone atmosphérique par rapport à l'angle de fermeture admission",
+      "recordLayout": "AFAT_RL_Lookup2D_WORD",
+      "defaultAddress": "0x4D3C6",
+      "dims": {
+        "nx": 12,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AFA_agCkGrdClsInVlvX_A",
+          "unit": "°Ck",
+          "factor": 0.09374999999707032,
+          "offset": 83.999999997375,
+          "dataType": "UWORD_BE",
+          "address": "0x4D328",
+          "fingerprint": [
+            1060,
+            1131,
+            1202,
+            1273,
+            1344,
+            1415,
+            1487,
+            1558,
+            1629,
+            1700,
+            1771,
+            1842
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x59EEC",
+          "fingerprint": [
+            500,
+            750,
+            900,
+            1050,
+            1200,
+            1350,
+            1550,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3500,
+            4000,
+            4500,
+            5500,
+            6250
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "AFA_facCorBoostGrdSlopEfc_M",
+      "type": "MAP",
+      "description": "cartographie de sensibilité de correction acoustique de la pression repartiteur admission moyenne en zone suralimentée par rapport à l'angle VVT de fermeture admission",
+      "recordLayout": "AFAT_RL_Lookup2D_WORD",
+      "defaultAddress": "0x4D576",
+      "dims": {
+        "nx": 12,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AFA_agCkGrdClsInVlvX_A",
+          "unit": "°Ck",
+          "factor": 0.09374999999707032,
+          "offset": 83.999999997375,
+          "dataType": "UWORD_BE",
+          "address": "0x4D328",
+          "fingerprint": [
+            1060,
+            1131,
+            1202,
+            1273,
+            1344,
+            1415,
+            1487,
+            1558,
+            1629,
+            1700,
+            1771,
+            1842
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x59EEC",
+          "fingerprint": [
+            500,
+            750,
+            900,
+            1050,
+            1200,
+            1350,
+            1550,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3500,
+            4000,
+            4500,
+            5500,
+            6250
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "AFA_facCorMassGrdBurnRg_M",
+      "type": "MAP",
+      "description": "cartographie de sensibilité de correction acoustique de la pression echappement par rapport à l'angle de fermeture echappement",
+      "recordLayout": "AFAT_RL_Lookup2D_WORD",
+      "defaultAddress": "0x4D726",
+      "dims": {
+        "nx": 12,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AFA_agCkGrdClsExVlvX_A",
+          "unit": "°Ck",
+          "factor": 0.09374999999707032,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x4D310",
+          "fingerprint": [
+            -240,
+            -187,
+            -134,
+            -80,
+            -27,
+            27,
+            80,
+            134,
+            187,
+            240,
+            294,
+            347
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x59EEC",
+          "fingerprint": [
+            500,
+            750,
+            900,
+            1050,
+            1200,
+            1350,
+            1550,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3500,
+            4000,
+            4500,
+            5500,
+            6250
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "AFA_facMassFlowGrdCor_M",
+      "type": "MAP",
+      "description": "cartographie de sensibilité de correction du débit reaspiré et balayé en fonction de la position du croisement de soupape par rapport au PMH admission par rapport à la position de croisement des soupapes",
+      "recordLayout": "AFAT_RL_Lookup2D_WORD",
+      "defaultAddress": "0x4D8D6",
+      "dims": {
+        "nx": 12,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AFA_agCkGrdPosnVlvOvlpX_A",
+          "unit": "°Ck",
+          "factor": 0.09374999999707032,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x4D358",
+          "fingerprint": [
+            -289,
+            -227,
+            -164,
+            -102,
+            -40,
+            22,
+            84,
+            147,
+            209,
+            271,
+            334,
+            396
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x59EEC",
+          "fingerprint": [
+            500,
+            750,
+            900,
+            1050,
+            1200,
+            1350,
+            1550,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3500,
+            4000,
+            4500,
+            5500,
+            6250
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "AFA_mfGrdBurnRspgRedBas_M",
+      "type": "MAP",
+      "description": "cartographie de sensibilité de  débit réduit de gaz brulé reaspiré de base par rapport au croisement de soupape ",
+      "recordLayout": "AFAT_RL_Lookup2D_WORD",
+      "defaultAddress": "0x4DAD0",
+      "dims": {
+        "nx": 24,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AFA_agCkGrdVlvOvlpX_A",
+          "unit": "°Ck",
+          "factor": 0.09374999999707032,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x4D370",
+          "fingerprint": [
+            -609,
+            -547,
+            -484,
+            -422,
+            -360,
+            -298,
+            -236,
+            -174,
+            -111,
+            -49,
+            14,
+            76,
+            138,
+            200,
+            262,
+            324,
+            387,
+            449,
+            511,
+            574,
+            636,
+            698,
+            760,
+            822
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x59EEC",
+          "fingerprint": [
+            500,
+            750,
+            900,
+            1050,
+            1200,
+            1350,
+            1550,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3500,
+            4000,
+            4500,
+            5500,
+            6250
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "AFA_mfGrdBurnRspgRedCor_M",
+      "type": "MAP",
+      "description": "cartographie de sensibilité de débit réduit de gaz brulé reaspiré corrigé par rapport au croisement de soupape ",
+      "recordLayout": "AFAT_RL_Lookup2D_WORD",
+      "defaultAddress": "0x4DE30",
+      "dims": {
+        "nx": 24,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AFA_agCkGrdVlvOvlpX_A",
+          "unit": "°Ck",
+          "factor": 0.09374999999707032,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x4D370",
+          "fingerprint": [
+            -609,
+            -547,
+            -484,
+            -422,
+            -360,
+            -298,
+            -236,
+            -174,
+            -111,
+            -49,
+            14,
+            76,
+            138,
+            200,
+            262,
+            324,
+            387,
+            449,
+            511,
+            574,
+            636,
+            698,
+            760,
+            822
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x59EEC",
+          "fingerprint": [
+            500,
+            750,
+            900,
+            1050,
+            1200,
+            1350,
+            1550,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3500,
+            4000,
+            4500,
+            5500,
+            6250
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "AFA_pGrdBegCorBoostSlopEfc_M",
+      "type": "MAP",
+      "description": "cartographie de sensibilité de pression à partir de laquelle la prise en compte de la correction acoustique en zone suralimenté est considérée par rapport à l'angle de fermeture admission",
+      "recordLayout": "AFAT_RL_Lookup2D_WORD",
+      "defaultAddress": "0x4E196",
+      "dims": {
+        "nx": 12,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AFA_agCkGrdClsInVlvX_A",
+          "unit": "°Ck",
+          "factor": 0.09374999999707032,
+          "offset": 83.999999997375,
+          "dataType": "UWORD_BE",
+          "address": "0x4D328",
+          "fingerprint": [
+            1060,
+            1131,
+            1202,
+            1273,
+            1344,
+            1415,
+            1487,
+            1558,
+            1629,
+            1700,
+            1771,
+            1842
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x59EEC",
+          "fingerprint": [
+            500,
+            750,
+            900,
+            1050,
+            1200,
+            1350,
+            1550,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3500,
+            4000,
+            4500,
+            5500,
+            6250
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "AirEfc_facAirScv_M",
+      "type": "MAP",
+      "description": "cartographie de relatant la proportion de gaz balayée directement à l'echappement",
+      "recordLayout": "LIB_CALIB_RL_Lookup2D_UWORD",
+      "defaultAddress": "0x57754",
+      "dims": {
+        "nx": 11,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirEfc_facAirScvX_A",
+          "unit": "-",
+          "factor": 1.52587890625e-05,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x59E8C",
+          "fingerprint": [
+            0,
+            6554,
+            13107,
+            19661,
+            26214,
+            32768,
+            39322,
+            45875,
+            52429,
+            58982,
+            65535
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEng2Y_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x59EDC",
+          "fingerprint": [
+            1050,
+            1350,
+            1550,
+            1750,
+            2000,
+            2500,
+            3000,
+            3500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "AirEfc_facCorAtmSlopEfc_M",
+      "type": "MAP",
+      "description": "cartographie de correction acoustique de la pression repartiteur admission moyenne en zone atmosphérique",
+      "recordLayout": "LIB_CALIB_RL_Lookup2D_UWORD",
+      "defaultAddress": "0x57804",
+      "dims": {
+        "nx": 13,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirEfc_agCkClsInVlvX_A",
+          "unit": "°Ck",
+          "factor": 0.09374999999999971,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x59E72",
+          "fingerprint": [
+            1920,
+            1991,
+            2062,
+            2133,
+            2205,
+            2275,
+            2347,
+            2418,
+            2489,
+            2560,
+            2631,
+            2702,
+            2773
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x59EEC",
+          "fingerprint": [
+            500,
+            750,
+            900,
+            1050,
+            1200,
+            1350,
+            1550,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3500,
+            4000,
+            4500,
+            5500,
+            6250
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "AirEfc_facCorBoostSlopEfc_M",
+      "type": "MAP",
+      "description": "cartographie de correction acoustique de la pression repartiteur admission moyenne en zone suralimentée",
+      "recordLayout": "LIB_CALIB_RL_Lookup2D_UWORD",
+      "defaultAddress": "0x579D8",
+      "dims": {
+        "nx": 13,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirEfc_agCkClsInVlvX_A",
+          "unit": "°Ck",
+          "factor": 0.09374999999999971,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x59E72",
+          "fingerprint": [
+            1920,
+            1991,
+            2062,
+            2133,
+            2205,
+            2275,
+            2347,
+            2418,
+            2489,
+            2560,
+            2631,
+            2702,
+            2773
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x59EEC",
+          "fingerprint": [
+            500,
+            750,
+            900,
+            1050,
+            1200,
+            1350,
+            1550,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3500,
+            4000,
+            4500,
+            5500,
+            6250
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "AirEfc_facCorMassBurnRg_M",
+      "type": "MAP",
+      "description": "cartographie de correction acoustique de la pression echappement",
+      "recordLayout": "LIB_CALIB_RL_Lookup2D_UWORD",
+      "defaultAddress": "0x57BAC",
+      "dims": {
+        "nx": 13,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirEfc_agCkClsExVlvX_A",
+          "unit": "°Ck",
+          "factor": 0.09374999999999971,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x5A152",
+          "fingerprint": [
+            -267,
+            -213,
+            -160,
+            -107,
+            -53,
+            0,
+            53,
+            107,
+            160,
+            213,
+            267,
+            320,
+            373
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x59EEC",
+          "fingerprint": [
+            500,
+            750,
+            900,
+            1050,
+            1200,
+            1350,
+            1550,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3500,
+            4000,
+            4500,
+            5500,
+            6250
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "AirEfc_facLfpChrExpAtm_M",
+      "type": "MAP",
+      "description": "Cartographie De Gain Du Filtre De LÉquation De Barré St Venant En Zone Atmosphérique",
+      "recordLayout": "AirEfcEngCylPrmT_RL_Lookup2D_UWORD",
+      "defaultAddress": "0x4E934",
+      "dims": {
+        "nx": 11,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirEfc_rPresEngX_A",
+          "unit": "-",
+          "factor": 1.52587890625e-05,
+          "offset": 0.0,
+          "dataType": "ULONG_BE",
+          "address": "0x5A22C",
+          "fingerprint": [
+            0,
+            32768,
+            39322,
+            45876,
+            49152,
+            52428,
+            55706,
+            58982,
+            62260,
+            64881,
+            65535
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x59EEC",
+          "fingerprint": [
+            500,
+            750,
+            900,
+            1050,
+            1200,
+            1350,
+            1550,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3500,
+            4000,
+            4500,
+            5500,
+            6250
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "AirEfc_facMassFlowCor_M",
+      "type": "MAP",
+      "description": "cartographie de correction du débit reaspiré et balayé en fonction de la position du croisement de soupape par rapport au PMH admission",
+      "recordLayout": "LIB_CALIB_RL_Lookup2D_UWORD",
+      "defaultAddress": "0x57D80",
+      "dims": {
+        "nx": 13,
+        "ny": 18
+      },
+      "axes": [
+        {
+          "inputQuantity": "AirEfc_agCkPosnVlvOvlpX_A",
+          "unit": "°Ck",
+          "factor": 0.09374999999999971,
+          "offset": 0.0,
+          "dataType": "SWORD_BE",
+          "address": "0x5A186",
+          "fingerprint": [
+            -320,
+            -258,
+            -195,
+            -133,
+            -71,
+            -9,
+            53,
+            115,
+            178,
+            240,
+            302,
+            365,
+            427
+          ]
+        },
+        {
+          "inputQuantity": "AirEfc_nEngY_A",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x59EEC",
+          "fingerprint": [
+            500,
+            750,
+            900,
+            1050,
+            1200,
+            1350,
+            1550,
+            1750,
+            2000,
+            2250,
+            2500,
+            2750,
+            3000,
+            3500,
+            4000,
+            4500,
+            5500,
+            6250
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "14/14"
+  }
+}

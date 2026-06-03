@@ -1,0 +1,264 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "documentation",
+  "name": "open_damos — Documentation",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "SC4_MINILINK.S19",
+    "damos": "SC4_MINILINK.A2L",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/Immo EA890 SC_4_Get/SC_4_Get_Set/Documentation"
+  },
+  "recordLayouts": {
+    "_REC_A1MAP_20_SV_U1_U1_U1": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_SV_U2_U2_U1": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UWORD_LE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_SV_U1_S2_S2": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "DATA_GEARADV.Eng_tqIdRed_M_VW",
+      "type": "MAP",
+      "description": "Reduction of maximum indicated torque due to influence of air density",
+      "recordLayout": "_REC_A1MAP_20_SV_U1_U1_U1",
+      "defaultAddress": "0xAE9C",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Eng_densAir_VW",
+          "unit": "kg/m3",
+          "factor": 0.0078125,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0xADDC",
+          "fingerprint": [
+            8,
+            90,
+            102,
+            115,
+            128,
+            141,
+            154,
+            166
+          ]
+        },
+        {
+          "inputQuantity": "DATA_GEARADV.Eng_nQuoSpdRev8_A_VW",
+          "unit": "U/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0xAE3E",
+          "fingerprint": [
+            8,
+            24,
+            31,
+            38,
+            44,
+            50,
+            63,
+            125
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "DATA_ThmMng.CoTE_agSafeMinRotAirRel_M_VW",
+      "type": "MAP",
+      "description": "angle safe minimal rotary slide valve dependent of Air_rChRel",
+      "recordLayout": "_REC_A1MAP_20_SV_U2_U2_U1",
+      "defaultAddress": "0xF72C",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "CoTE_rChRelFil_VW",
+          "unit": "%",
+          "factor": 0.0234375,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0xF882",
+          "fingerprint": [
+            6,
+            427,
+            853,
+            1280,
+            1707,
+            2133
+          ]
+        },
+        {
+          "inputQuantity": "CoTE_tHd_VW",
+          "unit": "°C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "address": "0xFB6C",
+          "fingerprint": [
+            6,
+            104,
+            131,
+            157,
+            171,
+            184
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "DATA_ThmMng.CoTE_agSafeMinRot_M_VW",
+      "type": "MAP",
+      "description": "angle safe minimal rotary slide valve",
+      "recordLayout": "_REC_A1MAP_20_SV_U2_U2_U1",
+      "defaultAddress": "0xF774",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "Eng_mAirCumStrtHld_VW",
+          "unit": "kg",
+          "factor": 0.0003555555555555556,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0xF824",
+          "fingerprint": [
+            6,
+            2813,
+            4219,
+            5625,
+            8438,
+            11250
+          ]
+        },
+        {
+          "inputQuantity": "Eng_tCoHdStrt_VW",
+          "unit": "°C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "address": "0xFA6C",
+          "fingerprint": [
+            6,
+            37,
+            51,
+            77,
+            95,
+            117
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "DATA_VLCCtl.VLCCtl_facIntEng_M_VW",
+      "type": "MAP",
+      "description": "integral controller parameter for engine torque area",
+      "recordLayout": "_REC_A1MAP_20_SV_U1_S2_S2",
+      "defaultAddress": "0x103DF",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "Pt_r_tqWhlEng_VW",
+          "unit": "-",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x102F6",
+          "fingerprint": [
+            8,
+            200,
+            330,
+            470,
+            649,
+            650,
+            900,
+            1200
+          ]
+        },
+        {
+          "inputQuantity": "Pt_nClu_VW",
+          "unit": "U/min",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x102E8",
+          "fingerprint": [
+            6,
+            2000,
+            3040,
+            3520,
+            4000,
+            5040
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "4/4"
+  }
+}

@@ -1,0 +1,995 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "giulia",
+  "name": "open_damos — GIULIA",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "GIULIA EDC17C69_180cv AT.hex",
+    "damos": "GIULIA EDC17C69_180cv AT.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/GIULIA-EDC17C69-55270336 ols+a2l/GIULIA"
+  },
+  "recordLayouts": {
+    "Map_Xs16Ys16Ws16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "SWORD_LE"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "AccPed_trqASTEngCity_MAP",
+      "type": "MAP",
+      "description": "Drivability Map in engine torque for conventional drive train control, for Selespeed Transmission in city mode",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x92C8BA",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            1000,
+            2000,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            10000,
+            10002,
+            10004,
+            10006,
+            10008,
+            10010
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            819,
+            1638,
+            2458,
+            3277,
+            4096,
+            4915,
+            5734,
+            6554,
+            7373,
+            8192,
+            8274,
+            8356,
+            8438,
+            8520,
+            8602
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqASTEngDrvAwyCity_MAP",
+      "type": "MAP",
+      "description": "Drivers behavior Map at selespeed drive mode for drive away condition in city mode",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x92CAFE",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            600,
+            1000,
+            1600,
+            2000,
+            3000,
+            4000,
+            5000,
+            5400,
+            6000,
+            6600,
+            7400,
+            8000,
+            9000,
+            10000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            410,
+            819,
+            1229,
+            1638,
+            2048,
+            2867,
+            3277,
+            3686,
+            4096,
+            4506,
+            5325,
+            5734,
+            6554,
+            7373,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqASTEngDrvAwyNorm_MAP",
+      "type": "MAP",
+      "description": "Drivers behavior Map at selespeed drive mode for drive away condition in normal mode",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x92CD42",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            600,
+            1000,
+            1600,
+            2000,
+            3000,
+            4000,
+            5000,
+            5400,
+            6000,
+            6600,
+            7400,
+            8000,
+            9000,
+            10000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            410,
+            819,
+            1229,
+            1638,
+            2048,
+            2867,
+            3277,
+            3686,
+            4096,
+            4506,
+            5325,
+            5734,
+            6554,
+            7373,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqASTEngDrvAwySpt_MAP",
+      "type": "MAP",
+      "description": "Drivers behavior Map at selespeed drive mode for drive away condition in sport mode",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x92CF86",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            600,
+            1000,
+            1600,
+            2000,
+            3000,
+            4000,
+            5000,
+            5400,
+            6000,
+            6600,
+            7400,
+            8000,
+            9000,
+            10000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            410,
+            819,
+            1229,
+            1638,
+            2048,
+            2867,
+            3277,
+            3686,
+            4096,
+            4506,
+            5325,
+            5734,
+            6554,
+            7373,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqASTEngNorm_MAP",
+      "type": "MAP",
+      "description": "Drivability Map in engine torque for conventional drive train control, for Selespeed Transmission in normal mode",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x92D1CA",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            1000,
+            2000,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            10000,
+            10002,
+            10004,
+            10006,
+            10008,
+            10010
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            819,
+            1638,
+            2458,
+            3277,
+            4096,
+            4915,
+            5734,
+            6554,
+            7373,
+            8192,
+            8274,
+            8356,
+            8438,
+            8520,
+            8602
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqASTEngSpt_MAP",
+      "type": "MAP",
+      "description": "Drivability Map in engine torque for conventional drive train control, for Selespeed Transmission in sport mode",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x92D40E",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            1000,
+            2000,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            10000,
+            10002,
+            10004,
+            10006,
+            10008,
+            10010
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            819,
+            1638,
+            2458,
+            3277,
+            4096,
+            4915,
+            5734,
+            6554,
+            7373,
+            8192,
+            8274,
+            8356,
+            8438,
+            8520,
+            8602
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqEngCity_MAP",
+      "type": "MAP",
+      "description": "Drivability map at city mode . Size is 16x16",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x92D658",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            800,
+            2000,
+            3000,
+            4000,
+            4500,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            9500,
+            10200,
+            10300,
+            12000,
+            12200
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            82,
+            410,
+            819,
+            1638,
+            2458,
+            3277,
+            4096,
+            4915,
+            5734,
+            6554,
+            7373,
+            7782,
+            8198,
+            8199,
+            8200
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqEngDrvAwyCity_MAP",
+      "type": "MAP",
+      "description": "Drivers behavior Map in city mode at standard drive mode for drive away condition.",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x92D89C",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            800,
+            2000,
+            3000,
+            4000,
+            4500,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            9500,
+            10200,
+            10300,
+            12000,
+            12200
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            82,
+            410,
+            819,
+            1638,
+            2458,
+            3277,
+            4096,
+            4915,
+            5734,
+            6554,
+            7373,
+            7782,
+            8198,
+            8199,
+            8200
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqEngDrvAwyNorm_MAP",
+      "type": "MAP",
+      "description": "Drivers behavior Map in normal mode at standard drive mode for drive away condition.",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x92DAE0",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            800,
+            2000,
+            3000,
+            4000,
+            4500,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            9500,
+            10200,
+            10300,
+            12000,
+            12200
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            82,
+            410,
+            819,
+            1638,
+            2458,
+            3277,
+            4096,
+            4915,
+            5734,
+            6554,
+            7373,
+            7782,
+            8198,
+            8199,
+            8200
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqEngDrvAwySpt_MAP",
+      "type": "MAP",
+      "description": "Drivers behavior Map in sport mode at standard drive mode for drive away condition.",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x92DD24",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            800,
+            2000,
+            3000,
+            4000,
+            4500,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            9500,
+            10200,
+            10300,
+            12000,
+            12200
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            82,
+            410,
+            819,
+            1638,
+            2458,
+            3277,
+            4096,
+            4915,
+            5734,
+            6554,
+            7373,
+            7782,
+            8198,
+            8199,
+            8200
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqEngNorm_MAP",
+      "type": "MAP",
+      "description": "Drivability map at normal mode. Size is 16x16",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x92DF68",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            800,
+            2000,
+            3000,
+            4000,
+            4500,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            9500,
+            10200,
+            10300,
+            12000,
+            12200
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            82,
+            410,
+            819,
+            1638,
+            2458,
+            3277,
+            4096,
+            4915,
+            5734,
+            6554,
+            7373,
+            7782,
+            8198,
+            8199,
+            8200
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqEngSpt_MAP",
+      "type": "MAP",
+      "description": "Drivability map at sport mode . Size is 16x16",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x92E1AC",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            800,
+            2000,
+            3000,
+            4000,
+            4500,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            9500,
+            10200,
+            10300,
+            12000,
+            12200
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            82,
+            410,
+            819,
+            1638,
+            2458,
+            3277,
+            4096,
+            4915,
+            5734,
+            6554,
+            7373,
+            7782,
+            8198,
+            8199,
+            8200
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AFS_dmAirSubsVal_MAP",
+      "type": "MAP",
+      "description": "Map to calculate the substitute value for air flow signal in case of errors",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x927600",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            1500,
+            3000,
+            4500,
+            6750,
+            8250,
+            9750,
+            11250
+          ]
+        },
+        {
+          "inputQuantity": "InjCtl_qRaw",
+          "unit": "mm^3/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            1200,
+            2400,
+            3600,
+            5400,
+            6600,
+            7800,
+            9000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Kg/h"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AFS_facPlsCorBasEGRShOff_MAP",
+      "type": "MAP",
+      "description": "Pulsation correction map when EGR is shut off.",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x8E8130",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            700,
+            1400,
+            2100,
+            2800,
+            3500,
+            4200,
+            4900,
+            5600,
+            6300,
+            7000,
+            7700,
+            8400,
+            9100,
+            9800,
+            10500
+          ]
+        },
+        {
+          "inputQuantity": "InjCtl_qSetUnBal",
+          "unit": "mm^3/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            200,
+            400,
+            600,
+            800,
+            1000,
+            1200,
+            1400,
+            1600,
+            1800,
+            2000,
+            2200,
+            2400,
+            2600,
+            2800,
+            3000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0001220703125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "14/14"
+  }
+}

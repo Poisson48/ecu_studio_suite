@@ -1,0 +1,845 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "genesis_coupe_20_turbo",
+  "name": "open_damos — genesis_coupe_20_turbo",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "691F20RC.s19",
+    "damos": "691F203C.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/Hyundai_Genesis_Coupe_2.0_Turbo/genesis_coupe_20_turbo"
+  },
+  "recordLayouts": {
+    "_REC_MAP_20_u2_u1_u1": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UWORD_LE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_MAP_20_u1_u1_u1": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "ip_toil_fac_ofs_cor",
+      "type": "MAP",
+      "description": "Correlation factor for corrective offset",
+      "recordLayout": "_REC_MAP_20_u2_u1_u1",
+      "defaultAddress": "0x84F782",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x840E93",
+          "fingerprint": [
+            8,
+            19,
+            31,
+            47,
+            63,
+            94,
+            125,
+            156
+          ]
+        },
+        {
+          "inputQuantity": "tco",
+          "unit": "°C",
+          "factor": 0.7500000000000002,
+          "offset": -48.000000000000014,
+          "dataType": "UBYTE",
+          "address": "0x841384",
+          "fingerprint": [
+            6,
+            171,
+            184,
+            197,
+            211,
+            224
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_rel_flow_min_cps__n_32__maf",
+      "type": "MAP",
+      "description": "ip_rel_flow_min_cps",
+      "recordLayout": "_REC_MAP_20_u2_u1_u1",
+      "defaultAddress": "0x84F522",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x84188F",
+          "fingerprint": [
+            8,
+            23,
+            31,
+            47,
+            63,
+            94,
+            125,
+            156
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x841808",
+          "fingerprint": [
+            8,
+            15,
+            22,
+            28,
+            37,
+            46,
+            55,
+            83
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_cl_crlc_ramp_open__n_32__maf",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "_REC_MAP_20_u2_u1_u1",
+      "defaultAddress": "0x84CB8A",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x84188F",
+          "fingerprint": [
+            8,
+            23,
+            31,
+            47,
+            63,
+            94,
+            125,
+            156
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x841808",
+          "fingerprint": [
+            8,
+            15,
+            22,
+            28,
+            37,
+            46,
+            55,
+            83
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_cl_crlc__n_32__maf",
+      "type": "MAP",
+      "description": "correlation constant for CL-filter",
+      "recordLayout": "_REC_MAP_20_u2_u1_u1",
+      "defaultAddress": "0x84CB0A",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x84188F",
+          "fingerprint": [
+            8,
+            23,
+            31,
+            47,
+            63,
+            94,
+            125,
+            156
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x841808",
+          "fingerprint": [
+            8,
+            15,
+            22,
+            28,
+            37,
+            46,
+            55,
+            83
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_fuel_flow_max_cp__n_32__maf",
+      "type": "MAP",
+      "description": "ip_fuel_flow_max_cp",
+      "recordLayout": "_REC_MAP_20_u2_u1_u1",
+      "defaultAddress": "0x84E062",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x84188F",
+          "fingerprint": [
+            8,
+            23,
+            31,
+            47,
+            63,
+            94,
+            125,
+            156
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x841808",
+          "fingerprint": [
+            8,
+            15,
+            22,
+            28,
+            37,
+            46,
+            55,
+            83
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_rel_flow_max_cps__n_32__maf",
+      "type": "MAP",
+      "description": "ip_rel_flow_max_cps",
+      "recordLayout": "_REC_MAP_20_u2_u1_u1",
+      "defaultAddress": "0x84F4A2",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x84188F",
+          "fingerprint": [
+            8,
+            23,
+            31,
+            47,
+            63,
+            94,
+            125,
+            156
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x841808",
+          "fingerprint": [
+            8,
+            15,
+            22,
+            28,
+            37,
+            46,
+            55,
+            83
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_td",
+      "type": "MAP",
+      "description": "Dwell time correction versus battery voltage and engine speed",
+      "recordLayout": "_REC_MAP_20_u2_u1_u1",
+      "defaultAddress": "0x850D54",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "vb",
+          "unit": "V",
+          "factor": 0.1015625,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x84541E",
+          "fingerprint": [
+            8,
+            54,
+            59,
+            78,
+            98,
+            118,
+            138,
+            158
+          ]
+        },
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x845415",
+          "fingerprint": [
+            8,
+            19,
+            31,
+            63,
+            94,
+            125,
+            156,
+            188
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_iga_bas_0",
+      "type": "MAP",
+      "description": "Basic ignition angle",
+      "recordLayout": "_REC_MAP_20_u1_u1_u1",
+      "defaultAddress": "0x850DD4",
+      "dims": {
+        "nx": 16,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x845588",
+          "fingerprint": [
+            16,
+            20,
+            25,
+            31,
+            47,
+            63,
+            70,
+            78,
+            88,
+            94,
+            109,
+            125,
+            141,
+            156,
+            172,
+            188
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x845574",
+          "fingerprint": [
+            12,
+            18,
+            27,
+            35,
+            55,
+            73,
+            92,
+            110,
+            129,
+            147,
+            165,
+            184
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_iga_ref",
+      "type": "MAP",
+      "description": "Reference ignition angle",
+      "recordLayout": "_REC_MAP_20_u1_u1_u1",
+      "defaultAddress": "0x850F54",
+      "dims": {
+        "nx": 16,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x845588",
+          "fingerprint": [
+            16,
+            20,
+            25,
+            31,
+            47,
+            63,
+            70,
+            78,
+            88,
+            94,
+            109,
+            125,
+            141,
+            156,
+            172,
+            188
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x845574",
+          "fingerprint": [
+            12,
+            18,
+            27,
+            35,
+            55,
+            73,
+            92,
+            110,
+            129,
+            147,
+            165,
+            184
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_iga_ref_temp_pos_fac",
+      "type": "MAP",
+      "description": "Weighting factor for positive temperature correction of IGA_REF versus N_32, MAF_HB",
+      "recordLayout": "_REC_MAP_20_u1_u1_u1",
+      "defaultAddress": "0x845770",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x845599",
+          "fingerprint": [
+            8,
+            19,
+            25,
+            31,
+            38,
+            50,
+            75,
+            100
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x845581",
+          "fingerprint": [
+            6,
+            37,
+            55,
+            73,
+            92,
+            106
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_iga_bas_temp_pos_fac",
+      "type": "MAP",
+      "description": "Weighting factor for positive temperature correction of Basic IGA versus N_32, MAF_HB",
+      "recordLayout": "_REC_MAP_20_u1_u1_u1",
+      "defaultAddress": "0x8456B0",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x845599",
+          "fingerprint": [
+            8,
+            19,
+            25,
+            31,
+            38,
+            50,
+            75,
+            100
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x845581",
+          "fingerprint": [
+            6,
+            37,
+            55,
+            73,
+            92,
+            106
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_tq_conv_park_neut",
+      "type": "MAP",
+      "description": "Converter characteristic in park or neutral position",
+      "recordLayout": "_REC_MAP_20_u2_u1_u1",
+      "defaultAddress": "0x84FD9A",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "toil_gb_inter",
+          "unit": "°C",
+          "factor": 1.0,
+          "offset": -40.0,
+          "dataType": "UBYTE",
+          "address": "0x841465",
+          "fingerprint": [
+            8,
+            10,
+            20,
+            40,
+            60,
+            80,
+            100,
+            130
+          ]
+        },
+        {
+          "inputQuantity": "n",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x84105E",
+          "fingerprint": [
+            6,
+            22,
+            31,
+            44,
+            63,
+            94
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_tq_loss_acc_1",
+      "type": "MAP",
+      "description": "ACC torque loss due to intake air temperature and ACC fluid-pressure from APT",
+      "recordLayout": "_REC_MAP_20_u2_u1_u1",
+      "defaultAddress": "0x84FEBA",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "tia",
+          "unit": "°C",
+          "factor": 0.7500000000000002,
+          "offset": -48.000000000000014,
+          "dataType": "UBYTE",
+          "address": "0x841436",
+          "fingerprint": [
+            6,
+            64,
+            91,
+            117,
+            144,
+            171
+          ]
+        },
+        {
+          "inputQuantity": "acp",
+          "unit": "PSI",
+          "factor": 2.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x840BA7",
+          "fingerprint": [
+            6,
+            35,
+            59,
+            85,
+            118,
+            157
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_n_sp_is_mt",
+      "type": "MAP",
+      "description": "Nominal idle speed without additional load on the engine (M/T)",
+      "recordLayout": "_REC_MAP_20_u2_u1_u1",
+      "defaultAddress": "0x84F00A",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "tco",
+          "unit": "°C",
+          "factor": 0.7500000000000002,
+          "offset": -48.000000000000014,
+          "dataType": "UBYTE",
+          "address": "0x841A0A",
+          "fingerprint": [
+            6,
+            24,
+            64,
+            104,
+            144,
+            177
+          ]
+        },
+        {
+          "inputQuantity": "tco_st",
+          "unit": "°C",
+          "factor": 0.7500000000000002,
+          "offset": -48.000000000000014,
+          "dataType": "UBYTE",
+          "address": "0x841A6B",
+          "fingerprint": [
+            6,
+            24,
+            51,
+            64,
+            91,
+            144
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "14/14"
+  }
+}

@@ -1,0 +1,845 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "med17_1_1",
+  "name": "open_damos — MED17.1.1  RS3NF, 2,5lTFSI, 270KW, EU6+, DQ500-7A ab Serie_8V0907404_0001",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "D1711A13C000_MY15G6.hex",
+    "damos": "D1711A13C000_MY15G6.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/MED17.1.1  RS3NF, 2,5lTFSI, 270KW, EU6+, DQ500-7A ab Serie_8V0907404_0001"
+  },
+  "recordLayouts": {
+    "Map_Xs16Ys16Ws16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "SWORD_LE"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "ACComp_trqDynPres_MAP",
+      "type": "MAP",
+      "description": "Kennfeld für die dynamische Momentenbedarfsberechnung über Klimadruck",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x3B3248",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            2000,
+            4000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "AirC_pClnt",
+          "unit": "hPa",
+          "factor": 2.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            10000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACComp_trqDynTemp_MAP",
+      "type": "MAP",
+      "description": "Kennfeld für die dynamische Momentenbedarfsberechnung über Temperatur",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x3B32EC",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            2000,
+            4000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "ACComp_tEnvTrqCalc_mp",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2331,
+            2531,
+            2631,
+            2731,
+            2831,
+            2931,
+            3031,
+            3131
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACComp_trqStatPres_MAP",
+      "type": "MAP",
+      "description": "Kennfeld für die statische Momentenbedarfsberechnung über Klimadruck",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x3B3394",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            2000,
+            4000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "AirC_pClnt",
+          "unit": "hPa",
+          "factor": 2.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            500,
+            1000,
+            1250,
+            1500,
+            1750,
+            2000,
+            2250,
+            2500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACComp_trqStatTemp_MAP",
+      "type": "MAP",
+      "description": "Kennfeld für die statische Momentenbedarfsberechnung über Temperatur",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x3B3438",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            2000,
+            4000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "ACComp_tEnvTrqCalc_mp",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2331,
+            2531,
+            2631,
+            2731,
+            2831,
+            2931,
+            3031,
+            3131
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_dnDOSetP_MAP",
+      "type": "MAP",
+      "description": "Parameter für die gewünschte Drehzahlanforderung",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x3B38DA",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            410,
+            819,
+            1229,
+            2048,
+            2867,
+            4096
+          ]
+        },
+        {
+          "inputQuantity": "EnvP_p",
+          "unit": "hPa",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            700,
+            850,
+            900,
+            950,
+            1000,
+            1050
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.5,
+        "offset": 0.0,
+        "unit": "rpm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_facDrvPrgSptMode_MAP",
+      "type": "MAP",
+      "description": "Gang- und fahrpedalabhängiges Carisma Kennfeld (Modus Sprt)",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x3B39B8",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "AccPed_nEng_mp",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            798,
+            1218,
+            1386,
+            1596,
+            1806,
+            2016,
+            2226,
+            2436,
+            2982,
+            3990,
+            4998,
+            6006,
+            7980,
+            9996,
+            10710
+          ]
+        },
+        {
+          "inputQuantity": "AccPed_rAPP",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            819,
+            1638,
+            2458,
+            3277,
+            4096,
+            4506,
+            4915,
+            5325,
+            5734,
+            6144,
+            6554,
+            6963,
+            7373,
+            7782,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0009765625,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_facDrvPrgSptPlusMode_MAP",
+      "type": "MAP",
+      "description": "Kennfeld für die Neubewertung des Fahrpedal-Verhältnisses im Falle von einem aktiven Charisma - Modus SportPlus",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x3B3BFC",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "AccPed_nEng_mp",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            798,
+            1218,
+            1386,
+            1596,
+            1806,
+            2016,
+            2226,
+            2436,
+            2982,
+            3990,
+            4998,
+            6006,
+            7980,
+            9996,
+            10710
+          ]
+        },
+        {
+          "inputQuantity": "AccPed_rAPP",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            819,
+            1638,
+            2458,
+            3277,
+            4096,
+            4506,
+            4915,
+            5325,
+            5734,
+            6144,
+            6554,
+            6963,
+            7373,
+            7782,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0009765625,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_facMapVSelDynLim_MAP",
+      "type": "MAP",
+      "description": "KENNFELD zum Schalten zwischen den verschiedenen Fahrerwunschmerkmalen auf Basis der Fahrzeuggeschwindigkeit und der Motortemperatur bei dynamischer Begrenzung des adaptiven",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x3B3E40",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "VehV_v",
+          "unit": "km/h",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            1000,
+            2000,
+            3000,
+            4000,
+            5000
+          ]
+        },
+        {
+          "inputQuantity": "AccPed_tEng_mp",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2331,
+            2731,
+            2931,
+            3131,
+            3331,
+            4631
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.00390625,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_facMapVSelSpt_MAP",
+      "type": "MAP",
+      "description": "Interpolationskennfeld im Falle Drive Off für den Sport Mode",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x3B3EA4",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "VehV_v",
+          "unit": "km/h",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            6000,
+            8000,
+            32765,
+            32766,
+            32767
+          ]
+        },
+        {
+          "inputQuantity": "AccPed_tEng_mp",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2331,
+            2731,
+            2931,
+            3031,
+            3131,
+            4631
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.00390625,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_facMapVSel_MAP",
+      "type": "MAP",
+      "description": "KENNFELD zum Schalten zwischen den verschiedenen Fahrerwunschmerkmalen auf Basis der Fahrzeuggeschwindigkeit und der Motortemperatur",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x3B3F08",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "VehV_v",
+          "unit": "km/h",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            6000,
+            8000,
+            32765,
+            32766,
+            32767
+          ]
+        },
+        {
+          "inputQuantity": "AccPed_tEng_mp",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2331,
+            2731,
+            2931,
+            3031,
+            3131,
+            4631
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.00390625,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_tqEngDO_MAP",
+      "type": "MAP",
+      "description": "Fahrverhaltenkennfeld in Motormoment im Fall Anfahren",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x3B3FCC",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            1400,
+            2000,
+            2500,
+            3000,
+            4000,
+            6000,
+            8000,
+            12000,
+            12002,
+            12004,
+            12006,
+            12008,
+            12010,
+            12012,
+            12014
+          ]
+        },
+        {
+          "inputQuantity": "APP_r",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            469,
+            582,
+            778,
+            1024,
+            1352,
+            1720,
+            2089,
+            2499,
+            2908,
+            3604,
+            4383,
+            5120,
+            5944,
+            6963,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqEng0_MAP",
+      "type": "MAP",
+      "description": "Anfahrkennfeld",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x3B426C",
+      "dims": {
+        "nx": 9,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "AccPed_nEng_mp",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            800,
+            1400,
+            2000,
+            2500,
+            3000,
+            4000,
+            6000,
+            8000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "AccPed_rAPP",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            469,
+            582,
+            778,
+            1024,
+            1352,
+            1720,
+            2089,
+            2499,
+            2908,
+            3604,
+            4383,
+            5120,
+            5944,
+            6963,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqEng1_MAP",
+      "type": "MAP",
+      "description": "1.Gang (voreilendes) Zugwunschmoment aus Motor-Dreh-zahl und APP_rUnFlt",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x3B43C2",
+      "dims": {
+        "nx": 9,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "AccPed_nEng_mp",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            800,
+            1400,
+            2000,
+            2500,
+            3000,
+            4000,
+            6000,
+            8000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "AccPed_rAPP",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            469,
+            582,
+            778,
+            1024,
+            1352,
+            1720,
+            2089,
+            2499,
+            2908,
+            3604,
+            4383,
+            5120,
+            5944,
+            6963,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AccPed_trqEng2_MAP",
+      "type": "MAP",
+      "description": "2.Gang (voreilendes) Zugwunschmoment aus Motor-Dreh-zahl und APP_rUnFlt",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x3B4518",
+      "dims": {
+        "nx": 9,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "AccPed_nEng_mp",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            800,
+            1400,
+            2000,
+            2500,
+            3000,
+            4000,
+            6000,
+            8000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "AccPed_rAPP",
+          "unit": "%",
+          "factor": 0.01220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            469,
+            582,
+            778,
+            1024,
+            1352,
+            1720,
+            2089,
+            2499,
+            2908,
+            3604,
+            4383,
+            5120,
+            5939,
+            6963,
+            8192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true
+  }
+}

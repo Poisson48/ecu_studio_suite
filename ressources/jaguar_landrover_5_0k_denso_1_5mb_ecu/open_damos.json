@@ -1,0 +1,883 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "jaguar_landrover_5_0k_denso_1_5mb_ecu",
+  "name": "open_damos — Jaguar Landrover 5.0K Denso 1,5MB ECU",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "BE",
+  "baseline": {
+    "source": "Jaguar XF-R 8W83-14C273-YB.bin",
+    "damos": "J_K8N50A@_@57_0F00.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/Jaguar Landrover 5.0K Denso 1,5MB ECU"
+  },
+  "recordLayouts": {
+    "RL23": {
+      "type": "MAP",
+      "byteOrder": "BE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "RL27": {
+      "type": "MAP",
+      "byteOrder": "BE",
+      "headerBytes": 0,
+      "dataType": "UWORD_BE",
+      "axisMode": "COM_AXIS"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "MBD_CHK_DELAY_D",
+      "type": "MAP",
+      "description": "Delay of estimated coolant temperature",
+      "recordLayout": "RL23",
+      "defaultAddress": "0x13ACA",
+      "dims": {
+        "nx": 9,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "MBD_CHK_DELAY_X",
+          "unit": "deg.C",
+          "factor": 0.625,
+          "offset": -40.0,
+          "dataType": "UBYTE",
+          "address": "0x13AC1",
+          "fingerprint": [
+            0,
+            64,
+            96,
+            128,
+            160,
+            192,
+            224,
+            240,
+            255
+          ]
+        },
+        {
+          "inputQuantity": "Scm_Ne",
+          "unit": "rpm",
+          "factor": 0.1953125,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x13A0E",
+          "fingerprint": [
+            0,
+            5120,
+            10240,
+            15360,
+            20480,
+            25600,
+            30720,
+            35840
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "MBD_CLTL_DELAY_D",
+      "type": "MAP",
+      "description": "Delay of estimated coolant temperature",
+      "recordLayout": "RL23",
+      "defaultAddress": "0x141BB",
+      "dims": {
+        "nx": 9,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Rbd_CLTL_EstClntT_Old",
+          "unit": "deg.C",
+          "factor": 0.625,
+          "offset": -40.0,
+          "dataType": "UBYTE",
+          "address": "0x141B2",
+          "fingerprint": [
+            0,
+            64,
+            96,
+            128,
+            160,
+            192,
+            224,
+            240,
+            255
+          ]
+        },
+        {
+          "inputQuantity": "Scm_Ne",
+          "unit": "rpm",
+          "factor": 0.1953125,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x14150",
+          "fingerprint": [
+            0,
+            5120,
+            10240,
+            15360,
+            20480,
+            25600,
+            30720,
+            35840
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "MBD_CLTL_FALTLEVL_D",
+      "type": "MAP",
+      "description": "Accumulated Coolant Temperature Fault Level",
+      "recordLayout": "RL27",
+      "defaultAddress": "0x14004",
+      "dims": {
+        "nx": 9,
+        "ny": 9
+      },
+      "axes": [
+        {
+          "inputQuantity": "Sbd_CHK_Temp",
+          "unit": "deg.C",
+          "factor": 0.625,
+          "offset": -40.0,
+          "dataType": "UBYTE",
+          "address": "0x14161",
+          "fingerprint": [
+            0,
+            48,
+            64,
+            80,
+            96,
+            112,
+            128,
+            144,
+            255
+          ]
+        },
+        {
+          "inputQuantity": "Scm_ClntTemp_Sta",
+          "unit": "deg.C",
+          "factor": 0.703125,
+          "offset": -40.0,
+          "dataType": "UBYTE",
+          "address": "0x1416A",
+          "fingerprint": [
+            0,
+            128,
+            143,
+            222,
+            223,
+            224,
+            225,
+            226,
+            227
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "MBD_MAFR2_PRDGA1_D",
+      "type": "MAP",
+      "description": "Predict Ga1 (Map value)",
+      "recordLayout": "RL27",
+      "defaultAddress": "0x13DD6",
+      "dims": {
+        "nx": 9,
+        "ny": 15
+      },
+      "axes": [
+        {
+          "inputQuantity": "Scm_Ne",
+          "unit": "rpm",
+          "factor": 0.1953125,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x13DA6",
+          "fingerprint": [
+            5120,
+            7680,
+            10240,
+            12800,
+            15360,
+            17920,
+            20480,
+            23040,
+            25600
+          ]
+        },
+        {
+          "inputQuantity": "Scm_EfThrAngl",
+          "unit": "%",
+          "factor": 0.00152587890625,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x13DB8",
+          "fingerprint": [
+            3277,
+            4915,
+            6554,
+            8192,
+            9830,
+            13107,
+            16384,
+            19661,
+            22938,
+            26214,
+            29491,
+            32768,
+            36045,
+            39322,
+            42598
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "MBD_MAFR2_PRDGA2_D",
+      "type": "MAP",
+      "description": "Predict Ga2 (Map value)",
+      "recordLayout": "RL27",
+      "defaultAddress": "0x13C98",
+      "dims": {
+        "nx": 9,
+        "ny": 15
+      },
+      "axes": [
+        {
+          "inputQuantity": "Scm_Ne",
+          "unit": "rpm",
+          "factor": 0.1953125,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x13C68",
+          "fingerprint": [
+            5120,
+            7680,
+            10240,
+            12800,
+            15360,
+            17920,
+            20480,
+            23040,
+            25600
+          ]
+        },
+        {
+          "inputQuantity": "Scm_EfThrAngl",
+          "unit": "%",
+          "factor": 0.00152587890625,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x13C7A",
+          "fingerprint": [
+            3277,
+            4915,
+            6554,
+            8192,
+            9830,
+            13107,
+            16384,
+            19661,
+            22938,
+            26214,
+            29491,
+            32768,
+            36045,
+            39322,
+            42598
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "MBD_MAP2_ALTITDEDIFCOMP_D",
+      "type": "MAP",
+      "description": "altitude compensation",
+      "recordLayout": "RL27",
+      "defaultAddress": "0x9190",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Scm_Ne",
+          "unit": "rpm",
+          "factor": 0.1953125,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x9170",
+          "fingerprint": [
+            5120,
+            7680,
+            10240,
+            12800,
+            15360,
+            17920,
+            20480,
+            23040
+          ]
+        },
+        {
+          "inputQuantity": "Scm_EfThrAngl",
+          "unit": "%",
+          "factor": 0.00152587890625,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x9180",
+          "fingerprint": [
+            3277,
+            4915,
+            6554,
+            9830,
+            14746,
+            21299,
+            29491,
+            39322
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "MBD_MAP2_THRP_D",
+      "type": "MAP",
+      "description": "failure reference manifold pressure",
+      "recordLayout": "RL27",
+      "defaultAddress": "0x9230",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Scm_Ne",
+          "unit": "rpm",
+          "factor": 0.1953125,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x9210",
+          "fingerprint": [
+            5120,
+            7680,
+            10240,
+            12800,
+            15360,
+            17920,
+            20480,
+            23040
+          ]
+        },
+        {
+          "inputQuantity": "Scm_EfThrAngl",
+          "unit": "%",
+          "factor": 0.00152587890625,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x9220",
+          "fingerprint": [
+            3277,
+            4915,
+            6554,
+            9830,
+            16384,
+            22938,
+            29491,
+            39322
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "MBD_THMS_DELTA_FALT_D",
+      "type": "MAP",
+      "description": "delta for fault",
+      "recordLayout": "RL27",
+      "defaultAddress": "0x14270",
+      "dims": {
+        "nx": 9,
+        "ny": 9
+      },
+      "axes": [
+        {
+          "inputQuantity": "Scm_ClntTemp",
+          "unit": "deg.C",
+          "factor": 0.629,
+          "offset": -40.0,
+          "dataType": "UBYTE",
+          "address": "0x143B4",
+          "fingerprint": [
+            0,
+            32,
+            64,
+            95,
+            127,
+            159,
+            183,
+            191,
+            192
+          ]
+        },
+        {
+          "inputQuantity": "Scm_ClntTemp_Sta",
+          "unit": "deg.C",
+          "factor": 0.629,
+          "offset": -40.0,
+          "dataType": "UBYTE",
+          "address": "0x143BD",
+          "fingerprint": [
+            0,
+            32,
+            64,
+            95,
+            127,
+            159,
+            175,
+            191,
+            192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "MBD_THMS_DELTA_NRM_D",
+      "type": "MAP",
+      "description": "delta for normal",
+      "recordLayout": "RL27",
+      "defaultAddress": "0x14312",
+      "dims": {
+        "nx": 9,
+        "ny": 9
+      },
+      "axes": [
+        {
+          "inputQuantity": "Scm_ClntTemp",
+          "unit": "deg.C",
+          "factor": 0.629,
+          "offset": -40.0,
+          "dataType": "UBYTE",
+          "address": "0x14429",
+          "fingerprint": [
+            0,
+            32,
+            64,
+            95,
+            127,
+            159,
+            183,
+            191,
+            192
+          ]
+        },
+        {
+          "inputQuantity": "Scm_ClntTemp_Sta",
+          "unit": "deg.C",
+          "factor": 0.629,
+          "offset": -40.0,
+          "dataType": "UBYTE",
+          "address": "0x14432",
+          "fingerprint": [
+            0,
+            32,
+            64,
+            95,
+            127,
+            159,
+            175,
+            191,
+            192
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "MCH_RCLTA_MBT_D",
+      "type": "MAP",
+      "description": "MBT spark timing",
+      "recordLayout": "RL27",
+      "defaultAddress": "0x16AC8",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "MCH_RCLTA_MBT_X",
+          "unit": "rpm",
+          "factor": 0.1953125,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x16A88",
+          "fingerprint": [
+            2560,
+            3840,
+            5120,
+            6144,
+            7680,
+            10240,
+            12800,
+            15360,
+            17920,
+            20480,
+            23040,
+            25600,
+            28160,
+            30720,
+            33280,
+            35840
+          ]
+        },
+        {
+          "inputQuantity": "Rch_RCLTA_AllowedLoad_Old1",
+          "unit": "g/rev",
+          "factor": 0.0015,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x16AA8",
+          "fingerprint": [
+            0,
+            133,
+            267,
+            400,
+            533,
+            667,
+            833,
+            1000,
+            1167,
+            1333,
+            1667,
+            2000,
+            2333,
+            2667,
+            3000,
+            3333
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "MCH_THROPENANGL_PGAINERR_D",
+      "type": "MAP",
+      "description": "Prop. gain error for target flow",
+      "recordLayout": "RL27",
+      "defaultAddress": "0x15C10",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "MCH_THROPENANGL_PGAINERR_X",
+          "unit": "g/rev",
+          "factor": 0.00030517578125,
+          "offset": -10.0,
+          "dataType": "UWORD_BE",
+          "address": "0x15BF0",
+          "fingerprint": [
+            24576,
+            31785,
+            32735,
+            32801,
+            33751,
+            35226,
+            36045,
+            40960
+          ]
+        },
+        {
+          "inputQuantity": "Scm_MapMaf_LoadND",
+          "unit": "g/rev",
+          "factor": 0.000152587890625,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x15C00",
+          "fingerprint": [
+            3277,
+            4915,
+            6554,
+            9830,
+            13107,
+            16384,
+            22938,
+            26214
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_BE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "MCM_BLCHTR_DLTMDLCLNTTEMP_D",
+      "type": "MAP",
+      "description": "Modelled Delta Coolant Temperature",
+      "recordLayout": "RL23",
+      "defaultAddress": "0x19D8E",
+      "dims": {
+        "nx": 6,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "MCM_BLCHTR_DLTMDLCLNTTEMP_X",
+          "unit": "deg C",
+          "factor": 0.625,
+          "offset": -160.0,
+          "dataType": "UWORD_BE",
+          "address": "0x19D50",
+          "fingerprint": [
+            256,
+            304,
+            352,
+            400,
+            448,
+            496
+          ]
+        },
+        {
+          "inputQuantity": "Scm_EngOffT",
+          "unit": "min",
+          "factor": 0.02197265625,
+          "offset": 0.0,
+          "dataType": "UWORD_BE",
+          "address": "0x19D5C",
+          "fingerprint": [
+            0,
+            1365,
+            2731,
+            4096,
+            5461,
+            8192,
+            10923,
+            13653,
+            18204,
+            22756,
+            27307,
+            31858,
+            36409,
+            40960,
+            45511,
+            50062
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "MCM_BLCHTR_EFCTCLNTTEMP_E_D",
+      "type": "MAP",
+      "description": "Effective Coolant Temperature for E BH",
+      "recordLayout": "RL23",
+      "defaultAddress": "0x19E80",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Rcm_BlcHtr_IgnOnAFMTemp",
+          "unit": "deg.C",
+          "factor": 0.625,
+          "offset": -40.0,
+          "dataType": "UBYTE",
+          "address": "0x19E70",
+          "fingerprint": [
+            0,
+            16,
+            32,
+            48,
+            64,
+            80,
+            96,
+            112
+          ]
+        },
+        {
+          "inputQuantity": "Rcm_BlcHtr_StaClntTemp",
+          "unit": "deg.C",
+          "factor": 0.625,
+          "offset": -40.0,
+          "dataType": "UBYTE",
+          "address": "0x19E78",
+          "fingerprint": [
+            32,
+            48,
+            64,
+            80,
+            96,
+            112,
+            128,
+            144
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "MCM_BLCHTR_EFCTCLNTTEMP_F_D",
+      "type": "MAP",
+      "description": "Effective Coolant Temperature for FF BH",
+      "recordLayout": "RL23",
+      "defaultAddress": "0x19E30",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Rcm_BlcHtr_IgnOnAFMTemp",
+          "unit": "deg.C",
+          "factor": 0.625,
+          "offset": -40.0,
+          "dataType": "UBYTE",
+          "address": "0x19E20",
+          "fingerprint": [
+            0,
+            16,
+            32,
+            48,
+            64,
+            96,
+            128,
+            160
+          ]
+        },
+        {
+          "inputQuantity": "Rcm_BlcHtr_StaClntTemp",
+          "unit": "deg.C",
+          "factor": 0.625,
+          "offset": -40.0,
+          "dataType": "UBYTE",
+          "address": "0x19E28",
+          "fingerprint": [
+            0,
+            16,
+            32,
+            48,
+            64,
+            96,
+            128,
+            160
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "14/14"
+  }
+}

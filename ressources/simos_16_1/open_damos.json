@@ -1,0 +1,882 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "simos_16_1",
+  "name": "open_damos — SIMOS 16.1 (SG1) 3,0l V6 TFSIevo, AU57x-PA, 200245kW, EU6, DL501-7q_4G2907551_X203",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "SG1H0031_1C1.S19",
+    "damos": "SG1H0031_1C1_OEM.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/SIMOS 16.1 (SG1) 3,0l V6 TFSIevo, AU57x-PA, 200245kW, EU6, DL501-7q_4G2907551_X203"
+  },
+  "recordLayouts": {
+    "_REC_A1MAP_20_U1_U1_U1": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_U2_U2_U2": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UWORD_LE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_U1_U2_U1": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_U1_U1_U2": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_U2_U1_U2": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UWORD_LE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_U2_U1_U1": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UWORD_LE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_U2_U2_U1": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UWORD_LE",
+      "axisMode": "COM_AXIS"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "ip_fac_wup_cor_tia_scha",
+      "type": "MAP",
+      "description": "Map for TIA_SCHA_DOWN Warm-up correction factor",
+      "recordLayout": "_REC_A1MAP_20_U1_U1_U1",
+      "defaultAddress": "0xD954",
+      "dims": {
+        "nx": 12,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "temp_cold_src",
+          "unit": "°C",
+          "factor": 0.7500000000000002,
+          "offset": -48.000000000000014,
+          "dataType": "UBYTE",
+          "address": "0x86E",
+          "fingerprint": [
+            12,
+            17,
+            36,
+            51,
+            77,
+            91,
+            104,
+            117,
+            131,
+            144,
+            157,
+            171
+          ]
+        },
+        {
+          "inputQuantity": "temp_hot_src_mmv",
+          "unit": "°C",
+          "factor": 0.7500000000000002,
+          "offset": -48.000000000000014,
+          "dataType": "UBYTE",
+          "address": "0x88E",
+          "fingerprint": [
+            12,
+            17,
+            36,
+            51,
+            77,
+            104,
+            117,
+            131,
+            144,
+            157,
+            171,
+            184
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_eff_scha",
+      "type": "MAP",
+      "description": "Super-Charger compression efficiency",
+      "recordLayout": "_REC_A1MAP_20_U2_U2_U2",
+      "defaultAddress": "0xD7B8",
+      "dims": {
+        "nx": 6,
+        "ny": 7
+      },
+      "axes": [
+        {
+          "inputQuantity": "ldpm_pq_scha_1_airt",
+          "unit": "-",
+          "factor": 0.000244140625,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x83A",
+          "fingerprint": [
+            6,
+            4096,
+            4915,
+            5734,
+            6554,
+            7373
+          ]
+        },
+        {
+          "inputQuantity": "ldpm_n_scha_1_airt",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x82A",
+          "fingerprint": [
+            7,
+            4000,
+            6000,
+            8000,
+            10000,
+            12000,
+            14000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_tia_scha_up_cold_src",
+      "type": "MAP",
+      "description": "Offset map fot TIA_SCHA_UP calculation",
+      "recordLayout": "_REC_A1MAP_20_U1_U2_U1",
+      "defaultAddress": "0xDBA8",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "ldpm_maf_stk_1_airt",
+          "unit": "mg/stk",
+          "factor": 0.04238956282902266,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0xD718",
+          "fingerprint": [
+            8,
+            2359,
+            3539,
+            7077,
+            9436,
+            12975,
+            16513,
+            18873
+          ]
+        },
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x820",
+          "fingerprint": [
+            8,
+            22,
+            31,
+            63,
+            94,
+            125,
+            156,
+            188
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_v_efc_ctl_lsh_lsl",
+      "type": "MAP",
+      "description": "Open loop control effective heater voltage",
+      "recordLayout": "_REC_A1MAP_20_U1_U1_U2",
+      "defaultAddress": "0x1F7BC",
+      "dims": {
+        "nx": 7,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x3124",
+          "fingerprint": [
+            7,
+            21,
+            47,
+            63,
+            94,
+            125,
+            156
+          ]
+        },
+        {
+          "inputQuantity": "ldpm_teg_dyn_lsl_1_egcp",
+          "unit": "°C",
+          "factor": 0.0625,
+          "offset": -273.15,
+          "dataType": "UWORD_LE",
+          "address": "0x3184",
+          "fingerprint": [
+            6,
+            9970,
+            10770,
+            12370,
+            14770,
+            17170
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_iplsl_ofs_scav",
+      "type": "MAP",
+      "description": "Map for offset- correction of linear lambda sensor pump current at scavenging",
+      "recordLayout": "_REC_A1MAP_20_U2_U1_U2",
+      "defaultAddress": "0x1EFF0",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x2FDB",
+          "fingerprint": [
+            8,
+            22,
+            29,
+            33,
+            39,
+            43,
+            47,
+            50
+          ]
+        },
+        {
+          "inputQuantity": "maf",
+          "unit": "mg/stk",
+          "factor": 0.02119478141451133,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x1EABC",
+          "fingerprint": [
+            8,
+            21232,
+            25950,
+            30668,
+            35386,
+            40576,
+            46238,
+            51900
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_lamb_ampl_max_dyn_lsl_up",
+      "type": "MAP",
+      "description": "Nominal sensor expected amplitude during the Dynamic Diagnosis Rem.: The same points in LDPM_N_32_2_EGTR and LDPM_MAF_HB_2_EGTR shall be used",
+      "recordLayout": "_REC_A1MAP_20_U2_U1_U1",
+      "defaultAddress": "0x1F070",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x313B",
+          "fingerprint": [
+            8,
+            34,
+            39,
+            47,
+            55,
+            63,
+            70,
+            78
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x310E",
+          "fingerprint": [
+            8,
+            22,
+            23,
+            28,
+            32,
+            41,
+            50,
+            60
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_t_dyn_diag",
+      "type": "MAP",
+      "description": "Amplitude measurement time: same points than in LDPM_N_32_2_EGTR and LDPM_MAF_HB_2_EGTR shall be used",
+      "recordLayout": "_REC_A1MAP_20_U2_U1_U1",
+      "defaultAddress": "0x1F4B4",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x313B",
+          "fingerprint": [
+            8,
+            34,
+            39,
+            47,
+            55,
+            63,
+            70,
+            78
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x310E",
+          "fingerprint": [
+            8,
+            22,
+            23,
+            28,
+            32,
+            41,
+            50,
+            60
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_fac_o2l_1_max_cat",
+      "type": "MAP",
+      "description": "multiplicative factor on reference working point OSC for working point depending OSC",
+      "recordLayout": "_REC_A1MAP_20_U2_U2_U2",
+      "defaultAddress": "0x1FE30",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "maf_cyl",
+          "unit": "kg/h",
+          "factor": 0.03125,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x1FC80",
+          "fingerprint": [
+            8,
+            480,
+            1600,
+            3200,
+            4800,
+            6400,
+            9600,
+            16000
+          ]
+        },
+        {
+          "inputQuantity": "ldpm_temp_cat_ip_o2l_max",
+          "unit": "°C",
+          "factor": 0.0625,
+          "offset": -273.15,
+          "dataType": "UWORD_LE",
+          "address": "0x1FCD0",
+          "fingerprint": [
+            8,
+            4372,
+            9170,
+            12370,
+            13970,
+            15570,
+            17170,
+            18770
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_lamb_sp_de_nom_pls",
+      "type": "MAP",
+      "description": "Amplitude of nominal forced stimulation",
+      "recordLayout": "_REC_A1MAP_20_U2_U1_U1",
+      "defaultAddress": "0x20418",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x3B98",
+          "fingerprint": [
+            8,
+            22,
+            39,
+            55,
+            63,
+            78,
+            94,
+            125
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x3B80",
+          "fingerprint": [
+            8,
+            13,
+            23,
+            32,
+            41,
+            50,
+            69,
+            78
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_o2l_sp_cat_diag_pls",
+      "type": "MAP",
+      "description": "Oxygen loading set point for forced lambda stimulation in case of active catalyst diagnosis",
+      "recordLayout": "_REC_A1MAP_20_U2_U1_U1",
+      "defaultAddress": "0x20834",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x3B98",
+          "fingerprint": [
+            8,
+            22,
+            39,
+            55,
+            63,
+            78,
+            94,
+            125
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x3B80",
+          "fingerprint": [
+            8,
+            13,
+            23,
+            32,
+            41,
+            50,
+            69,
+            78
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_o2l_sp_dly_diag_pls",
+      "type": "MAP",
+      "description": "Oxygen loading set point for forced lambda stimulation in case of active delay WRAF sensor diagnosis",
+      "recordLayout": "_REC_A1MAP_20_U2_U1_U1",
+      "defaultAddress": "0x208B4",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x39FE",
+          "fingerprint": [
+            8,
+            38,
+            39,
+            47,
+            55,
+            63,
+            70,
+            78
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x39B8",
+          "fingerprint": [
+            8,
+            18,
+            23,
+            32,
+            41,
+            50,
+            60,
+            69
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_o2l_sp_dyn_diag_pls",
+      "type": "MAP",
+      "description": "Oxygen loading set point for forced lambda stimulation in case of active dynamic WRAF sensor diagnosis",
+      "recordLayout": "_REC_A1MAP_20_U2_U1_U1",
+      "defaultAddress": "0x20934",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_32",
+          "unit": "rpm",
+          "factor": 32.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x3A07",
+          "fingerprint": [
+            8,
+            34,
+            39,
+            47,
+            55,
+            63,
+            70,
+            78
+          ]
+        },
+        {
+          "inputQuantity": "maf_hb",
+          "unit": "mg/stk",
+          "factor": 5.447058823529412,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x39C1",
+          "fingerprint": [
+            8,
+            18,
+            23,
+            28,
+            32,
+            41,
+            50,
+            60
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_loil_cor_pump_oil_el_h",
+      "type": "MAP",
+      "description": "Compensation map for oil warn level at active high pressure state of the oil pump",
+      "recordLayout": "_REC_A1MAP_20_U2_U2_U1",
+      "defaultAddress": "0x20DC0",
+      "dims": {
+        "nx": 10,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_srv_intl",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x20CE0",
+          "fingerprint": [
+            10,
+            500,
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500
+          ]
+        },
+        {
+          "inputQuantity": "toil_srv_intl",
+          "unit": "°C",
+          "factor": 1.0,
+          "offset": -60.0,
+          "dataType": "UBYTE",
+          "address": "0x3EED",
+          "fingerprint": [
+            10,
+            110,
+            120,
+            130,
+            140,
+            150,
+            160,
+            170,
+            180,
+            190
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_loil_cor_pump_oil_el_l",
+      "type": "MAP",
+      "description": "Compensation map for oil warn level at active low pressure state of the oil pump",
+      "recordLayout": "_REC_A1MAP_20_U2_U2_U1",
+      "defaultAddress": "0x20E88",
+      "dims": {
+        "nx": 10,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "n_srv_intl",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x20CE0",
+          "fingerprint": [
+            10,
+            500,
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500
+          ]
+        },
+        {
+          "inputQuantity": "toil_srv_intl",
+          "unit": "°C",
+          "factor": 1.0,
+          "offset": -60.0,
+          "dataType": "UBYTE",
+          "address": "0x3EED",
+          "fingerprint": [
+            10,
+            110,
+            120,
+            130,
+            140,
+            150,
+            160,
+            170,
+            180,
+            190
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "14/14"
+  }
+}

@@ -1,0 +1,793 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "dme841_r1c2a114b",
+  "name": "open_damos — DME841_R1C2A114B",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "DME841_R1C2A114B.hex",
+    "damos": "R1C2A114B.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/DME8.4/B48/BN2020/DME841_R1C2A114B"
+  },
+  "recordLayouts": {
+    "KfAxU8AyU8SstxU16SstyU16WU16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "UWORD_LE"
+    },
+    "RB_Map_U8U8_U8": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "UBYTE"
+    },
+    "GkfWUb": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "RB_Map_U16U16_U16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "UWORD_LE"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "CILCN_aEngRghChngThrBnk1At_MAP",
+      "type": "MAP",
+      "description": "Drehzahl- und lastabhängige Sollkennlinie für Laufunruheänderung Bank 1 (gedrosselter Betrieb), automatisches Getriebe",
+      "recordLayout": "KfAxU8AyU8SstxU16SstyU16WU16",
+      "defaultAddress": "0x90DA21E",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "CILCN_ratChrgAirAdapSync",
+          "unit": "%",
+          "factor": 0.0234375,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            0,
+            11008,
+            21760,
+            32768,
+            43776,
+            54528
+          ]
+        },
+        {
+          "inputQuantity": "CILCN_nEngAdapSync",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            0,
+            512,
+            1024,
+            1536,
+            2048,
+            2560
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.006315935604489039,
+        "offset": 0.0,
+        "unit": "(Umdr./sec)^2"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "CILCN_aEngRghChngThrBnk1Mt_MAP",
+      "type": "MAP",
+      "description": "Drehzahl- und lastabhängige Sollkennlinie für Laufunruheänderung Bank 1 (gedrosselter Betrieb), Handschalter",
+      "recordLayout": "KfAxU8AyU8SstxU16SstyU16WU16",
+      "defaultAddress": "0x90DA282",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "CILCN_ratChrgAirAdapSync",
+          "unit": "%",
+          "factor": 0.0234375,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            0,
+            11008,
+            21760,
+            32768,
+            43776,
+            54528
+          ]
+        },
+        {
+          "inputQuantity": "CILCN_nEngAdapSync",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            0,
+            512,
+            1024,
+            1536,
+            2048,
+            2560
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.006315935604489039,
+        "offset": 0.0,
+        "unit": "(Umdr./sec)^2"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "CILCN_facEnaCorr_MAP",
+      "type": "MAP",
+      "description": "Drehzahl- und lastabhängiges Kennfeld zur Festlegung des Anwendungsbereiches der Adaptionswerte",
+      "recordLayout": "KfAxU8AyU8SstxU16SstyU16WU16",
+      "defaultAddress": "0x90DA4F8",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "CILCN_nEngAdapSync",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            0,
+            512,
+            1024,
+            1536,
+            2048,
+            2560,
+            3072,
+            3584
+          ]
+        },
+        {
+          "inputQuantity": "CILCN_ratChrgAirAdapSync",
+          "unit": "%",
+          "factor": 0.0234375,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            0,
+            11008,
+            21760,
+            32768,
+            43776,
+            54528
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.52587890625e-05,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "GEVlv_tiActIntkAgFildg_MAP",
+      "type": "MAP",
+      "description": "Zeitkonstante für die Filterung des Nockenwellenistwinkels für die Nockenwellenregelung",
+      "recordLayout": "RB_Map_U8U8_U8",
+      "defaultAddress": "0x90D99FA",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEngLRes",
+          "unit": "rpm",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            13,
+            25,
+            38,
+            50,
+            63,
+            75,
+            113,
+            150
+          ]
+        },
+        {
+          "inputQuantity": "toch_msg",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            24,
+            91,
+            131,
+            171,
+            197,
+            224
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 0.01,
+        "offset": 0.0,
+        "unit": "s"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "GEVlv_tiActOutlAgFildg_MAP",
+      "type": "MAP",
+      "description": "Zeitkonstante für die Filterung des Nockenwellenistwinkels für die Nockenwellenregelung",
+      "recordLayout": "RB_Map_U8U8_U8",
+      "defaultAddress": "0x90D97B0",
+      "dims": {
+        "nx": 8,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEngLRes",
+          "unit": "rpm",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            13,
+            25,
+            38,
+            50,
+            63,
+            75,
+            113,
+            150
+          ]
+        },
+        {
+          "inputQuantity": "toch_msg",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            24,
+            91,
+            131,
+            171,
+            197,
+            224
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 0.01,
+        "offset": 0.0,
+        "unit": "s"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "inj.KFKTM2A",
+      "type": "MAP",
+      "description": " / Kennfeld: Einfluß Fahrzeuggeschwindigkeit und E-Lüfter auf Kraftstofftemperatur, aut. Getriebe",
+      "recordLayout": "RB_Map_U8U8_U8",
+      "defaultAddress": "0x90D40CA",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "km/h",
+          "factor": 1.25,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            0,
+            7,
+            28,
+            40,
+            64,
+            200
+          ]
+        },
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "%",
+          "factor": 0.390625,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            18,
+            26,
+            38,
+            102,
+            128,
+            255
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 0.0078125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "inj.KFKTM2M",
+      "type": "MAP",
+      "description": " / Kennfeld: Einfluß Fahrzeuggeschwindigkeit und E-Lüfter auf Kraftstofftemperatur, man. Getriebe",
+      "recordLayout": "RB_Map_U8U8_U8",
+      "defaultAddress": "0x90D40FC",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "km/h",
+          "factor": 1.25,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            0,
+            7,
+            28,
+            40,
+            64,
+            200
+          ]
+        },
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "%",
+          "factor": 0.390625,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            18,
+            26,
+            38,
+            102,
+            128,
+            255
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 0.0078125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "inj.KFTMOKORA",
+      "type": "MAP",
+      "description": " / Kennfeld: Einfluß nmot und tmot auf Kraftstofftemperatur, aut. Getriebe",
+      "recordLayout": "RB_Map_U8U8_U8",
+      "defaultAddress": "0x90D412E",
+      "dims": {
+        "nx": 9,
+        "ny": 9
+      },
+      "axes": [
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            37,
+            64,
+            91,
+            117,
+            177,
+            191,
+            197,
+            211,
+            224
+          ]
+        },
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            10,
+            15,
+            20,
+            25,
+            50,
+            75,
+            100,
+            125,
+            150
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 0.75,
+        "offset": -48.0,
+        "unit": "Grad C"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "inj.KFTMOKORM",
+      "type": "MAP",
+      "description": " / Kennfeld: Einfluß von nmot und tmot auf Kraftstofftemperatur bei man. Getriebe",
+      "recordLayout": "RB_Map_U8U8_U8",
+      "defaultAddress": "0x90D4193",
+      "dims": {
+        "nx": 9,
+        "ny": 9
+      },
+      "axes": [
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            37,
+            64,
+            91,
+            117,
+            177,
+            191,
+            197,
+            211,
+            224
+          ]
+        },
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            10,
+            15,
+            20,
+            25,
+            50,
+            75,
+            100,
+            125,
+            150
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 0.75,
+        "offset": -48.0,
+        "unit": "Grad C"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "KFAMAL",
+      "type": "MAP",
+      "description": "Kennfeld Absenkungsfaktor für Lur-Wert bei erkannten Mehrfachaussetzern",
+      "recordLayout": "GkfWUb",
+      "defaultAddress": "0x90DBA5A",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "midmd",
+          "unit": "%",
+          "factor": 0.390625,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x90DCE1F",
+          "fingerprint": [
+            8,
+            11,
+            19,
+            31,
+            44,
+            61,
+            77,
+            90
+          ]
+        },
+        {
+          "inputQuantity": "Epm_nEngLRes",
+          "unit": "rpm",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x90DCE28",
+          "fingerprint": [
+            8,
+            12,
+            22,
+            37,
+            50,
+            75,
+            113,
+            138
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "KFAMAL1",
+      "type": "MAP",
+      "description": "Kennfeld Absenkungsfaktor für Lur-Wert bei erkannten Mehrfachaussetzern",
+      "recordLayout": "GkfWUb",
+      "defaultAddress": "0x90DBA9A",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "midmd",
+          "unit": "%",
+          "factor": 0.390625,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x90DCE1F",
+          "fingerprint": [
+            8,
+            11,
+            19,
+            31,
+            44,
+            61,
+            77,
+            90
+          ]
+        },
+        {
+          "inputQuantity": "Epm_nEngLRes",
+          "unit": "rpm",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x90DCE28",
+          "fingerprint": [
+            8,
+            12,
+            22,
+            37,
+            50,
+            75,
+            113,
+            138
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "KFAMAL2",
+      "type": "MAP",
+      "description": "Kennfeld Absenkungsfaktor für Lur-Wert bei erkannten Mehrfachaussetzern",
+      "recordLayout": "GkfWUb",
+      "defaultAddress": "0x90DBADA",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "midmd",
+          "unit": "%",
+          "factor": 0.390625,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x90DCE1F",
+          "fingerprint": [
+            8,
+            11,
+            19,
+            31,
+            44,
+            61,
+            77,
+            90
+          ]
+        },
+        {
+          "inputQuantity": "Epm_nEngLRes",
+          "unit": "rpm",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "address": "0x90DCE28",
+          "fingerprint": [
+            8,
+            12,
+            22,
+            37,
+            50,
+            75,
+            113,
+            138
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "KFCLTHDEV",
+      "type": "MAP",
+      "description": "Kennfeld Zeitkonstante Tiefpass Kühlung",
+      "recordLayout": "RB_Map_U16U16_U16",
+      "defaultAddress": "0x90CBC72",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "tfuelsqhdv",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            16384,
+            18176,
+            19712,
+            21504,
+            23296,
+            24832,
+            26624,
+            29952
+          ]
+        },
+        {
+          "inputQuantity": "thdevvfz",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UWORD_LE",
+          "fingerprint": [
+            16384,
+            18176,
+            19712,
+            21504,
+            23296,
+            24832,
+            26624,
+            29952
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 0.2,
+        "offset": 0.0,
+        "unit": "s"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "KFFFANZ",
+      "type": "MAP",
+      "description": "Anzahl Folgefunken",
+      "recordLayout": "RB_Map_U8U8_U8",
+      "defaultAddress": "0x90D9D64",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "Grad C",
+          "factor": 0.75,
+          "offset": -48.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            24,
+            51,
+            64,
+            91,
+            144,
+            191
+          ]
+        },
+        {
+          "inputQuantity": "NO_INPUT_QUANTITY",
+          "unit": "1/min",
+          "factor": 40.0,
+          "offset": 0.0,
+          "dataType": "UBYTE",
+          "fingerprint": [
+            5,
+            15,
+            23,
+            30,
+            50,
+            75
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "10/14"
+  }
+}

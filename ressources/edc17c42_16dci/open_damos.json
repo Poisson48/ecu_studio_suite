@@ -1,0 +1,870 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "edc17c42_16dci",
+  "name": "open_damos — 1.6 DCI 130hp RENAULT - BOSCH EDC17C42",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "R9M404_1706_400A2_BMS_70RC_OVB.hex",
+    "damos": "1706_400A2.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/Renault EDC17 2.0DCI and 1.6DCI edc17C42, EDC17C19/1.6 DCI 130hp RENAULT - BOSCH EDC17C42"
+  },
+  "recordLayouts": {
+    "Map_Xs16Ys16Ws16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "SWORD_LE"
+    },
+    "RSA_RecordLayout_MAP_UWORD": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UWORD_LE",
+      "axisMode": "COM_AXIS"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "ASMod_dmAir_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x1D1052",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "ASMod_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2000,
+            2800,
+            3600,
+            4400,
+            5200,
+            6000,
+            7000,
+            8000
+          ]
+        },
+        {
+          "inputQuantity": "ASMod_qInjCmb",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            3000,
+            4000,
+            5000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Kg/h"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ASMod_etaTrbCh_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x1D15F4",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "ASMod_dmAFSCor",
+          "unit": "Kg/h",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            500,
+            1000,
+            1500,
+            2500,
+            3500,
+            4500,
+            5000,
+            5500
+          ]
+        },
+        {
+          "inputQuantity": "ASMod_rPresCmpr_mp",
+          "unit": "-",
+          "factor": 0.0001220703125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            8192,
+            9830,
+            11469,
+            13107,
+            15565,
+            18022,
+            20480,
+            22938
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.0001220703125,
+        "offset": 0.0,
+        "unit": "-"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ASMod_pDiffPipe0_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x1D145A",
+      "dims": {
+        "nx": 10,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1200,
+            2400,
+            3600,
+            4800,
+            6000,
+            7200,
+            8400,
+            8401,
+            8402,
+            8403
+          ]
+        },
+        {
+          "inputQuantity": "ASMod_qPresPipe_mp",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            900,
+            1800,
+            2700,
+            3600,
+            4500,
+            5400,
+            6300,
+            6301,
+            6302
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": "hPa"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ASMod_phiStrtDlv_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x1D118A",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "ASMod_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2000,
+            2800,
+            3600,
+            4400,
+            5200,
+            6000,
+            7000,
+            8000
+          ]
+        },
+        {
+          "inputQuantity": "ASMod_qInjCmb",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            3000,
+            4000,
+            5000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.021972656250005364,
+        "offset": 0.0,
+        "unit": "deg CrS"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ASMod_tIAT_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x1D1232",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "ASMod_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1600,
+            2400,
+            3400,
+            4400,
+            5600,
+            7000,
+            8600,
+            10200
+          ]
+        },
+        {
+          "inputQuantity": "ASMod_qInjCmb",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2500,
+            3500,
+            5000,
+            7000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": -273.14,
+        "unit": "deg C"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ASMod_tMnfStat_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x1D12D6",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "ASMod_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2000,
+            2800,
+            3600,
+            4400,
+            5200,
+            6000,
+            7000,
+            8000
+          ]
+        },
+        {
+          "inputQuantity": "ASMod_qInjCmb",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            3000,
+            4000,
+            5000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": -273.14,
+        "unit": "deg C"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "Cmp_ajs_acel_slk_dly_spc",
+      "type": "MAP",
+      "description": "Specific cartography for selecting the delay of action of the slack effect for vehicle acceleration",
+      "recordLayout": "RSA_RecordLayout_MAP_UWORD",
+      "defaultAddress": "0x182386",
+      "dims": {
+        "nx": 10,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Vxx_ajs_modu_n_mv",
+          "unit": "rpm",
+          "factor": 0.25,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x1AB936",
+          "fingerprint": [
+            10,
+            3200,
+            5000,
+            6000,
+            7000,
+            8000,
+            10000,
+            12000,
+            14000,
+            16000
+          ]
+        },
+        {
+          "inputQuantity": "Vxx_ajs_dt_tq_rat",
+          "unit": "-",
+          "factor": 0.01,
+          "offset": -10.0,
+          "dataType": "UWORD_LE",
+          "address": "0x182EFA",
+          "fingerprint": [
+            12,
+            900,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1700,
+            1800,
+            1900
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Cmp_ajs_acel_slk_dly_t1",
+      "type": "MAP",
+      "description": "AJMOD cartography for selecting the delay of action of the slack effect for vehicle acceleration",
+      "recordLayout": "RSA_RecordLayout_MAP_UWORD",
+      "defaultAddress": "0x1AB838",
+      "dims": {
+        "nx": 10,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Vxx_ajs_modu_n_mv",
+          "unit": "rpm",
+          "factor": 0.25,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x1AB936",
+          "fingerprint": [
+            10,
+            3200,
+            5000,
+            6000,
+            7000,
+            8000,
+            10000,
+            12000,
+            14000,
+            16000
+          ]
+        },
+        {
+          "inputQuantity": "Vxx_ajs_dt_tq_rat",
+          "unit": "-",
+          "factor": 0.01,
+          "offset": -10.0,
+          "dataType": "UWORD_LE",
+          "address": "0x182EFA",
+          "fingerprint": [
+            12,
+            900,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1700,
+            1800,
+            1900
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Cmp_ajs_acel_slk_t1_ini_max",
+      "type": "MAP",
+      "description": "AJMOD cartography for selectiong the initial time constant offset added during slack effect activation for vehicle acceleration",
+      "recordLayout": "RSA_RecordLayout_MAP_UWORD",
+      "defaultAddress": "0x1AB6A0",
+      "dims": {
+        "nx": 10,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Vxx_ajs_modu_n_mv",
+          "unit": "rpm",
+          "factor": 0.25,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x1AB936",
+          "fingerprint": [
+            10,
+            3200,
+            5000,
+            6000,
+            7000,
+            8000,
+            10000,
+            12000,
+            14000,
+            16000
+          ]
+        },
+        {
+          "inputQuantity": "Vxx_ajs_dt_tq_rat",
+          "unit": "-",
+          "factor": 0.01,
+          "offset": -10.0,
+          "dataType": "UWORD_LE",
+          "address": "0x182EFA",
+          "fingerprint": [
+            12,
+            900,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1700,
+            1800,
+            1900
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Cmp_ajs_acel_slk_t1_max_spc",
+      "type": "MAP",
+      "description": "Specific cartography for selecting the initial time constant offset added during slack effect activation for vehicle acceleration",
+      "recordLayout": "RSA_RecordLayout_MAP_UWORD",
+      "defaultAddress": "0x1821EE",
+      "dims": {
+        "nx": 10,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Vxx_ajs_modu_n_mv",
+          "unit": "rpm",
+          "factor": 0.25,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x1AB936",
+          "fingerprint": [
+            10,
+            3200,
+            5000,
+            6000,
+            7000,
+            8000,
+            10000,
+            12000,
+            14000,
+            16000
+          ]
+        },
+        {
+          "inputQuantity": "Vxx_ajs_dt_tq_rat",
+          "unit": "-",
+          "factor": 0.01,
+          "offset": -10.0,
+          "dataType": "UWORD_LE",
+          "address": "0x182EFA",
+          "fingerprint": [
+            12,
+            900,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1700,
+            1800,
+            1900
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Cmp_ajs_cor_t1_acel_clos_spc",
+      "type": "MAP",
+      "description": "Specific AJCOR time constant cartography for vehicle acceleration when driveline is closed",
+      "recordLayout": "RSA_RecordLayout_MAP_UWORD",
+      "defaultAddress": "0x183468",
+      "dims": {
+        "nx": 10,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Vxx_n",
+          "unit": "rpm",
+          "factor": 0.25,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x182F34",
+          "fingerprint": [
+            10,
+            3200,
+            4000,
+            5000,
+            6000,
+            8000,
+            10000,
+            12000,
+            14000,
+            16000
+          ]
+        },
+        {
+          "inputQuantity": "Vxx_ajs_dt_tq_rat",
+          "unit": "-",
+          "factor": 0.01,
+          "offset": -10.0,
+          "dataType": "UWORD_LE",
+          "address": "0x182EFA",
+          "fingerprint": [
+            12,
+            900,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1700,
+            1800,
+            1900
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Cmp_ajs_cor_t1_acel_dt_clos",
+      "type": "MAP",
+      "description": "AJCOR time constant cartography for vehicle acceleration when driveline is closed",
+      "recordLayout": "RSA_RecordLayout_MAP_UWORD",
+      "defaultAddress": "0x182D2E",
+      "dims": {
+        "nx": 10,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Vxx_n",
+          "unit": "rpm",
+          "factor": 0.25,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x182F34",
+          "fingerprint": [
+            10,
+            3200,
+            4000,
+            5000,
+            6000,
+            8000,
+            10000,
+            12000,
+            14000,
+            16000
+          ]
+        },
+        {
+          "inputQuantity": "Vxx_ajs_dt_tq_rat",
+          "unit": "-",
+          "factor": 0.01,
+          "offset": -10.0,
+          "dataType": "UWORD_LE",
+          "address": "0x182EFA",
+          "fingerprint": [
+            12,
+            900,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1700,
+            1800,
+            1900
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Cmp_ajs_cor_t1_decl_clos_spc",
+      "type": "MAP",
+      "description": "Specific AJCOR time constant cartography for vehicle deceleration when driveline is closed",
+      "recordLayout": "RSA_RecordLayout_MAP_UWORD",
+      "defaultAddress": "0x183378",
+      "dims": {
+        "nx": 10,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Vxx_n",
+          "unit": "rpm",
+          "factor": 0.25,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x182F34",
+          "fingerprint": [
+            10,
+            3200,
+            4000,
+            5000,
+            6000,
+            8000,
+            10000,
+            12000,
+            14000,
+            16000
+          ]
+        },
+        {
+          "inputQuantity": "Vxx_ajs_dt_tq_rat",
+          "unit": "-",
+          "factor": 0.01,
+          "offset": -10.0,
+          "dataType": "UWORD_LE",
+          "address": "0x182EFA",
+          "fingerprint": [
+            12,
+            900,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1700,
+            1800,
+            1900
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "Cmp_ajs_cor_t1_decl_dt_clos",
+      "type": "MAP",
+      "description": "AJCOR time constant cartography for vehicle deceleration when driveline is closed",
+      "recordLayout": "RSA_RecordLayout_MAP_UWORD",
+      "defaultAddress": "0x182C3E",
+      "dims": {
+        "nx": 10,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Vxx_n",
+          "unit": "rpm",
+          "factor": 0.25,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x182F34",
+          "fingerprint": [
+            10,
+            3200,
+            4000,
+            5000,
+            6000,
+            8000,
+            10000,
+            12000,
+            14000,
+            16000
+          ]
+        },
+        {
+          "inputQuantity": "Vxx_ajs_dt_tq_rat",
+          "unit": "-",
+          "factor": 0.01,
+          "offset": -10.0,
+          "dataType": "UWORD_LE",
+          "address": "0x182EFA",
+          "fingerprint": [
+            12,
+            900,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1700,
+            1800,
+            1900
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "14/14"
+  }
+}

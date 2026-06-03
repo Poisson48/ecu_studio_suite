@@ -1,0 +1,855 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "simos_19_2_20tfsi",
+  "name": "open_damos — SIMOS 19.2 2,0 TFSI EA888Gen3, AU426 PHEV, 185kW, EU6AG, DL_80A906259B_X709",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "FS_VWSCM_0R0_700_hooked_20170307_093856_1.s19",
+    "damos": "SCM700_C2_OEM_hooked_20170307_093856.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/SIMOS 19.2 2,0 TFSI EA888Gen3, AU426 PHEV, 185kW, EU6AG, DL_80A906259B_X709"
+  },
+  "recordLayouts": {
+    "_REC_A1MAP_20_S1_U2_U2": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "SBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_S1_U2_S2": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "SBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_U1_U2_U1": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_U4_U2_U2": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "ULONG_LE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_U2_U2_U2": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UWORD_LE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_U1_U1_U2": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_U1_U2_U2": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    },
+    "_REC_A1MAP_20_U1_U1_U1": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 0,
+      "dataType": "UBYTE",
+      "axisMode": "COM_AXIS"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "ip_tlts_mdl_2_ofs_1",
+      "type": "MAP",
+      "description": "Engine speed and intake gas mass influence on TLTS_MDL_2 calculation",
+      "recordLayout": "_REC_A1MAP_20_S1_U2_U2",
+      "defaultAddress": "0x681290",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x680EB4",
+          "fingerprint": [
+            8,
+            700,
+            1200,
+            1800,
+            2400,
+            3000,
+            3800,
+            4800
+          ]
+        },
+        {
+          "inputQuantity": "m_gas_tig_im_airt",
+          "unit": "mg/stk",
+          "factor": 0.04238956282902266,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x680E78",
+          "fingerprint": [
+            8,
+            2359,
+            7077,
+            8257,
+            10616,
+            14154,
+            16513,
+            18873
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_tig_cmpr_up_mdl_ofs_1",
+      "type": "MAP",
+      "description": "Intake gas mass and temperature difference influence on intake gas temperature model upstream compressor",
+      "recordLayout": "_REC_A1MAP_20_S1_U2_S2",
+      "defaultAddress": "0x680FFC",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "mfl_cmpr",
+          "unit": "kg/h",
+          "factor": 0.0625,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x680DD4",
+          "fingerprint": [
+            6,
+            160,
+            800,
+            2400,
+            4800,
+            8000
+          ]
+        },
+        {
+          "inputQuantity": "ldpm_temp_dif_tig_cmpr_mdl_ofs_1",
+          "unit": "°C",
+          "factor": 0.0078125,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "address": "0x680DE4",
+          "fingerprint": [
+            6,
+            384,
+            1920,
+            3840,
+            5760,
+            7680
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_fac_cor_iga_er_std_stnd",
+      "type": "MAP",
+      "description": "Correction of standard maximum engine roughness due to spark retard",
+      "recordLayout": "_REC_A1MAP_20_U1_U2_U1",
+      "defaultAddress": "0x682E90",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "eff_iga_av",
+          "unit": "-",
+          "factor": 3.0517578125000075e-05,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x6829A8",
+          "fingerprint": [
+            6,
+            13108,
+            19661,
+            22938,
+            26215,
+            29492
+          ]
+        },
+        {
+          "inputQuantity": "tco",
+          "unit": "°C",
+          "factor": 0.7500000000000002,
+          "offset": -48.000000000000014,
+          "dataType": "UBYTE",
+          "address": "0x682510",
+          "fingerprint": [
+            6,
+            24,
+            51,
+            64,
+            91,
+            104
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_maf_int_inh_mpi_inj_purge",
+      "type": "MAP",
+      "description": "Mass air flow integral threshold for inhibiting MPI injector purge",
+      "recordLayout": "_REC_A1MAP_20_U4_U2_U2",
+      "defaultAddress": "0x6868C4",
+      "dims": {
+        "nx": 8,
+        "ny": 14
+      },
+      "axes": [
+        {
+          "inputQuantity": "maf",
+          "unit": "mg/stk",
+          "factor": 0.2,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x684898",
+          "fingerprint": [
+            8,
+            600,
+            800,
+            1200,
+            1500,
+            2000,
+            2500,
+            3000
+          ]
+        },
+        {
+          "inputQuantity": "n",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x684AD8",
+          "fingerprint": [
+            14,
+            500,
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500,
+            6000,
+            6500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "ULONG_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_maf_int_thd_clr_mpi_inh",
+      "type": "MAP",
+      "description": "Mass air flow threshold for clearing MPI mode inhibition",
+      "recordLayout": "_REC_A1MAP_20_U2_U2_U2",
+      "defaultAddress": "0x6850C8",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "n",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x684848",
+          "fingerprint": [
+            8,
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000
+          ]
+        },
+        {
+          "inputQuantity": "tq_req_clu",
+          "unit": "Nm",
+          "factor": 0.03125,
+          "offset": -1024.0,
+          "dataType": "UWORD_LE",
+          "address": "0x6847F8",
+          "fingerprint": [
+            8,
+            32767,
+            32768,
+            33408,
+            34368,
+            35968,
+            39168,
+            42368
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_fac_mff_delta_oil_cor_toil",
+      "type": "MAP",
+      "description": "oil temperature dependent correction of fuel accumulation and evaporation",
+      "recordLayout": "_REC_A1MAP_20_U1_U1_U2",
+      "defaultAddress": "0x6877A8",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "toil_mdl",
+          "unit": "°C",
+          "factor": 1.0,
+          "offset": -40.0,
+          "dataType": "UBYTE",
+          "address": "0x687298",
+          "fingerprint": [
+            8,
+            10,
+            20,
+            40,
+            60,
+            80,
+            100,
+            120
+          ]
+        },
+        {
+          "inputQuantity": "ldp_mff_delta_oil_ip_toil_cor",
+          "unit": "g/s",
+          "factor": 0.0004882812542915997,
+          "offset": -15.999999999999996,
+          "dataType": "UWORD_LE",
+          "address": "0x687518",
+          "fingerprint": [
+            8,
+            31948,
+            32358,
+            32767,
+            32768,
+            32809,
+            33178,
+            33792
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_mff_delta_oil_bol_inc_maf",
+      "type": "MAP",
+      "description": "bottom limitation of fuel mass flow into the oil depending on N, MAF",
+      "recordLayout": "_REC_A1MAP_20_U2_U2_U2",
+      "defaultAddress": "0x6877E8",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "n",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x687460",
+          "fingerprint": [
+            6,
+            700,
+            1500,
+            2500,
+            3500,
+            4500
+          ]
+        },
+        {
+          "inputQuantity": "maf",
+          "unit": "mg/stk",
+          "factor": 0.02119478141451133,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x687480",
+          "fingerprint": [
+            6,
+            4718,
+            14154,
+            21232,
+            28309,
+            37745
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_mff_delta_oil_cor_opp",
+      "type": "MAP",
+      "description": "operating point dependent correction map for fuel accumulation",
+      "recordLayout": "_REC_A1MAP_20_U1_U2_U2",
+      "defaultAddress": "0x687680",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "n",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x687460",
+          "fingerprint": [
+            6,
+            700,
+            1500,
+            2500,
+            3500,
+            4500
+          ]
+        },
+        {
+          "inputQuantity": "maf",
+          "unit": "mg/stk",
+          "factor": 0.02119478141451133,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x687480",
+          "fingerprint": [
+            6,
+            4718,
+            14154,
+            21232,
+            28309,
+            37745
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_mff_delta_oil_cor_opp_hot",
+      "type": "MAP",
+      "description": "operating point dependent correction map for fuel evaporation",
+      "recordLayout": "_REC_A1MAP_20_U1_U2_U2",
+      "defaultAddress": "0x687614",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "n",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x687460",
+          "fingerprint": [
+            6,
+            700,
+            1500,
+            2500,
+            3500,
+            4500
+          ]
+        },
+        {
+          "inputQuantity": "ldpm_prs_cps",
+          "unit": "hPa",
+          "factor": 0.08291752498664837,
+          "offset": -2717.0414587624905,
+          "dataType": "UWORD_LE",
+          "address": "0x687450",
+          "fingerprint": [
+            6,
+            32768,
+            33371,
+            35180,
+            37592,
+            40004
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_mff_delta_oil_cor_opp_vap",
+      "type": "MAP",
+      "description": "operating point dependent correction map for fuel evaporation",
+      "recordLayout": "_REC_A1MAP_20_U1_U2_U2",
+      "defaultAddress": "0x68765C",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "n",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x687460",
+          "fingerprint": [
+            6,
+            700,
+            1500,
+            2500,
+            3500,
+            4500
+          ]
+        },
+        {
+          "inputQuantity": "maf",
+          "unit": "mg/stk",
+          "factor": 0.02119478141451133,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x687480",
+          "fingerprint": [
+            6,
+            4718,
+            14154,
+            21232,
+            28309,
+            37745
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_mff_delta_oil_tol_inc_maf",
+      "type": "MAP",
+      "description": "top limitation of fuel mass flow into the oil depending on N, MAF",
+      "recordLayout": "_REC_A1MAP_20_U2_U2_U2",
+      "defaultAddress": "0x687830",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "n",
+          "unit": "rpm",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x687460",
+          "fingerprint": [
+            6,
+            700,
+            1500,
+            2500,
+            3500,
+            4500
+          ]
+        },
+        {
+          "inputQuantity": "maf",
+          "unit": "mg/stk",
+          "factor": 0.02119478141451133,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x687480",
+          "fingerprint": [
+            6,
+            4718,
+            14154,
+            21232,
+            28309,
+            37745
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_pwm_wg_opl",
+      "type": "MAP",
+      "description": "Open loop wastegate control signal",
+      "recordLayout": "_REC_A1MAP_20_U2_U2_U2",
+      "defaultAddress": "0x688AB0",
+      "dims": {
+        "nx": 12,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "pq_epc_out_sp",
+          "unit": "-",
+          "factor": 0.000244140625,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x688740",
+          "fingerprint": [
+            12,
+            4096,
+            4301,
+            4506,
+            4710,
+            4915,
+            5120,
+            5530,
+            6144,
+            7373,
+            8192,
+            9421
+          ]
+        },
+        {
+          "inputQuantity": "pq_epc_in_sp",
+          "unit": "-",
+          "factor": 0.000244140625,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x6886D4",
+          "fingerprint": [
+            8,
+            4096,
+            5109,
+            5954,
+            6793,
+            7613,
+            8445,
+            9332
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_temp_epc_wg_bas",
+      "type": "MAP",
+      "description": "Basic wastegate EPC temperature",
+      "recordLayout": "_REC_A1MAP_20_U1_U1_U1",
+      "defaultAddress": "0x688798",
+      "dims": {
+        "nx": 6,
+        "ny": 6
+      },
+      "axes": [
+        {
+          "inputQuantity": "tco",
+          "unit": "°C",
+          "factor": 0.7500000000000002,
+          "offset": -48.000000000000014,
+          "dataType": "UBYTE",
+          "address": "0x6882E8",
+          "fingerprint": [
+            6,
+            24,
+            72,
+            104,
+            144,
+            184
+          ]
+        },
+        {
+          "inputQuantity": "tam",
+          "unit": "°C",
+          "factor": 0.7500000000000002,
+          "offset": -48.000000000000014,
+          "dataType": "UBYTE",
+          "address": "0x6882E0",
+          "fingerprint": [
+            6,
+            24,
+            44,
+            72,
+            84,
+            104
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UBYTE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    },
+    {
+      "name": "ip_pq_epc_out",
+      "type": "MAP",
+      "description": "Pressure ratio at the wastegate actuator EPC",
+      "recordLayout": "_REC_A1MAP_20_U2_U2_U2",
+      "defaultAddress": "0x688958",
+      "dims": {
+        "nx": 6,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "pwm_wg",
+          "unit": "%",
+          "factor": 0.0015258789062500009,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x6885CC",
+          "fingerprint": [
+            6,
+            7883,
+            11942,
+            21551,
+            38147,
+            49908
+          ]
+        },
+        {
+          "inputQuantity": "pq_epc_in",
+          "unit": "-",
+          "factor": 0.000244140625,
+          "offset": 0.0,
+          "dataType": "UWORD_LE",
+          "address": "0x6886E8",
+          "fingerprint": [
+            8,
+            4096,
+            5109,
+            5954,
+            6793,
+            7613,
+            8445,
+            9332
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "UWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": ""
+      },
+      "comAxis": true,
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "14/14"
+  }
+}

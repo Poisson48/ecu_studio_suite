@@ -1,0 +1,929 @@
+{
+  "$schema": "../open_damos.schema.json",
+  "ecu": "c1508duf0_lib",
+  "name": "open_damos — C1508DUF0_LIB",
+  "version": "0.1.0",
+  "license": "CC0-1.0",
+  "byteOrder": "LE",
+  "baseline": {
+    "source": "PMD114A0DC1508_NUF0_LIB_cleaned.hex",
+    "damos": "PMD114A0DC1508_NUF0_LIB.a2l",
+    "note": "Auto-generated from the 2020 DAMOS pack. Family dir: Damos/EDC17 V8TDI/C1508DUF0_LIB"
+  },
+  "recordLayouts": {
+    "Map_Xs16Ys16Ws16": {
+      "type": "MAP",
+      "byteOrder": "LE",
+      "headerBytes": 4,
+      "dataType": "SWORD_LE"
+    }
+  },
+  "characteristics": [
+    {
+      "name": "ACComp_trqDynPres_MAP",
+      "type": "MAP",
+      "description": "Kennfeld für die dynamische Momentenbedarfsberechnung über Klimadruck",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x774498",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            2000,
+            4000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "AirC_pClnt",
+          "unit": "hPa",
+          "factor": 2.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            500,
+            1000,
+            1250,
+            1500,
+            1750,
+            2000,
+            2250,
+            2500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACComp_trqDynTemp_MAP",
+      "type": "MAP",
+      "description": "Kennfeld für die dynamische Momentenbedarfsberechnung über Temperatur",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x77453C",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            2000,
+            4000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "ACComp_tEnvTrqCalc_mp",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2331,
+            2531,
+            2631,
+            2731,
+            2831,
+            2931,
+            3031,
+            3131
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACComp_trqStatPres_MAP",
+      "type": "MAP",
+      "description": "Kennfeld für die statische Momentenbedarfsberechnung über Klimadruck",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x7745E4",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            2000,
+            4000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "AirC_pClnt",
+          "unit": "hPa",
+          "factor": 2.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            500,
+            1000,
+            1250,
+            1500,
+            1750,
+            2000,
+            2250,
+            2500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ACComp_trqStatTemp_MAP",
+      "type": "MAP",
+      "description": "Kennfeld für die statische Momentenbedarfsberechnung über Temperatur",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x774688",
+      "dims": {
+        "nx": 8,
+        "ny": 8
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1000,
+            2000,
+            4000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000
+          ]
+        },
+        {
+          "inputQuantity": "ACComp_tEnvTrqCalc_mp",
+          "unit": "deg C",
+          "factor": 0.1,
+          "offset": -273.14,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            2331,
+            2531,
+            2631,
+            2731,
+            2831,
+            2931,
+            3031,
+            3131
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Nm"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "ActMod_pStyPres_MAP",
+      "type": "MAP",
+      "description": "Kennfeld zur Ermittlung des stationären Spülgefälles",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x753180",
+      "dims": {
+        "nx": 12,
+        "ny": 12
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            1000,
+            2000,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            10000,
+            11000
+          ]
+        },
+        {
+          "inputQuantity": "ActMod_trqInr",
+          "unit": "Nm",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            500,
+            1000,
+            1500,
+            2000,
+            2500,
+            3000,
+            3500,
+            4000,
+            4500,
+            5000,
+            5500
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 1.0,
+        "offset": 0.0,
+        "unit": "hPa"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AFS_dmAirSubsValB1_MAP",
+      "type": "MAP",
+      "description": "Kennfeld zur Berechnung des Ersatzwerts für Luftstromsignal im Fall von AFS-Fehlern auf Bank1",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x7751C8",
+      "dims": {
+        "nx": 12,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            750,
+            2250,
+            3000,
+            3750,
+            5250,
+            6000,
+            7500,
+            8250,
+            9000,
+            10500,
+            11250
+          ]
+        },
+        {
+          "inputQuantity": "Air_pIntkVUs",
+          "unit": "hPa",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1500,
+            1700,
+            1800,
+            2000,
+            2200,
+            2300,
+            2500,
+            2700,
+            2800,
+            3000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Kg/h"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AFS_dmAirSubsValB2_MAP",
+      "type": "MAP",
+      "description": "Kennfeld zur Berechnung des Ersatzwerts für Luftstromsignal im Fall von AFS-Fehlern auf Bank2",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x7752E8",
+      "dims": {
+        "nx": 12,
+        "ny": 10
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            750,
+            2250,
+            3000,
+            3750,
+            5250,
+            6000,
+            7500,
+            8250,
+            9000,
+            10500,
+            11250
+          ]
+        },
+        {
+          "inputQuantity": "Air_pIntkVUs",
+          "unit": "hPa",
+          "factor": 1.0,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            1500,
+            1700,
+            1800,
+            2000,
+            2200,
+            2300,
+            2500,
+            2700,
+            2800,
+            3000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Kg/h"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AFS_dmPlsCorB1_MAP",
+      "type": "MAP",
+      "description": "Drehzahl und Einspritzmenge abhängiges Kennfeld zur Berechnung des Pulsationskorrekturfaktors auf Bank1",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x775604",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            700,
+            2100,
+            2800,
+            3500,
+            4200,
+            5600,
+            6300,
+            7000,
+            7700,
+            9100,
+            9800,
+            10000,
+            10200,
+            10600,
+            10800
+          ]
+        },
+        {
+          "inputQuantity": "InjCtl_qRaw",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            1000,
+            3000,
+            4000,
+            5000,
+            6000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000,
+            12500,
+            13000,
+            13500,
+            14500,
+            15000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Kg/h"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AFS_dmPlsCorB2_MAP",
+      "type": "MAP",
+      "description": "Drehzahl und Einspritzmenge abhängiges Kennfeld zur Berechnung des Pulsationskorrekturfaktors auf Bank2",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x775848",
+      "dims": {
+        "nx": 16,
+        "ny": 16
+      },
+      "axes": [
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            700,
+            2100,
+            2800,
+            3500,
+            4200,
+            5600,
+            6300,
+            7000,
+            7700,
+            9100,
+            9800,
+            10000,
+            10200,
+            10600,
+            10800
+          ]
+        },
+        {
+          "inputQuantity": "InjCtl_qRaw",
+          "unit": "mg/hub",
+          "factor": 0.01,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            1000,
+            3000,
+            4000,
+            5000,
+            6000,
+            8000,
+            9000,
+            10000,
+            11000,
+            12000,
+            12500,
+            13000,
+            13500,
+            14500,
+            15000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Kg/h"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AFS_dmPlstCorrnOffsB1_MAP",
+      "type": "MAP",
+      "description": "Kennfeld zur Berechnung des Luftmassenstromoffsets, der die Pulsationsfehler und Abweichungen durch den Luftkanaleinfluss behandelt-Bank1",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x775A8C",
+      "dims": {
+        "nx": 20,
+        "ny": 14
+      },
+      "axes": [
+        {
+          "inputQuantity": "AFS_dmSensCorrB1_mp",
+          "unit": "Kg/h",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            550,
+            1100,
+            1650,
+            2200,
+            2750,
+            3300,
+            3850,
+            4400,
+            4767,
+            5133,
+            5500,
+            6050,
+            6600,
+            7150,
+            7700,
+            8250,
+            8800,
+            9400,
+            10000
+          ]
+        },
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            900,
+            1800,
+            2700,
+            3600,
+            4500,
+            5400,
+            6300,
+            7200,
+            8100,
+            9000,
+            9900,
+            10800,
+            12000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Kg/h"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AFS_dmPlstCorrnOffsB2_MAP",
+      "type": "MAP",
+      "description": "Kennfeld zur Berechnung des Luftmassenstromoffsets, der die Pulsationsfehler und Abweichungen durch den Luftkanaleinfluss behandelt-Bank2",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x775D04",
+      "dims": {
+        "nx": 20,
+        "ny": 14
+      },
+      "axes": [
+        {
+          "inputQuantity": "AFS_dmSensCorrB2_mp",
+          "unit": "Kg/h",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            550,
+            1100,
+            1650,
+            2200,
+            2750,
+            3300,
+            3850,
+            4400,
+            4767,
+            5133,
+            5500,
+            6050,
+            6600,
+            7150,
+            7700,
+            8250,
+            8800,
+            9400,
+            10000
+          ]
+        },
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            900,
+            1800,
+            2700,
+            3600,
+            4500,
+            5400,
+            6300,
+            7200,
+            8100,
+            9000,
+            9900,
+            10800,
+            12000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Kg/h"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AFS_dmPlstCorrnOffsEOM1B1_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x775F7C",
+      "dims": {
+        "nx": 20,
+        "ny": 14
+      },
+      "axes": [
+        {
+          "inputQuantity": "AFS_dmSensCorrB1_mp",
+          "unit": "Kg/h",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            550,
+            1100,
+            1650,
+            2200,
+            2750,
+            3300,
+            3850,
+            4400,
+            4767,
+            5133,
+            5500,
+            6050,
+            6600,
+            7150,
+            7700,
+            8250,
+            8800,
+            9400,
+            10000
+          ]
+        },
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            900,
+            1800,
+            2700,
+            3600,
+            4500,
+            5400,
+            6300,
+            7200,
+            8100,
+            9000,
+            9900,
+            10800,
+            12000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Kg/h"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AFS_dmPlstCorrnOffsEOM1B2_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x7761F4",
+      "dims": {
+        "nx": 20,
+        "ny": 14
+      },
+      "axes": [
+        {
+          "inputQuantity": "AFS_dmSensCorrB2_mp",
+          "unit": "Kg/h",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            550,
+            1100,
+            1650,
+            2200,
+            2750,
+            3300,
+            3850,
+            4400,
+            4767,
+            5133,
+            5500,
+            6050,
+            6600,
+            7150,
+            7700,
+            8250,
+            8800,
+            9400,
+            10000
+          ]
+        },
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            900,
+            1800,
+            2700,
+            3600,
+            4500,
+            5400,
+            6300,
+            7200,
+            8100,
+            9000,
+            9900,
+            10800,
+            12000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Kg/h"
+      },
+      "category": "auto"
+    },
+    {
+      "name": "AFS_dmPlstCorrnOffsEOM2B1_MAP",
+      "type": "MAP",
+      "description": "",
+      "recordLayout": "Map_Xs16Ys16Ws16",
+      "defaultAddress": "0x77646C",
+      "dims": {
+        "nx": 20,
+        "ny": 14
+      },
+      "axes": [
+        {
+          "inputQuantity": "AFS_dmSensCorrB1_mp",
+          "unit": "Kg/h",
+          "factor": 0.1,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            550,
+            1100,
+            1650,
+            2200,
+            2750,
+            3300,
+            3850,
+            4400,
+            4767,
+            5133,
+            5500,
+            6050,
+            6600,
+            7150,
+            7700,
+            8250,
+            8800,
+            9400,
+            10000
+          ]
+        },
+        {
+          "inputQuantity": "Epm_nEng",
+          "unit": "rpm",
+          "factor": 0.5,
+          "offset": 0.0,
+          "dataType": "SWORD_LE",
+          "fingerprint": [
+            0,
+            900,
+            1800,
+            2700,
+            3600,
+            4500,
+            5400,
+            6300,
+            7200,
+            8100,
+            9000,
+            9900,
+            10800,
+            12000
+          ]
+        }
+      ],
+      "data": {
+        "dataType": "SWORD_LE",
+        "factor": 0.1,
+        "offset": 0.0,
+        "unit": "Kg/h"
+      },
+      "category": "auto"
+    }
+  ],
+  "maturity": "beta",
+  "addressMode": "physical",
+  "generated": {
+    "tool": "scripts/batch_opendamos.py",
+    "sourcePack": "damos_pack_2020.rar",
+    "autoSelectedMaps": true,
+    "relocated": "14/14"
+  }
+}
