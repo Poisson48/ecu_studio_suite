@@ -8,6 +8,10 @@ find_package(nlohmann_json REQUIRED)
 add_library(ecu_mcp STATIC
     src/McpServer.cpp
     src/Tools.cpp
+    src/tools_common.cpp
+    src/tools_rom.cpp
+    src/tools_recipes.cpp
+    src/tools_damos.cpp
 )
 
 target_include_directories(ecu_mcp

@@ -52,12 +52,23 @@ set(ECU_STUDIO_SOURCES
     src/rom_document.cpp
     src/panels/mpps_panel.cpp
     src/panels/hex_view_panel.cpp
+    src/panels/hex_view.cpp
     src/panels/map_editor_panel.cpp
+    src/panels/map_editor_panel_grid.cpp
+    src/panels/map_editor_panel_ops.cpp
+    src/panels/map_editor_panel_baseline.cpp
+    src/panels/map_view_helpers.cpp
+    src/panels/open_damos_relocator.cpp
+    src/panels/git_blob_utils.cpp
     src/panels/damos_editor_panel.cpp
+    src/panels/damos_editor_panel_automods.cpp
     src/panels/map3d_panel.cpp
     src/panels/map3d_view.cpp
     src/panels/project_panel.cpp
+    src/panels/project_panel_list.cpp
+    src/panels/project_panel_actions.cpp
     src/panels/automods_panel.cpp
+    src/panels/automods_panel_ops.cpp
     src/panels/checksum_panel.cpp
     src/panels/compare_panel.cpp
     src/panels/git_panel.cpp

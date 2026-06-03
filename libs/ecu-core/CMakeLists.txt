@@ -15,6 +15,8 @@ set(ECU_CORE_SOURCES
 )
 
 list(APPEND ECU_CORE_SOURCES src/OpenDamos.cpp)
+list(APPEND ECU_CORE_SOURCES src/OpenDamosRelocate.cpp)
+list(APPEND ECU_CORE_SOURCES src/OpenDamosSerialize.cpp)
 list(APPEND ECU_CORE_SOURCES src/OpenDamosRecipes.cpp)
 list(APPEND ECU_CORE_SOURCES src/OpenDamosA2lExport.cpp)
 list(APPEND ECU_CORE_SOURCES src/ReportGenerator.cpp)
