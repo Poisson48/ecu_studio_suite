@@ -17,7 +17,7 @@ jobs:
     steps:
       # Le submodule apps/socketspy est en HTTPS public → checkout natif.
       - name: Checkout (with submodules)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
 
@@ -105,7 +105,7 @@ jobs:
       # Toujours publier l'AppImage comme artifact du run : permet de la
       # télécharger même pour un build workflow_dispatch (sans tag/Release).
       - name: Upload AppImage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ECU_Studio-x86_64.AppImage
           path: ECU_Studio-x86_64.AppImage
@@ -141,7 +141,7 @@ jobs:
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             ECU_Studio-x86_64.AppImage

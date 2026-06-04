@@ -22,7 +22,7 @@ jobs:
       # The apps/socketspy submodule uses a public HTTPS URL, so the runner can
       # fetch it natively with the checkout action — no SSH keys required.
       - name: Checkout (with submodules)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
 
