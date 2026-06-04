@@ -1,0 +1,1278 @@
+{
+  "schema": "open_damos_index/1",
+  "repo": "Poisson48/ecu_studio_suite",
+  "raw": "https://raw.githubusercontent.com/Poisson48/ecu_studio_suite/main/",
+  "count": 127,
+  "recipes": [
+    {
+      "ecu": "000014a9_212_010_001",
+      "path": "ressources/000014a9_212_010_001/open_damos.json",
+      "name": "open_damos — 000014A9_212_010_001",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "000014a9_222_010_001",
+      "path": "ressources/000014a9_222_010_001/open_damos.json",
+      "name": "open_damos — 000014A9_222_010_001",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "00003744_012_010_001",
+      "path": "ressources/00003744_012_010_001/open_damos.json",
+      "name": "open_damos — 00003744_012_010_001",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "00003744_022_010_001",
+      "path": "ressources/00003744_022_010_001/open_damos.json",
+      "name": "open_damos — 00003744_022_010_001",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "1551uf5_lib",
+      "path": "ressources/1551uf5_lib/open_damos.json",
+      "name": "open_damos — 1551UF5_LIB",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "715c360b",
+      "path": "ressources/715c360b/open_damos.json",
+      "name": "open_damos — 715C360B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "715c400b",
+      "path": "ressources/715c400b/open_damos.json",
+      "name": "open_damos — 715c400b",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "715c450b",
+      "path": "ressources/715c450b/open_damos.json",
+      "name": "open_damos — 715c450b",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "8bc2540b",
+      "path": "ressources/8bc2540b/open_damos.json",
+      "name": "open_damos — 8BC2540B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "8bc2565b",
+      "path": "ressources/8bc2565b/open_damos.json",
+      "name": "open_damos — 8BC2565B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "8bc2585b",
+      "path": "ressources/8bc2585b/open_damos.json",
+      "name": "open_damos — 8BC2585B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "8bc2590b",
+      "path": "ressources/8bc2590b/open_damos.json",
+      "name": "open_damos — 8BC2590B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "8bc2595b",
+      "path": "ressources/8bc2595b/open_damos.json",
+      "name": "open_damos — 8BC2595B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "8bc2596b",
+      "path": "ressources/8bc2596b/open_damos.json",
+      "name": "open_damos — 8BC2596B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "8bc259ab",
+      "path": "ressources/8bc259ab/open_damos.json",
+      "name": "open_damos — 8BC259AB",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "8bc259bb",
+      "path": "ressources/8bc259bb/open_damos.json",
+      "name": "open_damos — 8BC259BB",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "8bc259cb",
+      "path": "ressources/8bc259cb/open_damos.json",
+      "name": "open_damos — 8BC259CB",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "8hp51",
+      "path": "ressources/8hp51/open_damos.json",
+      "name": "open_damos — JLR_8HP51_3G",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "a8ax_170320_083851_m_7121bda90_1",
+      "path": "ressources/a8ax_170320_083851_m_7121bda90_1/open_damos.json",
+      "name": "open_damos — A8AX_170320_083851_M_7121BDA90_1",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "a8ax_170405_085003_g_7141vaa90_1",
+      "path": "ressources/a8ax_170405_085003_g_7141vaa90_1/open_damos.json",
+      "name": "open_damos — A8AX_170405_085003_G_7141VAA90_1",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "a8ax_170406_162113_q_ajom0115_04",
+      "path": "ressources/a8ax_170406_162113_q_ajom0115_04/open_damos.json",
+      "name": "open_damos — A8AX_170406_162113_Q_AJOM0115_04",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "a8ax_170407_150630_m_7142vaa90_2",
+      "path": "ressources/a8ax_170407_150630_m_7142vaa90_2/open_damos.json",
+      "name": "open_damos — A8AX_170407_150630_M_7142VAA90_2",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 6,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "aktuell",
+      "path": "ressources/aktuell/open_damos.json",
+      "name": "open_damos — Aktuell",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "c0c2a00ab",
+      "path": "ressources/c0c2a00ab/open_damos.json",
+      "name": "open_damos — C0C2A00AB",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "c1508duf0_lib",
+      "path": "ressources/c1508duf0_lib/open_damos.json",
+      "name": "open_damos — C1508DUF0_LIB",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "cayenne_v6t_msg",
+      "path": "ressources/cayenne_v6t_msg/open_damos.json",
+      "name": "open_damos — Cayenne_V6T_MSG",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "daten_20l_73ae",
+      "path": "ressources/daten_20l_73ae/open_damos.json",
+      "name": "open_damos — Daten_20l_73AE",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme83t1_r2b22002b",
+      "path": "ressources/dme83t1_r2b22002b/open_damos.json",
+      "name": "open_damos — DME83T1_R2B22002B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme841_r1c2900ab",
+      "path": "ressources/dme841_r1c2900ab/open_damos.json",
+      "name": "open_damos — DME841_R1C2900AB",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme841_r1c2900db",
+      "path": "ressources/dme841_r1c2900db/open_damos.json",
+      "name": "open_damos — DME841_R1C2900DB",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme841_r1c2a008b",
+      "path": "ressources/dme841_r1c2a008b/open_damos.json",
+      "name": "open_damos — DME841_R1C2A008B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme841_r1c2a009b",
+      "path": "ressources/dme841_r1c2a009b/open_damos.json",
+      "name": "open_damos — DME841_R1C2A009B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme841_r1c2a113b",
+      "path": "ressources/dme841_r1c2a113b/open_damos.json",
+      "name": "open_damos — DME841_R1C2A113B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme841_r1c2a114b",
+      "path": "ressources/dme841_r1c2a114b/open_damos.json",
+      "name": "open_damos — DME841_R1C2A114B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme841_r1c2a117b",
+      "path": "ressources/dme841_r1c2a117b/open_damos.json",
+      "name": "open_damos — DME841_R1C2A117B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme841_r1c2a118b",
+      "path": "ressources/dme841_r1c2a118b/open_damos.json",
+      "name": "open_damos — DME841_R1C2A118B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme841_r1c2a119b",
+      "path": "ressources/dme841_r1c2a119b/open_damos.json",
+      "name": "open_damos — DME841_R1C2A119B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme841_r1c2a131b",
+      "path": "ressources/dme841_r1c2a131b/open_damos.json",
+      "name": "open_damos — DME841_R1C2A131B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme841_r1c2a132b",
+      "path": "ressources/dme841_r1c2a132b/open_damos.json",
+      "name": "open_damos — DME841_R1C2A132B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme84t1_r2b22002b",
+      "path": "ressources/dme84t1_r2b22002b/open_damos.json",
+      "name": "open_damos — DME84T1_R2B22002B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme861_r1c29004b",
+      "path": "ressources/dme861_r1c29004b/open_damos.json",
+      "name": "open_damos — DME861_R1C29004B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme861_r1c29005b",
+      "path": "ressources/dme861_r1c29005b/open_damos.json",
+      "name": "open_damos — DME861_R1C29005B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme861_r1c29007b",
+      "path": "ressources/dme861_r1c29007b/open_damos.json",
+      "name": "open_damos — DME861_R1C29007B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme861_r1c29008b",
+      "path": "ressources/dme861_r1c29008b/open_damos.json",
+      "name": "open_damos — DME861_R1C29008B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme861_r1c29009b",
+      "path": "ressources/dme861_r1c29009b/open_damos.json",
+      "name": "open_damos — DME861_R1C29009B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme861_r1c2900ab",
+      "path": "ressources/dme861_r1c2900ab/open_damos.json",
+      "name": "open_damos — DME861_R1C2900AB",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme861_r1c2900bb",
+      "path": "ressources/dme861_r1c2900bb/open_damos.json",
+      "name": "open_damos — DME861_R1C2900BB",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme861_r1c2900db",
+      "path": "ressources/dme861_r1c2900db/open_damos.json",
+      "name": "open_damos — DME861_R1C2900DB",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme861_r1c2a003b",
+      "path": "ressources/dme861_r1c2a003b/open_damos.json",
+      "name": "open_damos — DME861_R1C2A003B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme861_r1c2a004b",
+      "path": "ressources/dme861_r1c2a004b/open_damos.json",
+      "name": "open_damos — DME861_R1C2A004B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme861_r1c2a005b",
+      "path": "ressources/dme861_r1c2a005b/open_damos.json",
+      "name": "open_damos — DME861_R1C2A005B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme861_r1c2a006b",
+      "path": "ressources/dme861_r1c2a006b/open_damos.json",
+      "name": "open_damos — DME861_R1C2A006B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme861_r1c2a008b",
+      "path": "ressources/dme861_r1c2a008b/open_damos.json",
+      "name": "open_damos — DME861_R1C2A008B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme861_r1c2a009b",
+      "path": "ressources/dme861_r1c2a009b/open_damos.json",
+      "name": "open_damos — DME861_R1C2A009B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme8xt1_b38tue_r2b22001b",
+      "path": "ressources/dme8xt1_b38tue_r2b22001b/open_damos.json",
+      "name": "open_damos — DME8XT1_B38TUE_R2B22001B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dme8xt1_b48tue_r2b22001b",
+      "path": "ressources/dme8xt1_b48tue_r2b22001b/open_damos.json",
+      "name": "open_damos — DME8XT1_B48TUE_R2B22001B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dmg1001a01c1394_my18e10_lib_215_2_0",
+      "path": "ressources/dmg1001a01c1394_my18e10_lib_215_2_0/open_damos.json",
+      "name": "open_damos — DMG1001A01C1394_MY18E10 (LIB-215.2.0)",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 13,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dmg1002ah2c1492_my19a20_ev_ecm_1_25l_tdi",
+      "path": "ressources/dmg1002ah2c1492_my19a20_ev_ecm_1_25l_tdi/open_damos.json",
+      "name": "open_damos — DMG1002AH2C1492_MY19A20_EV_ECM_1_25l_TDI_150KW",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dmg1031a01b1682_my19c10",
+      "path": "ressources/dmg1031a01b1682_my19c10/open_damos.json",
+      "name": "open_damos — DMG1031A01B1682_MY19C10",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "documentation",
+      "path": "ressources/documentation/open_damos.json",
+      "name": "open_damos — Documentation",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 4,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "dq500",
+      "path": "ressources/dq500/open_damos.json",
+      "name": "open_damos — DQ500 - ST3A0L0000000",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 7,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "edc16c34",
+      "path": "ressources/edc16c34/open_damos.json",
+      "name": "open_damos — EDC16C34 Bosch PSA",
+      "maturity": "proven",
+      "byteOrder": "BE",
+      "maps": 40,
+      "comAxis": false,
+      "source": "manual"
+    },
+    {
+      "ecu": "edc16c39",
+      "path": "ressources/edc16c39/open_damos.json",
+      "name": "open_damos — EDC16C39 Bosch (CNH / New Holland / Case IH / Steyr)",
+      "maturity": "proven",
+      "byteOrder": "BE",
+      "maps": 10,
+      "comAxis": false,
+      "source": "manual"
+    },
+    {
+      "ecu": "edc16cp33",
+      "path": "ressources/edc16cp33/open_damos.json",
+      "name": "open_damos — EDC16CP33 Bosch (seed)",
+      "maturity": "beta",
+      "byteOrder": "BE",
+      "maps": 1,
+      "comAxis": false,
+      "source": "manual"
+    },
+    {
+      "ecu": "edc17",
+      "path": "ressources/edc17/open_damos.json",
+      "name": "open_damos — EDC17_C50",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "edc17c19_20dci",
+      "path": "ressources/edc17c19_20dci/open_damos.json",
+      "name": "open_damos — Laguna 2.0 DCI EDC17C19",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "edc17c42_16dci",
+      "path": "ressources/edc17c42_16dci/open_damos.json",
+      "name": "open_damos — 1.6 DCI 130hp RENAULT - BOSCH EDC17C42",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "edc17c49",
+      "path": "ressources/edc17c49/open_damos.json",
+      "name": "open_damos — FREEMONT edc17c49",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "edc17c50",
+      "path": "ressources/edc17c50/open_damos.json",
+      "name": "open_damos — Bosch EDC17_C50 (Hyundai/Kia D-engine 7HH21)",
+      "maturity": "proven",
+      "byteOrder": "LE",
+      "maps": 12,
+      "comAxis": false,
+      "source": "manual"
+    },
+    {
+      "ecu": "edc17cp19",
+      "path": "ressources/edc17cp19/open_damos.json",
+      "name": "open_damos — Renault_2.0_DCI_EDC17CP19_a2l_hex",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "edc17cp44",
+      "path": "ressources/edc17cp44/open_damos.json",
+      "name": "open_damos — Bosch EDC17CP44 (Audi/VW 3.0 V6 TDI)",
+      "maturity": "proven",
+      "byteOrder": "LE",
+      "maps": 13,
+      "comAxis": false,
+      "source": "manual"
+    },
+    {
+      "ecu": "edc17cp44_30tdi",
+      "path": "ressources/edc17cp44_30tdi/open_damos.json",
+      "name": "open_damos — EDC17CP44 3,0 TDI Gen2, D4PA, 176 kW, BIN5, MJ16_4H0907401N_X701_Premaster0003",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "eh_files",
+      "path": "ressources/eh_files/open_damos.json",
+      "name": "open_damos — EH_Files",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "fl_0ck910255a_p008",
+      "path": "ressources/fl_0ck910255a_p008/open_damos.json",
+      "name": "open_damos — FL_0CK910255A__P008",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 6,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "fsp_msg_sw_neu",
+      "path": "ressources/fsp_msg_sw_neu/open_damos.json",
+      "name": "open_damos — FSP_MSG_SW_neu",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "genesis_coupe_20_turbo",
+      "path": "ressources/genesis_coupe_20_turbo/open_damos.json",
+      "name": "open_damos — genesis_coupe_20_turbo",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "giulia",
+      "path": "ressources/giulia/open_damos.json",
+      "name": "open_damos — GIULIA",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "gti",
+      "path": "ressources/gti/open_damos.json",
+      "name": "open_damos — GTI",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "jaguar_landrover_5_0k_denso_1_5mb_ecu",
+      "path": "ressources/jaguar_landrover_5_0k_denso_1_5mb_ecu/open_damos.json",
+      "name": "open_damos — Jaguar Landrover 5.0K Denso 1,5MB ECU",
+      "maturity": "beta",
+      "byteOrder": "BE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "md1_c1508duko_40tdi_057907309b_4n0907409",
+      "path": "ressources/md1_c1508duko_40tdi_057907309b_4n0907409/open_damos.json",
+      "name": "open_damos — MD1_C1508DUKO_40TDI_057907309B_4N0907409_X711",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "md1cp004",
+      "path": "ressources/md1cp004/open_damos.json",
+      "name": "open_damos — MD1CP004 3,0 V6TDI EVO, MLB53A, Gen3 LK2 210 kW, EU6plus, MJ18 (IS-M)_760907401_Z709",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "md1cp004_30tdi",
+      "path": "ressources/md1cp004_30tdi/open_damos.json",
+      "name": "open_damos — MD1CP004 3,0 TDI (EVO), SQ5NF, Gen3 LK3 260 kW, EU6plus, MJ18_80A907589_X711",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "md1cp014_40tdi",
+      "path": "ressources/md1cp014_40tdi/open_damos.json",
+      "name": "open_damos — MD1CP014 4,0TDI V8, AU651, 320KW, Gen3, AL952-8Q, EU6AG_4N0907409_X612",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "mdg1_c1483ma6f5",
+      "path": "ressources/mdg1_c1483ma6f5/open_damos.json",
+      "name": "open_damos — MDG1_ C1483MA6F5",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "mdg1_ma6f5r4000000_allrad_front",
+      "path": "ressources/mdg1_ma6f5r4000000_allrad_front/open_damos.json",
+      "name": "open_damos — MDG1 MA6F5R4000000 Allrad_Front",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "med17_1_1",
+      "path": "ressources/med17_1_1/open_damos.json",
+      "name": "open_damos — MED17.1.1  RS3NF, 2,5lTFSI, 270KW, EU6+, DQ500-7A ab Serie_8V0907404_0001",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "med17_1_14tfsi",
+      "path": "ressources/med17_1_14tfsi/open_damos.json",
+      "name": "open_damos — MED17.1_1.4TFSI",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "med17_1_62",
+      "path": "ressources/med17_1_62/open_damos.json",
+      "name": "open_damos — MED17.1.62",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "mg1cs002",
+      "path": "ressources/mg1cs002/open_damos.json",
+      "name": "open_damos — MG1CS002 2.6IFX 3,0l V6 TFSI, EA839, AU65 D5 PHEV, 250kW, EU6, AL553E-8Q_4N0907559C_X705",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "n",
+      "path": "ressources/n/open_damos.json",
+      "name": "open_damos — N",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "nissan_juke_1_6_dig_t_s19_9apctdem06",
+      "path": "ressources/nissan_juke_1_6_dig_t_s19_9apctdem06/open_damos.json",
+      "name": "open_damos — Nissan Juke 1.6-dig-T S19 (9APCTDEM06)",
+      "maturity": "beta",
+      "byteOrder": "BE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "psa_1_6_valeo_v46",
+      "path": "ressources/psa_1_6_valeo_v46/open_damos.json",
+      "name": "open_damos — PSA   1.6 Valeo  V46-",
+      "maturity": "beta",
+      "byteOrder": "BE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "psa_valeo_v46",
+      "path": "ressources/psa_valeo_v46/open_damos.json",
+      "name": "open_damos — PSA Valeo V46 (1.6 essence, COM_AXIS)",
+      "maturity": "beta",
+      "byteOrder": "BE",
+      "maps": 12,
+      "comAxis": true,
+      "source": "manual"
+    },
+    {
+      "ecu": "q8_v6tdi",
+      "path": "ressources/q8_v6tdi/open_damos.json",
+      "name": "open_damos — Q8_V6TDI",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "q8_v6tfsi",
+      "path": "ressources/q8_v6tfsi/open_damos.json",
+      "name": "open_damos — Q8_V6TFSI",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "r1c2a112b",
+      "path": "ressources/r1c2a112b/open_damos.json",
+      "name": "open_damos — R1C2A112B",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "s19",
+      "path": "ressources/s19/open_damos.json",
+      "name": "open_damos — s19",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "scb3v30",
+      "path": "ressources/scb3v30/open_damos.json",
+      "name": "open_damos — SCB3V30",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "scbw30",
+      "path": "ressources/scbw30/open_damos.json",
+      "name": "open_damos — SCBW30",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "scg50031",
+      "path": "ressources/scg50031/open_damos.json",
+      "name": "open_damos — SCG50031",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "scg700",
+      "path": "ressources/scg700/open_damos.json",
+      "name": "open_damos — SCG700",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "scm7c1_c1",
+      "path": "ressources/scm7c1_c1/open_damos.json",
+      "name": "open_damos — SCM7C1_C1",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "scm900_c2_oem_20t_al",
+      "path": "ressources/scm900_c2_oem_20t_al/open_damos.json",
+      "name": "open_damos — SCM900_C2_OEM_20T_AL",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "sid807",
+      "path": "ressources/sid807/open_damos.json",
+      "name": "open_damos — Continental SID807 (PSA 1.6 HDi DS4, LE COM_AXIS)",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 12,
+      "comAxis": true,
+      "source": "manual"
+    },
+    {
+      "ecu": "simos18_1",
+      "path": "ressources/simos18_1/open_damos.json",
+      "name": "open_damos — Simos18.1 8V0906259P SCG0070000000 Golf 7R ULEV",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "simos18_10",
+      "path": "ressources/simos18_10/open_damos.json",
+      "name": "open_damos — Simos18.10 2.0l TFSI, MQB48_, 169kW, EU6 ZDEF, DQ381-7F_81A907115__Y628",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "simos18_41_20tfsi",
+      "path": "ressources/simos18_41_20tfsi/open_damos.json",
+      "name": "open_damos — Simos18.41 2,0 TFSI EA888Gen3, AU536, 185183kW, EU6EU4, AL552-8Q_4M8906259",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "simos18_5_20tfsi",
+      "path": "ressources/simos18_5_20tfsi/open_damos.json",
+      "name": "open_damos — Simos18.5 2,0 TFSI EA888Gen3, AU536 PHEV, 185kW, EU6, AL552E-8Q_4M0906259B_X615",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "simos_12_1",
+      "path": "ressources/simos_12_1/open_damos.json",
+      "name": "open_damos — Simos 12.1 SC1CF031_C_OEM SC100CF000000",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "simos_16",
+      "path": "ressources/simos_16/open_damos.json",
+      "name": "open_damos — SIMOS 16 CJEB SG1H0031_1C1-a2l_4G2907551 _X203",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "simos_16_1",
+      "path": "ressources/simos_16_1/open_damos.json",
+      "name": "open_damos — SIMOS 16.1 (SG1) 3,0l V6 TFSIevo, AU57x-PA, 200245kW, EU6, DL501-7q_4G2907551_X203",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "simos_18",
+      "path": "ressources/simos_18/open_damos.json",
+      "name": "open_damos — SIMOS 18 (Flashing)",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "simos_18_1",
+      "path": "ressources/simos_18_1/open_damos.json",
+      "name": "open_damos — SIMOS 18.1",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "simos_18_10_20tfsi",
+      "path": "ressources/simos_18_10_20tfsi/open_damos.json",
+      "name": "open_damos — SIMOS 18.10 2,0 TFSI, VW37x (MQB-A1_GTI), 180kW, EU6ZDEUBG_5G0906259N_X709",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "simos_18_1_20tfsi",
+      "path": "ressources/simos_18_1_20tfsi/open_damos.json",
+      "name": "open_damos — SC800LB700000 5G0906259P 0001 SIMOS 18.1 2,0TFSI EA888G3 VW37x 162 169kW Hex A2l",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "simos_18_41_20tfsi",
+      "path": "ressources/simos_18_41_20tfsi/open_damos.json",
+      "name": "open_damos — 80A906259A_SCB00S4000000_SIMOS 18.41 2,0 TFSI",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "simos_18_5_20tfsi",
+      "path": "ressources/simos_18_5_20tfsi/open_damos.json",
+      "name": "open_damos — SIMOS 18.5 2,0 TFSI EA888Gen3, AU536 PHEV, 185kW, EU6, AL552E-8Q_4M0906259B_X615",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "simos_18_6_20tfsi",
+      "path": "ressources/simos_18_6_20tfsi/open_damos.json",
+      "name": "open_damos — SIMOS 18.6 2,0 TFSI EA888G3, AU37x, VW37x (MQB-A1), 215kW, ULEV_8V0906259H_0002",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "simos_19_2_20tfsi",
+      "path": "ressources/simos_19_2_20tfsi/open_damos.json",
+      "name": "open_damos — SIMOS 19.2 2,0 TFSI EA888Gen3, AU426 PHEV, 185kW, EU6AG, DL_80A906259B_X709",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "simos_19_3",
+      "path": "ressources/simos_19_3/open_damos.json",
+      "name": "open_damos — SIMOS 19.3 SCQ110_C_OEM",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "simos_8_51_30tfsi",
+      "path": "ressources/simos_8_51_30tfsi/open_damos.json",
+      "name": "open_damos — S8500I3000000 Simos 8.51 8R0907551D 0003 3.0TFSI Q5 8R Hex A2l",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "tgm",
+      "path": "ressources/tgm/open_damos.json",
+      "name": "open_damos — TGM",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "unknown",
+      "path": "ressources/unknown/open_damos.json",
+      "name": "open_damos — unknown",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "v6_3_0l_tfsi_06m907309e_971907559a_0003",
+      "path": "ressources/v6_3_0l_tfsi_06m907309e_971907559a_0003/open_damos.json",
+      "name": "open_damos — V6 3.0l TFSI_06M907309E_971907559A_0003",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "v6tfsi",
+      "path": "ressources/v6tfsi/open_damos.json",
+      "name": "open_damos — V6TFSI",
+      "maturity": "beta",
+      "byteOrder": "LE",
+      "maps": 14,
+      "comAxis": false,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "valeo_vd46_1_2t_a2l_hex",
+      "path": "ressources/valeo_vd46_1_2t_a2l_hex/open_damos.json",
+      "name": "open_damos — Valeo VD46_1.2T a2l+hex",
+      "maturity": "beta",
+      "byteOrder": "BE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    },
+    {
+      "ecu": "valeo_vd46_1_2t_hex_a2l",
+      "path": "ressources/valeo_vd46_1_2t_hex_a2l/open_damos.json",
+      "name": "open_damos — Valeo VD46_1.2T hex + a2l",
+      "maturity": "beta",
+      "byteOrder": "BE",
+      "maps": 14,
+      "comAxis": true,
+      "source": "pack-2020"
+    }
+  ]
+}
