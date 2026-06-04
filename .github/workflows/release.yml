@@ -65,18 +65,8 @@ jobs:
           # The install target only installs the binary to bin/; stage it in an
           # AppDir together with the .desktop file and icon for linuxdeploy.
           DESTDIR=/tmp/appdir cmake --install build
-          # Bundle the OpenDAMOS recipe library so the AppImage ships with all ECU
-          # recipes out of the box (loadRecipe searches ../ressources from the
-          # binary). The in-app "Bibliothèque" tab can still fetch newer ones.
-          mkdir -p /tmp/appdir/usr/ressources
-          cp ressources/index.json ressources/open_damos.schema.json /tmp/appdir/usr/ressources/ 2>/dev/null || true
-          find ressources -name open_damos.json | while read -r f; do
-            mkdir -p "/tmp/appdir/usr/$(dirname "$f")"
-            cp "$f" "/tmp/appdir/usr/$f"
-          done
-          echo "Bundled $(find /tmp/appdir/usr/ressources -name open_damos.json | wc -l) recipes into the AppImage."
-          # Bundle the Qt TLS plugin so HTTPS works inside the AppImage (the in-app
-          # updater + OpenDAMOS Library tab need it) — linuxdeploy-plugin-qt skips it.
+          # Bundle the Qt TLS plugin so HTTPS works inside the AppImage (the
+          # in-app updater needs it) — linuxdeploy-plugin-qt skips it otherwise.
           QT_PLUGIN_DIR="$(qmake6 -query QT_INSTALL_PLUGINS 2>/dev/null || echo /usr/lib/x86_64-linux-gnu/qt6/plugins)"
           mkdir -p /tmp/appdir/usr/plugins/tls
           cp "${QT_PLUGIN_DIR}/tls/"*.so /tmp/appdir/usr/plugins/tls/ 2>/dev/null || true
