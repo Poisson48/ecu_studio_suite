@@ -1569,6 +1569,10 @@ Vérifiez que le fichier est accessible en écriture.</translation>
 <context>
     <name>ecu_studio::MainWindow</name>
     <message>
+        <source>Bibliothèque</source>
+        <translation>Bibliothèque</translation>
+    </message>
+    <message>
         <source>Projet</source>
         <translation>Projet</translation>
     </message>
@@ -3045,6 +3049,117 @@ Utilisez « Importer ROM... » pour en ajouter une.</translation>
     <message>
         <source>Detach to window</source>
         <translation>Detach to window</translation>
+    </message>
+</context>
+<context>
+    <name>ecu_studio::OpenDamosLibraryPanel</name>
+    <message>
+        <source>Bibliothèque OpenDAMOS</source>
+        <translation>Bibliothèque OpenDAMOS</translation>
+    </message>
+    <message>
+        <source>Récupère les recettes OpenDAMOS publiées sur GitHub — installez les recettes ECU sans recompiler l'application.</source>
+        <translation>Récupère les recettes OpenDAMOS publiées sur GitHub — installez les recettes ECU sans recompiler l'application.</translation>
+    </message>
+    <message>
+        <source>Filtrer (ECU, nom, source)...</source>
+        <translation>Filtrer (ECU, nom, source)...</translation>
+    </message>
+    <message>
+        <source>Trouver pour ma ROM</source>
+        <translation>Trouver pour ma ROM</translation>
+    </message>
+    <message>
+        <source>Filtre la liste sur l'ECU de la ROM actuellement chargée.</source>
+        <translation>Filtre la liste sur l'ECU de la ROM actuellement chargée.</translation>
+    </message>
+    <message>
+        <source>Installer</source>
+        <translation>Installer</translation>
+    </message>
+    <message>
+        <source>Rafraîchir</source>
+        <translation>Rafraîchir</translation>
+    </message>
+    <message>
+        <source>ECU</source>
+        <translation>ECU</translation>
+    </message>
+    <message>
+        <source>Nom</source>
+        <translation>Nom</translation>
+    </message>
+    <message>
+        <source>Maturité</source>
+        <translation>Maturité</translation>
+    </message>
+    <message>
+        <source>Endian</source>
+        <translation>Endian</translation>
+    </message>
+    <message>
+        <source>Cartes</source>
+        <translation>Cartes</translation>
+    </message>
+    <message>
+        <source>Source</source>
+        <translation>Source</translation>
+    </message>
+    <message>
+        <source>Déjà installée</source>
+        <translation>Déjà installée</translation>
+    </message>
+    <message>
+        <source>Cliquez sur « Rafraîchir » pour charger la bibliothèque.</source>
+        <translation>Cliquez sur « Rafraîchir » pour charger la bibliothèque.</translation>
+    </message>
+    <message>
+        <source>TLS/SSL indisponible — impossible de contacter GitHub. Vérifiez l'installation d'OpenSSL du système.</source>
+        <translation>TLS/SSL indisponible — impossible de contacter GitHub. Vérifiez l'installation d'OpenSSL du système.</translation>
+    </message>
+    <message>
+        <source>Téléchargement de la bibliothèque...</source>
+        <translation>Téléchargement de la bibliothèque...</translation>
+    </message>
+    <message>
+        <source>Erreur réseau : %1</source>
+        <translation>Erreur réseau : %1</translation>
+    </message>
+    <message>
+        <source>Manifeste mal formé : %1</source>
+        <translation>Manifeste mal formé : %1</translation>
+    </message>
+    <message>
+        <source>%1 recette(s) disponible(s) · %2 installée(s).</source>
+        <translation>%1 recette(s) disponible(s) · %2 installée(s).</translation>
+    </message>
+    <message>
+        <source>URL de base absente du manifeste — impossible d'installer.</source>
+        <translation>URL de base absente du manifeste — impossible d'installer.</translation>
+    </message>
+    <message>
+        <source>Installation de %1...</source>
+        <translation>Installation de %1...</translation>
+    </message>
+    <message>
+        <source>Échec du téléchargement de %1 : %2</source>
+        <translation>Échec du téléchargement de %1 : %2</translation>
+    </message>
+    <message>
+        <source>Recette %1 invalide (JSON attendu).</source>
+        <translation>Recette %1 invalide (JSON attendu).</translation>
+    </message>
+    <message>
+        <source>Impossible de créer le dossier %1.</source>
+        <translation>Impossible de créer le dossier %1.</translation>
+    </message>
+    <message>
+        <source>Écriture impossible : %1</source>
+        <translation>Écriture impossible : %1</translation>
+    </message>
+    <message>
+        <source>Recette « %1 » installée dans %2.</source>
+        <translation>Recette « %1 » installée dans %2.</translation>
     </message>
 </context>
 </TS>

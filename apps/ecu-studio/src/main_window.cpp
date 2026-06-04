@@ -11,6 +11,7 @@
 #include "panels/git_panel.h"
 #include "panels/a2l_panel.h"
 #include "panels/can_panel.h"
+#include "panels/opendamos_library_panel.h"
 #include "hub/hub_launcher_panel.h"
 #include "updater.h"
 #include "update_dialog.h"
@@ -116,6 +117,7 @@ void MainWindow::setupUi() {
     m_gitPanel      = new GitPanel(m_doc, this);
     m_a2lPanel      = new A2lPanel(m_doc, this);
     m_canPanel      = new CanPanel(this);
+    m_libraryPanel  = new OpenDamosLibraryPanel(m_doc, this);
     m_hubPanel      = new HubLauncherPanel(m_doc, this);
 
     wirePanels();
@@ -140,6 +142,9 @@ void MainWindow::setupUi() {
     m_sidebar->addPanel("A2L",               tr("A2L"),       m_a2lPanel);
     // 🚌 (U+1F68C, bus) — moniteur CAN intégré (cancore de SocketSpy)
     m_sidebar->addPanel("\xf0\x9f\x9a\x8c",  tr("CAN"),        m_canPanel);
+    // 📚 (U+1F4DA, books) — Bibliothèque OpenDAMOS : récupère les 127+ recettes
+    // ECU publiées sur GitHub (sans recompiler l'app).
+    m_sidebar->addPanel("\xf0\x9f\x93\x9a",  tr("Bibliothèque"), m_libraryPanel);
 
     auto* central = new QWidget(this);
     auto* hbox    = new QHBoxLayout(central);
