@@ -81,6 +81,7 @@ set(ECU_STUDIO_SOURCES
     src/hub/sub_program_registry.cpp
     src/hub/maturity_badge.cpp
     src/hub/hub_launcher_panel.cpp
+    src/hub/tool_downloader.cpp
     src/hub/verify_on_bus_dialog.cpp
 
     # Système de mise à jour intégré (vérifie les releases GitHub)

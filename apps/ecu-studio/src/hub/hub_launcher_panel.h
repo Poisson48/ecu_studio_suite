@@ -30,6 +30,7 @@ class QProcess;
 namespace ecu_studio {
 
 class RomDocument;
+class ToolDownloader;
 
 class HubLauncherPanel : public QWidget {
     Q_OBJECT
@@ -50,6 +51,11 @@ private:
 
     // Lance le binaire d'un sous-programme en sous-processus (pattern CanPanel).
     void launch(const SubProgram& sp);
+    // Télécharge la dernière release AppImage du sous-programme (downloadRepo)
+    // dans le dossier des outils, puis réactive le lancement — sans compilation.
+    void downloadTool(const SubProgram& sp);
+    // Re-résout la disponibilité des binaires et met à jour boutons/tooltips.
+    void refreshAvailability();
     // Ouvre la VerifyOnBusDialog pour un sous-programme « bus ».
     void verifyOnBus(const SubProgram& sp);
 
@@ -66,6 +72,14 @@ private:
     // Un QProcess* en cours d'exécution par identifiant de sous-programme,
     // parenté à `this`. Permet la garde state() != NotRunning par tuile.
     QHash<QString, QProcess*> m_procs;
+
+    // Boutons « Lancer » / « Télécharger » par identifiant, pour basculer leur
+    // état après un téléchargement réussi (sans reconstruire la grille).
+    QHash<QString, QPushButton*> m_launchBtns;
+    QHash<QString, QPushButton*> m_downloadBtns;
+
+    // Téléchargeur partagé (un seul à la fois), créé paresseusement.
+    ToolDownloader* m_downloader{nullptr};
 };
 
 } // namespace ecu_studio

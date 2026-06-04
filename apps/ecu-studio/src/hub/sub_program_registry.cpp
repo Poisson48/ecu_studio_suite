@@ -23,6 +23,7 @@ const QList<SubProgram>& SubProgramRegistry::all() {
             QStringLiteral("socketspy"),
             QStringList{},
             /*external=*/true,
+            /*downloadRepo=*/QStringLiteral("Poisson48/SocketSpy"),
         },
         SubProgram{
             QStringLiteral("socketspy-mcp"),
@@ -33,6 +34,7 @@ const QList<SubProgram>& SubProgramRegistry::all() {
             QStringLiteral("socketspy-mcp"),
             QStringList{QStringLiteral("--stdio")},
             /*external=*/true,
+            /*downloadRepo=*/QString(),
         },
         SubProgram{
             QStringLiteral("obd-scanner"),
@@ -43,6 +45,7 @@ const QList<SubProgram>& SubProgramRegistry::all() {
             QStringLiteral("obd-scanner"),
             QStringList{},
             /*external=*/true,
+            /*downloadRepo=*/QString(),
         },
     };
     return catalog;
@@ -71,9 +74,12 @@ QString SubProgramRegistry::resolveExec(const QString& execName) {
         exe += QStringLiteral(".exe");
 #endif
 
-    // Emplacements candidats : à côté d'ecu_studio, puis dans l'arbre de build.
+    // Emplacements candidats : d'abord le dossier des binaires téléchargés
+    // (writable, survit aux AppImage en lecture seule), puis à côté d'ecu_studio
+    // et dans l'arbre de build.
     const QString appDir = QCoreApplication::applicationDirPath();
     const QStringList candidates = {
+        toolsDir() + QStringLiteral("/") + exe,                     // binaire téléchargé
         appDir + QStringLiteral("/") + exe,
         appDir + QStringLiteral("/../socketspy/") + exe,            // build/apps/.. layout
         appDir + QStringLiteral("/../apps/socketspy/gui/") + exe,
@@ -87,6 +93,11 @@ QString SubProgramRegistry::resolveExec(const QString& execName) {
     // Dernier recours : dans le PATH.
     const QString inPath = QStandardPaths::findExecutable(exe);
     return inPath; // chaîne vide si introuvable
+}
+
+QString SubProgramRegistry::toolsDir() {
+    return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+           + QStringLiteral("/tools");
 }
 
 QString SubProgramRegistry::maturityLabel(Maturity maturity) {

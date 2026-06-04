@@ -33,6 +33,10 @@ struct SubProgram {
     QString     execName;     // Nom de l'exécutable (sans extension OS).
     QStringList args;         // Arguments par défaut passés au lancement.
     bool        external;     // true si binaire externe (résolu via resolveExec).
+    // Dépôt GitHub « Owner/Name » publiant une release AppImage téléchargeable
+    // (release-manifest.json). Vide = pas de téléchargement automatique (l'user
+    // doit fournir le binaire). Sert au bouton « Télécharger » du hub.
+    QString     downloadRepo;
 };
 
 // Accesseurs statiques sur le catalogue (aucune instance à créer).
@@ -51,6 +55,11 @@ public:
     // introuvable. `execName` est attendu sans extension : « .exe » est ajouté
     // automatiquement sous Windows.
     static QString resolveExec(const QString& execName);
+
+    // Dossier inscriptible où sont déposés les binaires téléchargés depuis le
+    // hub (<AppDataLocation>/tools). resolveExec l'inspecte en priorité, ce qui
+    // permet de lancer un sous-programme téléchargé sans recompiler la suite.
+    static QString toolsDir();
 
     // Libellé lisible (traduisible) du niveau de maturité.
     static QString maturityLabel(Maturity maturity);

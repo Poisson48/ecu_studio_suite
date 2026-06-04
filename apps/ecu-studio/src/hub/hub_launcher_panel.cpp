@@ -1,5 +1,6 @@
 #include "hub/hub_launcher_panel.h"
 
+#include <QDir>
 #include <QFrame>
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -10,8 +11,11 @@
 #include <QSizePolicy>
 #include <QVBoxLayout>
 
+#include <utility>
+
 #include "../rom_document.h"
 #include "hub/maturity_badge.h"
+#include "hub/tool_downloader.h"
 #include "ecu_studio/palette.hpp"
 
 // VerifyOnBusDialog est l'un des trois autres modules du hub. Au moment où ce
@@ -159,20 +163,37 @@ QWidget* HubLauncherPanel::buildTile(const SubProgram& sp) {
     launchBtn->setObjectName(QStringLiteral("accentBtn"));
     connect(launchBtn, &QPushButton::clicked, this,
             [this, sp]() { launch(sp); });
+    m_launchBtns.insert(sp.id, launchBtn);
 
-    // Résolution du binaire : si introuvable, on désactive le bouton et on
-    // affiche un indice de build (pattern « binary not found » de CanPanel).
-    const QString exec = SubProgramRegistry::resolveExec(sp.execName);
-    if (sp.external && exec.isEmpty()) {
+    // Résolution du binaire : si introuvable, on désactive le lancement. Quand
+    // un dépôt de release est connu (downloadRepo), on propose plutôt de le
+    // télécharger automatiquement — sans imposer une compilation à l'utilisateur.
+    const QString exec        = SubProgramRegistry::resolveExec(sp.execName);
+    const bool    missing     = sp.external && exec.isEmpty();
+    const bool    canDownload = missing && !sp.downloadRepo.isEmpty();
+    if (missing) {
         launchBtn->setEnabled(false);
         launchBtn->setToolTip(
-            tr("Binaire introuvable — buildez avec -DECU_BUILD_SOCKETSPY=ON, "
-               "ou placez l'exécutable « %1 » à côté d'ecu_studio.")
-                .arg(sp.execName));
+            canDownload
+                ? tr("Binaire introuvable — cliquez « Télécharger » pour récupérer "
+                     "automatiquement la dernière version (aucune compilation requise).")
+                : tr("Binaire introuvable — buildez avec -DECU_BUILD_SOCKETSPY=ON, "
+                     "ou placez l'exécutable « %1 » à côté d'ecu_studio.")
+                      .arg(sp.execName));
     } else if (!exec.isEmpty()) {
         launchBtn->setToolTip(exec);
     }
     actions->addWidget(launchBtn);
+
+    if (canDownload) {
+        auto* dlBtn = new QPushButton(tr("Télécharger"), tile);
+        dlBtn->setObjectName(QStringLiteral("accentBtn"));
+        dlBtn->setToolTip(tr("Télécharge la dernière release de %1 depuis GitHub "
+                             "et l'installe — sans compiler.").arg(sp.name));
+        connect(dlBtn, &QPushButton::clicked, this, [this, sp]() { downloadTool(sp); });
+        m_downloadBtns.insert(sp.id, dlBtn);
+        actions->addWidget(dlBtn);
+    }
 
     // Affordance « Vérifier sur le bus » pour les sous-programmes concernés.
     if (supportsBusVerify(sp)) {
@@ -228,6 +249,63 @@ void HubLauncherPanel::launch(const SubProgram& sp) {
     proc->setArguments(sp.args);
     proc->start();
     setStatus(tr("%1 lancé (%2).").arg(sp.name, path));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Téléchargement automatique d'un sous-programme (évite la compilation manuelle)
+// ─────────────────────────────────────────────────────────────────────────────
+void HubLauncherPanel::downloadTool(const SubProgram& sp) {
+    if (sp.downloadRepo.isEmpty()) return;
+
+    const QString dir = SubProgramRegistry::toolsDir();
+    QDir().mkpath(dir);
+    const QString dest = dir + QStringLiteral("/") + sp.execName;
+
+    if (!m_downloader) {
+        m_downloader = new ToolDownloader(this);
+        connect(m_downloader, &ToolDownloader::progress, this,
+                [this](qint64 received, qint64 total) {
+                    if (total > 0)
+                        setStatus(tr("Téléchargement… %1 %  (%2 / %3 Mo)")
+                                      .arg(static_cast<int>(100.0 * received / total))
+                                      .arg(received / (1024 * 1024))
+                                      .arg(total / (1024 * 1024)));
+                });
+        connect(m_downloader, &ToolDownloader::failed, this,
+                [this](const QString& err) {
+                    setStatus(tr("Échec du téléchargement : %1").arg(err));
+                    for (QPushButton* b : std::as_const(m_downloadBtns))
+                        if (b) b->setEnabled(true);
+                });
+        connect(m_downloader, &ToolDownloader::finished, this,
+                [this](const QString& path) {
+                    setStatus(tr("Installé : %1 — prêt à lancer.").arg(path));
+                    refreshAvailability();
+                });
+    }
+
+    if (m_downloader->busy()) {
+        setStatus(tr("Un téléchargement est déjà en cours."));
+        return;
+    }
+    if (QPushButton* b = m_downloadBtns.value(sp.id)) b->setEnabled(false);
+    setStatus(tr("Téléchargement de %1 depuis GitHub (%2)…").arg(sp.name, sp.downloadRepo));
+    m_downloader->start(sp.downloadRepo, dest);
+}
+
+void HubLauncherPanel::refreshAvailability() {
+    for (const SubProgram& sp : SubProgramRegistry::all()) {
+        const QString exec      = SubProgramRegistry::resolveExec(sp.execName);
+        const bool    available = !exec.isEmpty() || !sp.external;
+        if (QPushButton* lb = m_launchBtns.value(sp.id)) {
+            lb->setEnabled(available);
+            if (!exec.isEmpty()) lb->setToolTip(exec);
+        }
+        if (QPushButton* db = m_downloadBtns.value(sp.id)) {
+            db->setVisible(!available);   // masque le bouton une fois installé
+            db->setEnabled(true);
+        }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

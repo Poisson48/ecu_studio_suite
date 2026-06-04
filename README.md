@@ -136,7 +136,7 @@ A free, **CC0** DAMOS that relocates ECU maps by **axis fingerprint** instead of
 
 ### Download (recommended)
 
-**[⬇ Download ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — v1.4.4, ~37 MB, Linux x86_64.
+**[⬇ Download ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — v1.4.5, ~37 MB, Linux x86_64.
 
 ```bash
 chmod +x ECU_Studio-x86_64.AppImage
@@ -319,7 +319,7 @@ Un DAMOS libre, **CC0**, qui relocalise les cartos d'ECU par **empreinte d'axe**
 
 ### Téléchargement (recommandé)
 
-**[⬇ Télécharger ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — v1.4.4, ~37 Mo, Linux x86_64.
+**[⬇ Télécharger ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — v1.4.5, ~37 Mo, Linux x86_64.
 
 ```bash
 chmod +x ECU_Studio-x86_64.AppImage
