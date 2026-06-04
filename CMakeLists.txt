@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(ecu-studio-suite VERSION 1.4.3 LANGUAGES CXX C)
+project(ecu-studio-suite VERSION 1.4.4 LANGUAGES CXX C)
 
 # ── Version ───────────────────────────────────────────────────────────────────
 # APP_VERSION (compilé dans le binaire via PROJECT_VERSION) DOIT correspondre au

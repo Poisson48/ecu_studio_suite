@@ -54,8 +54,16 @@ public slots:
     // Demande un nom puis crée + bascule sur une nouvelle variante.
     void createVariant();
 
+    // ── Annuler / Rétablir (Ctrl+Z / Ctrl+Y) basés sur l'historique git ──────
+    // undo() recule d'une version (premier-parent) ; redo() avance. Les éditions
+    // en cours sont d'abord capturées comme une version pour ne rien perdre.
+    void undo();
+    void redo();
+
 signals:
     void statusMessage(const QString& msg);
+    // Émis quand la disponibilité annuler/rétablir change (état des flèches).
+    void navStateChanged(bool canUndo, bool canRedo);
 
 private:
     void buildUi();
@@ -66,6 +74,14 @@ private:
     // Recharge la ROM du dossier de travail dans le document (après bascule de
     // variante ou restauration). Renvoie true si le rechargement a réussi.
     bool reloadWorkingRom();
+
+    // ── Pile undo/redo (lignée premier-parent de HEAD) ──────────────────────
+    void rebuildNav();                              // recalcule la chaîne (pos=0)
+    void emitNavState();                            // notifie l'état des flèches
+    bool loadVersionIntoDoc(const QString& hash);   // charge une version en doc
+
+    std::vector<std::string> m_navChain;  // hash récent(0) → ancien
+    int                      m_navPos{0}; // position courante dans m_navChain
 
     RomDocument* m_doc{nullptr};
     QString      m_repoPath;

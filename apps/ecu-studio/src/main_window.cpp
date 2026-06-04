@@ -24,6 +24,7 @@
 
 #include <QApplication>
 #include <QMenuBar>
+#include <QToolBar>
 #include <QFile>
 #include <QMenu>
 #include <QAction>
@@ -76,6 +77,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     setupUi();
     setupMenuBar();
+    setupToolBar();
     setupStatusBar();
 
     m_welcomeScreen = new WelcomeScreen(this);
@@ -381,6 +383,39 @@ void MainWindow::setupMenuBar() {
                         [this]() { checkForUpdates(/*silent=*/false); });
     helpMenu->addSeparator();
     helpMenu->addAction(tr("À propos d'ECU Studio"), this, &MainWindow::showAbout);
+}
+
+void MainWindow::setupToolBar() {
+    // Flèches Annuler / Rétablir adossées à l'historique git (onglet Versions).
+    // Annuler recule d'une version (premier-parent), Rétablir avance ; les
+    // éditions en cours sont d'abord capturées en version pour ne rien perdre.
+    auto* tb = addToolBar(tr("Navigation"));
+    tb->setObjectName("navToolBar");   // requis pour saveState()/restoreState()
+    tb->setMovable(false);
+
+    auto* undoAct = tb->addAction(tr("\xe2\x86\xb6 Annuler"));       // ↶
+    undoAct->setShortcut(QKeySequence::Undo);                       // Ctrl+Z
+    undoAct->setToolTip(tr("Annuler — revenir à la version précédente (Ctrl+Z)"));
+
+    auto* redoAct = tb->addAction(tr("Rétablir \xe2\x86\xb7"));      // ↷
+    redoAct->setShortcuts({ QKeySequence::Redo,                     // Ctrl+Shift+Z
+                            QKeySequence(Qt::CTRL | Qt::Key_Y) });  // Ctrl+Y
+    redoAct->setToolTip(tr("Rétablir — avancer à la version suivante (Ctrl+Y)"));
+
+    undoAct->setEnabled(false);
+    redoAct->setEnabled(false);
+
+    connect(undoAct, &QAction::triggered, m_gitPanel, &GitPanel::undo);
+    connect(redoAct, &QAction::triggered, m_gitPanel, &GitPanel::redo);
+    connect(m_gitPanel, &GitPanel::navStateChanged, this,
+            [undoAct, redoAct](bool canUndo, bool canRedo) {
+                undoAct->setEnabled(canUndo);
+                redoAct->setEnabled(canRedo);
+            });
+    // Le feedback annuler/rétablir s'affiche dans la barre de statut globale
+    // (l'utilisateur n'est pas forcément sur l'onglet Versions).
+    connect(m_gitPanel, &GitPanel::statusMessage, this,
+            [this](const QString& m) { statusBar()->showMessage(m, 3000); });
 }
 
 void MainWindow::rebuildRecentMenu() {

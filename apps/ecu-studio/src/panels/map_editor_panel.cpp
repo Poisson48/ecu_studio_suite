@@ -70,6 +70,9 @@ void MapEditorPanel::buildUi() {
     stageLay->addWidget(m_pctSpin);
 
     m_applyPctBtn = new QPushButton(tr("Appliquer %"), this);
+    m_applyPctBtn->setToolTip(tr("Applique le pourcentage aux cellules sélectionnées "
+                                 "(Shift/Ctrl pour la multi-sélection). Sans sélection, "
+                                 "s'applique à toute la map."));
     stageLay->addWidget(m_applyPctBtn);
 
     m_applyStage1Btn = new QPushButton(tr("Appliquer Stage 1 complet"), this);

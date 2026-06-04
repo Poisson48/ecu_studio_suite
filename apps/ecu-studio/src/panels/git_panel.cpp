@@ -24,6 +24,12 @@ GitPanel::GitPanel(RomDocument* doc, QWidget* parent)
     : QWidget(parent), m_doc(doc) {
     buildUi();
     updateActionStates();
+
+    // L'état des flèches annuler/rétablir dépend aussi des éditions en cours.
+    if (m_doc)
+        connect(m_doc, &RomDocument::modifiedStateChanged, this,
+                [this](bool) { emitNavState(); });
+    emitNavState();
 }
 
 GitPanel::~GitPanel() = default;
@@ -177,6 +183,7 @@ void GitPanel::setRepoPath(const QString& dir) {
 
     refreshVariants();
     refresh();
+    rebuildNav();
     updateActionStates();
 }
 
@@ -270,6 +277,7 @@ void GitPanel::commitCurrent() {
     setStatus(tr("Version %1 enregistrée")
                   .arg(QString::fromStdString(*result.hash).left(8)));
     refresh();
+    rebuildNav();
 #else
     setStatus(tr("Versions indisponibles (libgit2 non compilé)"), true);
 #endif
@@ -323,6 +331,7 @@ void GitPanel::restoreSelected() {
                   : tr("Version restaurée, mais rechargement de la ROM impossible"),
               !reloaded);
     refresh();
+    rebuildNav();
 #else
     setStatus(tr("Versions indisponibles (libgit2 non compilé)"), true);
 #endif
@@ -448,6 +457,7 @@ void GitPanel::switchVariant(int index) {
                   : tr("Variante « %1 » active (ROM non rechargée)").arg(name),
               !reloaded);
     refresh();
+    rebuildNav();
 #else
     Q_UNUSED(index);
     setStatus(tr("Versions indisponibles (libgit2 non compilé)"), true);
@@ -486,6 +496,106 @@ void GitPanel::createVariant() {
     setStatus(tr("Variante « %1 » créée").arg(QString::fromStdString(*r)));
     refreshVariants();
     refresh();
+    rebuildNav();
+#else
+    setStatus(tr("Versions indisponibles (libgit2 non compilé)"), true);
+#endif
+}
+
+// ── Annuler / Rétablir basés sur l'historique git ───────────────────────────
+
+void GitPanel::rebuildNav() {
+#ifdef ECU_GIT_AVAILABLE
+    m_navChain.clear();
+    m_navPos = 0;
+    if (m_git) m_navChain = m_git->historyChain();
+#endif
+    emitNavState();
+}
+
+void GitPanel::emitNavState() {
+    const bool repo = !m_repoPath.isEmpty();
+    const bool dirty = m_doc && m_doc->isModified();
+    // On peut annuler s'il existe une version plus ancienne, ou si des éditions
+    // en cours peuvent être capturées en version.
+    const bool canUndo = repo &&
+        (m_navPos + 1 < static_cast<int>(m_navChain.size()) || dirty);
+    const bool canRedo = repo && m_navPos > 0;
+    emit navStateChanged(canUndo, canRedo);
+}
+
+bool GitPanel::loadVersionIntoDoc(const QString& hash) {
+#ifdef ECU_GIT_AVAILABLE
+    if (!m_doc || !m_git) return false;
+    auto buf = m_git->readFileAtCommit(hash.toStdString(), "rom.bin");
+    if (!buf || buf->empty()) {
+        setStatus(tr("Impossible de lire la ROM de la version %1").arg(hash.left(8)), true);
+        return false;
+    }
+    QByteArray data(reinterpret_cast<const char*>(buf->data()),
+                    static_cast<qsizetype>(buf->size()));
+    // Écrit le fichier de travail (cohérence disque) puis recharge via
+    // loadFromFile pour conserver le chemin du document (loadFromData l'effacerait).
+    const QString romPath = QDir(m_repoPath).filePath("rom.bin");
+    QFile f(romPath);
+    if (f.open(QIODevice::WriteOnly)) { f.write(data); f.close(); }
+    return m_doc->loadFromFile(romPath);
+#else
+    Q_UNUSED(hash);
+    return false;
+#endif
+}
+
+void GitPanel::undo() {
+#ifdef ECU_GIT_AVAILABLE
+    if (m_repoPath.isEmpty() || !m_git) return;
+
+    // Capture d'abord les éditions non enregistrées comme une version, afin de
+    // ne rien perdre et de pouvoir les rétablir (git = pile d'annulation).
+    if (m_doc && m_doc->isLoaded() && m_doc->isModified() && !m_doc->path().isEmpty()) {
+        if (m_doc->saveToFile(m_doc->path())) {
+            m_git->commit(tr("Édition (annulable)").toStdString());
+            rebuildNav();                 // nouveau tip → m_navPos = 0
+        }
+    }
+
+    if (m_navPos + 1 >= static_cast<int>(m_navChain.size())) {
+        setStatus(tr("Rien à annuler — plus ancienne version atteinte."));
+        emitNavState();
+        return;
+    }
+
+    ++m_navPos;
+    const QString hash = QString::fromStdString(m_navChain[static_cast<std::size_t>(m_navPos)]);
+    if (loadVersionIntoDoc(hash))
+        setStatus(tr("Annulé → version %1  (%2 sur %3)")
+                      .arg(hash.left(8))
+                      .arg(static_cast<int>(m_navChain.size()) - m_navPos)
+                      .arg(m_navChain.size()));
+    emitNavState();
+#else
+    setStatus(tr("Versions indisponibles (libgit2 non compilé)"), true);
+#endif
+}
+
+void GitPanel::redo() {
+#ifdef ECU_GIT_AVAILABLE
+    if (m_repoPath.isEmpty() || !m_git) return;
+
+    if (m_navPos <= 0) {
+        setStatus(tr("Rien à rétablir — version la plus récente."));
+        emitNavState();
+        return;
+    }
+
+    --m_navPos;
+    const QString hash = QString::fromStdString(m_navChain[static_cast<std::size_t>(m_navPos)]);
+    if (loadVersionIntoDoc(hash))
+        setStatus(tr("Rétabli → version %1  (%2 sur %3)")
+                      .arg(hash.left(8))
+                      .arg(static_cast<int>(m_navChain.size()) - m_navPos)
+                      .arg(m_navChain.size()));
+    emitNavState();
 #else
     setStatus(tr("Versions indisponibles (libgit2 non compilé)"), true);
 #endif

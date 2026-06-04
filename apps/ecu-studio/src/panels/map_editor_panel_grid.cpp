@@ -232,6 +232,15 @@ void MapEditorPanel::applyPercent() {
     const quint32 addr = m_entries[static_cast<std::size_t>(m_currentRow)].address;
     const double  pct  = m_pctSpin->value();
 
+    // Sélection-first : si des cellules sont sélectionnées, on n'applique le %
+    // qu'à celles-ci (multiplicatif, comme opMultiply). Appliquer à toute la map
+    // n'a de sens que si rien n'est sélectionné.
+    if (m_grid && !m_grid->selectedItems().isEmpty()) {
+        const double f = 1.0 + pct / 100.0;
+        applyToSelection(tr("%1 %").arg(pct), [f](int, double cur) { return cur * f; });
+        return;
+    }
+
     QByteArray& rom = m_doc->romMutable();
     auto result = ecu::applyPctToMap(mutByteSpan(rom), addr, pct);
     if (!result) {
@@ -242,7 +251,8 @@ void MapEditorPanel::applyPercent() {
     if (!result->empty())
         m_doc->markModified();
 
-    setStatus(tr("%1 % appliqué à %2 — %3 cellule(s) modifiée(s).")
+    setStatus(tr("%1 % appliqué à TOUTE la map %2 — %3 cellule(s). "
+                 "Sélectionnez des cellules (Shift/Ctrl) pour ne viser qu'une zone.")
         .arg(pct).arg(hex32(addr)).arg(result->size()));
 
     // Recharge la grille si c'est la map affichée.

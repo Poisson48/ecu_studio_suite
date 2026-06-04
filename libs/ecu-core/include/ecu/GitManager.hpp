@@ -72,6 +72,9 @@ public:
     std::expected<std::string, std::string>    rewordCommit(const std::string& hash,
                                                             const std::string& newMessage);
     std::vector<GitCommit>                     log();
+    // Chaîne premier-parent depuis HEAD jusqu'à la racine (hash récent → ancien).
+    // Sert de pile d'annulation/rétablissement (undo/redo basé sur les versions).
+    std::vector<std::string>                   historyChain();
     DiffResult                                 diff(const std::string& hash);
     std::expected<void, std::string>           restore(const std::string& hash);
     std::expected<BranchList, std::string>     listBranches();

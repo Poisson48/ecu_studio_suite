@@ -402,6 +402,34 @@ GitManager::rewordCommit(const std::string& hash, const std::string& newMessage)
     return std::string(buf);
 }
 
+// ── historyChain ───────────────────────────────────────────────────────────────
+// Pile undo/redo : la lignée premier-parent de HEAD, du plus récent au plus
+// ancien. Lecture pure (aucune mutation), recalculée à chaque nouveau commit.
+std::vector<std::string> GitManager::historyChain() {
+    if (auto r = openOrNull(); !r) return {};
+    if (!m_repo)                    return {};
+
+    git_reference* branchRef = nullptr;
+    if (git_repository_head(&branchRef, m_repo) != 0) return {}; // HEAD non né
+    git_oid cur = *git_reference_target(branchRef);
+    git_reference_free(branchRef);
+
+    std::vector<std::string> out;
+    for (;;) {
+        char buf[GIT_OID_HEXSZ + 1];
+        git_oid_tostr(buf, sizeof buf, &cur);
+        out.emplace_back(buf);
+
+        git_commit* c = nullptr;
+        if (git_commit_lookup(&c, m_repo, &cur) != 0) break;
+        const unsigned pc = git_commit_parentcount(c);
+        if (pc == 0) { git_commit_free(c); break; }
+        cur = *git_commit_parent_id(c, 0);
+        git_commit_free(c);
+    }
+    return out;
+}
+
 // ── log ──────────────────────────────────────────────────────────────────────
 
 std::vector<GitCommit> GitManager::log() {

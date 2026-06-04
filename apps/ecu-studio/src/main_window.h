@@ -45,6 +45,7 @@ protected:
 private:
     void setupUi();
     void setupMenuBar();
+    void setupToolBar();   // flèches annuler/rétablir (Ctrl+Z / Ctrl+Y, via git)
     void setupStatusBar();
     void wirePanels();   // câble les signaux inter-panels (goto adresse, ROM lue…)
     void connectWelcomeSignals();
