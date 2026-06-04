@@ -41,6 +41,10 @@ public slots:
     // Restaure le commit sélectionné puis recharge la ROM dans le document.
     void restoreSelected();
 
+    // Réédite le message de la version sélectionnée (y compris les commits auto
+    // « WIP on … »). Réécrit l'historique de la variante courante via libgit2.
+    void renameSelected();
+
     // Recharge la liste des variantes (branches) et sélectionne la courante.
     void refreshVariants();
 
@@ -76,6 +80,7 @@ private:
     QTableWidget*    m_table{nullptr};
     QPushButton*     m_commitBtn{nullptr};
     QPushButton*     m_restoreBtn{nullptr};
+    QPushButton*     m_renameBtn{nullptr};
     QPushButton*     m_refreshBtn{nullptr};
     QLabel*          m_statusLabel{nullptr};
 };

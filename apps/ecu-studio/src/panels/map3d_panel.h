@@ -64,6 +64,9 @@ private:
     void rebuildCombo();           // remplit le sélecteur
     void onMapSelected(int index); // charge la map choisie
     void searchMaps();             // recherche heuristique (ecu::findMaps)
+    // Choix de la ROM de référence du mode fantôme (snapshot d'origine, commit
+    // git ou fichier .bin) — met à jour la baseline partagée du document.
+    void pickBaseline();
     void reloadCurrent();          // relit la map courante (romModified)
     void render(quint32 address);  // lit la map et la transmet à la vue
     void toggleHeatmap(bool on);
@@ -83,6 +86,7 @@ private:
     QPushButton* m_searchBtn = nullptr;
     QCheckBox*   m_heatChk   = nullptr;
     QCheckBox*   m_ghostChk  = nullptr;  // mode fantôme (baseline overlay)
+    QPushButton* m_baselineBtn = nullptr; // choix de la référence du fantôme
     QLabel*      m_infoLabel = nullptr;
     QLabel*      m_statusLabel = nullptr;
     QWidget*     m_view      = nullptr;  // Map3dViewPainter ou conteneur Q3DSurface

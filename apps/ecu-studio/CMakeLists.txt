@@ -71,6 +71,7 @@ set(ECU_STUDIO_SOURCES
     src/panels/automods_panel_ops.cpp
     src/panels/checksum_panel.cpp
     src/panels/compare_panel.cpp
+    src/panels/rom_source_picker.cpp
     src/panels/git_panel.cpp
     src/panels/a2l_panel.cpp
     src/panels/can_panel.cpp

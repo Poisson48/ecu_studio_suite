@@ -66,6 +66,11 @@ public:
 
     std::expected<void, std::string>           init();
     CommitResult                               commit(const std::string& message);
+    // Réécrit le message d'un commit existant (et re-chaîne ses descendants sur
+    // la branche courante). Les arbres, auteurs et dates sont préservés ; seuls
+    // les hash changent. Renvoie le nouveau hash du commit ré-édité.
+    std::expected<std::string, std::string>    rewordCommit(const std::string& hash,
+                                                            const std::string& newMessage);
     std::vector<GitCommit>                     log();
     DiffResult                                 diff(const std::string& hash);
     std::expected<void, std::string>           restore(const std::string& hash);

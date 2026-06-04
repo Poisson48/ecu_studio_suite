@@ -1,5 +1,5 @@
 #include "compare_panel.h"
-#include "git_blob_utils.h"
+#include "rom_source_picker.h"
 #include "../rom_document.h"
 #include "../byte_span.h"
 
@@ -10,14 +10,7 @@
 #include <QPushButton>
 #include <QTableWidget>
 #include <QHeaderView>
-#include <QFileInfo>
-#include <QFileDialog>
-#include <QMessageBox>
-#include <QFile>
-#include <QDialog>
-#include <QDialogButtonBox>
-#include <QComboBox>
-#include <QDir>
+#include <QFont>
 
 #include <span>
 #include <cstdint>
@@ -142,101 +135,18 @@ QString ComparePanel::slotText(const QString& which, const Slot& slot) const {
 }
 
 bool ComparePanel::pickSource(const QString& title, Slot& slot) {
-    QDialog dlg(this);
-    dlg.setWindowTitle(title);
-    dlg.setMinimumWidth(560);
-    auto* lay = new QVBoxLayout(&dlg);
+    // « ROM courante du document » n'est proposée que si une ROM est chargée.
+    const QString romPath = m_doc ? m_doc->path() : QString();
+    const QString firstLabel = (m_doc && m_doc->isLoaded())
+        ? tr("ROM courante du document") : QString();
 
-    lay->addWidget(new QLabel(tr("Choisissez la source de cette ROM à comparer :"), &dlg));
+    const PickedRom r = pickRomSource(this, title, romPath, firstLabel);
+    if (!r.ok) return false;
 
-    // Option 1 : ROM courante du document.
-    auto* docBtn = new QPushButton(tr("ROM courante du document"), &dlg);
-    docBtn->setEnabled(m_doc && m_doc->isLoaded());
-    lay->addWidget(docBtn);
-
-    // Option 2 : commit git du dépôt du projet.
-    const QString romPath  = m_doc ? m_doc->path() : QString();
-    const QString repoRoot = gitToplevelFor(romPath);
-    auto* gitGroup = new QGroupBox(tr("Depuis un commit git"), &dlg);
-    auto* gitLay   = new QVBoxLayout(gitGroup);
-    auto* commitCombo = new QComboBox(gitGroup);
-    auto* gitApplyBtn = new QPushButton(tr("Utiliser ce commit"), gitGroup);
-    gitLay->addWidget(commitCombo);
-    gitLay->addWidget(gitApplyBtn);
-    QString relPath;
-    if (repoRoot.isEmpty()) {
-        commitCombo->setEnabled(false);
-        gitApplyBtn->setEnabled(false);
-        gitLay->addWidget(new QLabel(
-            tr("(la ROM n'est pas dans un dépôt git — option indisponible)"), gitGroup));
-    } else {
-        QDir d(repoRoot);
-        relPath = d.relativeFilePath(romPath);
-        const auto commits = gitRecentCommits(repoRoot, 40);
-        if (commits.isEmpty()) {
-            commitCombo->setEnabled(false);
-            gitApplyBtn->setEnabled(false);
-            gitLay->addWidget(new QLabel(tr("(aucun commit listable — repo vide ?)"), gitGroup));
-        } else {
-            for (const auto& c : commits)
-                commitCombo->addItem(QString("%1  %2").arg(c.sha.left(8), c.summary),
-                                     c.sha);
-        }
-    }
-    lay->addWidget(gitGroup);
-
-    // Option 3 : fichier .bin externe.
-    auto* fileBtn = new QPushButton(tr("Depuis un fichier .bin externe…"), &dlg);
-    lay->addWidget(fileBtn);
-
-    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Cancel, &dlg);
-    lay->addWidget(buttons);
-    connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
-
-    bool chosen = false;
-
-    connect(docBtn, &QPushButton::clicked, &dlg, [&]() {
-        slot.fromDoc = true;
-        slot.bytes.clear();
-        slot.label.clear();
-        chosen = true;
-        dlg.accept();
-    });
-    connect(gitApplyBtn, &QPushButton::clicked, &dlg, [&]() {
-        if (repoRoot.isEmpty() || commitCombo->currentIndex() < 0) return;
-        const QString sha = commitCombo->currentData().toString();
-        const QByteArray bytes = gitBlobAt(repoRoot, sha, relPath);
-        if (bytes.isEmpty()) {
-            QMessageBox::warning(&dlg, title,
-                tr("Impossible d'extraire %1 du commit %2 — le fichier était-il "
-                   "versionné à ce moment ?").arg(relPath, sha.left(8)));
-            return;
-        }
-        slot.fromDoc = false;
-        slot.bytes   = bytes;
-        slot.label   = tr("commit %1").arg(sha.left(8));
-        chosen = true;
-        dlg.accept();
-    });
-    connect(fileBtn, &QPushButton::clicked, &dlg, [&]() {
-        const QString p = QFileDialog::getOpenFileName(
-            &dlg, tr("ROM à comparer"), {},
-            tr("ROM (*.bin *.ori *.mod *.hex);;Tous (*.*)"));
-        if (p.isEmpty()) return;
-        QFile f(p);
-        if (!f.open(QIODevice::ReadOnly)) {
-            QMessageBox::warning(&dlg, title, tr("Impossible d'ouvrir %1").arg(p));
-            return;
-        }
-        slot.fromDoc = false;
-        slot.bytes   = f.readAll();
-        slot.label   = QFileInfo(p).fileName();
-        chosen = true;
-        dlg.accept();
-    });
-
-    dlg.exec();
-    return chosen;
+    slot.fromDoc = r.firstOption;
+    slot.bytes   = r.firstOption ? QByteArray() : r.bytes;
+    slot.label   = r.firstOption ? QString()    : r.label;
+    return true;
 }
 
 void ComparePanel::openComparison() {

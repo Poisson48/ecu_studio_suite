@@ -1,5 +1,6 @@
 #include "map3d_panel.h"
 #include "map3d_view.h"
+#include "rom_source_picker.h"
 #include "../rom_document.h"
 #include "../byte_span.h"
 
@@ -11,6 +12,7 @@
 #include <QComboBox>
 #include <QPushButton>
 #include <QCheckBox>
+#include <QFile>
 
 #include <algorithm>
 #include <cstdint>
@@ -75,9 +77,15 @@ void Map3dPanel::buildUi() {
     m_heatChk = new QCheckBox(tr("Heatmap 2D"), this);
     ctl->addWidget(m_heatChk);
     m_ghostChk = new QCheckBox(tr("Fantôme"), this);
-    m_ghostChk->setToolTip(tr("Superpose la ROM d'origine en wireframe cyan sous "
-                              "la surface courante pour comparer les éditions."));
+    m_ghostChk->setToolTip(tr("Superpose la baseline en wireframe cyan sous la "
+                              "surface courante. Choisis la baseline via "
+                              "« Baseline… » : un commit git donne un fantôme entre "
+                              "la ROM modifiée courante et ce commit."));
     ctl->addWidget(m_ghostChk);
+    m_baselineBtn = new QPushButton(tr("Baseline…"), this);
+    m_baselineBtn->setToolTip(tr("ROM de référence du mode fantôme : commit git, "
+                                 "fichier .bin externe ou snapshot d'origine."));
+    ctl->addWidget(m_baselineBtn);
     ctl->addStretch();
     root->addWidget(ctlBox);
 
@@ -102,6 +110,7 @@ void Map3dPanel::buildUi() {
     connect(m_ghostChk, &QCheckBox::toggled, this, [this](bool) {
         if (m_currentAddr != 0) render(m_currentAddr);
     });
+    connect(m_baselineBtn, &QPushButton::clicked, this, &Map3dPanel::pickBaseline);
 }
 
 void Map3dPanel::viewSetSurface(const SurfaceData& data) {
@@ -188,9 +197,15 @@ void Map3dPanel::buildUi() {
     m_heatChk = new QCheckBox(tr("Heatmap 2D"), this);
     ctl->addWidget(m_heatChk);
     m_ghostChk = new QCheckBox(tr("Fantôme"), this);
-    m_ghostChk->setToolTip(tr("Superpose la ROM d'origine en wireframe cyan sous "
-                              "la surface courante pour comparer les éditions."));
+    m_ghostChk->setToolTip(tr("Superpose la baseline en wireframe cyan sous la "
+                              "surface courante. Choisis la baseline via "
+                              "« Baseline… » : un commit git donne un fantôme entre "
+                              "la ROM modifiée courante et ce commit."));
     ctl->addWidget(m_ghostChk);
+    m_baselineBtn = new QPushButton(tr("Baseline…"), this);
+    m_baselineBtn->setToolTip(tr("ROM de référence du mode fantôme : commit git, "
+                                 "fichier .bin externe ou snapshot d'origine."));
+    ctl->addWidget(m_baselineBtn);
     ctl->addStretch();
     root->addWidget(ctlBox);
 
@@ -213,6 +228,7 @@ void Map3dPanel::buildUi() {
     connect(m_ghostChk, &QCheckBox::toggled, this, [this](bool) {
         if (m_currentAddr != 0) render(m_currentAddr);
     });
+    connect(m_baselineBtn, &QPushButton::clicked, this, &Map3dPanel::pickBaseline);
     // Édition par clic court sur un sommet (signal du painter).
     connect(view, &Map3dViewPainter::cellClicked,
             this, &Map3dPanel::onCellClicked);
@@ -361,6 +377,38 @@ void Map3dPanel::showMap(quint32 address, const QString& name,
     m_entries.push_back(std::move(e));
     rebuildCombo();
     m_mapCombo->setCurrentIndex(static_cast<int>(m_entries.size()) - 1);
+}
+
+void Map3dPanel::pickBaseline() {
+    if (!m_doc || !m_doc->isLoaded()) {
+        setStatus(tr("Chargez une ROM avant de choisir une baseline."), true);
+        return;
+    }
+
+    const PickedRom r = pickRomSource(this, tr("Baseline du mode fantôme"),
+                                      m_doc->path(),
+                                      tr("Snapshot d'origine (à l'ouverture)"));
+    if (!r.ok) return;
+
+    if (r.firstOption) {
+        // Snapshot d'origine : relit la ROM depuis le disque pour reproduire
+        // l'état du chargement ; sinon retombe sur l'état courant (resetBaseline).
+        QFile f(m_doc->path());
+        if (!m_doc->path().isEmpty() && f.open(QIODevice::ReadOnly))
+            m_doc->setBaselineFromBytes(f.readAll(), tr("fichier d'origine"));
+        else
+            m_doc->resetBaseline();
+        setStatus(tr("Baseline : snapshot d'origine."));
+    } else {
+        m_doc->setBaselineFromBytes(r.bytes, r.label);
+        setStatus(tr("Baseline : %1 (%2 octets).").arg(r.label).arg(r.bytes.size()));
+    }
+
+    // Active le fantôme et redessine pour montrer immédiatement la comparaison.
+    if (m_ghostChk && !m_ghostChk->isChecked())
+        m_ghostChk->setChecked(true);       // déclenche render() via toggled
+    else if (m_currentAddr != 0)
+        render(m_currentAddr);
 }
 
 void Map3dPanel::reloadCurrent() {

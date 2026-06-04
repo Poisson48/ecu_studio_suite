@@ -56,9 +56,14 @@ void GitPanel::buildUi() {
     m_commitBtn  = new QPushButton(tr("Enregistrer une version"), this);
     m_commitBtn->setObjectName("accentBtn");
     m_restoreBtn = new QPushButton(tr("Revenir à cette version"), this);
+    m_renameBtn  = new QPushButton(tr("Renommer le message…"), this);
+    m_renameBtn->setToolTip(tr("Modifier le message de la version sélectionnée "
+                               "(double-clic sur la ligne) — y compris les "
+                               "enregistrements automatiques « WIP on … »."));
     m_refreshBtn = new QPushButton(tr("Rafraîchir"), this);
     btnRow->addWidget(m_commitBtn);
     btnRow->addWidget(m_restoreBtn);
+    btnRow->addWidget(m_renameBtn);
     btnRow->addWidget(m_refreshBtn);
     btnRow->addStretch();
     repoLay->addLayout(btnRow);
@@ -88,6 +93,7 @@ void GitPanel::buildUi() {
 
     connect(m_commitBtn,  &QPushButton::clicked, this, &GitPanel::commitCurrent);
     connect(m_restoreBtn, &QPushButton::clicked, this, &GitPanel::restoreSelected);
+    connect(m_renameBtn,  &QPushButton::clicked, this, &GitPanel::renameSelected);
     connect(m_refreshBtn, &QPushButton::clicked, this, &GitPanel::refresh);
     connect(m_newVariantBtn, &QPushButton::clicked, this, &GitPanel::createVariant);
     connect(m_variantCombo,
@@ -95,6 +101,9 @@ void GitPanel::buildUi() {
             this, &GitPanel::switchVariant);
     connect(m_table, &QTableWidget::itemSelectionChanged,
             this, &GitPanel::updateActionStates);
+    // Double-clic sur une ligne = éditer son message (édition « plus tard »).
+    connect(m_table, &QTableWidget::cellDoubleClicked,
+            this, [this](int, int) { renameSelected(); });
 
 #ifndef ECU_GIT_AVAILABLE
     setStatus(tr("Versions indisponibles (libgit2 non compilé)"), true);
@@ -132,6 +141,7 @@ void GitPanel::updateActionStates() {
     m_commitBtn->setEnabled(hasRepo);
     m_refreshBtn->setEnabled(hasRepo);
     m_restoreBtn->setEnabled(hasSelection);
+    if (m_renameBtn) m_renameBtn->setEnabled(hasSelection);
     if (m_variantCombo)  m_variantCombo->setEnabled(hasRepo);
     if (m_newVariantBtn) m_newVariantBtn->setEnabled(hasRepo);
 }
@@ -312,6 +322,54 @@ void GitPanel::restoreSelected() {
                   ? tr("Revenu à la version %1").arg(hash.left(8))
                   : tr("Version restaurée, mais rechargement de la ROM impossible"),
               !reloaded);
+    refresh();
+#else
+    setStatus(tr("Versions indisponibles (libgit2 non compilé)"), true);
+#endif
+}
+
+void GitPanel::renameSelected() {
+#ifdef ECU_GIT_AVAILABLE
+    if (m_repoPath.isEmpty() || !m_git) {
+        setStatus(tr("Aucun projet ouvert"), true);
+        return;
+    }
+
+    const QString hash = selectedHash();
+    if (hash.isEmpty()) {
+        setStatus(tr("Aucune version sélectionnée"), true);
+        return;
+    }
+
+    // Message actuel (1re ligne) proposé comme valeur par défaut.
+    QString current;
+    if (const int row = m_table->currentRow(); row >= 0 && m_table->item(row, 2))
+        current = m_table->item(row, 2)->text();
+
+    bool ok = false;
+    const QString newMsg = QInputDialog::getText(
+        this, tr("Renommer le message"),
+        tr("Nouveau message de la version %1 :").arg(hash.left(8)),
+        QLineEdit::Normal, current, &ok);
+    if (!ok) return;
+    if (newMsg.trimmed().isEmpty()) {
+        setStatus(tr("Message vide : renommage annulé"), true);
+        return;
+    }
+    if (newMsg == current) return;  // inchangé
+
+    auto r = m_git->rewordCommit(hash.toStdString(), newMsg.toStdString());
+    if (!r) {
+        setStatus(tr("Échec du renommage : %1")
+                      .arg(QString::fromStdString(r.error())), true);
+        QMessageBox::warning(this, tr("Renommer le message"),
+            tr("Le renommage du message a échoué :\n%1")
+                .arg(QString::fromStdString(r.error())));
+        return;
+    }
+
+    // L'arbre est inchangé (même rom.bin) : pas besoin de recharger la ROM.
+    setStatus(tr("Message de la version mis à jour."));
     refresh();
 #else
     setStatus(tr("Versions indisponibles (libgit2 non compilé)"), true);

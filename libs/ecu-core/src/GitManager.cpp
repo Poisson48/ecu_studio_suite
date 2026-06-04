@@ -294,6 +294,114 @@ CommitResult GitManager::commit(const std::string& message) {
     return { std::move(result.value()), message, false };
 }
 
+// ── rewordCommit ───────────────────────────────────────────────────────────────
+// Réécrit le message d'un commit déjà enregistré. Comme git ne permet pas de
+// muter un commit, on recrée la cible avec le nouveau message puis on rejoue
+// (re-parent) tous ses descendants sur la branche courante. Arbres, auteurs et
+// dates sont conservés : seul le hash change, le contenu de rom.bin est intact.
+std::expected<std::string, std::string>
+GitManager::rewordCommit(const std::string& hash, const std::string& newMessage) {
+    if (auto r = openOrNull(); !r) return std::unexpected(r.error());
+    if (!m_repo)                    return std::unexpected("dépôt indisponible");
+
+    git_oid targetOid{};
+    if (git_oid_fromstr(&targetOid, hash.c_str()) != 0)
+        return std::unexpected("hash invalide : " + hash);
+
+    // Branche courante + son tip (HEAD).
+    git_reference* branchRef = nullptr;
+    if (git_repository_head(&branchRef, m_repo) != 0)
+        return std::unexpected(lastGitError());
+    const std::string branchRefName = git_reference_name(branchRef);
+    const git_oid     headOid       = *git_reference_target(branchRef);
+    git_reference_free(branchRef);
+
+    // Chaîne premier-parent de HEAD jusqu'à la cible (incluse), newest→oldest.
+    std::vector<git_oid> chain;
+    bool found = false;
+    for (git_oid cur = headOid;;) {
+        chain.push_back(cur);
+        if (git_oid_equal(&cur, &targetOid)) { found = true; break; }
+        git_commit* c = nullptr;
+        if (git_commit_lookup(&c, m_repo, &cur) != 0) break;
+        if (git_commit_parentcount(c) == 0) { git_commit_free(c); break; }
+        cur = *git_commit_parent_id(c, 0);
+        git_commit_free(c);
+    }
+    if (!found)
+        return std::unexpected("la version sélectionnée n'est pas sur la variante courante");
+
+    std::reverse(chain.begin(), chain.end()); // oldest(cible)→newest(HEAD)
+
+    // Recrée chaque commit ; le 1er garde ses parents d'origine (seul le message
+    // change), les suivants voient leur 1er parent remplacé par le commit réécrit.
+    git_oid newParentOid{};
+    git_oid newTargetOid{};
+    git_oid newHeadOid{};
+    for (std::size_t i = 0; i < chain.size(); ++i) {
+        git_commit* orig = nullptr;
+        if (git_commit_lookup(&orig, m_repo, &chain[i]) != 0)
+            return std::unexpected(lastGitError());
+
+        git_tree* tree = nullptr;
+        if (git_commit_tree(&tree, orig) != 0) {
+            git_commit_free(orig);
+            return std::unexpected(lastGitError());
+        }
+
+        std::vector<git_commit*> parents;
+        const unsigned pc = git_commit_parentcount(orig);
+        if (i == 0) {
+            for (unsigned p = 0; p < pc; ++p) {
+                git_commit* par = nullptr;
+                if (git_commit_parent(&par, orig, p) == 0) parents.push_back(par);
+            }
+        } else {
+            git_commit* newPar = nullptr;
+            if (git_commit_lookup(&newPar, m_repo, &newParentOid) == 0)
+                parents.push_back(newPar);
+            for (unsigned p = 1; p < pc; ++p) {
+                git_commit* par = nullptr;
+                if (git_commit_parent(&par, orig, p) == 0) parents.push_back(par);
+            }
+        }
+
+        std::vector<const git_commit*> cparents(parents.begin(), parents.end());
+        const char* msg = (i == 0) ? newMessage.c_str() : git_commit_message(orig);
+
+        git_oid newOid{};
+        const int rc = git_commit_create(
+            &newOid, m_repo, nullptr,
+            git_commit_author(orig), git_commit_committer(orig),
+            git_commit_message_encoding(orig), msg,
+            tree, cparents.size(),
+            cparents.empty() ? nullptr : cparents.data());
+
+        for (git_commit* p : parents) git_commit_free(p);
+        git_tree_free(tree);
+        git_commit_free(orig);
+
+        if (rc != 0) return std::unexpected(lastGitError());
+
+        if (i == 0) newTargetOid = newOid;
+        newParentOid = newOid;
+        newHeadOid   = newOid;
+    }
+
+    // Pointe la branche courante sur le nouveau tip (force). Les arbres étant
+    // identiques, l'index et le répertoire de travail restent cohérents.
+    git_reference* updated = nullptr;
+    if (git_reference_create(&updated, m_repo, branchRefName.c_str(),
+                             &newHeadOid, /*force=*/1,
+                             "reword: édition du message de version") != 0)
+        return std::unexpected(lastGitError());
+    git_reference_free(updated);
+
+    char buf[GIT_OID_HEXSZ + 1];
+    git_oid_tostr(buf, sizeof buf, &newTargetOid);
+    return std::string(buf);
+}
+
 // ── log ──────────────────────────────────────────────────────────────────────
 
 std::vector<GitCommit> GitManager::log() {
