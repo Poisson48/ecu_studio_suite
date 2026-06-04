@@ -17,6 +17,8 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QDesktopServices>
+#include <QSet>
 
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -149,7 +151,17 @@ void OpenDamosLibraryPanel::buildUi() {
             &OpenDamosLibraryPanel::installSelected);
     toolbar->addWidget(m_installBtn);
 
-    m_refreshBtn = new QPushButton(tr("Rafraîchir"), this);
+    auto* openFolderBtn = new QPushButton(tr("Ouvrir le dossier"), this);
+    openFolderBtn->setToolTip(
+        tr("Ouvre le dossier local des recettes. Déposez-y vos fichiers "
+           "open_damos.json pour rester 100%% local, sans rien télécharger."));
+    connect(openFolderBtn, &QPushButton::clicked, this,
+            &OpenDamosLibraryPanel::openLocalFolder);
+    toolbar->addWidget(openFolderBtn);
+
+    m_refreshBtn = new QPushButton(tr("Importer depuis GitHub"), this);
+    m_refreshBtn->setToolTip(
+        tr("Optionnel : récupère le catalogue de recettes publié en ligne."));
     connect(m_refreshBtn, &QPushButton::clicked, this,
             &OpenDamosLibraryPanel::refresh);
     toolbar->addWidget(m_refreshBtn);
@@ -195,14 +207,51 @@ void OpenDamosLibraryPanel::buildUi() {
     m_statusLabel->setStyleSheet("color:#7c8fa6;");
     root->addWidget(m_statusLabel);
 
-    setStatus(tr("Cliquez sur « Rafraîchir » pour charger la bibliothèque."));
+    setStatus(tr("Dossier local des recettes — déposez-y vos open_damos.json, "
+                 "ou « Importer depuis GitHub »."));
+}
+
+void OpenDamosLibraryPanel::openLocalFolder() {
+    const QString base = ecu::OpenDamos::userRecipeDir();
+    QDir().mkpath(base);
+    QDesktopServices::openUrl(QUrl::fromLocalFile(base));
+}
+
+void OpenDamosLibraryPanel::loadLocal() {
+    // Source par défaut : le DOSSIER LOCAL. Aucun accès réseau.
+    m_recipes.clear();
+    const QString base = ecu::OpenDamos::userRecipeDir();
+    QDir d(base);
+    const QStringList ecus = d.entryList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+    for (const QString& ecu : ecus) {
+        QFile f(d.filePath(ecu + QStringLiteral("/open_damos.json")));
+        if (!f.open(QIODevice::ReadOnly)) continue;
+        const QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
+        if (!doc.isObject()) continue;
+        const QJsonObject o = doc.object();
+        Recipe r;
+        r.ecu       = o.value(QStringLiteral("ecu")).toString(ecu);
+        r.name      = o.value(QStringLiteral("name")).toString(ecu);
+        r.maturity  = o.value(QStringLiteral("maturity")).toString();
+        r.byteOrder = o.value(QStringLiteral("byteOrder")).toString();
+        r.maps      = o.value(QStringLiteral("characteristics")).toArray().size();
+        r.source    = tr("dossier local");
+        r.path.clear();                       // déjà présente sur disque
+        m_recipes.push_back(r);
+    }
+    m_loaded = true;
+    populateTable();
+    applyFilter();
+    setStatus(tr("%1 recette(s) dans le dossier local. "
+                 "« Ouvrir le dossier » pour en déposer · « Importer depuis GitHub » "
+                 "pour le catalogue en ligne.").arg(m_recipes.size()));
 }
 
 void OpenDamosLibraryPanel::showEvent(QShowEvent* e) {
     QWidget::showEvent(e);
-    // Charge automatiquement au premier affichage (paresseux : aucun trafic
-    // réseau tant que l'utilisateur n'ouvre pas l'onglet).
-    if (!m_loaded) refresh();
+    // Local-first : on lit le dossier local (hors-ligne). Aucun trafic réseau
+    // tant que l'utilisateur ne clique pas « Importer depuis GitHub ».
+    if (!m_loaded) loadLocal();
 }
 
 void OpenDamosLibraryPanel::setStatus(const QString& msg, bool error) {
@@ -249,8 +298,11 @@ void OpenDamosLibraryPanel::parseManifest(const QByteArray& body) {
     m_raw = obj.value(QStringLiteral("raw")).toString();
     const QJsonArray arr = obj.value(QStringLiteral("recipes")).toArray();
 
-    m_recipes.clear();
-    m_recipes.reserve(arr.size());
+    // MERGE : on garde les recettes du dossier local et on ajoute celles du
+    // catalogue en ligne qui n'y sont pas encore (téléchargeables).
+    QSet<QString> have;
+    for (const Recipe& r : m_recipes) have.insert(r.ecu);
+    int online = 0;
     for (const QJsonValue& v : arr) {
         if (!v.isObject()) continue;
         const QJsonObject r = v.toObject();
@@ -260,26 +312,29 @@ void OpenDamosLibraryPanel::parseManifest(const QByteArray& body) {
         rec.name      = r.value(QStringLiteral("name")).toString();
         rec.maturity  = r.value(QStringLiteral("maturity")).toString();
         rec.byteOrder = r.value(QStringLiteral("byteOrder")).toString();
-        // `maps` peut être un nombre ou un tableau selon la recette.
         const QJsonValue mapsV = r.value(QStringLiteral("maps"));
         if (mapsV.isDouble())     rec.maps = mapsV.toInt();
         else if (mapsV.isArray()) rec.maps = mapsV.toArray().size();
         rec.comAxis = r.value(QStringLiteral("comAxis")).toBool();
         rec.source  = r.value(QStringLiteral("source")).toString();
         if (rec.ecu.isEmpty() || rec.path.isEmpty()) continue;
+        if (have.contains(rec.ecu)) continue;     // déjà en local
+        have.insert(rec.ecu);
         m_recipes.push_back(rec);
+        ++online;
     }
 
     m_loaded = true;
     populateTable();
+    applyFilter();
 
     const int installed = [this]() {
         int n = 0;
         for (const Recipe& r : m_recipes) if (isInstalled(r.ecu)) ++n;
         return n;
     }();
-    setStatus(tr("%1 recette(s) disponible(s) · %2 installée(s).")
-                  .arg(m_recipes.size()).arg(installed));
+    setStatus(tr("%1 recette(s) au total · %2 en local · %3 téléchargeable(s) depuis GitHub.")
+                  .arg(m_recipes.size()).arg(installed).arg(online));
 }
 
 QWidget* OpenDamosLibraryPanel::makeMaturityPill(const QString& maturity,

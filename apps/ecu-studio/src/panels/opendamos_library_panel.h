@@ -65,6 +65,11 @@ private:
     void buildUi();
     void setStatus(const QString& msg, bool error = false);
 
+    // Scanne le DOSSIER LOCAL des recettes (OpenDamos::userRecipeDir()) — marche
+    // hors-ligne. Source par défaut ; l'import GitHub est optionnel.
+    void loadLocal();
+    void openLocalFolder();
+
     // Parse le corps JSON du manifest dans m_raw / m_recipes, puis peuple la table.
     void parseManifest(const QByteArray& body);
     void populateTable();
