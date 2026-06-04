@@ -40,12 +40,21 @@ jobs:
 
       - name: CMake configure
         run: |
+          # Aligne la version compilée (APP_VERSION) sur le tag git pour les
+          # builds de release. Pour un workflow_dispatch sans tag, GITHUB_REF_NAME
+          # n'est pas une version → on laisse vide et CMake garde la version
+          # déclarée dans CMakeLists.txt.
+          VERSION_OVERRIDE=""
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VERSION_OVERRIDE="-DECU_VERSION_OVERRIDE=${GITHUB_REF_NAME#v}"
+          fi
           cmake -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/usr \
             -DECU_MPPS_SIMULATION=OFF \
             -DECU_BUILD_TESTS=OFF \
             -DECU_BUILD_SOCKETSPY=OFF \
+            ${VERSION_OVERRIDE} \
             -G Ninja
 
       - name: CMake build

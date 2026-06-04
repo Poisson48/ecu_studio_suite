@@ -1,5 +1,17 @@
 cmake_minimum_required(VERSION 3.28)
-project(ecu-studio-suite VERSION 1.3.0 LANGUAGES CXX C)
+project(ecu-studio-suite VERSION 1.4.1 LANGUAGES CXX C)
+
+# ── Version ───────────────────────────────────────────────────────────────────
+# APP_VERSION (compilé dans le binaire via PROJECT_VERSION) DOIT correspondre au
+# tag git de la release. Sinon l'updater propose en boucle une mise à jour déjà
+# installée : le manifeste tire sa version du tag (ex. v1.4.1) alors que le binaire
+# tirait la sienne de la ligne project() ci-dessus — d'où « toujours 1.3.0 après
+# relance ». La CI release passe -DECU_VERSION_OVERRIDE=<tag sans v> pour garder
+# binaire et manifeste alignés ; en local on garde la version déclarée ci-dessus.
+if(ECU_VERSION_OVERRIDE)
+    set(PROJECT_VERSION "${ECU_VERSION_OVERRIDE}")
+    message(STATUS "Version surchargée depuis le tag git : ${PROJECT_VERSION}")
+endif()
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
