@@ -25,6 +25,7 @@ class ComparePanel;
 class GitPanel;
 class A2lPanel;
 class CanPanel;
+class OpenDamosLibraryPanel;
 class HubLauncherPanel;
 class Updater;
 class WelcomeScreen;
@@ -102,6 +103,7 @@ private:
     GitPanel*       m_gitPanel{nullptr};
     A2lPanel*       m_a2lPanel{nullptr};
     CanPanel*       m_canPanel{nullptr};
+    OpenDamosLibraryPanel* m_libraryPanel{nullptr};
     HubLauncherPanel* m_hubPanel{nullptr};
 
     // Barre de statut

@@ -234,10 +234,18 @@ struct RelocResult {
 class OpenDamos {
 public:
     // Load a recipe from ressources/<ecu>/open_damos.json. baseDir overrides
-    // the resource root (default: "ressources"). Returns an error message on
-    // failure (no exceptions are thrown).
+    // the resource root (default: "ressources"). The writable user cache
+    // (userRecipeDir()) is also searched, so recipes installed by the in-app
+    // OpenDAMOS library are picked up without rebuilding. Returns an error
+    // message on failure (no exceptions are thrown).
     static std::expected<DamosRecipe, std::string>
     loadRecipe(const QString& ecu, const QString& baseDir = {});
+
+    // Base directory of the writable user recipe cache:
+    //   <QStandardPaths::AppDataLocation>/opendamos
+    // The OpenDAMOS library panel installs recipes under <dir>/<ecu>/open_damos.json
+    // and loadRecipe() searches there. Shared so panel and loader agree on the path.
+    static QString userRecipeDir();
 
     // Load a recipe directly from a JSON document (string).
     static std::expected<DamosRecipe, std::string>

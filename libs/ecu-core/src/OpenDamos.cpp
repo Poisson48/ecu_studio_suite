@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QCoreApplication>
+#include <QStandardPaths>
 
 #include <nlohmann/json.hpp>
 
@@ -243,16 +244,28 @@ OpenDamos::parseRecipe(const std::string& text) {
 
     return recipe;
 }
+QString OpenDamos::userRecipeDir() {
+    // Dossier inscriptible où la « Bibliothèque » (panneau OpenDAMOS) installe les
+    // recettes téléchargées depuis GitHub. Partagé entre le panneau (écriture) et
+    // loadRecipe() (lecture) pour qu'ils s'accordent sur le même chemin.
+    return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+           + QStringLiteral("/opendamos");
+}
+
 std::expected<DamosRecipe, std::string>
 OpenDamos::loadRecipe(const QString& ecu, const QString& baseDir) {
     const QString rel = ecu + QStringLiteral("/open_damos.json");
 
-    // Construit la liste des emplacements candidats : explicit baseDir, puis CWD,
-    // puis remontées depuis le dossier de l'exécutable. Permet de lancer l'app
-    // depuis build_debug/ sans devoir copier les recettes.
+    // Construit la liste des emplacements candidats : explicit baseDir, puis le
+    // cache utilisateur inscriptible (recettes téléchargées via la Bibliothèque),
+    // puis CWD, puis remontées depuis le dossier de l'exécutable. Permet de lancer
+    // l'app depuis build_debug/ sans devoir copier les recettes, et de récupérer
+    // les 127+ recettes sans recompiler l'application.
     QStringList candidates;
     if (!baseDir.isEmpty())
         candidates << QDir(baseDir).filePath(rel);
+    // Cache utilisateur : <AppDataLocation>/opendamos/<ecu>/open_damos.json
+    candidates << QDir(userRecipeDir()).filePath(rel);
     candidates << QDir(QStringLiteral("ressources")).filePath(rel);
 
     const QString appDir = QCoreApplication::applicationDirPath();

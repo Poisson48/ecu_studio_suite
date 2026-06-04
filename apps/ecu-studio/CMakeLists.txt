@@ -74,6 +74,7 @@ set(ECU_STUDIO_SOURCES
     src/panels/git_panel.cpp
     src/panels/a2l_panel.cpp
     src/panels/can_panel.cpp
+    src/panels/opendamos_library_panel.cpp
 
     # Hub ECU Studio : lanceur de sous-programmes + vérification sur bus
     src/hub/sub_program_registry.cpp
