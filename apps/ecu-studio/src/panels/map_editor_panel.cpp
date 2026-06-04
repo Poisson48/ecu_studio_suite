@@ -165,8 +165,11 @@ void MapEditorPanel::buildUi() {
 
     m_ghostChk = new QCheckBox(tr("Fantôme"), this);
     m_ghostChk->setChecked(false);
-    m_ghostChk->setToolTip(tr("Superpose la valeur de la ROM d'origine sous la "
-                              "valeur courante (en italique) + triangle de delta."));
+    m_ghostChk->setToolTip(tr("Superpose la valeur de la baseline sous la valeur "
+                              "courante (en italique) + triangle de delta. "
+                              "Choisis la baseline via « Baseline… » : un commit git "
+                              "donne un fantôme entre la ROM modifiée courante et ce "
+                              "commit."));
     opRow->addWidget(m_ghostChk);
     m_baselineBtn = new QPushButton(tr("Baseline…"), this);
     m_baselineBtn->setToolTip(tr("Choisir la ROM de référence du mode fantôme : "

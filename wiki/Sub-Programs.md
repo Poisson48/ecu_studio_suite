@@ -12,7 +12,7 @@ The suite is a **hub** that launches two sub-programs that share one Qt6 dark th
 
 ### ECU Studio — the ECU reprogramming app
 
-> Repo: https://github.com/Poisson48/ecu_studio_suite · current release **v1.4.1** · status legend below.
+> Repo: https://github.com/Poisson48/ecu_studio_suite · current release **v1.4.2** · status legend below.
 > **Proven** = stable · **Beta** = new / works-but-unproven · **Incoming** = roadmap.
 
 | Feature | Status | What it does |
@@ -92,7 +92,7 @@ La suite est un **hub** qui lance deux sous-programmes partageant un thème somb
 
 ### ECU Studio — l'app de reprogrammation ECU
 
-> Dépôt : https://github.com/Poisson48/ecu_studio_suite · version actuelle **v1.4.1** · légende ci-dessous.
+> Dépôt : https://github.com/Poisson48/ecu_studio_suite · version actuelle **v1.4.2** · légende ci-dessous.
 > **Proven** (éprouvé) = stable · **Beta** = neuf / fonctionne mais non éprouvé · **Incoming** (à venir) = feuille de route.
 
 | Fonctionnalité | Statut | Ce que ça fait |
