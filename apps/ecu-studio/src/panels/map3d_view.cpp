@@ -7,6 +7,7 @@
 #include <QPointF>
 #include <QColor>
 #include <QFont>
+#include <QtMath>   // garantit M_PI (non défini par MSVC sans _USE_MATH_DEFINES)
 
 #include <algorithm>
 #include <cmath>

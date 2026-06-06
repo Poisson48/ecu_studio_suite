@@ -39,7 +39,11 @@ std::string formatTime(const git_time& t) {
 
     std::time_t epoch = static_cast<std::time_t>(t.time) + off * 60;
     std::tm     tm{};
+#ifdef _WIN32
+    gmtime_s(&tm, &epoch);   // MSVC : arguments inversés vs POSIX
+#else
     gmtime_r(&epoch, &tm);
+#endif
 
     return std::format("{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}{}{:02d}:{:02d}",
         tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
