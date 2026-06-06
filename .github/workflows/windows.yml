@@ -1,0 +1,83 @@
+name: Windows
+
+# Build natif Windows d'ECU Studio (.exe MSVC x64).
+#
+# Stratégie de dépendances :
+#   - Qt6 via aqtinstall (binaires précompilés) — bien plus rapide que de laisser
+#     vcpkg recompiler Qt depuis les sources (plusieurs heures).
+#   - Les petites libs C (libgit2, zlib, openssl, nlohmann-json) via vcpkg en mode
+#     « classic » ; on passe leur arbre installé à CMAKE_PREFIX_PATH (pas de mode
+#     manifest, pour éviter que vcpkg ne tente de reconstruire qt6 listé dans
+#     vcpkg.json).
+#   - MPPS en simulation (pas de libusb requis) tant que le hardware n'est pas
+#     finalisé ; moniteur CAN SocketCAN désactivé (Linux-only) ; SocketSpy off.
+
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Install Qt 6 (aqtinstall)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.7.*"
+          host: windows
+          target: desktop
+          arch: win64_msvc2019_64
+          modules: qtcharts qtserialbus qtserialport
+          cache: true
+
+      - name: Install C deps via vcpkg (classic mode)
+        shell: pwsh
+        run: |
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install `
+            nlohmann-json libgit2 zlib openssl `
+            --triplet x64-windows
+
+      - name: CMake configure
+        shell: pwsh
+        run: |
+          cmake -B build -G "Visual Studio 17 2022" -A x64 `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR;$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows" `
+            -DECU_MPPS_SIMULATION=ON `
+            -DECU_BUILD_TESTS=OFF `
+            -DECU_BUILD_SOCKETSPY=OFF
+
+      - name: CMake build
+        shell: pwsh
+        run: cmake --build build --config Release --parallel
+
+      - name: Package (windeployqt + DLLs vcpkg)
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Recurse -Filter ecu_studio.exe build |
+                 Where-Object { $_.FullName -like "*Release*" } |
+                 Select-Object -First 1
+          if (-not $exe) { throw "ecu_studio.exe introuvable" }
+          $dist = "dist/ecu-studio-windows"
+          New-Item -ItemType Directory -Force -Path $dist | Out-Null
+          Copy-Item $exe.FullName $dist
+          # Dépendances Qt
+          & "$env:QT_ROOT_DIR\bin\windeployqt.exe" --release --no-translations "$dist\ecu_studio.exe"
+          # DLLs vcpkg (libgit2, openssl, zlib…)
+          Copy-Item "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin\*.dll" $dist -ErrorAction SilentlyContinue
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecu-studio-windows-x64
+          path: dist/ecu-studio-windows
+          if-no-files-found: error

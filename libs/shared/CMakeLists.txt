@@ -13,4 +13,5 @@ target_link_libraries(ecu_shared
     PUBLIC Qt6::Core Qt6::Widgets
 )
 
-target_compile_options(ecu_shared PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(ecu_shared PRIVATE
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra;-Wpedantic>)

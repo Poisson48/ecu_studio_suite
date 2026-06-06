@@ -1,7 +1,7 @@
 find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(PkgConfig REQUIRED)
 
 if(NOT ECU_MPPS_SIMULATION)
+    find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
     set(MPPS_LIBUSB_SRC src/MppsDevice_libusb.cpp)
 else()
@@ -27,4 +27,5 @@ target_link_libraries(mppslib
     PRIVATE ${LIBUSB_LIBRARIES}
 )
 
-target_compile_options(mppslib PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(mppslib PRIVATE
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra;-Wpedantic>)

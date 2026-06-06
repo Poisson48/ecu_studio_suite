@@ -5,6 +5,8 @@
     "nlohmann-json",
     "libusb",
     "libgit2",
+    "zlib",
+    "openssl",
     "gtest",
     "lua",
     {

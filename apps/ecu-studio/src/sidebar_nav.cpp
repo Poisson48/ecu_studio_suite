@@ -1,8 +1,10 @@
 #include "sidebar_nav.h"
+#include "nav_icons.h"
 
 #include <QCloseEvent>
 #include <QContextMenuEvent>
 #include <QFont>
+#include <QIcon>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -89,10 +91,22 @@ public:
         setCheckable(true);
         setToolTip(label);
         setFixedWidth(64);
-        setMinimumHeight(52);
+        setMinimumHeight(54);
 
-        setText(icon + "\n" + label);
-        setToolButtonStyle(Qt::ToolButtonTextOnly);
+        // `icon` peut être un id d'icône vectorielle (ex. "hex", "maps") rendu
+        // par navIcon(), ou — pour compatibilité — un caractère emoji affiché en
+        // texte. On préfère l'icône dessinée : pas de carré « tofu » sans police
+        // emoji, et un rendu identique Linux/Windows.
+        QIcon drawn = ecu_studio::navIcon(icon);
+        if (!drawn.isNull()) {
+            setIcon(drawn);
+            setIconSize(QSize(24, 24));
+            setText(label);
+            setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+        } else {
+            setText(icon + "\n" + label);
+            setToolButtonStyle(Qt::ToolButtonTextOnly);
+        }
 
         QFont f = font();
         f.setPointSize(8);

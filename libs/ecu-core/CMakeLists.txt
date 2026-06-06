@@ -1,7 +1,30 @@
 find_package(Qt6 REQUIRED COMPONENTS Core Sql)
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LIBGIT2 libgit2)  # optionnel
 find_package(nlohmann_json QUIET)   # optionnel
+
+# libgit2 (optionnel) — active GitManager (historique/undo-redo des ROMs).
+# Sous Linux on passe par pkg-config ; sous Windows (vcpkg) il n'y a pas de
+# pkg-config fiable, on retombe alors sur le package CMake config de vcpkg.
+find_package(PkgConfig QUIET)
+if(PkgConfig_FOUND)
+    pkg_check_modules(LIBGIT2 libgit2)
+endif()
+if(NOT LIBGIT2_FOUND)
+    # vcpkg expose libgit2 sous différents noms de package/cible selon les
+    # versions : on tente les variantes connues et on garde la première qui sort
+    # une cible importable.
+    find_package(libgit2 CONFIG QUIET)
+    if(NOT TARGET libgit2::libgit2)
+        find_package(unofficial-libgit2 CONFIG QUIET)
+    endif()
+    foreach(_git2_target libgit2::libgit2 unofficial::libgit2 libgit2package libgit2)
+        if(TARGET ${_git2_target})
+            set(LIBGIT2_FOUND TRUE)
+            set(LIBGIT2_INCLUDE_DIRS "")
+            set(LIBGIT2_LIBRARIES ${_git2_target})
+            break()
+        endif()
+    endforeach()
+endif()
 
 set(ECU_CORE_SOURCES
     src/EcuCatalog.cpp
@@ -52,4 +75,5 @@ if(LIBGIT2_FOUND)
     target_compile_definitions(ecu_core PUBLIC ECU_GIT_AVAILABLE)
 endif()
 
-target_compile_options(ecu_core PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(ecu_core PRIVATE
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra;-Wpedantic>)

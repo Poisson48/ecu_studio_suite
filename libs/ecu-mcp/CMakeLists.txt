@@ -24,4 +24,10 @@ target_link_libraries(ecu_mcp
     PRIVATE ecu_core
 )
 
-target_compile_options(ecu_mcp PRIVATE -Wall -Wextra -Wpedantic)
+# Transport TCP (boucle locale) : Winsock sous Windows.
+if(WIN32)
+    target_link_libraries(ecu_mcp PRIVATE ws2_32)
+endif()
+
+target_compile_options(ecu_mcp PRIVATE
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra;-Wpedantic>)

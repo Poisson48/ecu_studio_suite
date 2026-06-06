@@ -90,6 +90,8 @@ set(ECU_STUDIO_SOURCES
 
     # SidebarNav de SocketSpy — copié pour que AUTOMOC le traite correctement
     src/sidebar_nav.cpp
+    # Icônes de navigation dessinées en QPainter (remplacent les emojis-texte)
+    src/nav_icons.cpp
 )
 
 add_executable(ecu_studio ${ECU_STUDIO_SOURCES})

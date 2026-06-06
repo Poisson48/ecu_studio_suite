@@ -41,9 +41,18 @@ public:
 
 protected:
     void closeEvent(QCloseEvent* e) override;
+    // Glisser-déposer d'un fichier ROM sur la fenêtre → ouverture directe.
+    void dragEnterEvent(QDragEnterEvent* e) override;
+    void dropEvent(QDropEvent* e) override;
 
 private:
     void setupUi();
+    // Construit un panneau « Bientôt disponible » (utilisé pour MPPS).
+    QWidget* makeComingSoonPanel(const QString& title, const QString& subtitle);
+    // Charge une ROM depuis un chemin (route .ols/.zip/.hex via WinolsParser,
+    // sinon ouverture binaire directe). Utilisé par le drag-drop.
+    void loadRomPath(const QString& path);
+    void importWinolsFile(const QString& path);
     void setupMenuBar();
     void setupToolBar();   // flèches annuler/rétablir (Ctrl+Z / Ctrl+Y, via git)
     void setupStatusBar();
@@ -93,6 +102,7 @@ private:
 
     // Panels ECU Studio
     MppsPanel*      m_mppsPanel{nullptr};
+    QWidget*        m_mppsComingSoon{nullptr};  // placeholder « bientôt » (sidebar)
     HexViewPanel*   m_hexPanel{nullptr};
     MapEditorPanel*   m_mapEditor{nullptr};
     DamosEditorPanel* m_damosEditor{nullptr};

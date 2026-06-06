@@ -17,6 +17,7 @@
 #include "update_dialog.h"
 #include "rom_document.h"
 #include "welcome_screen.h"
+#include "nav_icons.h"
 #include "byte_span.h"
 #include "ecu/WinolsParser.hpp"
 #include "ecu/ReportGenerator.hpp"
@@ -31,6 +32,7 @@
 #include <QActionGroup>
 #include <QStatusBar>
 #include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
@@ -39,6 +41,10 @@
 #include <QTimer>
 #include <QFileInfo>
 #include <QCloseEvent>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QMimeData>
+#include <QPixmap>
 #include <QDesktopServices>
 #include <QUrl>
 
@@ -105,6 +111,7 @@ void MainWindow::setupUi() {
     setWindowTitle(QString("ECU Studio v%1").arg(APP_VERSION));
     resize(1280, 760);
     setMinimumSize(900, 560);
+    setAcceptDrops(true);   // glisser-déposer d'une ROM → ouverture directe
 
     // Panels — tous reliés au document ROM partagé (sauf MPPS qui le remplit).
     m_projectPanel  = new ProjectPanel(m_doc, this);
@@ -124,29 +131,31 @@ void MainWindow::setupUi() {
 
     wirePanels();
 
-    // Sidebar — réutilise SidebarNav de SocketSpy verbatim
+    // MPPS (programmation matérielle) : encore très instable — affiché en
+    // « Bientôt disponible » dans la sidebar. Le panneau réel (m_mppsPanel) reste
+    // instancié et câblé (barre de statut), mais n'est pas exposé pour l'instant.
+    m_mppsComingSoon = makeComingSoonPanel(
+        tr("MPPS — Programmation matérielle"),
+        tr("La lecture/écriture ROM par dongle MPPS est en cours de finalisation "
+           "et n'est pas encore fiable. Cette fonctionnalité arrive bientôt."));
+
+    // Sidebar — réutilise SidebarNav de SocketSpy ; les icônes sont des ids
+    // vectoriels rendus par navIcon() (plus d'emojis-texte « carrés »).
     m_sidebar = new socketspy::gui::SidebarNav(this);
-    // 🚀 (U+1F680, rocket) — ECU Suite HUB : vue d'accueil, lance les sous-programmes
-    // spécialisés. Posée en premier pour servir de vue d'atterrissage par défaut.
-    m_sidebar->addPanel("\xf0\x9f\x9a\x80",  tr("HUB"),       m_hubPanel);
-    m_sidebar->addPanel("\xf0\x9f\x93\x81",  tr("Projet"),    m_projectPanel);
-    m_sidebar->addPanel("\xf0\x9f\x94\x8c",  tr("MPPS"),      m_mppsPanel);
-    m_sidebar->addPanel("\xf0\x9f\x97\x83",  tr("Hex"),       m_hexPanel);
-    m_sidebar->addPanel("\xf0\x9f\x93\x8a",  tr("Maps"),      m_mapEditor);
-    // 📝 (U+1F4DD, memo) — éditeur de recipe open_damos (modifier ou créer)
-    m_sidebar->addPanel("\xf0\x9f\x93\x9d",  tr("DAMOS"),     m_damosEditor);
-    // 🧊 (U+1F9CA, cube) — visualisation 3D de la map sélectionnée (à la WinOLS)
-    m_sidebar->addPanel("\xf0\x9f\xa7\x8a",  tr("3D"),        m_map3dPanel);
-    m_sidebar->addPanel("\xe2\x9a\x99",      tr("AutoMods"),  m_autoMods);
-    m_sidebar->addPanel("\xe2\x9c\x85",      tr("Checksum"),  m_checksumPanel);
-    m_sidebar->addPanel("\xe2\x89\xa0",      tr("Compare"),   m_comparePanel);
-    m_sidebar->addPanel("\xe2\x93\x96",      tr("Versions"),  m_gitPanel);
-    m_sidebar->addPanel("A2L",               tr("A2L"),       m_a2lPanel);
-    // 🚌 (U+1F68C, bus) — moniteur CAN intégré (cancore de SocketSpy)
-    m_sidebar->addPanel("\xf0\x9f\x9a\x8c",  tr("CAN"),        m_canPanel);
-    // 📚 (U+1F4DA, books) — Bibliothèque OpenDAMOS : récupère les 127+ recettes
-    // ECU publiées sur GitHub (sans recompiler l'app).
-    m_sidebar->addPanel("\xf0\x9f\x93\x9a",  tr("Bibliothèque"), m_libraryPanel);
+    m_sidebar->addPanel("hub",       tr("HUB"),          m_hubPanel);
+    m_sidebar->addPanel("project",   tr("Projet"),       m_projectPanel);
+    m_sidebar->addPanel("mpps",      tr("MPPS"),         m_mppsComingSoon);
+    m_sidebar->addPanel("hex",       tr("Hex"),          m_hexPanel);
+    m_sidebar->addPanel("maps",      tr("Maps"),         m_mapEditor);
+    m_sidebar->addPanel("damos",     tr("DAMOS"),        m_damosEditor);
+    m_sidebar->addPanel("3d",        tr("3D"),           m_map3dPanel);
+    m_sidebar->addPanel("automods",  tr("AutoMods"),     m_autoMods);
+    m_sidebar->addPanel("checksum",  tr("Checksum"),     m_checksumPanel);
+    m_sidebar->addPanel("compare",   tr("Compare"),      m_comparePanel);
+    m_sidebar->addPanel("versions",  tr("Versions"),     m_gitPanel);
+    m_sidebar->addPanel("a2l",       tr("A2L"),          m_a2lPanel);
+    m_sidebar->addPanel("can",       tr("CAN"),          m_canPanel);
+    m_sidebar->addPanel("library",   tr("Bibliothèque"), m_libraryPanel);
 
     auto* central = new QWidget(this);
     auto* hbox    = new QHBoxLayout(central);
@@ -162,6 +171,46 @@ void MainWindow::setupUi() {
                 QSettings s;
                 s.setValue("window/panelIndex", m_sidebar->stack()->currentIndex());
             });
+}
+
+QWidget* MainWindow::makeComingSoonPanel(const QString& title, const QString& subtitle) {
+    auto* page  = new QWidget(this);
+    auto* outer = new QVBoxLayout(page);
+    outer->addStretch();
+
+    auto* iconLabel = new QLabel(page);
+    iconLabel->setPixmap(navIcon("mpps").pixmap(72, 72));
+    iconLabel->setAlignment(Qt::AlignCenter);
+    outer->addWidget(iconLabel);
+
+    auto* badge = new QLabel(tr("BIENTÔT DISPONIBLE"), page);
+    badge->setStyleSheet(
+        "color:#a5b4fc; background:rgba(99,102,241,0.18);"
+        "border:1px solid rgba(99,102,241,0.40); border-radius:11px;"
+        "padding:4px 14px; font-weight:700; font-size:11px;");
+    auto* badgeRow = new QHBoxLayout;
+    badgeRow->addStretch(); badgeRow->addWidget(badge); badgeRow->addStretch();
+    outer->addSpacing(16);
+    outer->addLayout(badgeRow);
+
+    auto* titleLabel = new QLabel(title, page);
+    titleLabel->setAlignment(Qt::AlignCenter);
+    titleLabel->setStyleSheet("color:#e5e7eb; font-size:18px; font-weight:700;");
+    outer->addSpacing(14);
+    outer->addWidget(titleLabel);
+
+    auto* sub = new QLabel(subtitle, page);
+    sub->setWordWrap(true);
+    sub->setAlignment(Qt::AlignCenter);
+    sub->setMaximumWidth(460);
+    sub->setStyleSheet("color:#9ca3af; font-size:13px;");
+    auto* subRow = new QHBoxLayout;
+    subRow->addStretch(); subRow->addWidget(sub); subRow->addStretch();
+    outer->addSpacing(8);
+    outer->addLayout(subRow);
+
+    outer->addStretch();
+    return page;
 }
 
 void MainWindow::wirePanels() {
@@ -234,7 +283,10 @@ void MainWindow::importWinols() {
     const QString f = pickRomFile(this, tr("Importer un export WinOLS"),
                                   tr("Exports WinOLS (*.zip *.ols *.hex *.bin);;Tous (*.*)"));
     if (f.isEmpty()) return;
+    importWinolsFile(f);
+}
 
+void MainWindow::importWinolsFile(const QString& f) {
     QFile file(f);
     if (!file.open(QIODevice::ReadOnly)) {
         QMessageBox::warning(this, tr("Import WinOLS"),
@@ -260,6 +312,39 @@ void MainWindow::importWinols() {
             .arg(result->rom.size() / 1024)
             .arg(result->maps.size()),
         5000);
+}
+
+// Ouverture express d'une ROM par chemin (glisser-déposer). Les conteneurs
+// WinOLS / Intel HEX passent par le parser dédié ; les .bin/.ori/.mod sont
+// chargés directement dans l'éditeur hex.
+void MainWindow::loadRomPath(const QString& path) {
+    const QString suffix = QFileInfo(path).suffix().toLower();
+    if (suffix == "zip" || suffix == "ols" || suffix == "hex") {
+        importWinolsFile(path);
+    } else {
+        m_hexPanel->loadRom(path);
+        m_sidebar->showPanel(m_hexPanel);
+    }
+}
+
+void MainWindow::dragEnterEvent(QDragEnterEvent* e) {
+    const QMimeData* mime = e->mimeData();
+    if (mime && mime->hasUrls()) {
+        for (const QUrl& url : mime->urls()) {
+            if (url.isLocalFile()) { e->acceptProposedAction(); return; }
+        }
+    }
+}
+
+void MainWindow::dropEvent(QDropEvent* e) {
+    const QMimeData* mime = e->mimeData();
+    if (!mime || !mime->hasUrls()) return;
+    for (const QUrl& url : mime->urls()) {
+        if (!url.isLocalFile()) continue;
+        loadRomPath(url.toLocalFile());
+        e->acceptProposedAction();
+        return;   // on ne charge que le premier fichier déposé
+    }
 }
 
 void MainWindow::generateReport() {
@@ -343,10 +428,9 @@ void MainWindow::setupMenuBar() {
     fileMenu->addSeparator();
     fileMenu->addAction(tr("Quitter"), QKeySequence::Quit, this, &QWidget::close);
 
-    auto* mppsMenu = menuBar()->addMenu(tr("MPPS"));
-    mppsMenu->addAction(tr("Scanner les périphériques"),  m_mppsPanel, &MppsPanel::scanDevices);
-    mppsMenu->addAction(tr("Lire ROM"),                   m_mppsPanel, &MppsPanel::readRom);
-    mppsMenu->addAction(tr("Écrire ROM"), this, [this]() { m_mppsPanel->writeRom(); });
+    // Menu MPPS retiré : la programmation matérielle est mise de côté
+    // (« bientôt disponible ») tant qu'elle n'est pas fiabilisée. Le panneau
+    // reste accessible en placeholder dans la sidebar.
 
     auto* toolsMenu = menuBar()->addMenu(tr("Outils"));
     toolsMenu->addAction(tr("Corriger checksums"),  m_checksumPanel, &ChecksumPanel::runCorrection);
@@ -577,8 +661,9 @@ void MainWindow::connectWelcomeSignals() {
     connect(m_welcomeScreen, &WelcomeScreen::openRecentProjectRequested, this,
             &MainWindow::openProjectById);
     connect(m_welcomeScreen, &WelcomeScreen::scanMppsRequested, this, [this]() {
-        m_sidebar->showPanel(m_mppsPanel);
-        m_mppsPanel->scanDevices();
+        // MPPS mis de côté : on montre le placeholder « bientôt » au lieu de
+        // lancer un scan matériel non fiabilisé.
+        m_sidebar->showPanel(m_mppsComingSoon);
     });
     connect(m_welcomeScreen, &WelcomeScreen::languageChanged, this,
             [this](const QString& code) {

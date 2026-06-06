@@ -38,11 +38,20 @@ find_package(Qt6 REQUIRED COMPONENTS
 qt_standard_project_setup()
 
 # ── Autres dépendances ───────────────────────────────────────────────────────
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LUA     REQUIRED lua5.4)
-pkg_check_modules(LIBGIT2 libgit2)  # optionnel — requis uniquement si GitManager est compilé
+# Lua n'est utilisé QUE par le moteur de script de SocketSpy
+# (apps/socketspy/scripting). On ne le cherche donc que si on build SocketSpy —
+# sinon pkg-config/lua5.4 (paquet Debian) n'a pas à être présent, ce qui rend le
+# build portable sous Windows (vcpkg) où ce module pkg-config n'existe pas.
+if(ECU_BUILD_SOCKETSPY)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LUA REQUIRED lua5.4)
+endif()
 
+# libusb : requis uniquement pour le vrai accès USB (MPPS). En simulation — le cas
+# par défaut sous Windows tant que le hardware MPPS n'est pas finalisé — on s'en
+# passe (chaque sous-lib gère son propre fallback).
 if(NOT ECU_MPPS_SIMULATION)
+    find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
 else()
     # Mode simulation : pas besoin de libusb
@@ -70,7 +79,11 @@ if(ECU_MPPS_SIMULATION)
 endif()
 
 # ── Compile flags ────────────────────────────────────────────────────────────
-add_compile_options(-Wall -Wextra -Wpedantic)
+# Flags GCC/Clang uniquement : MSVC ne les comprend pas (-Wpedantic ferait un mur
+# d'avertissements D9002). Sous MSVC on reste sur les warnings par défaut.
+if(NOT MSVC)
+    add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
 # ── Sous-répertoires ─────────────────────────────────────────────────────────
 add_subdirectory(libs/shared)
