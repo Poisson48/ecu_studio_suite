@@ -17,9 +17,14 @@
 
 #include <QTextStream>
 
+#include <QInputDialog>
+#include <QDir>
+#include <QByteArrayView>
+
 #include "ecu/EcuCatalog.hpp"
 #include "ecu/OpenDamos.hpp"
 #include "ecu/OpenDamosA2lExport.hpp"
+#include "ecu/DamosImport.hpp"
 
 namespace ecu_studio {
 
@@ -60,6 +65,12 @@ void A2lPanel::buildUi() {
         tr("Génère un A2L décrivant les maps open_damos relocalisées pour la ROM courante"));
     toolRow->addWidget(m_exportBtn);
 
+    m_convertBtn = new QPushButton(tr("Convertir en OpenDAMOS"), this);
+    m_convertBtn->setToolTip(
+        tr("Convertit le DAMOS chargé (A2L) + la ROM courante en une recette\n"
+           "OpenDAMOS (empreintes d'axes lues dans la ROM), indépendante du firmware."));
+    toolRow->addWidget(m_convertBtn);
+
     m_filterEdit = new QLineEdit(this);
     m_filterEdit->setPlaceholderText(tr("Filtrer (nom, type, unité, adresse)..."));
     m_filterEdit->setClearButtonEnabled(true);
@@ -99,6 +110,7 @@ void A2lPanel::buildUi() {
 
     connect(m_loadBtn,    &QPushButton::clicked,   this, &A2lPanel::loadA2l);
     connect(m_exportBtn,  &QPushButton::clicked,   this, &A2lPanel::exportA2l);
+    connect(m_convertBtn, &QPushButton::clicked,   this, &A2lPanel::convertToOpenDamos);
     connect(m_filterEdit, &QLineEdit::textChanged, this, &A2lPanel::applyFilter);
     connect(m_table,      &QTableWidget::cellDoubleClicked,
             this, &A2lPanel::onCellDoubleClicked);
@@ -200,6 +212,65 @@ void A2lPanel::exportA2l() {
     QMessageBox::information(this, tr("Exporter A2L"),
         tr("A2L exporté avec succès : %n caractéristique(s).\n%1",
            nullptr, n).arg(path));
+}
+
+void A2lPanel::convertToOpenDamos() {
+    if (!m_loaded) {
+        QMessageBox::information(this, tr("Convertir DAMOS"),
+            tr("Chargez d'abord un fichier DAMOS (A2L)."));
+        return;
+    }
+    if (!m_doc || !m_doc->isLoaded()) {
+        QMessageBox::information(this, tr("Convertir DAMOS"),
+            tr("Chargez la ROM correspondante avant de convertir : les empreintes\n"
+               "d'axes (qui rendent la recette indépendante du firmware) sont lues\n"
+               "directement dans la ROM."));
+        return;
+    }
+
+    // L'ECU sert de dossier de destination (<ecu>/open_damos.json) et d'id de recette.
+    QString ecuId = m_doc->ecuId();
+    if (ecuId.isEmpty()) {
+        bool ok = false;
+        ecuId = QInputDialog::getText(this, tr("Identifiant ECU"),
+            tr("Identifiant ECU pour la recette OpenDAMOS (ex. edc16c34) :"),
+            QLineEdit::Normal, {}, &ok).trimmed();
+        if (!ok || ecuId.isEmpty()) return;
+    }
+
+    ecu::DamosImportStats st;
+    const QByteArray& rom = m_doc->rom();
+    ecu::DamosRecipe recipe = ecu::damosToOpenDamos(
+        m_parser.characteristics(),
+        QByteArrayView(rom.constData(), rom.size()), ecuId, &st);
+
+    if (recipe.characteristics.empty()) {
+        QMessageBox::warning(this, tr("Convertir DAMOS"),
+            tr("Aucune caractéristique convertie (%1 ignorée(s)).\n\n"
+               "Cause la plus probable : la ROM chargée ne correspond pas à ce DAMOS "
+               "(adresses hors de l'image). Chargez la ROM d'origine du DAMOS.")
+                .arg(st.skipped));
+        return;
+    }
+
+    const QString dir = ecu::OpenDamos::userRecipeDir() + "/" + ecuId;
+    QDir().mkpath(dir);
+    const QString out = dir + "/open_damos.json";
+    auto saved = ecu::OpenDamos::saveRecipe(recipe, out);
+    if (!saved) {
+        QMessageBox::warning(this, tr("Convertir DAMOS"),
+            tr("Échec de l'enregistrement : %1")
+                .arg(QString::fromStdString(saved.error())));
+        return;
+    }
+
+    QMessageBox::information(this, tr("Convertir DAMOS → OpenDAMOS"),
+        tr("Recette OpenDAMOS générée pour « %1 » :\n"
+           "  \342\200\242 %2 caractéristique(s) convertie(s)\n"
+           "  \342\200\242 %3 ignorée(s)\n\n"
+           "Enregistrée dans :\n%4\n\n"
+           "Elle est désormais disponible dans l'app (AutoMods, Maps, éditeur DAMOS).")
+            .arg(ecuId).arg(st.converted).arg(st.skipped).arg(out));
 }
 
 void A2lPanel::populateTable() {

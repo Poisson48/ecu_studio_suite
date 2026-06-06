@@ -1,6 +1,7 @@
 #include "ecu/A2lParser.hpp"
 #include <QFile>
 #include <QHash>
+#include <QStringConverter>
 #include <optional>
 #include <cmath>
 
@@ -87,7 +88,31 @@ private:
         // Read a generous chunk of lines.
         QByteArray chunk = m_file.read(1 << 16); // 64 KiB
         if (chunk.isEmpty()) return !m_buf.isEmpty();
-        m_buf += QString::fromUtf8(chunk);
+
+        // DAMOS++ (SunOS) exports interleave NUL bytes — supprime-les.
+        if (chunk.contains('\0')) {
+            QByteArray clean;
+            clean.reserve(chunk.size());
+            for (char c : chunk)
+                if (c != '\0') clean.append(c);
+            chunk = std::move(clean);
+        }
+
+        // Décodage robuste et SÛR AUX FRONTIÈRES de chunk : on sniffe l'encodage
+        // une fois (UTF-8 si valide, sinon Latin-1 — fréquent pour les DAMOS
+        // Bosch, et jamais en échec car mono-octet), puis on garde un décodeur
+        // PERSISTANT. L'ancien `QString::fromUtf8(chunk)` par chunk corrompait
+        // une séquence multi-octets coupée à chaque frontière de 64 Kio et
+        // cassait tout fichier Latin-1.
+        if (!m_decInit) {
+            QStringDecoder probe(QStringConverter::Utf8);
+            (void)probe.decode(chunk);
+            m_dec = probe.hasError()
+                        ? QStringDecoder(QStringConverter::Latin1)
+                        : QStringDecoder(QStringConverter::Utf8);
+            m_decInit = true;
+        }
+        m_buf += m_dec.decode(chunk);
         return true;
     }
 
@@ -189,9 +214,11 @@ private:
         return Token{Tok::I, w};
     }
 
-    QFile&  m_file;
-    QString m_buf;
-    int     m_pos = 0;
+    QFile&         m_file;
+    QString        m_buf;
+    int            m_pos = 0;
+    QStringDecoder m_dec;             // décodeur persistant (UTF-8 ou Latin-1)
+    bool           m_decInit = false; // encodage sniffé au 1er chunk
 };
 
 // ---------------------------------------------------------------------------

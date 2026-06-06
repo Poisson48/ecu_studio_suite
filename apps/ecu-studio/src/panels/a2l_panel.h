@@ -28,6 +28,7 @@ public slots:
     void loadA2l();                       // ouvre un dialogue de fichier
     bool loadA2lFile(const QString& path);// charge un chemin précis
     void exportA2l();                     // exporte un A2L depuis le recipe open_damos
+    void convertToOpenDamos();            // DAMOS (A2L chargé) + ROM → recette OpenDAMOS
 
 signals:
     // Émis sur double-clic d'une ligne : le main_window positionne l'éditeur
@@ -51,6 +52,7 @@ private:
 
     QPushButton*   m_loadBtn{nullptr};
     QPushButton*   m_exportBtn{nullptr};
+    QPushButton*   m_convertBtn{nullptr};
     QLineEdit*     m_filterEdit{nullptr};
     QTableWidget*  m_table{nullptr};
     QLabel*        m_countLabel{nullptr};

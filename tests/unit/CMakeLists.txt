@@ -25,6 +25,7 @@ ecu_core_test(test_ecu_catalog)
 ecu_core_test(test_vehicle_templates)
 ecu_core_test(test_winols_parser)
 ecu_core_test(test_checksum_engine)
+ecu_core_test(test_damos_import)
 
 # ── ecu-mcp : serveur MCP JSON-RPC 2.0 ────────────────────────────────────────
 # ecu_mcp expose son include PUBLIC et tire nlohmann_json/ecu_core transitivement.
