@@ -41,8 +41,11 @@ jobs:
 
       - name: Install C deps via vcpkg (classic mode)
         shell: pwsh
+        # --classic : ignore le vcpkg.json du repo (qui listerait qt6 → des heures
+        # de compilation). On installe seulement les petites libs C dans l'arbre
+        # classic de vcpkg ($VCPKG_INSTALLATION_ROOT\installed\x64-windows).
         run: |
-          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install `
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install --classic `
             nlohmann-json libgit2 zlib openssl `
             --triplet x64-windows
 
