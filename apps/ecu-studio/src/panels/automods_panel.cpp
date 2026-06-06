@@ -380,6 +380,27 @@ void AutoModsPanel::applySelection() {
             QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes)
         return;
 
+    // IMMO OFF : opération à haut risque (peut rendre l'ECU non démarrable et a des
+    // implications légales/de propriété). On exige une confirmation renforcée et
+    // explicite, distincte de la confirmation générique ci-dessus.
+    bool immo = false;
+    for (const QString& n : names)
+        if (n.contains(QStringLiteral("immo"), Qt::CaseInsensitive)) { immo = true; break; }
+    if (immo &&
+        QMessageBox::warning(
+            this, tr("IMMO OFF — opération à haut risque"),
+            tr("Une modification IMMO OFF (désactivation de l'antidémarrage) a été "
+               "sélectionnée.\n\n"
+               "\342\200\242 À n'utiliser que sur un véhicule/ECU dont vous êtes "
+               "propriétaire ou pour lequel vous êtes explicitement autorisé "
+               "(swap moteur, remplacement d'ECU, banc d'essai).\n"
+               "\342\200\242 Peut rendre l'ECU NON DÉMARRABLE si la définition ne "
+               "correspond pas exactement à ce firmware.\n"
+               "\342\200\242 Sauvegardez la ROM d'origine avant d'appliquer.\n\n"
+               "Confirmer l'application IMMO OFF ?"),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes)
+        return;
+
     bool anyChange = false;
     for (const auto& e : entries) {
         bool changed = false;
