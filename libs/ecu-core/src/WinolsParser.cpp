@@ -227,6 +227,7 @@ WinolsParser::parse(const QByteArray& data, const QString& filename) const
         WinolsParseResult res;
         res.rom      = std::move(*romRes);
         res.filename = outName;
+        if (auto ecuId = ecu::olsReadEcuId(data)) res.ecu = *ecuId;
         if (auto mapsRes = ecu::olsExtractMaps(data, filename)) {
             for (const auto& m : *mapsRes) {
                 WinolsMapDef d;

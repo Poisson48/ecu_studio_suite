@@ -36,12 +36,15 @@ void appendLe32(QByteArray& b, uint32_t v) {
 // Build a minimal synthetic WinOLS .ols project: the "WinOLS File" magic, an
 // ASCII eprom-size token in the header, one DAMOS label record, then the
 // length-prefixed raw ROM block — enough to exercise the native-.ols path.
-QByteArray makeOls(uint32_t romSize, const QByteArray& label) {
+QByteArray makeOls(uint32_t romSize, const QByteArray& label,
+                   const QByteArray& ecu = "EDC16CP33") {
     QByteArray ols;
     ols += QByteArray("\x0b\x00\x00\x00WinOLS File\x00", 16);
     const QByteArray hexSize = QByteArray::number(romSize, 16).toUpper();
     appendLe32(ols, static_cast<uint32_t>(hexSize.size()));
     ols += hexSize;
+    appendLe32(ols, static_cast<uint32_t>(ecu.size()));        // token ECU d'en-tête
+    ols += ecu;
     appendLe32(ols, static_cast<uint32_t>(label.size()));
     ols += label;
     appendLe32(ols, romSize);                                  // ROM block prefix
@@ -140,6 +143,9 @@ TEST(WinolsParser, ParsesNativeOlsProject) {
 
     // .ols suffix is rewritten to .bin.
     EXPECT_EQ(res->filename, QStringLiteral("RENAULT.bin"));
+
+    // ECU détecté dans l'en-tête → relocalisation OpenDAMOS auto à l'import.
+    EXPECT_EQ(res->ecu, QStringLiteral("edc16cp33"));
 
     // Best-effort DAMOS labels (underscore-style identifiers) are surfaced.
     bool found = false;

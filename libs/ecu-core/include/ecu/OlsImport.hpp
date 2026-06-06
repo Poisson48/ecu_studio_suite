@@ -25,6 +25,7 @@
 
 #include <cstdint>
 #include <expected>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -53,6 +54,12 @@ olsExtractRom(const QByteArray& ols, const QString& filename = {});
 // `name`; address/dims are left at 0 (see header note above).
 std::expected<std::vector<OlsMapEntry>, std::string>
 olsExtractMaps(const QString& olsPath);
+
+// Lit l'identifiant ECU depuis l'en-tête .ols (ex. "EDC16CP33" -> "edc16cp33"),
+// renvoyé en minuscules pour s'aligner sur les dossiers de recettes OpenDAMOS
+// (ressources/<ecu>/). std::nullopt si introuvable. Sert à relocaliser
+// automatiquement la bonne recette OpenDAMOS sur la ROM extraite du .ols.
+std::optional<QString> olsReadEcuId(const QByteArray& ols);
 
 // Same, operating on an in-memory .ols buffer (filename used only in messages).
 std::expected<std::vector<OlsMapEntry>, std::string>

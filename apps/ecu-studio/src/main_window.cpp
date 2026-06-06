@@ -306,13 +306,25 @@ void MainWindow::importWinolsFile(const QString& f) {
     }
 
     m_doc->loadFromData(result->rom, result->filename);
+
+    // OLS → OpenDAMOS (voie fiable) : l'ECU détecté dans l'en-tête .ols définit
+    // l'ECU du document, ce qui déclenche la relocalisation par empreintes de la
+    // recette OpenDAMOS sur la ROM extraite (adresses exactes pour ce firmware —
+    // c'est la force d'OpenDAMOS, indépendante du firmware).
+    if (!result->ecu.isEmpty())
+        m_doc->setEcuId(result->ecu);
+
     m_sidebar->showPanel(m_hexPanel);
+    const QString ecuMsg = result->ecu.isEmpty()
+        ? QString()
+        : tr(" · ECU %1 → recette OpenDAMOS relocalisée").arg(result->ecu);
     statusBar()->showMessage(
-        tr("Importé : %1 (%2 Ko, %3 maps)")
+        tr("Importé : %1 (%2 Ko, %3 maps)%4")
             .arg(result->filename)
             .arg(result->rom.size() / 1024)
-            .arg(result->maps.size()),
-        5000);
+            .arg(result->maps.size())
+            .arg(ecuMsg),
+        6000);
 }
 
 // Ouverture express d'une ROM par chemin (glisser-déposer). Les conteneurs

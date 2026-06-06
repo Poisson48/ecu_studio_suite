@@ -5,6 +5,7 @@
 
 #include <QFile>
 #include <QFileInfo>
+#include <QRegularExpression>
 
 #include <algorithm>
 #include <cctype>
@@ -230,6 +231,36 @@ olsExtractMaps(const QString& olsPath) {
 std::expected<std::vector<OlsMapEntry>, std::string>
 olsExtractMaps(const QByteArray& ols, const QString& /*filename*/) {
     return extractMaps(ols);
+}
+
+std::optional<QString> olsReadEcuId(const QByteArray& d) {
+    const std::int64_t n = d.size();
+    if (n < 32 || !d.startsWith(QByteArray("\x0b\x00\x00\x00WinOLS File", 15)))
+        return std::nullopt;
+
+    // Familles ECU usuelles : un token (préfixe + chiffre) dans l'en-tête.
+    static const QRegularExpression kEcu(
+        QStringLiteral("^(EDC|MED|MEDC|ME|MD|MDG|MG|SIMOS|SID|DME|VAG)[0-9][0-9A-Za-z._]*$"));
+
+    const std::int64_t lim = std::min<std::int64_t>(0x2000, n);
+    std::int64_t o = 0;
+    while (o + 4 <= lim) {
+        const std::uint32_t L = u32le(d, o);
+        if (L >= 3 && L <= 32 && o + 4 + static_cast<std::int64_t>(L) <= n) {
+            const QByteArray t = d.mid(o + 4, static_cast<int>(L));
+            bool ascii = true;
+            for (char c : t)
+                if (static_cast<unsigned char>(c) < 32 || static_cast<unsigned char>(c) > 126) { ascii = false; break; }
+            if (ascii) {
+                const QString s = QString::fromLatin1(t);
+                if (kEcu.match(s).hasMatch()) return s.toLower();
+            }
+            o += 4 + L;
+        } else {
+            ++o;
+        }
+    }
+    return std::nullopt;
 }
 
 } // namespace ecu

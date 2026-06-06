@@ -22,6 +22,7 @@ struct WinolsParseResult {
     QByteArray            rom;
     QString               filename;
     QList<WinolsMapDef>   maps;
+    QString               ecu;   // ECU détecté dans l'en-tête (.ols natif), sinon vide
 };
 
 // Synchronous parser — the JS original is async only because the unzipper
