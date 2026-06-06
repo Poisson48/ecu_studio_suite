@@ -25,6 +25,20 @@ if(NOT LIBGIT2_FOUND)
         endif()
     endforeach()
 endif()
+if(NOT LIBGIT2_FOUND)
+    # Dernier recours : on localise l'en-tête + la lib directement dans
+    # CMAKE_PREFIX_PATH (couvre vcpkg, où la lib s'appelle git2.lib/libgit2).
+    find_path(LIBGIT2_INCLUDE_DIRS NAMES git2.h)
+    find_library(LIBGIT2_LIBRARIES NAMES git2 libgit2 git2.dll)
+    if(LIBGIT2_INCLUDE_DIRS AND LIBGIT2_LIBRARIES)
+        set(LIBGIT2_FOUND TRUE)
+    endif()
+endif()
+if(LIBGIT2_FOUND)
+    message(STATUS "ECU Studio : libgit2 trouvé (${LIBGIT2_LIBRARIES}) — GitManager activé.")
+else()
+    message(STATUS "ECU Studio : libgit2 INTROUVABLE — Versions/undo-redo désactivés.")
+endif()
 
 set(ECU_CORE_SOURCES
     src/EcuCatalog.cpp
