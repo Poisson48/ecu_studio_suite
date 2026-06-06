@@ -120,6 +120,7 @@ private:
     // Barre de statut
     QLabel* m_romLabel{nullptr};      // nom + taille de la ROM
     QLabel* m_ecuLabel{nullptr};      // ECU courant
+    QLabel* m_relocBadge{nullptr};    // badge qualité de relocalisation OpenDAMOS
     QLabel* m_modifiedLabel{nullptr}; // indicateur ● de modification
     QLabel* m_deviceLabel{nullptr};   // statut connexion MPPS
 };

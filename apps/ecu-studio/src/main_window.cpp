@@ -45,6 +45,7 @@
 #include <QDropEvent>
 #include <QMimeData>
 #include <QPixmap>
+#include <QColor>
 #include <QDesktopServices>
 #include <QUrl>
 
@@ -612,6 +613,20 @@ void MainWindow::setupStatusBar() {
     m_ecuLabel = new QLabel(this);
     m_ecuLabel->setObjectName("ecuLabel");
     statusBar()->addPermanentWidget(m_ecuLabel);
+
+    // Badge global de qualité de relocalisation OpenDAMOS (alimenté par AutoMods).
+    m_relocBadge = new QLabel(this);
+    m_relocBadge->setObjectName("relocBadge");
+    m_relocBadge->setVisible(false);
+    statusBar()->addPermanentWidget(m_relocBadge);
+    connect(m_autoMods, &AutoModsPanel::relocQualityChanged, this,
+            [this](const QString& text, const QColor& color) {
+                if (text.isEmpty()) { m_relocBadge->setVisible(false); return; }
+                m_relocBadge->setText(text);
+                m_relocBadge->setStyleSheet(
+                    QString("color:%1; font-weight:600;").arg(color.name()));
+                m_relocBadge->setVisible(true);
+            });
 
     m_deviceLabel = new QLabel(tr("Aucun périphérique"), this);
     m_deviceLabel->setObjectName("deviceLabel");

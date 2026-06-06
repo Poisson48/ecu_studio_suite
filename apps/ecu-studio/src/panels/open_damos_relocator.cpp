@@ -93,4 +93,49 @@ std::vector<MapEntry> buildRelocatedEntries(const ecu::DamosRecipe& recipe,
     return entries;
 }
 
+RelocQuality computeRelocQuality(const std::vector<ecu::RelocResult>& results) {
+    RelocQuality q;
+    q.total = static_cast<int>(results.size());
+    double scoreSum = 0.0;
+    for (const auto& r : results) {
+        const bool relocated =
+            r.addressSource != ecu::AddressSource::DefaultFallback && r.score != 0.0;
+        if (!relocated) continue;
+        ++q.relocated;
+        scoreSum += r.score;
+        if (r.addressSource == ecu::AddressSource::Fingerprint) ++q.byFingerprint;
+        else if (r.addressSource == ecu::AddressSource::Anchor)  ++q.byAnchor;
+    }
+    if (q.relocated > 0) q.avgScore = scoreSum / q.relocated;
+    if (q.total > 0)     q.fraction = static_cast<double>(q.relocated) / q.total;
+
+    if (q.total == 0)
+        q.tier = RelocQuality::None;
+    else if (q.fraction >= 0.85 && q.avgScore >= 0.70)
+        q.tier = RelocQuality::Good;
+    else if (q.fraction >= 0.50)
+        q.tier = RelocQuality::Partial;
+    else
+        q.tier = RelocQuality::Poor;
+    return q;
+}
+
+QColor relocTierColor(RelocQuality::Tier tier) {
+    switch (tier) {
+        case RelocQuality::Good:    return QColor(0x22, 0xc5, 0x5e);  // vert
+        case RelocQuality::Partial: return QColor(0xf5, 0x9e, 0x0b);  // orange
+        case RelocQuality::Poor:    return QColor(0xef, 0x44, 0x44);  // rouge
+        case RelocQuality::None:    break;
+    }
+    return QColor(0x6b, 0x72, 0x80);                                  // gris
+}
+
+QString relocQualityText(const RelocQuality& q) {
+    if (q.total == 0)
+        return QCoreApplication::translate("ecu_studio", "non relocalisé");
+    const int pct = static_cast<int>(q.avgScore * 100.0 + 0.5);
+    return QCoreApplication::translate("ecu_studio", "%1/%2 maps · %3 %")
+        .arg(q.relocated).arg(q.total).arg(pct);
+}
+
 } // namespace ecu_studio

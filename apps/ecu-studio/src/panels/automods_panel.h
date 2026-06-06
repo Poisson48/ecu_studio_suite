@@ -1,6 +1,7 @@
 #pragma once
 #include <QWidget>
 #include <QString>
+#include <QColor>
 #include <vector>
 
 class QListWidget;
@@ -27,6 +28,11 @@ public:
 
 public slots:
     void refresh();          // recharge les mods disponibles pour l'ECU courant
+
+signals:
+    // Émis après relocalisation : qualité d'adéquation OpenDAMOS ↔ ROM courante
+    // (texte déjà formaté + couleur du tier), pour le badge de la barre de statut.
+    void relocQualityChanged(const QString& text, const QColor& color);
 
 private slots:
     void applySelection();   // applique le template / les auto-mods cochés
@@ -70,6 +76,7 @@ private:
     RomDocument* m_doc{nullptr};
 
     QLabel*      m_ecuLabel{nullptr};
+    QLabel*      m_relocBadge{nullptr};   // badge qualité de relocalisation OpenDAMOS
     QListWidget* m_list{nullptr};
     QPushButton* m_applyBtn{nullptr};
     QPushButton* m_restoreBtn{nullptr};

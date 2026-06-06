@@ -1,6 +1,7 @@
 #include "automods_panel.h"
 #include "../rom_document.h"
 #include "../byte_span.h"
+#include "open_damos_relocator.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -73,6 +74,17 @@ void AutoModsPanel::buildUi() {
     m_ecuLabel = new QLabel(this);
     m_ecuLabel->setStyleSheet("color:#22c55e; font-weight:600;");
     headRow->addWidget(m_ecuLabel);
+
+    // Badge de qualité de relocalisation OpenDAMOS (vert/orange/rouge) — montre à
+    // quel point la recette OpenDAMOS s'adapte à CETTE ROM (DAMOS ne sait pas).
+    m_relocBadge = new QLabel(this);
+    m_relocBadge->setToolTip(
+        tr("Qualité de relocalisation OpenDAMOS sur cette ROM (par empreinte d'axes).\n"
+           "Atout vs DAMOS statique : s'adapte à un firmware jamais vu."));
+    m_relocBadge->setVisible(false);
+    headRow->addSpacing(8);
+    headRow->addWidget(m_relocBadge);
+
     headRow->addStretch();
     m_refreshBtn = new QPushButton(tr("Actualiser"), this);
     headRow->addWidget(m_refreshBtn);
@@ -205,6 +217,7 @@ void AutoModsPanel::refresh() {
     // résout ces noms en adresses via la relocalisation open_damos de l'ECU.
     // Une recette est applicable si la recette open_damos charge ET qu'au moins
     // une de ses opérations cible une caractéristique relocalisée de façon sûre.
+    RelocQuality quality;   // qualité d'adéquation OpenDAMOS ↔ ROM (pour le badge)
     {
         const auto recipes = ecu::listRecipes();
         if (!recipes.empty()) {
@@ -219,6 +232,7 @@ void AutoModsPanel::refresh() {
                 od.setRecipe(std::move(*damos));
                 const QByteArray& rom = m_doc->rom();
                 auto relocated = od.relocate(QByteArrayView(rom.constData(), rom.size()));
+                quality = computeRelocQuality(relocated);
                 for (const auto& r : relocated) {
                     const bool safe =
                         r.addressSource != ecu::AddressSource::DefaultFallback
@@ -314,6 +328,21 @@ void AutoModsPanel::refresh() {
 
     if (m_list->count() == 0)
         log(tr("Aucune modification disponible pour cet ECU."));
+
+    // ── Badge de qualité de relocalisation OpenDAMOS ─────────────────────────
+    if (quality.total > 0) {
+        const QColor  c   = relocTierColor(quality.tier);
+        const QString txt = relocQualityText(quality);
+        m_relocBadge->setText(tr("OpenDAMOS \342\227\217 %1").arg(txt));   // ●
+        m_relocBadge->setStyleSheet(QString(
+            "color:%1; border:1px solid %1; border-radius:9px;"
+            "padding:1px 8px; font-weight:600;").arg(c.name()));
+        m_relocBadge->setVisible(true);
+        emit relocQualityChanged(tr("OpenDAMOS %1").arg(txt), c);
+    } else {
+        m_relocBadge->setVisible(false);
+        emit relocQualityChanged(QString(), QColor());
+    }
 }
 
 std::vector<AutoModsPanel::Entry> AutoModsPanel::selectedEntries() const {
