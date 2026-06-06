@@ -1,4 +1,8 @@
-find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent Network LinguistTools)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent Network)
+# LinguistTools (lrelease) : optionnel — compile les .ts → .qm. Absent de certaines
+# installations Qt (ex. aqtinstall minimal sous Windows) ; sans lui, on se passe des
+# traductions compilées et l'app retombe sur les chaînes source FR/EN.
+find_package(Qt6 QUIET OPTIONAL_COMPONENTS LinguistTools)
 # OpenSSL::Crypto — vérification de signature Ed25519 des mises à jour (updater).
 find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 
@@ -167,13 +171,17 @@ qt_add_resources(ecu_studio "ecu_studio_resources"
 )
 
 # ── i18n ─────────────────────────────────────────────────────────────────────
-qt_add_translations(ecu_studio
-    TS_FILES
-        i18n/ecu_studio_fr.ts
-        i18n/ecu_studio_en.ts
-    RESOURCE_PREFIX "/i18n"
-    QM_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/translations"
-)
+if(Qt6LinguistTools_FOUND)
+    qt_add_translations(ecu_studio
+        TS_FILES
+            i18n/ecu_studio_fr.ts
+            i18n/ecu_studio_en.ts
+        RESOURCE_PREFIX "/i18n"
+        QM_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/translations"
+    )
+else()
+    message(STATUS "ECU Studio : LinguistTools absent — traductions .qm non compilées.")
+endif()
 
 install(TARGETS ecu_studio RUNTIME DESTINATION bin)
 

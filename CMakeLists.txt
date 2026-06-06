@@ -61,7 +61,10 @@ else()
 endif()
 
 find_package(nlohmann_json REQUIRED)
-find_package(GTest         REQUIRED)
+# GTest n'est nécessaire que pour la suite de tests (tests/).
+if(ECU_BUILD_TESTS)
+    find_package(GTest REQUIRED)
+endif()
 
 # ── Platform ─────────────────────────────────────────────────────────────────
 if(WIN32)
