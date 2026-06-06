@@ -54,4 +54,8 @@ olsExtractRom(const QByteArray& ols, const QString& filename = {});
 std::expected<std::vector<OlsMapEntry>, std::string>
 olsExtractMaps(const QString& olsPath);
 
+// Same, operating on an in-memory .ols buffer (filename used only in messages).
+std::expected<std::vector<OlsMapEntry>, std::string>
+olsExtractMaps(const QByteArray& ols, const QString& filename = {});
+
 } // namespace ecu

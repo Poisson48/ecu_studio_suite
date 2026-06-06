@@ -153,15 +153,11 @@ bool looksLikeLabel(const QByteArray& s) {
         else if (!std::isdigit(c)) return false;
         if (i == 0 && !std::isalpha(c)) return false;
     }
-    // ECU labels are CamelCase or contain an underscore (AccPed_trqEngHiGear_MAP,
-    // Rail_pSetPointBase_MAP, …) — filters out plain words / units.
-    if (hasSep) return hasAlpha;
-    bool hasUpper = false, hasLower = false;
-    for (char ch : s) {
-        if (std::isupper(static_cast<unsigned char>(ch))) hasUpper = true;
-        if (std::islower(static_cast<unsigned char>(ch))) hasLower = true;
-    }
-    return hasAlpha && hasUpper && hasLower;
+    // Real WinOLS/DAMOS map labels are underscore-separated technical identifiers
+    // (AccPed_trqEngHiGear_MAP, Rail_pSetPointBase_MAP, ASDdc_T1CluNeg_C…).
+    // Exiger un underscore élimine les mots d'en-tête et les unités (Renault,
+    // Bosch, Engine, Original, hPa, Ohm, « Map »…) sans perdre de vraie map.
+    return hasAlpha && hasSep;
 }
 
 } // namespace
@@ -180,12 +176,10 @@ olsExtractRom(const QString& olsPath) {
     return extract(f.readAll(), QFileInfo(olsPath).fileName());
 }
 
+namespace {
+
 std::expected<std::vector<OlsMapEntry>, std::string>
-olsExtractMaps(const QString& olsPath) {
-    QFile f(olsPath);
-    if (!f.open(QIODevice::ReadOnly))
-        return std::unexpected(("ols: cannot open " + olsPath).toStdString());
-    const QByteArray d = f.readAll();
+extractMaps(const QByteArray& d) {
     const std::int64_t n = d.size();
     if (n < 32 || !d.startsWith(QByteArray("\x0b\x00\x00\x00WinOLS File", 15)))
         return std::unexpected("ols: not a WinOLS .ols project");
@@ -221,6 +215,21 @@ olsExtractMaps(const QString& olsPath) {
         }
     }
     return maps;
+}
+
+} // namespace
+
+std::expected<std::vector<OlsMapEntry>, std::string>
+olsExtractMaps(const QString& olsPath) {
+    QFile f(olsPath);
+    if (!f.open(QIODevice::ReadOnly))
+        return std::unexpected(("ols: cannot open " + olsPath).toStdString());
+    return extractMaps(f.readAll());
+}
+
+std::expected<std::vector<OlsMapEntry>, std::string>
+olsExtractMaps(const QByteArray& ols, const QString& /*filename*/) {
+    return extractMaps(ols);
 }
 
 } // namespace ecu

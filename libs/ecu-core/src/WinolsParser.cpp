@@ -1,4 +1,5 @@
 #include "ecu/WinolsParser.hpp"
+#include "ecu/OlsImport.hpp"
 
 #include <QByteArray>
 #include <QList>
@@ -208,6 +209,36 @@ WinolsParser::parse(const QByteArray& data, const QString& filename) const
     // Detect ZIP by the PK magic (same check as the JS original).
     if (data.size() >= 2 && bytes[0] == 0x50 && bytes[1] == 0x4B)
         return parseZip(data, filename);
+
+    // Native WinOLS project (.ols): length-prefixed "WinOLS File" magic. Extract
+    // the real ROM image (and best-effort map names) via OlsImport — sinon le
+    // fallback binaire brut plus bas chargerait tout le conteneur multi-Mo.
+    if (data.startsWith(QByteArray("\x0b\x00\x00\x00WinOLS File", 15))) {
+        auto romRes = ecu::olsExtractRom(data, filename);
+        if (!romRes)
+            return std::unexpected(QString::fromStdString(romRes.error()));
+
+        QString outName = filename;
+        static const QRegularExpression kOlsSuffix(u"\\.ols$"_qs,
+            QRegularExpression::CaseInsensitiveOption);
+        outName.remove(kOlsSuffix);
+        outName += u".bin"_qs;
+
+        WinolsParseResult res;
+        res.rom      = std::move(*romRes);
+        res.filename = outName;
+        if (auto mapsRes = ecu::olsExtractMaps(data, filename)) {
+            for (const auto& m : *mapsRes) {
+                WinolsMapDef d;
+                d.name    = QString::fromStdString(m.name);
+                d.address = static_cast<uint32_t>(m.offset);
+                d.nx      = m.nx > 0 ? m.nx : 1;
+                d.ny      = m.ny > 0 ? m.ny : 1;
+                res.maps.append(d);
+            }
+        }
+        return res;
+    }
 
     const QString ext = filename.toLower();
 

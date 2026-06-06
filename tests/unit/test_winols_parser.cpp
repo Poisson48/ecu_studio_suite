@@ -26,6 +26,29 @@ QByteArray hexRecord(uint16_t addr, uint8_t type, const QByteArray& data) {
     return ":" + rec.toHex().toUpper() + "\r\n";
 }
 
+void appendLe32(QByteArray& b, uint32_t v) {
+    b.append(static_cast<char>(v & 0xFF));
+    b.append(static_cast<char>((v >> 8) & 0xFF));
+    b.append(static_cast<char>((v >> 16) & 0xFF));
+    b.append(static_cast<char>((v >> 24) & 0xFF));
+}
+
+// Build a minimal synthetic WinOLS .ols project: the "WinOLS File" magic, an
+// ASCII eprom-size token in the header, one DAMOS label record, then the
+// length-prefixed raw ROM block — enough to exercise the native-.ols path.
+QByteArray makeOls(uint32_t romSize, const QByteArray& label) {
+    QByteArray ols;
+    ols += QByteArray("\x0b\x00\x00\x00WinOLS File\x00", 16);
+    const QByteArray hexSize = QByteArray::number(romSize, 16).toUpper();
+    appendLe32(ols, static_cast<uint32_t>(hexSize.size()));
+    ols += hexSize;
+    appendLe32(ols, static_cast<uint32_t>(label.size()));
+    ols += label;
+    appendLe32(ols, romSize);                                  // ROM block prefix
+    ols += QByteArray(static_cast<qsizetype>(romSize), static_cast<char>(0xA5));
+    return ols;
+}
+
 } // namespace
 
 TEST(WinolsParser, ParsesIntelHexByExtension) {
@@ -98,4 +121,29 @@ TEST(WinolsParser, RawBinaryGetsBinSuffix) {
     ASSERT_TRUE(res.has_value());
     EXPECT_EQ(res->filename, QStringLiteral("noext.bin"));
     EXPECT_EQ(res->rom, bin);
+}
+
+TEST(WinolsParser, ParsesNativeOlsProject) {
+    const QByteArray label   = "Rail_pSetPointBase_MAP";
+    const uint32_t   romSize = 0x40000;  // 256 KiB (min plausible eprom size)
+    const QByteArray ols     = makeOls(romSize, label);
+
+    WinolsParser parser;
+    auto res = parser.parse(ols, "RENAULT.ols");
+    ASSERT_TRUE(res.has_value()) << res.error().toStdString();
+
+    // The real ROM image is carved out of the multi-block container — not the
+    // whole file (the previous raw-binary fallback returned the entire .ols).
+    EXPECT_EQ(res->rom.size(), static_cast<qsizetype>(romSize));
+    EXPECT_LT(res->rom.size(), ols.size());
+    EXPECT_EQ(static_cast<uint8_t>(res->rom.at(0)), 0xA5);
+
+    // .ols suffix is rewritten to .bin.
+    EXPECT_EQ(res->filename, QStringLiteral("RENAULT.bin"));
+
+    // Best-effort DAMOS labels (underscore-style identifiers) are surfaced.
+    bool found = false;
+    for (const auto& m : res->maps)
+        if (m.name == QString::fromLatin1(label)) { found = true; break; }
+    EXPECT_TRUE(found);
 }
