@@ -225,6 +225,28 @@ void SidebarNav::addPanel(const QString& icon, const QString& label, QWidget* pa
     }
 }
 
+void SidebarNav::addSeparator(const QString& title) {
+    auto* w   = new QWidget;
+    auto* lay = new QVBoxLayout(w);
+    lay->setContentsMargins(8, 7, 8, 1);
+    lay->setSpacing(3);
+
+    auto* line = new QFrame;
+    line->setFixedHeight(1);
+    line->setStyleSheet("background:#2a2a45; border:none;");
+    lay->addWidget(line);
+
+    if (!title.isEmpty()) {
+        auto* lbl = new QLabel(title);
+        lbl->setAlignment(Qt::AlignCenter);
+        lbl->setStyleSheet(
+            "color:#5b6478; font-size:8px; font-weight:700; letter-spacing:1px;");
+        lay->addWidget(lbl);
+    }
+    // Insère avant le stretch final (comme addPanel).
+    m_btnLayout->insertWidget(m_btnLayout->count() - 1, w);
+}
+
 void SidebarNav::showPanel(QWidget* panel) {
     for (auto& e : m_entries)
         e.btn->setChecked(e.panel == panel && !e.detached);

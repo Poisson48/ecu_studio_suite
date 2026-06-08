@@ -16,6 +16,9 @@ public:
     explicit SidebarNav(QWidget* parent = nullptr);
 
     void addPanel(const QString& icon, const QString& label, QWidget* panel);
+    // Insère un séparateur de section (fin trait + petit titre) pour regrouper
+    // visuellement les panneaux. N'ajoute pas d'entrée navigable.
+    void addSeparator(const QString& title = {});
     void showPanel(QWidget* panel);
     void setPanelVisible(QWidget* panel, bool visible);
     int  panelCount() const;

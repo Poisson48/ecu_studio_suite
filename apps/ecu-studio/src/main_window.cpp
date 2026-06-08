@@ -143,20 +143,30 @@ void MainWindow::setupUi() {
     // Sidebar — réutilise SidebarNav de SocketSpy ; les icônes sont des ids
     // vectoriels rendus par navIcon() (plus d'emojis-texte « carrés »).
     m_sidebar = new socketspy::gui::SidebarNav(this);
+    // Panneaux regroupés en sections pour réduire la surcharge des 14 entrées :
+    // Accueil → Édition ROM → Analyse → DAMOS/OpenDAMOS → Matériel.
     m_sidebar->addPanel("hub",       tr("HUB"),          m_hubPanel);
     m_sidebar->addPanel("project",   tr("Projet"),       m_projectPanel);
-    m_sidebar->addPanel("mpps",      tr("MPPS"),         m_mppsComingSoon);
+
+    m_sidebar->addSeparator(tr("ÉDITION"));
     m_sidebar->addPanel("hex",       tr("Hex"),          m_hexPanel);
     m_sidebar->addPanel("maps",      tr("Maps"),         m_mapEditor);
-    m_sidebar->addPanel("damos",     tr("DAMOS"),        m_damosEditor);
     m_sidebar->addPanel("3d",        tr("3D"),           m_map3dPanel);
-    m_sidebar->addPanel("automods",  tr("AutoMods"),     m_autoMods);
+
+    m_sidebar->addSeparator(tr("ANALYSE"));
     m_sidebar->addPanel("checksum",  tr("Checksum"),     m_checksumPanel);
     m_sidebar->addPanel("compare",   tr("Compare"),      m_comparePanel);
     m_sidebar->addPanel("versions",  tr("Versions"),     m_gitPanel);
+
+    m_sidebar->addSeparator(tr("DAMOS"));
+    m_sidebar->addPanel("damos",     tr("DAMOS"),        m_damosEditor);
+    m_sidebar->addPanel("automods",  tr("AutoMods"),     m_autoMods);
     m_sidebar->addPanel("a2l",       tr("A2L"),          m_a2lPanel);
-    m_sidebar->addPanel("can",       tr("CAN"),          m_canPanel);
     m_sidebar->addPanel("library",   tr("Bibliothèque"), m_libraryPanel);
+
+    m_sidebar->addSeparator(tr("MATÉRIEL"));
+    m_sidebar->addPanel("can",       tr("CAN"),          m_canPanel);
+    m_sidebar->addPanel("mpps",      tr("MPPS"),         m_mppsComingSoon);
 
     auto* central = new QWidget(this);
     auto* hbox    = new QHBoxLayout(central);
