@@ -65,4 +65,31 @@ Avant d'ajouter des features (et avant de revendiquer la parité) :
 **En une phrase :** fondations honnêtes + un *concept* OpenDAMOS réellement bon, mais
 **la maturité, la couverture validée et le checksum moderne manquent** ; il faut
 **solidifier et mesurer** avant de se comparer frontalement aux outils commerciaux.
+
+---
+
+## Complétude fonctionnelle (audit 2026-06-10, toute l'app)
+
+Distinction clé : **« câblé/fonctionnel » ≠ « fiable/correct »**. L'audit de câblage
+des 14 panels + main_window conclut : **quasi tout est connecté, aucun bouton mort**,
+les cas « sans ROM / sans libgit2 / hors Linux » sont gérés gracieusement. C'est un
+vrai bon point de finition UI. MAIS les caveats de fiabilité ci-dessus restent.
+
+**Manques concrets trouvés — et traités :**
+- ✅ **3D « Reset vue »** : bouton ajouté (réinitialise angle/zoom, les 2 backends).
+- ✅ **Checksum générique** (Sum/Xor + offsets « plausibles » TODO_REVERSE) : ajout
+  d'une **confirmation de sécurité** (risque de brick si flashé) — c'était un manque
+  dangereux.
+
+**Manques concrets restants (documentés, non bloquants) :**
+- 3D : modes **delta/split/overlay** absents (seulement value + fantôme).
+- **Checksum EDC17/MED17** absent (message explicite) ; **12 TODO_REVERSE**.
+- HUB « Vérifier sur le bus » derrière `#ifdef ECU_HAS_VERIFY_ON_BUS_DIALOG`.
+- **MPPS** : placeholder « coming soon » (intentionnel).
+- Offsets checksum EDC16 512K/2M : génériques, à reverser par variante.
+
+**Verdict complétude :** l'app est **finie au sens UI** (pas de coquille vide) ; les
+trous restants sont soit des features avancées (modes 3D, EDC17), soit volontaires
+(MPPS). Le vrai enjeu n'est pas la complétude du câblage mais la **fiabilité prouvée**
+(tests + mesure de la relocalisation) et le **checksum moderne**.
 </content>

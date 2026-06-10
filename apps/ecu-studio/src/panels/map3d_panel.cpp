@@ -86,6 +86,9 @@ void Map3dPanel::buildUi() {
     m_baselineBtn->setToolTip(tr("ROM de référence du mode fantôme : commit git, "
                                  "fichier .bin externe ou snapshot d'origine."));
     ctl->addWidget(m_baselineBtn);
+    m_resetBtn = new QPushButton(tr("Reset vue"), this);
+    m_resetBtn->setToolTip(tr("Réinitialise l'angle de rotation et le zoom."));
+    ctl->addWidget(m_resetBtn);
     ctl->addStretch();
     root->addWidget(ctlBox);
 
@@ -111,6 +114,7 @@ void Map3dPanel::buildUi() {
         if (m_currentAddr != 0) render(m_currentAddr);
     });
     connect(m_baselineBtn, &QPushButton::clicked, this, &Map3dPanel::pickBaseline);
+    connect(m_resetBtn, &QPushButton::clicked, this, [this]() { viewReset(); });
 }
 
 void Map3dPanel::viewSetSurface(const SurfaceData& data) {
@@ -179,6 +183,14 @@ void Map3dPanel::viewClear() {
     }
 }
 
+void Map3dPanel::viewReset() {
+    if (m_surface && m_surface->scene() && m_surface->scene()->activeCamera()) {
+        auto* cam = m_surface->scene()->activeCamera();
+        cam->setCameraPreset(Q3DCamera::CameraPresetIsometricRight);
+        cam->setZoomLevel(100.0f);
+    }
+}
+
 #else  // ── Repli QPainter (universel) ──────────────────────────────────────────
 
 void Map3dPanel::buildUi() {
@@ -206,6 +218,9 @@ void Map3dPanel::buildUi() {
     m_baselineBtn->setToolTip(tr("ROM de référence du mode fantôme : commit git, "
                                  "fichier .bin externe ou snapshot d'origine."));
     ctl->addWidget(m_baselineBtn);
+    m_resetBtn = new QPushButton(tr("Reset vue"), this);
+    m_resetBtn->setToolTip(tr("Réinitialise l'angle de rotation et le zoom."));
+    ctl->addWidget(m_resetBtn);
     ctl->addStretch();
     root->addWidget(ctlBox);
 
@@ -229,6 +244,7 @@ void Map3dPanel::buildUi() {
         if (m_currentAddr != 0) render(m_currentAddr);
     });
     connect(m_baselineBtn, &QPushButton::clicked, this, &Map3dPanel::pickBaseline);
+    connect(m_resetBtn, &QPushButton::clicked, this, [this]() { viewReset(); });
     // Édition par clic court sur un sommet (signal du painter).
     connect(view, &Map3dViewPainter::cellClicked,
             this, &Map3dPanel::onCellClicked);
@@ -242,6 +258,9 @@ void Map3dPanel::viewSetHeatmap(bool on) {
 }
 void Map3dPanel::viewClear() {
     static_cast<Map3dViewPainter*>(m_view)->clearSurface();
+}
+void Map3dPanel::viewReset() {
+    static_cast<Map3dViewPainter*>(m_view)->resetView();
 }
 
 #endif // ECU_HAVE_DATAVIZ

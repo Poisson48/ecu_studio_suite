@@ -16,6 +16,7 @@
 #include <QTextEdit>
 #include <QDateTime>
 #include <QFont>
+#include <QMessageBox>
 #include <QRegularExpression>
 #include <QRegularExpressionValidator>
 
@@ -397,6 +398,19 @@ void ChecksumPanel::runCorrection() {
         runCorrectionMpps();
         return;
     }
+
+    // Mode générique (Sum/Xor) : NON validé pour un ECU précis. Les offsets par
+    // défaut sont « plausibles » (TODO_REVERSE), pas l'algorithme réel de l'ECU.
+    // Écrire ce checksum puis flasher peut BRICKER l'ECU → confirmation explicite.
+    if (QMessageBox::warning(
+            this, tr("Checksum générique — non validé"),
+            tr("L'algorithme « %1 » et ces offsets ne sont PAS validés pour un ECU "
+               "précis (valeurs génériques par défaut). Corriger avec un mauvais "
+               "algorithme/offset puis flasher peut rendre l'ECU NON DÉMARRABLE.\n\n"
+               "À n'utiliser que si tu connais l'algorithme et les offsets EXACTS de "
+               "ton ECU. Continuer ?").arg(m_algoCombo->currentText()),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes)
+        return;
 
     qsizetype start = 0, end = 0, store = 0;
     bool bigEndian = false;

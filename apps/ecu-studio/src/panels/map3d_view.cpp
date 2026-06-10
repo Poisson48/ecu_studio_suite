@@ -82,6 +82,13 @@ void Map3dViewPainter::setHeatmap(bool on) {
     update();
 }
 
+void Map3dViewPainter::resetView() {
+    m_yaw   = -35.0;   // mêmes valeurs que l'init — vue isométrique par défaut
+    m_pitch = 28.0;
+    m_zoom  = 1.0;
+    update();
+}
+
 void Map3dViewPainter::mousePressEvent(QMouseEvent* e) {
     m_lastPos    = e->pos();
     m_pressPos   = e->pos();

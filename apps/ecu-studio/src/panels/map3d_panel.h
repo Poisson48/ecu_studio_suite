@@ -79,6 +79,7 @@ private:
     void viewSetSurface(const SurfaceData& data);
     void viewSetHeatmap(bool on);
     void viewClear();
+    void viewReset();   // réinitialise l'angle/zoom de la caméra (bouton « Reset vue »)
 
     RomDocument* m_doc = nullptr;
 
@@ -87,6 +88,7 @@ private:
     QCheckBox*   m_heatChk   = nullptr;
     QCheckBox*   m_ghostChk  = nullptr;  // mode fantôme (baseline overlay)
     QPushButton* m_baselineBtn = nullptr; // choix de la référence du fantôme
+    QPushButton* m_resetBtn  = nullptr;  // réinitialise la vue (angle/zoom)
     QLabel*      m_infoLabel = nullptr;
     QLabel*      m_statusLabel = nullptr;
     QWidget*     m_view      = nullptr;  // Map3dViewPainter ou conteneur Q3DSurface

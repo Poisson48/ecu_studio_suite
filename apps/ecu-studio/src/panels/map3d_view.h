@@ -37,6 +37,7 @@ public:
     void setSurface(const SurfaceData& data);
     void setHeatmap(bool on);
     void clearSurface();
+    void resetView();   // réinitialise rotation/zoom à la vue par défaut
 
 signals:
     // Émis quand l'utilisateur clique (clic court, pas drag) sur le sommet d'une
