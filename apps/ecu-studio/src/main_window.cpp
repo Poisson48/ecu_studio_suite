@@ -39,6 +39,7 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QTimer>
+#include <QDateTime>
 #include <QFileInfo>
 #include <QCloseEvent>
 #include <QDragEnterEvent>
@@ -760,8 +761,14 @@ void MainWindow::autoSave() {
     // original (et sa sauvegarde « .orig »), et enregistre explicitement via Ctrl+S.
     if (!m_doc->isManaged())
         return;
-    if (m_doc->saveToFile(m_doc->path()))
+    if (m_doc->saveToFile(m_doc->path())) {
         statusBar()->showMessage(tr("Sauvegarde automatique — %1").arg(m_doc->name()), 2000);
+        // Ultra-sécure : CHAQUE sauvegarde passe par le git interne du projet →
+        // historique complet, tout état est récupérable depuis l'onglet Versions.
+        m_gitPanel->autoCommit(
+            tr("auto: %1")
+                .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss")));
+    }
 }
 
 void MainWindow::applyLanguage(const QString& code) {
@@ -793,6 +800,9 @@ void MainWindow::recreateWelcomeScreen() {
 }
 
 void MainWindow::closeEvent(QCloseEvent* e) {
+    // Capture l'état final (sauvegarde + commit git) avant de quitter, pour ne pas
+    // perdre les dernières modifications non encore autosauvées.
+    autoSave();
     saveWindowState();
     QMainWindow::closeEvent(e);
 }

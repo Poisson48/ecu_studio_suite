@@ -283,6 +283,26 @@ void GitPanel::commitCurrent() {
 #endif
 }
 
+bool GitPanel::autoCommit(const QString& message) {
+#ifdef ECU_GIT_AVAILABLE
+    if (m_repoPath.isEmpty() || !m_git) return false;   // pas de projet → no-op
+    ecu::CommitResult result = m_git->commit(message.toStdString());
+    if (result.nothing) return false;                   // rien changé depuis HEAD
+    if (!result.hash) {
+        setStatus(tr("Échec de l'enregistrement automatique"), true);
+        return false;
+    }
+    setStatus(tr("Version auto %1 enregistrée")
+                  .arg(QString::fromStdString(*result.hash).left(8)));
+    refresh();
+    rebuildNav();
+    return true;
+#else
+    Q_UNUSED(message);
+    return false;
+#endif
+}
+
 void GitPanel::restoreSelected() {
 #ifdef ECU_GIT_AVAILABLE
     if (m_repoPath.isEmpty() || !m_git) {

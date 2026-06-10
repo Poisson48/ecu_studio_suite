@@ -38,6 +38,12 @@ public slots:
     // Committe l'état courant du dépôt (demande un message).
     void commitCurrent();
 
+    // Commit NON-INTERACTIF de l'état du dépôt (rom.bin déjà écrit sur disque par
+    // l'appelant). Utilisé pour que CHAQUE sauvegarde passe par le git interne du
+    // projet → historique complet, ultra-sécure. No-op si pas de dépôt ou rien à
+    // committer. Renvoie true si une version a été créée.
+    bool autoCommit(const QString& message);
+
     // Restaure le commit sélectionné puis recharge la ROM dans le document.
     void restoreSelected();
 
