@@ -2,6 +2,7 @@
 #include "../rom_document.h"
 #include "../byte_span.h"
 #include "ecu/ChecksumEngine.hpp"
+#include "ecu/Edc17Checksum.hpp"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -89,9 +90,12 @@ void ChecksumPanel::buildUi() {
 
     grid->addWidget(new QLabel(tr("Algorithme:"), this), 1, 2);
     m_algoCombo = new QComboBox(this);
-    // VRAI checksum MPPS reverse-engineered — mode primaire et par défaut.
+    // Modes à VRAI moteur (reverse-engineered) en premier. EDC16 par défaut ;
+    // onRomLoaded() bascule automatiquement sur EDC17 si la ROM en est une.
     m_algoCombo->addItem(tr("MPPS CRC-16/ARC (EDC16)"),
                          static_cast<int>(Algo::MppsCrc16Arc));
+    m_algoCombo->addItem(tr("EDC17/MED17 (blocs Bosch — auto)"),
+                         static_cast<int>(Algo::Edc17));
     // Modes génériques secondaires (conservés mais non par défaut).
     m_algoCombo->addItem(tr("Sum32 (générique)"), static_cast<int>(Algo::Sum32));
     m_algoCombo->addItem(tr("Sum16 (générique)"), static_cast<int>(Algo::Sum16));
@@ -160,11 +164,14 @@ bool ChecksumPanel::isMppsMode() const {
            == Algo::MppsCrc16Arc;
 }
 
-// En mode MPPS la région/le stockage sont fixés par le moteur (auto-détectés
-// selon la taille). On grise donc les champs manuels pour éviter toute
-// confusion ; ils restent actifs pour les modes génériques.
+bool ChecksumPanel::isEdc17Mode() const {
+    return static_cast<Algo>(m_algoCombo->currentData().toInt()) == Algo::Edc17;
+}
+
+// En mode MPPS / EDC17 les régions sont fixées par le moteur (auto-détectées).
+// On grise les champs manuels ; ils restent actifs pour les modes génériques.
 void ChecksumPanel::onAlgoChanged() {
-    const bool generic = !isMppsMode();
+    const bool generic = !isMppsMode() && !isEdc17Mode();
     m_startEdit->setEnabled(generic);
     m_endEdit->setEnabled(generic);
     m_storeEdit->setEnabled(generic);
@@ -185,6 +192,16 @@ void ChecksumPanel::onRomLoaded() {
                             .arg(m_doc->rom().size() / 1024));
         log(tr("ROM chargée : %1 (%2 octets)")
             .arg(m_doc->name()).arg(m_doc->rom().size()));
+
+        // Auto-détection EDC17/MED17 : si la ROM porte une table de blocs Bosch,
+        // on sélectionne le moteur EDC17 (sinon on garde MPPS EDC16 par défaut).
+        if (ecu::edc17Verify(constByteSpan(m_doc->rom())).isEdc17 && !isEdc17Mode()) {
+            const int idx = m_algoCombo->findData(static_cast<int>(Algo::Edc17));
+            if (idx >= 0) {
+                m_algoCombo->setCurrentIndex(idx);
+                log(tr("EDC17/MED17 détecté (table de blocs Bosch) — moteur sélectionné."));
+            }
+        }
     } else {
         m_romLabel->setText(tr("Aucune ROM chargée"));
     }
@@ -329,6 +346,10 @@ void ChecksumPanel::verify() {
         verifyMpps();
         return;
     }
+    if (isEdc17Mode()) {
+        verifyEdc17();
+        return;
+    }
 
     qsizetype start = 0, end = 0, store = 0;
     bool bigEndian = false;
@@ -396,6 +417,10 @@ void ChecksumPanel::verify() {
 void ChecksumPanel::runCorrection() {
     if (isMppsMode()) {
         runCorrectionMpps();
+        return;
+    }
+    if (isEdc17Mode()) {
+        runCorrectionEdc17();
         return;
     }
 
@@ -578,6 +603,83 @@ void ChecksumPanel::runCorrectionMpps() {
     }
 
     verifyMpps(); // re-vérification après correction
+}
+
+// ── Mode EDC17/MED17 (table de blocs Bosch — moteur ecu::edc17*) ──────────────
+
+namespace {
+QString edc17AlgoName(ecu::Edc17Algo a) {
+    switch (a) {
+        case ecu::Edc17Algo::Crc32: return QStringLiteral("CRC32");
+        case ecu::Edc17Algo::Add32: return QStringLiteral("ADD32");
+        case ecu::Edc17Algo::Add16: return QStringLiteral("ADD16");
+        default:                    return QStringLiteral("?");
+    }
+}
+} // namespace
+
+void ChecksumPanel::verifyEdc17() {
+    if (!m_doc || !m_doc->isLoaded()) { log(tr("Aucune ROM chargée"), true); return; }
+
+    const ecu::Edc17Result r = ecu::edc17Verify(constByteSpan(m_doc->rom()));
+    if (!r.isEdc17) {
+        log(tr("[!] Aucune table de blocs EDC17/MED17 détectée dans cette ROM."), true);
+        m_table->setRowCount(0);
+        return;
+    }
+
+    auto hx = [](std::uint32_t v) {
+        return QString("0x%1").arg(v, 8, 16, QLatin1Char('0')).toUpper().replace("0X", "0x");
+    };
+
+    m_table->setRowCount(r.total());
+    int ri = 0;
+    for (const auto& b : r.blocks) {
+        for (const auto& cs : b.cs) {
+            auto* c0 = new QTableWidgetItem(
+                QString("blk 0x%1 · %2 [0x%3..0x%4]")
+                    .arg(b.id & 0xFF, 2, 16, QLatin1Char('0'))
+                    .arg(edc17AlgoName(cs.algo))
+                    .arg(cs.startAddr, 0, 16).arg(cs.endAddr, 0, 16));
+            auto* c1 = new QTableWidgetItem(cs.inBounds ? hx(cs.computed) : QStringLiteral("—"));
+            auto* c2 = new QTableWidgetItem(
+                cs.algo == ecu::Edc17Algo::Crc32 ? hx(0x35015001u) : hx(cs.expected));
+            QString state;
+            if (!cs.inBounds) {
+                state = tr("hors ROM");
+            } else if (cs.valid) {
+                state = tr("OK"); c2->setForeground(QColor("#22c55e"));
+            } else {
+                state = tr("DIFFÉRENT");
+                c1->setForeground(QColor("#ef4444")); c2->setForeground(QColor("#ef4444"));
+            }
+            m_table->setItem(ri, 0, c0); m_table->setItem(ri, 1, c1);
+            m_table->setItem(ri, 2, c2); m_table->setItem(ri, 3, new QTableWidgetItem(state));
+            ++ri;
+        }
+    }
+    log(tr("EDC17/MED17 : %1 bloc(s), %2/%3 structure(s) valides (%4 hors ROM).")
+            .arg(static_cast<int>(r.blocks.size()))
+            .arg(r.validCount()).arg(r.inBoundsCount())
+            .arg(r.total() - r.inBoundsCount()));
+}
+
+void ChecksumPanel::runCorrectionEdc17() {
+    if (!m_doc || !m_doc->isLoaded()) { log(tr("Aucune ROM chargée"), true); return; }
+
+    QByteArray& rom = m_doc->romMutable();
+    const auto fixed = ecu::edc17Correct(mutByteSpan(rom));
+    if (!fixed) {
+        log(tr("[!] Pas une ROM EDC17/MED17 (aucune table de blocs) — rien corrigé."), true);
+        return;
+    }
+    if (*fixed == 0) {
+        log(tr("Rien à corriger : tous les checksums EDC17/MED17 sont déjà valides."));
+    } else {
+        m_doc->markModified();   // plusieurs régions touchées → versionné en git
+        log(tr("[OK] %n checksum(s) EDC17/MED17 corrigé(s) (CRC32 + ADD32).", "", *fixed));
+    }
+    verifyEdc17();   // re-vérifie et rafraîchit le tableau
 }
 
 } // namespace ecu_studio

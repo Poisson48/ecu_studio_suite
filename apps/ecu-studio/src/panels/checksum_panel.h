@@ -37,6 +37,7 @@ public:
     // Algorithmes de checksum supportés.
     enum class Algo {
         MppsCrc16Arc, // VRAI checksum MPPS reverse-engineered (CRC-16/ARC EDC16) — défaut
+        Edc17,        // EDC17/MED17 : table de blocs Bosch (CRC32/ADD32/ADD16) — auto
         Sum32,        // somme additive 32 bits des mots (générique)
         Sum16,        // somme additive 16 bits des half-words (générique)
         Xor32,        // XOR 32 bits des mots (générique)
@@ -66,6 +67,11 @@ private:
     void runCorrectionMpps();
     // true si l'algo courant est le mode MPPS.
     bool isMppsMode() const;
+
+    // ── Mode EDC17/MED17 (moteur réel ecu::edc17Verify/edc17Correct) ─────────
+    void verifyEdc17();           // vérifie toute la table de blocs
+    void runCorrectionEdc17();    // corrige toutes les structures invalides
+    bool isEdc17Mode() const;
 
     // ── Helpers d'analyse ────────────────────────────────────────────────────
     // Lit les bornes saisies par l'utilisateur. Retourne false (et journalise)
