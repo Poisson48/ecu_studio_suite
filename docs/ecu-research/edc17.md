@@ -3,6 +3,34 @@
 > Addresses below come from specific dumps/guides and are **box-specific**. Use as
 > labels/leads, not as family-wide constants.
 
+## 0. Structure de la table de blocs — VALIDÉE sur dumps réels (2026-06-10)
+
+Prototype validé contre `.damos_raw/edc17_c50.bin`, `edc17_c56.bin`,
+`edc17cp44_audi.bin` : **CRC32 = 100 % valides** sur les blocs programme. Le port C++
+doit utiliser EXACTEMENT ceci.
+
+**Découverte des blocs** (scan dword-aligné) : un bloc commence là où
+`(u32@+0 & 0xFF) ∈ {0x10,0x30,0x40,0x60,0xC0}`, `size=u32@+4` avec `0x40≤size≤reste`,
+et `u32@(start+size-4)==0xDEADBEEF`.
+
+**En-tête de bloc** : `+0x2C` = nombre de structures checksum ; `+0x30` = checksum-
+adjust (dword) ; `+0x34` = première structure (32 octets chacune).
+
+**Structure checksum (32 o, little-endian)** : `+4`=adresse début, `+8`=adresse fin
+(inclusive), `+12`=valeur init (= 0xFADECAFE), `+16`=valeur attendue (ADD), `+28`=algo
+(word & 0xFF) : `0x00`=CRC32, `0x01`=ADD32, `0x10`=ADD16.
+
+**Adresse → offset fichier** : `addr & 0x1FFFFFFF` (miroirs TriCore).
+
+**Algorithmes** : CRC32 bitwise poly `0xEDB88320`, init = champ init, sur **dwords LE**,
+attendu **`0x35015001`**. ADD32 = somme de dwords LE (init), attendu = champ attendu
+(`0xCAFEAFFE`). ADD16 = somme de mots LE (idem). Région **[start..end] inclusive**.
+
+> Note port : le bloc **dataset (id 0x60)** d'un fichier tuné a un ADD invalide tant
+> qu'on n'a pas recalculé l'adjust → c'est ce que la **correction** doit faire
+> (ADD : ajuster les 4 derniers octets de la région ; CRC32 : résoudre le patch par
+> élimination de Gauss GF(2) — cf. medc17-checksum-tool). Round-trip à tester.
+
 ## 1. Checksum / security (CONFIRMED family)
 
 Bosch EDC17 (Tricore) firmware uses **three checksum algorithms** over Bosch blocks:
