@@ -319,6 +319,12 @@ QByteArray WinolsParser::parseIntelHex(const QByteArray& data) const
         QByteArray payload;
     };
 
+    // Normalise les adresses sur les 29 bits de poids faible : un HEX TriCore/PPC
+    // basé en 0x80000000 produirait sinon une image de ~2 Gio (OOM/crash). Garde-fou
+    // dur sur la taille pour qu'aucune entrée malformée ne fasse exploser la RAM.
+    constexpr uint32_t kAddrMask = 0x1FFFFFFFu;
+    constexpr uint32_t kMaxImage = 64u * 1024 * 1024;   // 64 Mio (aucune ROM ECU au-delà)
+
     const QString text = QString::fromLatin1(data);
     const QStringList lines = text.split(QRegularExpression(u"\\r?\\n"_qs));
 
@@ -332,8 +338,16 @@ QByteArray WinolsParser::parseIntelHex(const QByteArray& data) const
 
         // Decode the entire line (minus the leading ':') as hex bytes.
         const QByteArray raw = QByteArray::fromHex(line.sliced(1).toLatin1());
-        if (raw.size() < 4)
-            continue; // malformed — too short to contain header fields
+        if (raw.size() < 5)
+            continue; // trop court : count(1)+addr(2)+type(1)+checksum(1) minimum
+
+        // Valide le checksum Intel HEX : la somme de TOUS les octets (données +
+        // octet de checksum) vaut 0 mod 256. Un record corrompu est ignoré —
+        // crucial pour ne JAMAIS reconstruire une ROM fausse depuis un HEX abîmé.
+        uint8_t sum = 0;
+        for (char c : raw) sum += static_cast<uint8_t>(c);
+        if (sum != 0)
+            continue;
 
         const auto* b = reinterpret_cast<const uint8_t*>(raw.constData());
         const uint8_t  count = b[0];
@@ -341,21 +355,18 @@ QByteArray WinolsParser::parseIntelHex(const QByteArray& data) const
         const uint8_t  type  = b[3];
 
         if (type == 0x00) { // Data record
-            if (raw.size() < 4 + count)
-                continue; // malformed record — skip silently
-            const uint32_t fullAddr = extAddr + addr;
-            segments.append(Segment{
-                fullAddr,
-                raw.sliced(4, count)
-            });
+            if (raw.size() < 5 + count)
+                continue; // 4 octets d'en-tête + count données + 1 checksum
+            const uint32_t fullAddr = (extAddr + addr) & kAddrMask;
+            if (fullAddr > kMaxImage || fullAddr + count > kMaxImage)
+                continue; // hors garde-fou : on n'alloue jamais au-delà
+            segments.append(Segment{ fullAddr, raw.sliced(4, count) });
             maxAddr = std::max(maxAddr, fullAddr + count);
 
         } else if (type == 0x02) { // Extended segment address (bits 19:4)
-            if (raw.size() < 6) continue;
             extAddr = static_cast<uint32_t>((b[4] << 8) | b[5]) << 4;
 
         } else if (type == 0x04) { // Extended linear address (upper 16 bits)
-            if (raw.size() < 6) continue;
             extAddr = static_cast<uint32_t>((b[4] << 8) | b[5]) << 16;
 
         } else if (type == 0x01) { // End-of-file record
@@ -366,12 +377,16 @@ QByteArray WinolsParser::parseIntelHex(const QByteArray& data) const
     }
 
     // Build a flat image filled with 0xFF (unprogrammed flash default) then
-    // overlay every data segment at its resolved address.
+    // overlay every data segment at its resolved address — chaque copie est bornée.
     QByteArray rom(static_cast<qsizetype>(maxAddr), static_cast<char>(0xFF));
-    for (const Segment& seg : segments)
-        std::memcpy(rom.data() + seg.addr,
-                    seg.payload.constData(),
-                    static_cast<std::size_t>(seg.payload.size()));
+    for (const Segment& seg : segments) {
+        if (seg.addr >= static_cast<uint32_t>(rom.size()))
+            continue;
+        const qsizetype n =
+            std::min<qsizetype>(seg.payload.size(), rom.size() - seg.addr);
+        std::memcpy(rom.data() + seg.addr, seg.payload.constData(),
+                    static_cast<std::size_t>(n));
+    }
 
     return rom;
 }

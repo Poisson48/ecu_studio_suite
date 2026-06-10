@@ -103,6 +103,45 @@ TEST(WinolsParser, IntelHexGapFilledWithFF) {
     EXPECT_EQ(static_cast<uint8_t>(res->rom.at(7)), 0xDD);
 }
 
+// HEX TriCore basé en 0x80000000 : ne doit PAS allouer une image de ~2 Gio.
+TEST(WinolsParser, IntelHexHighBaseAddressNoOom) {
+    QByteArray ext;     ext.append('\x80'); ext.append('\x00'); // linear 0x8000_0000
+    QByteArray payload; payload.append(static_cast<char>(0xAA));
+                        payload.append(static_cast<char>(0xBB));
+    QByteArray hex;
+    hex += hexRecord(0x0000, 0x04, ext);      // extended linear address
+    hex += hexRecord(0x0010, 0x00, payload);  // data at 0x80000010
+    hex += hexRecord(0x0000, 0x01, QByteArray());
+
+    WinolsParser parser;
+    auto res = parser.parse(hex, "tri.hex");
+    ASSERT_TRUE(res.has_value()) << res.error().toStdString();
+    // 0x80000010 & 0x1FFFFFFF = 0x10 → image compacte, pas d'OOM.
+    EXPECT_LT(res->rom.size(), qsizetype{1024});
+    ASSERT_GE(res->rom.size(), 0x12);
+    EXPECT_EQ(static_cast<uint8_t>(res->rom.at(0x10)), 0xAA);
+    EXPECT_EQ(static_cast<uint8_t>(res->rom.at(0x11)), 0xBB);
+}
+
+// Record à checksum invalide : ignoré (on ne reconstruit jamais une ROM fausse).
+TEST(WinolsParser, IntelHexBadChecksumRecordSkipped) {
+    QByteArray good; good.append(static_cast<char>(0xCC));
+                     good.append(static_cast<char>(0xDD));
+    QByteArray hex;
+    hex += ":02000000AABB00\r\n";                  // checksum 0x00 (faux) → ignoré
+    hex += hexRecord(0x0004, 0x00, good);          // record valide
+    hex += hexRecord(0x0000, 0x01, QByteArray());
+
+    WinolsParser parser;
+    auto res = parser.parse(hex, "bad.hex");
+    ASSERT_TRUE(res.has_value()) << res.error().toStdString();
+    ASSERT_GE(res->rom.size(), 6);
+    EXPECT_EQ(static_cast<uint8_t>(res->rom.at(0)), 0xFF);  // record faux non appliqué
+    EXPECT_EQ(static_cast<uint8_t>(res->rom.at(1)), 0xFF);
+    EXPECT_EQ(static_cast<uint8_t>(res->rom.at(4)), 0xCC);  // record valide appliqué
+    EXPECT_EQ(static_cast<uint8_t>(res->rom.at(5)), 0xDD);
+}
+
 TEST(WinolsParser, RawBinaryPassthrough) {
     QByteArray bin;
     for (int i = 0; i < 32; ++i)
