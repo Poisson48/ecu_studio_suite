@@ -391,7 +391,7 @@ bool GitPanel::reloadWorkingRom() {
     if (!m_doc) return false;
     const QString romPath = QDir(m_repoPath).filePath("rom.bin");
     if (!QFileInfo::exists(romPath)) return false;
-    return m_doc->loadFromFile(romPath);
+    return m_doc->loadFromFile(romPath, /*managed=*/true);  // copie de travail projet
 }
 
 void GitPanel::refreshVariants() {
@@ -539,7 +539,7 @@ bool GitPanel::loadVersionIntoDoc(const QString& hash) {
     const QString romPath = QDir(m_repoPath).filePath("rom.bin");
     QFile f(romPath);
     if (f.open(QIODevice::WriteOnly)) { f.write(data); f.close(); }
-    return m_doc->loadFromFile(romPath);
+    return m_doc->loadFromFile(romPath, /*managed=*/true);  // copie de travail projet
 #else
     Q_UNUSED(hash);
     return false;

@@ -17,9 +17,19 @@ public:
     explicit RomDocument(QObject* parent = nullptr);
 
     // ── Chargement / sauvegarde ────────────────────────────────────────────
-    bool loadFromFile(const QString& path);
+    // `managed` = true quand le fichier est une COPIE DE TRAVAIL gérée par l'app
+    // (ex. rom.bin d'un projet, dont l'original est déjà préservé en
+    // rom.original.bin). Pour un fichier EXTERNE ouvert « en express » (managed
+    // == false), on protège l'original : une sauvegarde immuable « .orig » est
+    // créée à côté, et l'autosave NE l'écrasera jamais (cf. MainWindow::autoSave).
+    bool loadFromFile(const QString& path, bool managed = false);
     bool loadFromData(const QByteArray& data, const QString& name);
     bool saveToFile(const QString& path);
+
+    // true si la ROM courante est une copie de travail gérée (autosave autorisé).
+    bool                isManaged() const { return m_managed; }
+    // Chemin de la sauvegarde immuable de l'original sur disque (vide si aucune).
+    QString             originalBackupPath() const { return m_originalBackup; }
 
     // ── Accès ───────────────────────────────────────────────────────────────
     bool                isLoaded() const { return !m_rom.isEmpty(); }
@@ -67,7 +77,9 @@ private:
     QString    m_path;
     QString    m_name;
     QString    m_ecuId;
-    bool       m_modified = false;
+    QString    m_originalBackup;       // sauvegarde immuable de l'original (disque)
+    bool       m_managed   = false;    // copie de travail gérée → autosave autorisé
+    bool       m_modified  = false;
 };
 
 } // namespace ecu_studio

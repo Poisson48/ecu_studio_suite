@@ -418,7 +418,14 @@ void MainWindow::generateReport() {
 void MainWindow::openRomFromDialog() {
     const QString f = pickRomFile(this, tr("Ouvrir ROM"),
                                   tr("ROM (*.bin *.ori *.mod);;Tous (*.*)"));
-    if (!f.isEmpty()) m_hexPanel->loadRom(f);
+    if (f.isEmpty()) return;
+    m_hexPanel->loadRom(f);
+    // Réassurance : l'original est protégé (sauvegarde immuable « .orig »).
+    const QString backup = m_doc->originalBackupPath();
+    if (!backup.isEmpty())
+        statusBar()->showMessage(
+            tr("Original préservé : %1 — l'autosave ne l'écrasera pas.")
+                .arg(QFileInfo(backup).fileName()), 6000);
 }
 
 void MainWindow::setupMenuBar() {
@@ -562,7 +569,9 @@ void MainWindow::openProjectById(const QString& id) {
 
     auto path = m_projects->romPath(id);
     if (path && QFile::exists(*path)) {
-        if (!m_doc->loadFromFile(*path)) {
+        // Copie de travail gérée d'un projet (rom.bin) : autosave autorisé, car
+        // l'original est déjà préservé séparément en rom.original.bin.
+        if (!m_doc->loadFromFile(*path, /*managed=*/true)) {
             QMessageBox::warning(this, tr("Ouvrir projet"),
                                  tr("Impossible de charger la ROM : %1").arg(*path));
             return;
@@ -743,6 +752,13 @@ void MainWindow::restoreWindowState() {
 
 void MainWindow::autoSave() {
     if (!m_doc->isLoaded() || !m_doc->isModified() || m_doc->path().isEmpty())
+        return;
+    // SÉCURITÉ : ne JAMAIS écraser automatiquement un fichier ouvert « en express ».
+    // L'autosave ne vise que les copies de travail gérées (rom.bin d'un projet,
+    // dont l'original est préservé en rom.original.bin). Un stock ouvert directement
+    // via « Ouvrir ROM » n'est jamais réécrit en silence — l'utilisateur garde son
+    // original (et sa sauvegarde « .orig »), et enregistre explicitement via Ctrl+S.
+    if (!m_doc->isManaged())
         return;
     if (m_doc->saveToFile(m_doc->path()))
         statusBar()->showMessage(tr("Sauvegarde automatique — %1").arg(m_doc->name()), 2000);

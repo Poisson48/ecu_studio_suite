@@ -274,7 +274,9 @@ void ProjectPanel::openProjectById(const QString& id) {
     auto path = m_manager->romPath(id);
     if (path && QFile::exists(*path)) {
         if (m_doc) {
-            if (!m_doc->loadFromFile(*path)) {
+            // Copie de travail gérée (rom.bin du projet) — autosave autorisé ;
+            // l'original reste préservé séparément en rom.original.bin.
+            if (!m_doc->loadFromFile(*path, /*managed=*/true)) {
                 QMessageBox::warning(this, tr("Ouvrir projet"),
                                      tr("Impossible de charger la ROM : %1").arg(*path));
                 return;
