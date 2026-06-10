@@ -84,6 +84,7 @@ private:
     RomDocument* m_doc = nullptr;
 
     QComboBox*   m_mapCombo  = nullptr;
+    QComboBox*   m_modeCombo = nullptr;  // Vue : Valeur / Delta (vs baseline)
     QPushButton* m_searchBtn = nullptr;
     QCheckBox*   m_heatChk   = nullptr;
     QCheckBox*   m_ghostChk  = nullptr;  // mode fantôme (baseline overlay)

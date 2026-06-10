@@ -76,6 +76,14 @@ void Map3dPanel::buildUi() {
     ctl->addWidget(m_searchBtn);
     m_heatChk = new QCheckBox(tr("Heatmap 2D"), this);
     ctl->addWidget(m_heatChk);
+    ctl->addWidget(new QLabel(tr("Vue :"), this));
+    m_modeCombo = new QComboBox(this);
+    m_modeCombo->addItem(tr("Valeur"));
+    m_modeCombo->addItem(tr("Delta (vs baseline)"));
+    m_modeCombo->setToolTip(tr("Valeur : surface des valeurs courantes.\n"
+                               "Delta : surface des écarts courant − baseline "
+                               "(rouge = hausse, bleu = baisse)."));
+    ctl->addWidget(m_modeCombo);
     m_ghostChk = new QCheckBox(tr("Fantôme"), this);
     m_ghostChk->setToolTip(tr("Superpose la baseline en wireframe cyan sous la "
                               "surface courante. Choisis la baseline via "
@@ -110,6 +118,8 @@ void Map3dPanel::buildUi() {
             this, &Map3dPanel::onMapSelected);
     connect(m_searchBtn, &QPushButton::clicked, this, &Map3dPanel::searchMaps);
     connect(m_heatChk, &QCheckBox::toggled, this, &Map3dPanel::toggleHeatmap);
+    connect(m_modeCombo, qOverload<int>(&QComboBox::currentIndexChanged),
+            this, [this](int) { if (m_currentAddr != 0) render(m_currentAddr); });
     connect(m_ghostChk, &QCheckBox::toggled, this, [this](bool) {
         if (m_currentAddr != 0) render(m_currentAddr);
     });
@@ -208,6 +218,14 @@ void Map3dPanel::buildUi() {
     ctl->addWidget(m_searchBtn);
     m_heatChk = new QCheckBox(tr("Heatmap 2D"), this);
     ctl->addWidget(m_heatChk);
+    ctl->addWidget(new QLabel(tr("Vue :"), this));
+    m_modeCombo = new QComboBox(this);
+    m_modeCombo->addItem(tr("Valeur"));
+    m_modeCombo->addItem(tr("Delta (vs baseline)"));
+    m_modeCombo->setToolTip(tr("Valeur : surface des valeurs courantes.\n"
+                               "Delta : surface des écarts courant − baseline "
+                               "(rouge = hausse, bleu = baisse)."));
+    ctl->addWidget(m_modeCombo);
     m_ghostChk = new QCheckBox(tr("Fantôme"), this);
     m_ghostChk->setToolTip(tr("Superpose la baseline en wireframe cyan sous la "
                               "surface courante. Choisis la baseline via "
@@ -240,6 +258,8 @@ void Map3dPanel::buildUi() {
             this, &Map3dPanel::onMapSelected);
     connect(m_searchBtn, &QPushButton::clicked, this, &Map3dPanel::searchMaps);
     connect(m_heatChk, &QCheckBox::toggled, this, &Map3dPanel::toggleHeatmap);
+    connect(m_modeCombo, qOverload<int>(&QComboBox::currentIndexChanged),
+            this, [this](int) { if (m_currentAddr != 0) render(m_currentAddr); });
     connect(m_ghostChk, &QCheckBox::toggled, this, [this](bool) {
         if (m_currentAddr != 0) render(m_currentAddr);
     });
@@ -478,6 +498,8 @@ void Map3dPanel::render(quint32 address) {
 
     m_currentAddr = address;
 
+    const bool deltaMode = m_modeCombo && m_modeCombo->currentIndex() == 1;
+
     SurfaceData s;
     s.nx = md->nx;
     s.ny = md->ny;
@@ -490,8 +512,27 @@ void Map3dPanel::render(quint32 address) {
             s.z[idx] = static_cast<double>(md->data[idx]);
         }
 
-    // Mode fantôme : lit la même map dans la baseline et remplit baselineZ.
-    if (m_ghostChk && m_ghostChk->isChecked() && m_doc->hasBaseline()) {
+    // Mode Delta : surface = écart courant − baseline (besoin d'une baseline aux
+    // mêmes dimensions). Sinon on retombe sur la vue Valeur avec un message.
+    bool deltaApplied = false;
+    if (deltaMode) {
+        if (m_doc->hasBaseline()) {
+            auto bspan = constByteSpan(m_doc->baseline());
+            if (auto bmd = ecu::readMapData(bspan, address);
+                bmd && bmd->nx == md->nx && bmd->ny == md->ny) {
+                for (std::size_t i = 0; i < s.z.size(); ++i)
+                    s.z[i] = static_cast<double>(md->data[i]) -
+                             static_cast<double>(bmd->data[i]);
+                deltaApplied = true;
+            }
+        }
+        if (!deltaApplied)
+            setStatus(tr("Mode Delta : aucune baseline comparable — affichage en "
+                         "valeur. Définis une baseline via « Baseline… »."), true);
+    }
+
+    // Mode fantôme (seulement en vue Valeur) : baseline en wireframe sous la surface.
+    if (!deltaMode && m_ghostChk && m_ghostChk->isChecked() && m_doc->hasBaseline()) {
         auto bspan = constByteSpan(m_doc->baseline());
         if (auto bmd = ecu::readMapData(bspan, address);
             bmd && bmd->nx == md->nx && bmd->ny == md->ny) {
@@ -519,6 +560,7 @@ void Map3dPanel::render(quint32 address) {
 
     s.title = name.isEmpty() ? hex32(address) : name;
     if (!dataUnit.isEmpty()) s.title += QString(" [%1]").arg(dataUnit);
+    if (deltaApplied) s.title = QStringLiteral("\xce\x94 ") + s.title;  // « Δ »
     // Titres d'axes (utilisés par le backend Q3DSurface s'il est dispo).
     s.xAxisTitle = xUnit.isEmpty() ? tr("X") : QString("X (%1)").arg(xUnit);
     s.yAxisTitle = yUnit.isEmpty() ? tr("Y") : QString("Y (%1)").arg(yUnit);
