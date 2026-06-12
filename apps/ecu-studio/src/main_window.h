@@ -25,6 +25,7 @@ class ComparePanel;
 class GitPanel;
 class A2lPanel;
 class CanPanel;
+class ObdPanel;
 class OpenDamosLibraryPanel;
 class HubLauncherPanel;
 class Updater;
@@ -114,6 +115,7 @@ private:
     GitPanel*       m_gitPanel{nullptr};
     A2lPanel*       m_a2lPanel{nullptr};
     CanPanel*       m_canPanel{nullptr};
+    ObdPanel*       m_obdPanel{nullptr};
     OpenDamosLibraryPanel* m_libraryPanel{nullptr};
     HubLauncherPanel* m_hubPanel{nullptr};
 

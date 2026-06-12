@@ -157,6 +157,15 @@ void paintIcon(QPainter& p, const QString& id) {
         p.drawPath(a);
         p.drawLine(QPointF(10.2, 13), QPointF(13.8, 13));
 
+    } else if (id == "obd") {
+        // Cadran live (OBD datalog) : demi-cercle gradué + aiguille.
+        p.drawArc(QRectF(3, 7, 18, 18), 0, 180 * 16);
+        p.drawLine(QPointF(3, 16), QPointF(21, 16));
+        p.drawLine(QPointF(12, 16), QPointF(16.5, 10.5));   // aiguille
+        drawDot(p, 12, 16, 1.6);
+        p.drawLine(QPointF(6, 12.5), QPointF(7.3, 13.4));   // ticks
+        p.drawLine(QPointF(18, 12.5), QPointF(16.7, 13.4));
+
     } else if (id == "can") {
         // Bus CAN : ligne + nœuds.
         p.drawLine(QPointF(3, 9), QPointF(21, 9));
@@ -203,7 +212,7 @@ QPixmap renderPixmap(const QString& id, const QColor& color, int px) {
 QIcon navIcon(const QString& id) {
     static const QStringList known = {
         "hub", "project", "mpps", "hex", "maps", "damos", "3d",
-        "automods", "checksum", "compare", "versions", "a2l", "can", "library"
+        "automods", "checksum", "compare", "versions", "a2l", "can", "library", "obd"
     };
     if (!known.contains(id)) return {};
 

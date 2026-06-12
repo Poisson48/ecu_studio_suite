@@ -11,6 +11,7 @@
 #include "panels/git_panel.h"
 #include "panels/a2l_panel.h"
 #include "panels/can_panel.h"
+#include "panels/obd_panel.h"
 #include "panels/opendamos_library_panel.h"
 #include "hub/hub_launcher_panel.h"
 #include "updater.h"
@@ -128,6 +129,7 @@ void MainWindow::setupUi() {
     m_gitPanel      = new GitPanel(m_doc, this);
     m_a2lPanel      = new A2lPanel(m_doc, this);
     m_canPanel      = new CanPanel(this);
+    m_obdPanel      = new ObdPanel(this);
     m_libraryPanel  = new OpenDamosLibraryPanel(m_doc, this);
     m_hubPanel      = new HubLauncherPanel(m_doc, this);
 
@@ -166,6 +168,7 @@ void MainWindow::setupUi() {
     m_sidebar->addPanel("library",   tr("Bibliothèque"), m_libraryPanel);
 
     m_sidebar->addSeparator(tr("MATÉRIEL"));
+    m_sidebar->addPanel("obd",       tr("OBD"),          m_obdPanel);
     m_sidebar->addPanel("can",       tr("CAN"),          m_canPanel);
     m_sidebar->addPanel("mpps",      tr("MPPS"),         m_mppsComingSoon);
 

@@ -1,4 +1,4 @@
-find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent Network)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent Network SerialPort)
 # LinguistTools (lrelease) : optionnel — compile les .ts → .qm. Absent de certaines
 # installations Qt (ex. aqtinstall minimal sous Windows) ; sans lui, on se passe des
 # traductions compilées et l'app retombe sur les chaînes source FR/EN.
@@ -81,6 +81,10 @@ set(ECU_STUDIO_SOURCES
     src/panels/can_panel.cpp
     src/panels/opendamos_library_panel.cpp
 
+    # OBD-II / ELM327 (datalog + sniffing CAN via adaptateur USB)
+    src/obd/elm327.cpp
+    src/panels/obd_panel.cpp
+
     # Hub ECU Studio : lanceur de sous-programmes + vérification sur bus
     src/hub/sub_program_registry.cpp
     src/hub/maturity_badge.cpp
@@ -123,6 +127,7 @@ target_link_libraries(ecu_studio
         Qt6::Widgets
         Qt6::Concurrent
         Qt6::Network
+        Qt6::SerialPort
         mppslib
         ecu_core
         ecu_mcp
