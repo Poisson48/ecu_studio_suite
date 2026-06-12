@@ -32,7 +32,12 @@ namespace ecu_studio {
 
 namespace {
 
-const char* kDataTypes[] = { "SBYTE", "UBYTE", "SWORD_BE", "UWORD_BE", "SLONG_BE", "ULONG_BE" };
+const char* kDataTypes[] = {
+    "SBYTE", "UBYTE",
+    "SWORD_BE", "UWORD_BE", "SLONG_BE", "ULONG_BE",
+    // Variantes little-endian (Continental SID807, MEDC17, …).
+    "SWORD_LE", "UWORD_LE", "SLONG_LE", "ULONG_LE",
+};
 
 ecu::DamosDataType comboToDataType(int idx) {
     using DT = ecu::DamosDataType;
@@ -43,6 +48,10 @@ ecu::DamosDataType comboToDataType(int idx) {
         case 3: return DT::UWordBE;
         case 4: return DT::SLongBE;
         case 5: return DT::ULongBE;
+        case 6: return DT::SWordLE;
+        case 7: return DT::UWordLE;
+        case 8: return DT::SLongLE;
+        case 9: return DT::ULongLE;
     }
     return DT::SWordBE;
 }
@@ -56,6 +65,10 @@ int dataTypeToCombo(ecu::DamosDataType t) {
         case DT::UWordBE: return 3;
         case DT::SLongBE: return 4;
         case DT::ULongBE: return 5;
+        case DT::SWordLE: return 6;
+        case DT::UWordLE: return 7;
+        case DT::SLongLE: return 8;
+        case DT::ULongLE: return 9;
     }
     return 2;
 }

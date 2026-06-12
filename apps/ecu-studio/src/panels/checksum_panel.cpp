@@ -298,6 +298,10 @@ quint32 ChecksumPanel::computeChecksum(const QByteArray& rom, qsizetype start,
         // Mode MPPS : traité par le moteur réel (verifyMpps/runCorrectionMpps),
         // jamais via ce calcul générique. Présent pour l'exhaustivité du switch.
         break;
+    case Algo::Edc17:
+        // Mode EDC17/MED17 : traité par le moteur ecu::edc17* (verifyEdc17/
+        // runCorrectionEdc17), jamais via ce calcul générique. Idem.
+        break;
     case Algo::Sum32:
         for (qsizetype i = start; i + 4 <= end; i += 4)
             acc += word32(i);

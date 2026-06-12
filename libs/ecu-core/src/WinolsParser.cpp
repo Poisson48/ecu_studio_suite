@@ -252,12 +252,12 @@ WinolsParser::parse(const QByteArray& data, const QString& filename) const
             QRegularExpression::CaseInsensitiveOption);
         outName.remove(kHexSuffix);
         outName += u".bin"_qs;
-        return WinolsParseResult{ parseIntelHex(data), outName, {} };
+        return WinolsParseResult{ parseIntelHex(data), outName, {}, /*ecu*/ {} };
     }
 
     // Raw binary fallback.
     const QString outName = ext.endsWith(u".bin"_qs) ? filename : filename + u".bin"_qs;
-    return WinolsParseResult{ data, outName, {} };
+    return WinolsParseResult{ data, outName, {}, /*ecu*/ {} };
 }
 
 std::expected<WinolsParseResult, QString>
@@ -297,7 +297,7 @@ WinolsParser::parseZip(const QByteArray& data, const QString& /*filename*/) cons
     // definitions live in the companion .ols XML that is separate from the ROM
     // payload.  We surface an empty list here; callers that also have the XML
     // can populate it via A2lParser / OpenDamos.
-    return WinolsParseResult{ std::move(*romRes), romEntry.path, {} };
+    return WinolsParseResult{ std::move(*romRes), romEntry.path, {}, /*ecu*/ {} };
 }
 
 bool WinolsParser::looksLikeHex(const QByteArray& data) const
