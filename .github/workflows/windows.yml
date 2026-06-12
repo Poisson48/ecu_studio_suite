@@ -83,7 +83,7 @@ jobs:
           Copy-Item "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin\*.dll" $dist -ErrorAction SilentlyContinue
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ecu-studio-windows-x64
           path: dist/ecu-studio-windows
