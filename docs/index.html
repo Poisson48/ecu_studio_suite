@@ -122,9 +122,9 @@
           <span class="pill pill-proven" data-en="Proven" data-fr="Prouvé">Proven</span>
         </div>
       </div>
-      <p data-en="ECU reprogramming and map editing: 2D + 3D map editor, DAMOS editor, A2L parsing, hex view, checksum correction, MPPS flash, ROM compare, git versioning, one-click AutoMods, and OpenDAMOS recipes."
-         data-fr="Reprogrammation ECU et édition de cartographies : éditeur 2D + 3D, éditeur DAMOS, analyse A2L, vue hexadécimale, correction de checksum, flash MPPS, comparaison de ROM, versionnage git, AutoMods en un clic et recettes OpenDAMOS.">
-        ECU reprogramming and map editing: 2D + 3D map editor, DAMOS editor, A2L parsing, hex view, checksum correction, MPPS flash, ROM compare, git versioning, one-click AutoMods, and OpenDAMOS recipes.
+      <p data-en="ECU reprogramming and map editing: 2D + 3D map editor, DAMOS editor, A2L parsing, hex view, checksum correction (EDC16 + EDC17), MPPS flash, ROM compare, git versioning, one-click AutoMods, OpenDAMOS recipes, and live OBD-II datalog (PIDs, DTC read &amp; clear, VIN, CAN sniff)."
+         data-fr="Reprogrammation ECU et édition de cartographies : éditeur 2D + 3D, éditeur DAMOS, analyse A2L, vue hexadécimale, correction de checksum (EDC16 + EDC17), flash MPPS, comparaison de ROM, versionnage git, AutoMods en un clic, recettes OpenDAMOS et datalog OBD-II en direct (PID, lecture &amp; effacement DTC, VIN, sniff CAN).">
+        ECU reprogramming and map editing: 2D + 3D map editor, DAMOS editor, A2L parsing, hex view, checksum correction (EDC16 + EDC17), MPPS flash, ROM compare, git versioning, one-click AutoMods, OpenDAMOS recipes, and live OBD-II datalog (PIDs, DTC read &amp; clear, VIN, CAN sniff).
       </p>
       <div class="prog-links">
         <a href="#status" data-en="Feature board ↓" data-fr="Tableau des fonctions ↓">Feature board ↓</a>
@@ -255,11 +255,11 @@
         <li><span data-en="2D map editor — Bosch Kf maps, percentage scaling" data-fr="éditeur de cartes 2D — cartes Bosch Kf, mise à l'échelle en %">2D map editor — Bosch Kf maps, percentage scaling</span></li>
         <li><span data-en="A2L / DAMOS parser (Bosch &amp; PSA dialects)" data-fr="analyseur A2L / DAMOS (dialectes Bosch &amp; PSA)">A2L / DAMOS parser (Bosch &amp; PSA dialects)</span></li>
         <li><span data-en="DAMOS editor — edit recipes, detect maps, export A2L" data-fr="éditeur DAMOS — éditer des recettes, détecter des cartes, exporter A2L">DAMOS editor — edit recipes, detect maps, export A2L</span></li>
-        <li><span data-en="Checksum correction with read-back verification" data-fr="correction de checksum avec vérification par relecture">Checksum correction with read-back verification</span></li>
+        <li><span data-en="Checksum correction — EDC16 (CRC-16/ARC) + EDC17/MED17 (CRC32 / ADD32 / ADD16), read-back verified" data-fr="correction de checksum — EDC16 (CRC-16/ARC) + EDC17/MED17 (CRC32 / ADD32 / ADD16), vérifiée par relecture">Checksum correction — EDC16 (CRC-16/ARC) + EDC17/MED17, read-back verified</span></li>
+        <li><span data-en="Every save auto-commits to a per-project git; original ROM kept immutable (.orig)" data-fr="chaque sauvegarde auto-committée dans un git par projet ; ROM d'origine conservée immuable (.orig)">Every save auto-commits to a per-project git; original ROM kept immutable (.orig)</span></li>
         <li><span data-en="Heuristic map finder (no A2L needed)" data-fr="détecteur heuristique de cartes (sans A2L)">Heuristic map finder (no A2L needed)</span></li>
         <li><span data-en="ROM compare — byte diff grouped into map intervals" data-fr="comparaison de ROM — diff octet regroupé par intervalles de carte">ROM compare — byte diff grouped into map intervals</span></li>
         <li><span data-en="Git versioning of ROM history (libgit2)" data-fr="versionnage git de l'historique des ROM (libgit2)">Git versioning of ROM history (libgit2)</span></li>
-        <li><span data-en="AutoMods — one-click Stage 1 / Pop&amp;Bang / depollution" data-fr="AutoMods — Stage 1 / Pop&amp;Bang / dépollution en un clic">AutoMods — one-click Stage 1 / Pop&amp;Bang / depollution</span></li>
         <li><span data-en="Hex view with map-region overlays" data-fr="vue hexadécimale avec surlignage des zones de carte">Hex view with map-region overlays</span></li>
         <li><span data-en="In-app auto-update (Ed25519-signed, SHA-256)" data-fr="mise à jour intégrée (signée Ed25519, SHA-256)">In-app auto-update (Ed25519-signed, SHA-256)</span></li>
         <li><b>OpenDAMOS</b> <span data-en="Bosch EDC16 &amp; EDC17 (axis fingerprint)" data-fr="Bosch EDC16 &amp; EDC17 (empreinte d'axe)">Bosch EDC16 &amp; EDC17 (axis fingerprint)</span></li>
@@ -283,6 +283,8 @@
         <li><span data-en="The hub launcher — open &amp; share config across sub-programs" data-fr="le lanceur hub — ouvrir &amp; partager la config entre sous-programmes">The hub launcher — open &amp; share config across sub-programs</span></li>
         <li><span data-en="Flash → verify loop (ECU Studio ↔ SocketSpy)" data-fr="boucle flash → vérification (ECU Studio ↔ SocketSpy)">Flash → verify loop (ECU Studio ↔ SocketSpy)</span></li>
         <li><span data-en="3D map view — pseudo-3D surface + heatmap with ghost baseline" data-fr="vue 3D — surface pseudo-3D + heatmap avec base fantôme">3D map view — pseudo-3D surface + heatmap with ghost baseline</span></li>
+        <li><b>OBD-II datalog (ELM327)</b> <span data-en="— live PIDs, DTC read &amp; clear, VIN, CAN sniff over a USB ELM327; not yet vehicle-tested" data-fr="— PID live, lecture &amp; effacement DTC, VIN, sniff CAN via un ELM327 USB ; pas encore testé sur véhicule">— live PIDs, DTC read &amp; clear, VIN, CAN sniff over a USB ELM327; not yet vehicle-tested</span></li>
+        <li><b>AutoMods</b> <span data-en="— one-click Stage 1 / IMMO OFF / depollution recipes; safety-guarded but not field-proven" data-fr="— recettes Stage 1 / IMMO OFF / dépollution en un clic ; gardes de sécurité mais non éprouvé sur le terrain">— one-click Stage 1 / IMMO OFF / depollution recipes; safety-guarded but not field-proven</span></li>
         <li><span data-en="Brand-new SocketSpy panels still being hardened" data-fr="tout nouveaux panneaux SocketSpy en cours de fiabilisation">Brand-new SocketSpy panels still being hardened</span></li>
       </ul>
     </div>

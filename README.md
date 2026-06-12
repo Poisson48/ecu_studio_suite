@@ -50,7 +50,7 @@ The suite is a hub launcher around two flagship sub-programs that share the same
 
 | Sub-program | Role | Repo |
 |-------------|------|------|
-| **ECU Studio** | ECU reprogramming, 2D/3D map editor, DAMOS editor, A2L, hex view, checksums, MPPS flashing, compare, git versioning, AutoMods, OpenDAMOS | *(this repo)* |
+| **ECU Studio** | ECU reprogramming, 2D/3D map editor, DAMOS editor, A2L, hex view, checksums (EDC16 + EDC17), MPPS flashing, compare, git versioning, AutoMods, OpenDAMOS, OBD-II live datalog | *(this repo)* |
 | **[SocketSpy](https://github.com/Poisson48/SocketSpy)** | Linux SocketCAN analysis — live monitor, DBC decode, signal graphs, protocol decoders, UDS tester, Lua scripting, simulator, and more | [Poisson48/SocketSpy](https://github.com/Poisson48/SocketSpy) |
 
 ## The interconnection loop
@@ -78,14 +78,15 @@ The flagship workflow — the reason the suite exists — closes the loop betwee
 | 2D map editor | ✅ Proven | Scalar / curve / table maps; CSV import/export |
 | DAMOS editor | ✅ Proven | Create & edit `open_damos` in-app, detect maps from ROM, export A2L |
 | A2L parser & export | ✅ Proven | Parse ASAP2 `.a2l`, browse by ECU, export relocated maps to A2L |
-| Checksum panel | ✅ Proven | Compute & patch checksums for supported ECU families |
+| Checksum panel | ✅ Proven | EDC16 (CRC-16/ARC) **+ EDC17/MED17** (Bosch block table: CRC32 / ADD32 / ADD16) — compute & patch, validated on real dumps |
 | Compare panel | ✅ Proven | Side-by-side ROM diff, byte-level delta, region filter |
-| AutoMods panel | ✅ Proven | Apply named calibration patches from JSON recipe; batch apply / revert |
-| Git versioning | ✅ Proven | libgit2-backed ROM history — commit, browse, restore any version |
+| AutoMods panel | 🧪 Beta | Named calibration patches from JSON recipe (Stage 1, IMMO OFF…); safety guards, but not field-proven |
+| Git versioning (every save) | ✅ Proven | Every save auto-commits to a per-project git repo; original ROM kept immutable (`.orig`) — restore any version |
 | Project manager | ✅ Proven | `.ecuproj` files: ROM path, ECU type, notes, flash log |
 | In-app auto-update | ✅ Proven | Ed25519-signed manifest + SHA-256 verification |
 | Bilingual UI (EN / FR) | ✅ Proven | Complete French / English translations |
 | 3D map view (ghost overlay) | 🧪 Beta | Pseudo-3D + heatmap with baseline ghost overlay; native `Q3DSurface` OpenGL coming |
+| OBD-II live datalog (ELM327) | 🧪 Beta | USB ELM327 adapter: live PIDs (RPM / boost / temp / MAF / λ), CSV log, **read + clear DTCs**, VIN, CAN sniffing. Compiles & unit-tested, **not yet verified on a real vehicle** |
 | CAN companion (launch SocketSpy) | 🧪 Beta | Launch SocketSpy side-by-side during reprogramming |
 
 ### SocketSpy — Linux CAN bus analysis (v0.8.7)
@@ -136,7 +137,7 @@ A free, **CC0** DAMOS that relocates ECU maps by **axis fingerprint** instead of
 
 ### Download (recommended)
 
-**[⬇ Download ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — v1.4.5, ~37 MB, Linux x86_64.
+**[⬇ Download ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — v1.5.0, ~39 MB, Linux x86_64.
 
 ```bash
 chmod +x ECU_Studio-x86_64.AppImage
@@ -233,7 +234,7 @@ La suite est un lanceur (hub) autour de deux sous-programmes phares qui partagen
 
 | Sous-programme | Rôle | Dépôt |
 |----------------|------|-------|
-| **ECU Studio** | Reprogrammation ECU, éditeur de cartos 2D/3D, éditeur DAMOS, A2L, vue hex, checksums, flash MPPS, comparaison, versionnement git, AutoMods, OpenDAMOS | *(ce dépôt)* |
+| **ECU Studio** | Reprogrammation ECU, éditeur de cartos 2D/3D, éditeur DAMOS, A2L, vue hex, checksums (EDC16 + EDC17), flash MPPS, comparaison, versionnement git, AutoMods, OpenDAMOS, datalog OBD-II en direct | *(ce dépôt)* |
 | **[SocketSpy](https://github.com/Poisson48/SocketSpy)** | Analyse SocketCAN sous Linux — moniteur live, décodage DBC, graphes de signaux, décodeurs de protocoles, testeur UDS, scripts Lua, simulateur, et plus | [Poisson48/SocketSpy](https://github.com/Poisson48/SocketSpy) |
 
 ## La boucle d'interconnexion
@@ -261,14 +262,15 @@ Le workflow phare — la raison d'être de la suite — boucle entre *modifier* 
 | Éditeur de cartos 2D | ✅ Éprouvé | Cartos scalaires / courbes / tables ; import/export CSV |
 | Éditeur DAMOS | ✅ Éprouvé | Créer & éditer `open_damos` dans l'appli, détecter les cartos depuis la ROM, exporter en A2L |
 | Parseur & export A2L | ✅ Éprouvé | Parser ASAP2 `.a2l`, parcourir par ECU, exporter les cartos relocalisées en A2L |
-| Panneau checksum | ✅ Éprouvé | Calculer & corriger les checksums des familles d'ECU supportées |
+| Panneau checksum | ✅ Éprouvé | EDC16 (CRC-16/ARC) **+ EDC17/MED17** (table de blocs Bosch : CRC32 / ADD32 / ADD16) — calcul & correction, validé sur dumps réels |
 | Panneau de comparaison | ✅ Éprouvé | Diff ROM côte à côte, delta octet par octet, filtre par région |
-| Panneau AutoMods | ✅ Éprouvé | Appliquer des patchs de calibration nommés depuis une recette JSON ; appliquer / annuler en lot |
-| Versionnement git | ✅ Éprouvé | Historique ROM via libgit2 — commit, parcours, restauration de toute version |
+| Panneau AutoMods | 🧪 Bêta | Patchs de calibration nommés depuis une recette JSON (Stage 1, IMMO OFF…) ; gardes de sécurité, mais non éprouvé sur le terrain |
+| Versionnement git (chaque sauvegarde) | ✅ Éprouvé | Chaque sauvegarde est auto-committée dans un git par projet ; ROM d'origine conservée immuable (`.orig`) — restauration de toute version |
 | Gestionnaire de projet | ✅ Éprouvé | Fichiers `.ecuproj` : chemin ROM, type d'ECU, notes, journal de flash |
 | Mise à jour automatique intégrée | ✅ Éprouvé | Manifeste signé Ed25519 + vérification SHA-256 |
 | Interface bilingue (EN / FR) | ✅ Éprouvé | Traductions françaises / anglaises complètes |
 | Vue 3D des cartos (overlay fantôme) | 🧪 Bêta | Pseudo-3D + carte de chaleur avec overlay fantôme de la base ; `Q3DSurface` OpenGL natif à venir |
+| Datalog OBD-II en direct (ELM327) | 🧪 Bêta | Adaptateur USB ELM327 : PID live (RPM / boost / temp / MAF / λ), log CSV, **lecture + effacement DTC**, VIN, sniff CAN. Compile & testé unitairement, **pas encore validé sur véhicule réel** |
 | Compagnon CAN (lancer SocketSpy) | 🧪 Bêta | Lancer SocketSpy côte à côte pendant la reprogrammation |
 
 ### SocketSpy — analyse du bus CAN sous Linux (v0.8.7)
@@ -319,7 +321,7 @@ Un DAMOS libre, **CC0**, qui relocalise les cartos d'ECU par **empreinte d'axe**
 
 ### Téléchargement (recommandé)
 
-**[⬇ Télécharger ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — v1.4.5, ~37 Mo, Linux x86_64.
+**[⬇ Télécharger ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — v1.5.0, ~39 Mo, Linux x86_64.
 
 ```bash
 chmod +x ECU_Studio-x86_64.AppImage
