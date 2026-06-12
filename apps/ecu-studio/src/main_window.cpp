@@ -162,14 +162,17 @@ void MainWindow::setupUi() {
     m_sidebar->addPanel("versions",  tr("Versions"),     m_gitPanel);
 
     m_sidebar->addSeparator(tr("DAMOS"));
-    m_sidebar->addPanel("damos",     tr("DAMOS"),        m_damosEditor);
-    m_sidebar->addPanel("automods",  tr("AutoMods"),     m_autoMods);
+    // DAMOS éditeur : relocalisation OpenDAMOS ~30% des cas non testés → beta.
+    m_sidebar->addPanel("damos",     tr("DAMOS"),        m_damosEditor, /*beta=*/true);
+    // IMMO OFF (AutoMods) : transformations à risque non éprouvées en réel → beta.
+    m_sidebar->addPanel("automods",  tr("AutoMods"),     m_autoMods,    /*beta=*/true);
     m_sidebar->addPanel("a2l",       tr("A2L"),          m_a2lPanel);
     m_sidebar->addPanel("library",   tr("Bibliothèque"), m_libraryPanel);
 
     m_sidebar->addSeparator(tr("MATÉRIEL"));
-    m_sidebar->addPanel("obd",       tr("OBD"),          m_obdPanel);
-    m_sidebar->addPanel("can",       tr("CAN"),          m_canPanel);
+    // OBD (ELM327) et CAN : matériel jamais validé sur véhicule réel → beta.
+    m_sidebar->addPanel("obd",       tr("OBD"),          m_obdPanel,    /*beta=*/true);
+    m_sidebar->addPanel("can",       tr("CAN"),          m_canPanel,    /*beta=*/true);
     m_sidebar->addPanel("mpps",      tr("MPPS"),         m_mppsComingSoon);
 
     auto* central = new QWidget(this);

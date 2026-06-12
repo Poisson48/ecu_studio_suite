@@ -10,6 +10,8 @@
 #include <QLabel>
 #include <QMenu>
 #include <QMouseEvent>
+#include <QPainter>
+#include <QPaintEvent>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QScrollBar>
@@ -85,11 +87,12 @@ private:
 class SidebarButton : public QToolButton {
     Q_OBJECT
 public:
-    SidebarButton(const QString& icon, const QString& label, QWidget* panel, QWidget* parent = nullptr)
-        : QToolButton(parent), m_panel(panel), m_label(label)
+    SidebarButton(const QString& icon, const QString& label, QWidget* panel,
+                  bool beta = false, QWidget* parent = nullptr)
+        : QToolButton(parent), m_panel(panel), m_label(label), m_beta(beta)
     {
         setCheckable(true);
-        setToolTip(label);
+        setToolTip(beta ? label + tr(" — BETA (non vérifié, à valider)") : label);
         setFixedWidth(64);
         setMinimumHeight(54);
 
@@ -151,6 +154,29 @@ protected:
             emit detachTriggered(m_panel, m_label);
     }
 
+    // Pastille « BETA » (ambre) en coin haut-droit pour les features non
+    // validées (matériel non testé / relocalisation partielle).
+    void paintEvent(QPaintEvent* e) override {
+        QToolButton::paintEvent(e);
+        if (!m_beta) return;
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing, true);
+        QFont bf = font();
+        bf.setPointSizeF(6.0);
+        bf.setBold(true);
+        p.setFont(bf);
+        const QString txt = QStringLiteral("BETA");
+        const QFontMetrics fm(bf);
+        const int w = fm.horizontalAdvance(txt) + 6;
+        const int h = fm.height() + 1;
+        const QRect badge(width() - w - 3, 3, w, h);
+        p.setPen(Qt::NoPen);
+        p.setBrush(QColor(0xf5, 0x9e, 0x0b));          // ambre
+        p.drawRoundedRect(badge, 3, 3);
+        p.setPen(QColor(0x1a, 0x1a, 0x2a));            // texte sombre
+        p.drawText(badge, Qt::AlignCenter, txt);
+    }
+
 private:
     void applyStyle() {
         setStyleSheet(R"(
@@ -171,6 +197,7 @@ private:
     QString  m_label;
     QPoint   m_dragStart;
     bool     m_detached{false};
+    bool     m_beta{false};
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -209,8 +236,8 @@ SidebarNav::SidebarNav(QWidget* parent) : QWidget(parent) {
     lay->addWidget(scroll);
 }
 
-void SidebarNav::addPanel(const QString& icon, const QString& label, QWidget* panel) {
-    auto* btn = new SidebarButton(icon, label, panel);
+void SidebarNav::addPanel(const QString& icon, const QString& label, QWidget* panel, bool beta) {
+    auto* btn = new SidebarButton(icon, label, panel, beta);
     m_btnLayout->insertWidget(m_btnLayout->count() - 1, btn);
     m_stack->addWidget(panel);
 

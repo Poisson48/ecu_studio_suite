@@ -15,7 +15,8 @@ class SidebarNav : public QWidget {
 public:
     explicit SidebarNav(QWidget* parent = nullptr);
 
-    void addPanel(const QString& icon, const QString& label, QWidget* panel);
+    // `beta=true` affiche une pastille « BETA » sur le bouton (feature non validée).
+    void addPanel(const QString& icon, const QString& label, QWidget* panel, bool beta = false);
     // Insère un séparateur de section (fin trait + petit titre) pour regrouper
     // visuellement les panneaux. N'ajoute pas d'entrée navigable.
     void addSeparator(const QString& title = {});
