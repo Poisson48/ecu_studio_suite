@@ -52,6 +52,37 @@ qsizetype findPattern(const QByteArray& rom, std::span<const uint8_t> needle) {
     return rom.indexOf(pat, 0);
 }
 
+// Résout l'adresse réelle d'un auto-mod « adresse » sur cette ROM.
+//
+// Les AutoModAddress du catalogue portent l'adresse relevée sur ori.BIN. Sur un
+// autre firmware de la même famille (ex. SW 1037383736), le scalaire visé est à
+// un offset différent : écrire à l'adresse figée corrompt des octets voisins.
+// On relocalise donc via open_damos en reliant l'auto-mod à la caractéristique
+// VALUE qui partage la même defaultAddress (ex. egr_off @0x1C41B8 ==
+// AirCtl_nMin_C). Retourne l'adresse relocalisée si — et seulement si — la
+// relocalisation est fiable (ancre/empreinte, score > 0).
+std::optional<std::pair<std::size_t, QString>>
+relocatedAddressFor(const QString& ecuId, const QByteArray& rom,
+                    std::size_t hardcodedAddr) {
+    auto recipe = ecu::OpenDamos::loadRecipe(ecuId);
+    if (!recipe) return std::nullopt;
+
+    ecu::OpenDamos od;
+    od.setRecipe(std::move(*recipe));
+    for (const ecu::RelocResult& r : od.relocate(rom)) {
+        if (r.type != ecu::DamosType::Value) continue;
+        if (r.defaultAddress != hardcodedAddr) continue;
+        // Garde identique à applyRecipe : on refuse une relocalisation non fiable.
+        if (r.addressSource == ecu::AddressSource::DefaultFallback || r.score == 0.0)
+            return std::nullopt;
+        const QString src = r.addressSource == ecu::AddressSource::Anchor
+                                ? QStringLiteral("anchor")
+                                : QStringLiteral("fingerprint");
+        return std::make_pair(r.address, src);
+    }
+    return std::nullopt;
+}
+
 } // namespace
 
 bool AutoModsPanel::applyPattern(const QString& patternId) {
@@ -132,19 +163,52 @@ bool AutoModsPanel::applyAddress(const QString& addressId) {
         if (std::string(a.id) != id) continue;
 
         QByteArray& rom = m_doc->romMutable();
-        const qsizetype addr = static_cast<qsizetype>(a.address);
+
+        // 1) Tenter la relocalisation par open_damos (adresse figée = ori.BIN).
+        qsizetype addr = static_cast<qsizetype>(a.address);
+        QString addrSrc = QStringLiteral("figée");
+        bool relocated = false;
+        if (auto reloc = relocatedAddressFor(m_doc->ecuId(), rom, a.address)) {
+            addr    = static_cast<qsizetype>(reloc->first);
+            addrSrc = reloc->second;
+            relocated = true;
+        }
+
         if (addr < 0 || addr + static_cast<qsizetype>(a.bytes.size()) > rom.size()) {
             log(tr("[Address %1] adresse 0x%2 hors limites.")
-                    .arg(addressId).arg(a.address, 0, 16), true);
+                    .arg(addressId).arg(addr, 0, 16), true);
             return false;
         }
+
+        // 2) Fallback non relocalisé : garde de sécurité. On n'écrit QUE si les
+        //    octets courants correspondent au stock (a.restore) ou sont déjà à la
+        //    cible (a.bytes). Sinon on tape peut-être à côté sur cette ROM → skip.
+        if (!relocated && a.restore) {
+            const auto& stock = *a.restore;
+            bool matchesStock = stock.size() == a.bytes.size();
+            bool matchesTarget = true;
+            for (std::size_t i = 0; i < a.bytes.size(); ++i) {
+                const auto cur = static_cast<uint8_t>(rom[addr + static_cast<qsizetype>(i)]);
+                if (i >= stock.size() || cur != stock[i]) matchesStock = false;
+                if (cur != a.bytes[i]) matchesTarget = false;
+            }
+            if (!matchesStock && !matchesTarget) {
+                log(tr("[Address %1] @ 0x%2 [figée] : octets courants inattendus "
+                       "(ni stock ni cible) — non relocalisable sur cette ROM, "
+                       "ignoré par sécurité.")
+                        .arg(addressId).arg(addr, 0, 16), true);
+                return false;
+            }
+        }
+
         for (std::size_t i = 0; i < a.bytes.size(); ++i)
             rom[addr + static_cast<qsizetype>(i)] =
                 static_cast<char>(a.bytes[i]);
 
-        log(tr("[Address %1] @ 0x%2 ← %3")
+        log(tr("[Address %1] @ 0x%2 [%3] ← %4")
                 .arg(addressId)
-                .arg(a.address, 0, 16)
+                .arg(addr, 0, 16)
+                .arg(addrSrc)
                 .arg(bytesToHex(a.bytes)));
         return true;
     }
@@ -166,10 +230,15 @@ bool AutoModsPanel::restoreAddress(const QString& addressId) {
         }
         const auto& restoreBytes = *a.restore;
         QByteArray& rom = m_doc->romMutable();
-        const qsizetype addr = static_cast<qsizetype>(a.address);
+
+        // Même relocalisation qu'à l'application, pour restaurer au bon endroit.
+        qsizetype addr = static_cast<qsizetype>(a.address);
+        if (auto reloc = relocatedAddressFor(m_doc->ecuId(), rom, a.address))
+            addr = static_cast<qsizetype>(reloc->first);
+
         if (addr < 0 || addr + static_cast<qsizetype>(restoreBytes.size()) > rom.size()) {
             log(tr("[Address %1] adresse 0x%2 hors limites.")
-                    .arg(addressId).arg(a.address, 0, 16), true);
+                    .arg(addressId).arg(addr, 0, 16), true);
             return false;
         }
         for (std::size_t i = 0; i < restoreBytes.size(); ++i)
@@ -177,7 +246,7 @@ bool AutoModsPanel::restoreAddress(const QString& addressId) {
                 static_cast<char>(restoreBytes[i]);
 
         log(tr("[Address %1] restauré @ 0x%2")
-                .arg(addressId).arg(a.address, 0, 16));
+                .arg(addressId).arg(addr, 0, 16));
         return true;
     }
     return false;
@@ -200,45 +269,76 @@ bool AutoModsPanel::applyTemplate(const QString& templateId) {
     bool anyChange = false;
 
     // ── Stage 1 : appliquer un pourcentage à chaque map nommée ──────────────
+    //
+    // IMPORTANT : les adresses du catalogue (ecu->stage1Maps) sont relevées sur
+    // la ROM de référence ori.BIN. Sur un autre firmware de la même famille
+    // (ex. SW 1037383736 Berlingo 1.6 HDi 75), les mêmes maps existent à des
+    // offsets DIFFÉRENTS : écrire à l'adresse codée en dur tombe sur des octets
+    // qui ne sont pas la carto → aucun gain, voire corruption. On relocalise
+    // donc chaque map par empreinte d'axes via open_damos (même mécanisme que
+    // applyRecipe), et on saute toute map non relocalisée de façon fiable.
     if (tpl->stage1) {
-        if (!ecu->stage1Maps) {
-            log(tr("[Template %1] cet ECU n'a pas de maps stage1.")
-                    .arg(templateId), true);
+        auto damosRecipe = ecu::OpenDamos::loadRecipe(m_doc->ecuId());
+        if (!damosRecipe) {
+            log(tr("[Template %1] open_damos indisponible (%2) — Stage 1 annulé "
+                   "pour ne pas écrire à des adresses non vérifiées.")
+                    .arg(templateId,
+                         QString::fromStdString(damosRecipe.error())), true);
         } else {
-            for (const auto& [mapName, pct] : tpl->stage1->pcts) {
-                // Résoudre l'adresse depuis le catalogue stage1Maps par nom.
-                bool found = false;
-                for (const auto& m : *ecu->stage1Maps) {
-                    if (std::string(m.name) != mapName) continue;
-                    found = true;
+            ecu::OpenDamos od;
+            od.setRecipe(std::move(*damosRecipe));
 
-                    QByteArray& rom = m_doc->romMutable();
-                    auto romSpan = mutByteSpan(rom);
-                    auto res = ecu::applyPctToMap(romSpan, m.address,
-                                                  static_cast<double>(pct));
-                    if (!res) {
-                        log(tr("[Template %1] map « %2 » : %3")
-                                .arg(templateId)
-                                .arg(QString::fromStdString(mapName))
-                                .arg(QString::fromStdString(res.error())), true);
-                    } else {
-                        const std::size_t n = res->size();
-                        if (n) anyChange = true;
-                        log(tr("[Template %1] map « %2 » @ 0x%3 : %4%5%% "
-                               "(%6 cellule(s))")
-                                .arg(templateId)
-                                .arg(QString::fromStdString(mapName))
-                                .arg(m.address, 0, 16)
-                                .arg(pct >= 0 ? "+" : "")
-                                .arg(pct)
-                                .arg(static_cast<qulonglong>(n)));
-                    }
-                    break;
+            // Relocalisation sur la ROM propre (les empreintes portent sur les
+            // axes, jamais modifiés par le Stage 1 → l'ordre importe peu).
+            std::unordered_map<std::string, ecu::RelocResult> relocByName;
+            {
+                const QByteArray& romC = m_doc->romMutable();
+                for (auto& r : od.relocate(romC))
+                    relocByName.emplace(r.name, std::move(r));
+            }
+
+            for (const auto& [mapName, pct] : tpl->stage1->pcts) {
+                auto it = relocByName.find(mapName);
+                if (it == relocByName.end()) {
+                    log(tr("[Template %1] map « %2 » absente d'open_damos — ignorée.")
+                            .arg(templateId, QString::fromStdString(mapName)), true);
+                    continue;
                 }
-                if (!found)
-                    log(tr("[Template %1] map « %2 » absente du catalogue stage1.")
-                            .arg(templateId)
-                            .arg(QString::fromStdString(mapName)), true);
+                const ecu::RelocResult& rel = it->second;
+
+                // Même garde de sécurité que applyRecipe : on refuse d'écrire si
+                // la map n'a pas été relocalisée avec confiance.
+                if (rel.addressSource == ecu::AddressSource::DefaultFallback ||
+                    rel.score == 0.0) {
+                    log(tr("[Template %1] map « %2 » non relocalisée sur cette ROM "
+                           "(%3) — ignorée pour sécurité.")
+                            .arg(templateId, QString::fromStdString(mapName),
+                                 QString::fromStdString(
+                                     rel.warning.value_or("empreinte introuvable"))),
+                        true);
+                    continue;
+                }
+
+                QByteArray& rom = m_doc->romMutable();
+                auto romSpan = mutByteSpan(rom);
+                auto res = ecu::applyPctToMap(romSpan, rel.address,
+                                              static_cast<double>(pct));
+                if (!res) {
+                    log(tr("[Template %1] map « %2 » @ 0x%3 : %4")
+                            .arg(templateId, QString::fromStdString(mapName))
+                            .arg(static_cast<qulonglong>(rel.address), 0, 16)
+                            .arg(QString::fromStdString(res.error())), true);
+                    continue;
+                }
+                const std::size_t n = res->size();
+                if (n) anyChange = true;
+                log(tr("[Template %1] map « %2 » @ 0x%3 [reloc] : %4%5%% "
+                       "(%6 cellule(s))")
+                        .arg(templateId, QString::fromStdString(mapName))
+                        .arg(static_cast<qulonglong>(rel.address), 0, 16)
+                        .arg(pct >= 0 ? "+" : "")
+                        .arg(pct)
+                        .arg(static_cast<qulonglong>(n)));
             }
         }
     }
