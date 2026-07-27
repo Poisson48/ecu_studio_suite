@@ -2,14 +2,14 @@
   "$schema": "./open_damos.schema.json",
   "ecu": "edc16c34",
   "name": "open_damos — EDC16C34 Bosch PSA",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "license": "CC0-1.0",
   "homepage": "https://github.com/Poisson48/open_car_reprog/wiki/Open-DAMOS",
   "description": "Free and open DAMOS for Bosch EDC16C34 PSA (DV6TED4, 1.6 HDi 75/90/110 hp: Berlingo, Partner, 206, 207, 307, 308, 407, C3, C4, Fiesta TDCi, Mazda 2/3 MZ-CD). Each entry includes an axis fingerprint enabling automatic relocation onto any firmware in the family, without needing the proprietary Bosch DAMOS. Exportable to standard ASAP2 A2L (usable in WinOLS, TunerPro, EcuFlash, open-car-reprog).",
   "baseline": {
     "source": "ressources/edc16c34/ori.BIN",
     "damos": "ressources/edc16c34/damos.a2l",
-    "note": "Addresses and fingerprints taken from ori.BIN (100% match with damos.a2l). For other firmwares (e.g. SW 1037383736 Berlingo II 1.6 HDi 75), fingerprint relocation finds the same maps at different offsets."
+    "note": "Addresses and fingerprints taken from ori.BIN (100% match with damos.a2l). For other firmwares (e.g. SW 1037383736 Berlingo II 1.6 HDi 75), fingerprint relocation finds the same maps at different offsets. ATTENTION : damos.a2l n'est pas présent dans le dépôt (référencé par le catalogue ECU mais absent du disque) ; les empreintes ne sont donc plus vérifiables contre lui."
   },
   "recordLayouts": {
     "Kf_Xs16_Ys16_Ws16": {
@@ -1376,7 +1376,7 @@
     {
       "name": "AirSys_pAirBasRgn1_MAP",
       "category": "boost",
-      "description": "Target air pressure (boost) in region 1 vs RPM (X axis) and pedal load (Y axis). Main VGT turbo calibration MAP. Raising the cells = more boost = more available torque. On the DV6BTED4 75 hp, values are ~15–20% lower than the 110 hp version.",
+      "description": "Consigne de pression d'air absolue (suralimentation) région 1, en fonction du régime (axe X) et de la charge (axe Y). Carto principale de pilotage du turbo. Monter les cellules = plus de suralimentation = plus de couple disponible. Sur DV6BTED4 75 ch les valeurs sont 15 à 20 % plus basses que sur la version 110 ch. NOTE : sur le 75 ch (9HW) le turbo est un Mitsubishi TD025 à GÉOMÉTRIE FIXE piloté par wastegate, pas un VNT — la description antérieure parlait à tort de VGT.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
       "defaultAddress": "0x1C4500",
@@ -1434,7 +1434,8 @@
         "offset": 0,
         "unit": "mbar",
         "note": "Absolute pressure in mbar. 1013 mbar = atmospheric. 1800 mbar = 0.8 bar of boost."
-      }
+      },
+      "axisNote": "Axe Y NON RÉSOLU. Déclaré AccPed_rChkdVal en % avec facteur 0,01220703125, ce qui plafonnerait l'axe à 24,2 % de pédale : incohérent pour une consigne de suralimentation qui doit couvrir la pleine charge. Trois lectures possibles de la valeur brute maxi 1980 : quantité injectée ×0,02 = 39,6 mg/coup (concorde avec les 39-40 mg/coup calculés à pleine charge), quantité injectée ×0,01 = 19,8 mg/coup (l'axe ne couvrirait alors que la demi-charge, avec clampage au-delà), ou couple ×0,1 = 198 Nm (plausible pour un moteur donné à 170 Nm). Non tranché faute d'A2L. Sans incidence sur le tuning : les colonnes de rang élevé correspondent à la forte charge quelle que soit l'unité."
     },
     {
       "name": "AirSys_pAirBasRgn2_MAP",
@@ -2226,6 +2227,19 @@
   ],
   "changelog": [
     {
+      "version": "1.4.0",
+      "date": "2026-07-27",
+      "fixed": [
+        "FlMng_rLmbdSmk_MAP : empreinte d'axes corrigée (venait d'ori.BIN 110 ch), defaultAddress 0x1C931C -> 0x1CC33C. Relocalise en score 1.00 strict/strict sur le firmware 1037383736. Le catalogue passe de 24 à 25 MAP/CURVE localisées.",
+        "AirSys_pAirBasRgn1_MAP : description corrigée, le turbo du 75 ch est un TD025 à géométrie fixe à wastegate et non un VNT."
+      ],
+      "added": [
+        "knownFirmwares[1037383736] : identifiant de calibration, md5, adresses vérifiées de 12 cartos, et relevé des cartos plates et des contraintes actives.",
+        "AirSys_pAirBasRgn1_MAP.axisNote : l'axe Y est déclaré en % de pédale mais plafonne à 24,2 %, ce qui est incohérent. Trois interprétations possibles consignées."
+      ],
+      "note": "Travaux menés en construisant une calibration Stage 2 sur Berlingo B9 1.6 HDi 75. Total inchangé : 40 entrées."
+    },
+    {
       "version": "1.3.0",
       "date": "2026-05-18",
       "added": [
@@ -2255,14 +2269,37 @@
       "hw": "0281012620",
       "ref": "9663944680",
       "vehicle": "Citroën Berlingo I / Peugeot Partner 1.6 HDi 55kW 75 hp (DV6BTED4, engine code 9HW)",
-      "relocScore": "29/31 MAP/CURVE by fingerprint (score ~0.80–1.0)",
+      "relocScore": "25/31 MAP+CURVE par empreinte, dont 19 en score 1.00 strict/strict",
       "knownDiff": [
         "AccPed_trqEngHiGear_MAP et AccPed_trqEngLoGear_MAP partagent les mêmes axes pédale dans ce firmware 75hp (axe Y identique) — la désambiguïsation se fait uniquement par proximité de defaultAddress.",
         "FMTC_trq2qRgn1_MAP : axe Y légèrement différent en 75hp (RPM bas 500/600/800 au lieu de 550/700/850 en ori.BIN 110hp) — match bag/strict.",
         "InjCrv_qMI1BasRgn1_MAP et InjCrv_qMI1BasRgn2_MAP : absents dans ce firmware 75hp (dims 17×19 introuvables).",
-        "AirSys_pAirBasRgn2_MAP : absente en 75hp (calibration spécifique 110hp)."
+        "AirSys_pAirBasRgn2_MAP : absente en 75hp (calibration spécifique 110hp).",
+        "FlMng_rLmbdSmk_MAP : RÉSOLU en 1.4.0. Était introuvable car l'empreinte venait d'ori.BIN (110 ch) : axe X démarrant à 499 tr/min et axe Y de 250 à 900 mg/Hub, alors que le 75 ch a un axe X démarrant à 800 tr/min et un axe Y de 190 à 850 mg/Hub. Localisée à 0x1CC33C, données lambda 0,86 à 1,67.",
+        "Cartos plates, à traiter avec prudence : EngPrt_trqAPSLim_MAP vaut 4000 (400,0 Nm) sur ses 96 cellules, InjCrv_qMI1MaxRgn1_MAP vaut 5000 (50,00 mg/coup) sur ses 128 cellules, et Eng_trqSpd_CUR vaut 5000 (500,0 Nm) sur ses 12 points. Soit des plafonds neutralisés en usine, soit trois identifications erronées — non tranché.",
+        "EngPrt_qLim_CUR (limiteur de débit absolu) vaut 100 mg/coup constant puis chute à 0 entre 5100 et 5200 tr/min (coupure de surrégime). Non contraignant : la pleine charge réelle est autour de 40 mg/coup.",
+        "Rail_pSetPointBase_MAP atteint déjà 1600 bar, le maximum de la pompe HP. Aucune marge.",
+        "Le limiteur de fumée est la contrainte active à pleine charge. Son plancher de lambda descend à 1,03 vers 1600 tr/min (AFR 14,9:1) et remonte à 1,37 vers 3500 tr/min (AFR 19,9:1). C'est lui qui borne le couple, pas le souhait conducteur, qui demande déjà 288 Nm à 2000 tr/min.",
+        "Checksum : la région calibration 0x1C0000-0x1FDFFF porte un CK 32 bits stocké à 0x1C0028 (0xBE536AA7 sur ce dump), et un sous-bloc 0x1C122C-0x1C1557 a son propre CK. L'algorithme n'est pas recouvré (cf. docs/mpps-checksums.md §8) : le MPPS doit recalculer à l'écriture."
       ],
-      "note": "OBD MPPS dump — calibration only. DTC table DSM_ClaDfp absent (BDM needed). Test réalisé avec ressources/edc16c34/9663944680.bin."
+      "note": "OBD MPPS dump — calibration only. DTC table DSM_ClaDfp absent (BDM needed). Test réalisé avec ressources/edc16c34/9663944680.bin. Cartos relues et validées physiquement en juillet 2026 lors de la construction d'une calibration Stage 2 : axes, unités et plages de valeurs cohérents avec la physique du moteur. La chaîne suralimentation → masse d'air → limiteur de fumée → FMTC → couple reproduit 74 ch pour la calibration d'origine, contre 75 ch annoncés par PSA (écart 1 %).",
+      "calibrationId": "C353",
+      "calibrationString": "|99/1/EDC16C34/014/C353/X/0X0000_000/____________________/19810101/",
+      "md5": "f733c7bc5d4b1fc0092976874c21d08e",
+      "verifiedAddresses": {
+        "AirSys_pAirBasRgn1_MAP": "0x1C4D1C",
+        "FlMng_rLmbdSmk_MAP": "0x1CC33C",
+        "AccPed_trqEngHiGear_MAP": "0x1C162C",
+        "FMTC_trq2qBas_MAP": "0x1CCAD2",
+        "Rail_pSetPointBase_MAP": "0x1F0864",
+        "EngPrt_qLim_CUR": "0x1CB40C",
+        "AFSCD_dmLin_CUR": "0x1C24EC",
+        "FlSys_rhoTFuel_CUR": "0x1CCA70",
+        "Eng_trqSpd_CUR": "0x1CABE2",
+        "EngPrt_trqAPSLim_MAP": "0x1CB482",
+        "InjCrv_qMI1MaxRgn1_MAP": "0x1D6E94",
+        "AirCtl_mDesBas_MAP": "0x1C36D2"
+      }
     }
   ]
 }
