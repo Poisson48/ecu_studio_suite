@@ -28,6 +28,24 @@ Les deux binaires sont **entièrement reproductibles** depuis
 qui relocalise par empreinte d'axes. Les recettes sont la source de vérité ;
 les `.bin` ne sont là que pour éviter d'avoir à les régénérer.
 
+Depuis `open_damos.json` 1.5.0, les mêmes modifications sont aussi disponibles
+dans le **panneau Auto-mods de l'application** sous forme de trois patterns
+search/replace (avec restore intégré) :
+
+| Auto-mod | Contenu |
+|---|---|
+| `stage2_smoke_9hw` | limiteur de fumée, commun A et B — **toujours requis** |
+| `stage2A_boost_9hw` | suralimentation version A |
+| `stage2B_boost_9hw` | suralimentation version B |
+
+Un Stage 2 complet = `stage2_smoke_9hw` + **un seul** des deux boost. Les deux
+boost sont mutuellement exclusifs : restaurer l'un avant d'appliquer l'autre
+(le motif de recherche ne matche que les octets d'origine). Appliqués sur la
+lecture d'origine, ils reproduisent les md5 ci-dessus à l'octet près (vérifié
+via `damos_apply_automod`). Les motifs sont uniques dans la ROM, mais restent
+liés à cette calibration : sur toute autre ROM, le pattern ne matchera
+simplement pas.
+
 ## Ce qui est modifié
 
 Deux cartos, rien d'autre. Vérifié octet par octet : zone programme,
