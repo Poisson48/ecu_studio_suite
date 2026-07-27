@@ -157,3 +157,61 @@ TEST(RomPatcher, ReadWriteValue) {
     EXPECT_FALSE(readValue(std::span<const uint8_t>(rom), 16).has_value());
     EXPECT_FALSE(writeValue(std::span<uint8_t>(rom), 16, 1.0).has_value());
 }
+
+// --- CURVE (Kl_Xs16_Ws16) -------------------------------------------------
+
+namespace {
+
+// Build a synthetic ROM containing a single Kl_Xs16_Ws16 curve at the returned
+// address. Layout: [nx][xAxis...][data...] — no ny field.
+std::vector<uint8_t> buildCurveRom(std::size_t addr, int nx,
+                                   const std::vector<int16_t>& xAxis,
+                                   const std::vector<int16_t>& data) {
+    std::vector<uint8_t> rom(addr, 0x00);
+    pushBE(rom, static_cast<int16_t>(nx));
+    for (auto x : xAxis) pushBE(rom, x);
+    for (auto d : data) pushBE(rom, d);
+    rom.resize(rom.size() + 32, 0x00);
+    return rom;
+}
+
+} // namespace
+
+TEST(RomPatcher, ReadCurveDataDecodesAxisAndValues) {
+    // Mirrors EngPrt_qLim_CUR: RPM axis, fuel-quantity ceiling dropping to 0 at
+    // the rev limit.
+    const std::vector<int16_t> x{0, 250, 500, 1000, 2000, 5200};
+    const std::vector<int16_t> v{10000, 10000, 10000, 10000, 10000, 0};
+    const auto rom = buildCurveRom(0x100, 6, x, v);
+
+    auto cd = readCurveData(std::span<const uint8_t>(rom), 0x100);
+    ASSERT_TRUE(cd.has_value()) << cd.error();
+    EXPECT_EQ(cd->nx, 6);
+    EXPECT_EQ(cd->xAxis, x);
+    EXPECT_EQ(cd->data, v);
+    EXPECT_EQ(cd->dataOff, 0x100u + 2u + 6u * 2u);
+}
+
+TEST(RomPatcher, ReadCurveDataRejectsBadDimension) {
+    std::vector<uint8_t> rom(0x100, 0x00);
+    pushBE(rom, 0); // nx = 0
+    rom.resize(rom.size() + 32, 0x00);
+    EXPECT_FALSE(readCurveData(std::span<const uint8_t>(rom), 0x100).has_value());
+}
+
+TEST(RomPatcher, ReadCurveDataRejectsTruncatedRom) {
+    // nx claims 16 entries but the ROM ends immediately after the header.
+    std::vector<uint8_t> rom(0x100, 0x00);
+    pushBE(rom, 16);
+    EXPECT_FALSE(readCurveData(std::span<const uint8_t>(rom), 0x100).has_value());
+}
+
+TEST(RomPatcher, ReadMapDataOnCurveConsumesAxisAsNy) {
+    // Documents why a curve must not be read with readMapData(): the 4-byte MAP
+    // header swallows xAxis[0] as ny. With xAxis[0] == 0 that is a hard error,
+    // which is exactly what read_map reported for EngPrt_qLim_CUR.
+    const std::vector<int16_t> x{0, 250, 500, 1000};
+    const std::vector<int16_t> v{100, 200, 300, 400};
+    const auto rom = buildCurveRom(0x100, 4, x, v);
+    EXPECT_FALSE(readMapData(std::span<const uint8_t>(rom), 0x100).has_value());
+}

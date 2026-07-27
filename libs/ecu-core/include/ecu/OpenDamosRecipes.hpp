@@ -35,7 +35,23 @@ struct OpSetRaw   { int16_t raw; };
 struct OpAddPct   { double pct; };
 struct OpSetMapAll{ double phys; };
 
-using OpPayload = std::variant<OpSetPhys, OpSetRaw, OpAddPct, OpSetMapAll>;
+// One cell of a setCells operation. The cell is addressed by the RAW values of
+// its axes, not by index and not by address: `x` is matched against the X axis
+// read from the ROM, `y` against the Y axis (ignored, and must be unset, for a
+// CURVE). This keeps a recipe address-free and survives relocation, matching how
+// characteristics themselves are relocated by axis fingerprint. A cell whose
+// axis values match nothing is reported as an error rather than written blind.
+struct CellWrite {
+    double x     = 0.0;
+    double y     = 0.0;
+    bool   hasY  = false;
+    double phys  = 0.0;   // physical cell value, converted via the entry factor
+};
+
+struct OpSetCells { std::vector<CellWrite> cells; };
+
+using OpPayload = std::variant<OpSetPhys, OpSetRaw, OpAddPct, OpSetMapAll,
+                               OpSetCells>;
 
 struct RecipeOp {
     std::string entry;   // open_damos entry name (e.g. "VSSCD_vMax_C")

@@ -120,28 +120,54 @@ Tool makeReadMapTool() {
     Tool t;
     t.name        = "read_map";
     t.description =
-        "Lit une cartographie dans un fichier ROM à l'adresse donnée : "
-        "dimensions nx/ny, axes X/Y et grille de valeurs (SWORD big-endian). "
-        "L'en-tête MAP est de 4 octets (nx UWORD_BE, ny UWORD_BE).";
+        "Lit une cartographie (MAP 2D) ou une courbe (CURVE 1D) dans un fichier "
+        "ROM à l'adresse donnée : dimensions, axes et valeurs (SWORD "
+        "big-endian). L'en-tête MAP fait 4 octets (nx puis ny, UWORD_BE) ; "
+        "l'en-tête CURVE fait 2 octets (nx seul). Passer type='curve' pour une "
+        "courbe : la lire en 'map' consommerait xAxis[0] comme ny et échouerait.";
     t.inputSchema = {
         {"type", "object"},
         {"properties", {
             {"rom_path", {{"type", "string"},
                           {"description", "Chemin du fichier ROM"}}},
             {"address",  {{"type", "integer"},
-                          {"description", "Adresse de l'en-tête de la map (octets)"}}}
+                          {"description", "Adresse de l'en-tête de la map (octets)"}}},
+            {"type",     {{"type", "string"},
+                          {"enum", {"map", "curve"}},
+                          {"description", "'map' (2D, défaut) ou 'curve' (1D)"}}}
         }},
         {"required", {"rom_path", "address"}}
     };
     t.handler = [](const json& p) -> json {
         const std::string path = requireString(p, "rom_path");
         const auto address = static_cast<std::size_t>(requireNumber(p, "address"));
+        const std::string kind =
+            (p.contains("type") && p["type"].is_string())
+                ? p["type"].get<std::string>() : std::string("map");
         const auto rom = loadRom(path);
+
+        if (kind == "curve") {
+            auto cd = ecu::readCurveData(rom, address);
+            if (!cd) throw std::runtime_error(cd.error());
+            return {
+                {"address",    address},
+                {"addressHex", hexAddr(address)},
+                {"type",       "curve"},
+                {"nx",         cd->nx},
+                {"xAxis",      cd->xAxis},
+                {"data",       cd->data},
+                {"dataOffset", cd->dataOff},
+            };
+        }
+        if (kind != "map")
+            throw std::runtime_error("type doit valoir 'map' ou 'curve'");
+
         auto md = ecu::readMapData(rom, address);
         if (!md) throw std::runtime_error(md.error());
         return {
             {"address",    address},
             {"addressHex", hexAddr(address)},
+            {"type",       "map"},
             {"nx",         md->nx},
             {"ny",         md->ny},
             {"xAxis",      md->xAxis},
