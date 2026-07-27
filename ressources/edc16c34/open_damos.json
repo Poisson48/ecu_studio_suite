@@ -466,7 +466,7 @@
       "description": "SMOKE LIMITER — minimum lambda setpoint vs air mass flow. This is what holds you back with black smoke if you can't raise injection high enough. Lower it (e.g. 1.2 -> 1.1) to allow more injection before the smoke cut.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
-      "defaultAddress": "0x1C931C",
+      "defaultAddress": "0x1CC33C",
       "dims": {
         "nx": 16,
         "ny": 16
@@ -479,8 +479,6 @@
           "offset": 0,
           "dataType": "SWORD_BE",
           "fingerprint": [
-            499,
-            500,
             800,
             900,
             1000,
@@ -489,7 +487,9 @@
             1750,
             2000,
             2250,
+            2500,
             2750,
+            3000,
             3250,
             3500,
             3750,
@@ -504,6 +504,7 @@
           "offset": 0,
           "dataType": "SWORD_BE",
           "fingerprint": [
+            1900,
             2500,
             3500,
             3750,
@@ -518,8 +519,7 @@
             7000,
             7500,
             8000,
-            8500,
-            9000
+            8500
           ]
         }
       ],
@@ -535,8 +535,8 @@
         "sportPct": -8,
         "note": "Lowering lambda = more injection allowed. -5% = ~1.33 -> 1.26 lambda"
       },
-      "relocability": "ori-BIN-only",
-      "relocabilityNote": "Smoke limiter calibrated differently between 75 hp and 110 hp — ori.BIN address not valid on Berlingo."
+      "relocability": "verified",
+      "relocabilityNote": "Localisée sur 9663944680 (Berlingo 75 ch, calibration C353) le 2026-07-27 par empreinte d'axes : X = régime 800-4500 tr/min, Y = masse d'air par cylindre 190-850 mg/Hub, données lambda 0,86-1,67. L'empreinte précédente venait d'ori.BIN (110 ch) dont les deux axes diffèrent, d'où l'échec de relocalisation."
     },
     {
       "name": "InjCrv_phiMI1Bas2_MAP",

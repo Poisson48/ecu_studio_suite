@@ -22,6 +22,16 @@ struct MapData {
     std::size_t          dataOff;
 };
 
+// CURVE (record layout Kl_Xs16_Ws16): 2-byte header (nx UWORD_BE) followed by
+// the X axis then the values, both nx SWORD_BE entries. Unlike MapData there is
+// no ny field, so reading a curve with readMapData() consumes xAxis[0] as ny.
+struct CurveData {
+    int                  nx;
+    std::vector<int16_t> xAxis;
+    std::vector<int16_t> data;
+    std::size_t          dataOff;
+};
+
 struct ApplyPctOptions {
     bool    onlyPositive = true;
     int16_t rawMin       = -32768;
@@ -34,6 +44,9 @@ void writeSwordBE(std::span<uint8_t> rom, std::size_t off, double value);
 
 std::expected<MapData, std::string>
 readMapData(std::span<const uint8_t> rom, std::size_t address);
+
+std::expected<CurveData, std::string>
+readCurveData(std::span<const uint8_t> rom, std::size_t address);
 
 std::expected<std::vector<ChangedCell>, std::string>
 applyPctToMap(std::span<uint8_t> rom, std::size_t address, double pct,

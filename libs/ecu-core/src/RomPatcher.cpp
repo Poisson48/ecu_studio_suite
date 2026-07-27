@@ -95,6 +95,38 @@ readMapData(std::span<const uint8_t> rom, std::size_t address) {
     return out;
 }
 
+std::expected<CurveData, std::string>
+readCurveData(std::span<const uint8_t> rom, std::size_t address) {
+    if (!boundsOk(rom, address, 2))
+        return std::unexpected(
+            std::format("Address 0x{:X} out of ROM bounds", address));
+
+    const int nx = readSwordBE(rom, address);
+    if (nx <= 0 || nx > 64)
+        return std::unexpected(
+            std::format("Invalid curve dimension nx={} at 0x{:X}", nx, address));
+
+    const std::size_t xAxisOff = address + 2;
+    const std::size_t dataOff  = xAxisOff + static_cast<std::size_t>(nx) * 2;
+    const std::size_t required = dataOff + static_cast<std::size_t>(nx) * 2;
+    if (required > rom.size())
+        return std::unexpected(
+            std::format("Curve at 0x{:X} extends past ROM end (need {} bytes)",
+                        address, required));
+
+    CurveData out;
+    out.nx      = nx;
+    out.dataOff = dataOff;
+    out.xAxis.resize(static_cast<std::size_t>(nx));
+    out.data.resize(static_cast<std::size_t>(nx));
+    for (int i = 0; i < nx; ++i) {
+        const auto k = static_cast<std::size_t>(i);
+        out.xAxis[k] = readSwordBE(rom, xAxisOff + k * 2);
+        out.data[k]  = readSwordBE(rom, dataOff + k * 2);
+    }
+    return out;
+}
+
 std::expected<std::vector<ChangedCell>, std::string>
 applyPctToMap(std::span<uint8_t> rom, std::size_t address, double pct,
               ApplyPctOptions opts) {

@@ -17,10 +17,82 @@
 #include <QFile>
 #include <QString>
 
+#include <fstream>
 #include <span>
 #include <stdexcept>
 
 namespace ecu::mcp {
+
+namespace {
+
+// Parse a JSON recipe file into an ecu::Recipe. Lets a caller author a recipe
+// as data instead of extending the compiled-in table. Every failure is fatal:
+// a half-understood recipe must never reach a ROM.
+ecu::Recipe loadRecipeJson(const std::string& path) {
+    std::ifstream in(path);
+    if (!in) throw std::runtime_error("recette illisible : " + path);
+    json j;
+    try {
+        in >> j;
+    } catch (const std::exception& e) {
+        throw std::runtime_error("recette JSON invalide (" + path + ") : " + e.what());
+    }
+
+    ecu::Recipe r;
+    r.id          = j.value("id", std::string("recipe"));
+    r.name        = j.value("name", r.id);
+    r.category    = j.value("category", std::string("custom"));
+    r.description = j.value("description", std::string());
+    const std::string risk = j.value("risk", std::string("medium"));
+    r.risk = risk == "low"  ? ecu::RecipeRisk::Low
+           : risk == "high" ? ecu::RecipeRisk::High
+                            : ecu::RecipeRisk::Medium;
+
+    if (!j.contains("ops") || !j["ops"].is_array())
+        throw std::runtime_error("recette " + path + " : champ 'ops' absent ou non tableau");
+
+    for (const auto& o : j["ops"]) {
+        if (!o.contains("entry") || !o["entry"].is_string())
+            throw std::runtime_error("recette " + path + " : op sans 'entry'");
+        ecu::RecipeOp op;
+        op.entry = o["entry"].get<std::string>();
+        const std::string kind = o.value("op", std::string());
+
+        if (kind == "setPhys") {
+            op.payload = ecu::OpSetPhys{o.at("phys").get<double>()};
+        } else if (kind == "setRaw") {
+            op.payload = ecu::OpSetRaw{static_cast<int16_t>(o.at("raw").get<int>())};
+        } else if (kind == "addPct") {
+            op.payload = ecu::OpAddPct{o.at("pct").get<double>()};
+        } else if (kind == "setMapAll") {
+            op.payload = ecu::OpSetMapAll{o.at("phys").get<double>()};
+        } else if (kind == "setCells") {
+            if (!o.contains("cells") || !o["cells"].is_array())
+                throw std::runtime_error("recette " + path + " : setCells sans 'cells' pour "
+                                         + op.entry);
+            ecu::OpSetCells sc;
+            for (const auto& c : o["cells"]) {
+                ecu::CellWrite cw;
+                cw.x    = c.at("x").get<double>();
+                cw.phys = c.at("phys").get<double>();
+                if (c.contains("y")) { cw.y = c["y"].get<double>(); cw.hasY = true; }
+                sc.cells.push_back(cw);
+            }
+            if (sc.cells.empty())
+                throw std::runtime_error("recette " + path + " : setCells vide pour " + op.entry);
+            op.payload = std::move(sc);
+        } else {
+            throw std::runtime_error("recette " + path + " : opération inconnue '" + kind
+                                     + "' pour " + op.entry);
+        }
+        r.ops.push_back(std::move(op));
+    }
+    if (r.ops.empty())
+        throw std::runtime_error("recette " + path + " : aucune opération");
+    return r;
+}
+
+} // namespace
 
 // ---------------------------------------------------------------------------
 // list_recipes — recettes open_damos prédéfinies (OpenDamosRecipes::listRecipes)
@@ -136,17 +208,34 @@ Tool makeApplyRecipeTool() {
         {"properties", {
             {"rom_path",  {{"type", "string"}, {"description", "Chemin de la ROM source"}}},
             {"ecu_id",    {{"type", "string"}, {"description", "Identifiant ECU (pour charger l'open_damos)"}}},
-            {"recipe_id", {{"type", "string"}, {"description", "Identifiant de recette (cf. list_recipes)"}}},
+            {"recipe_id", {{"type", "string"}, {"description", "Identifiant de recette prédéfinie (cf. list_recipes)"}}},
+            {"recipe_path", {{"type", "string"}, {"description",
+                "Chemin d'un fichier recette JSON (alternative à recipe_id). "
+                "Format : {id,name,ops:[{entry,op,...}]} où op vaut setPhys, "
+                "setRaw, addPct, setMapAll ou setCells. setCells attend "
+                "cells:[{x,y,phys}] adressées par valeurs d'axes brutes."}}},
             {"out_path",  {{"type", "string"}, {"description", "Chemin du fichier de sortie modifié"}}}
         }},
-        {"required", {"rom_path", "ecu_id", "recipe_id", "out_path"}}
+        {"required", {"rom_path", "ecu_id", "out_path"}}
     };
     t.handler = [](const json& p) -> json {
         const std::string ecuId    = requireString(p, "ecu_id");
-        const std::string recipeId = requireString(p, "recipe_id");
         const std::string outPath  = requireString(p, "out_path");
-        const ecu::Recipe* recipe  = ecu::getRecipe(recipeId);
-        if (!recipe) throw std::runtime_error("recette introuvable : " + recipeId);
+
+        ecu::Recipe   parsed;
+        const ecu::Recipe* recipe = nullptr;
+        std::string   recipeId;
+
+        const bool hasPath = p.contains("recipe_path") && p["recipe_path"].is_string();
+        if (hasPath) {
+            parsed   = loadRecipeJson(p["recipe_path"].get<std::string>());
+            recipe   = &parsed;
+            recipeId = parsed.id;
+        } else {
+            recipeId = requireString(p, "recipe_id");
+            recipe   = ecu::getRecipe(recipeId);
+            if (!recipe) throw std::runtime_error("recette introuvable : " + recipeId);
+        }
 
         auto rom = loadRom(requireString(p, "rom_path"));
         std::span<uint8_t> romSpan(rom.data(), rom.size());

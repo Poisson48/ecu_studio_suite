@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <format>
 #include <limits>
+#include <optional>
 #include <span>
 #include <string_view>
 #include <unordered_map>
@@ -429,6 +430,96 @@ applyRecipe(const Recipe& recipe, std::span<uint8_t> rom, const QString& ecu) {
                 opRes.method       = "setMapAll";
                 opRes.physValue    = payload.phys;
                 opRes.rawValue     = raw;
+                opRes.cellsChanged = cells;
+
+            } else if constexpr (std::is_same_v<P, OpSetCells>) {
+                opRes.method = "setCells";
+                if (rel.type != DamosType::Map && rel.type != DamosType::Curve) {
+                    opRes.error = std::format("Unsupported operation setCells on type {}",
+                                              static_cast<int>(rel.type));
+                    return;
+                }
+                double factor = 1.0;
+                double offset = 0.0;
+                if (od.recipe()) {
+                    for (const DamosEntry& e : od.recipe()->characteristics) {
+                        if (e.name == op.entry) {
+                            factor = e.data.factor;
+                            offset = e.data.offset;
+                            break;
+                        }
+                    }
+                }
+
+                // Axis lookup: exact match on the raw axis value read from the
+                // ROM. Axes are integers, so equality is well defined here.
+                const auto indexOf = [](const std::vector<int16_t>& axis,
+                                        double value) -> std::optional<std::size_t> {
+                    for (std::size_t i = 0; i < axis.size(); ++i)
+                        if (static_cast<double>(axis[i]) == value) return i;
+                    return std::nullopt;
+                };
+
+                std::vector<int16_t> xAxis, yAxis;
+                std::size_t dataOff = 0;
+                std::size_t nyStride = 1;
+                if (rel.type == DamosType::Map) {
+                    auto md = readMapData(rom, rel.address);
+                    if (!md) { opRes.error = md.error(); return; }
+                    xAxis = md->xAxis; yAxis = md->yAxis;
+                    dataOff = md->dataOff;
+                    nyStride = static_cast<std::size_t>(md->ny);
+                } else {
+                    auto cd = readCurveData(rom, rel.address);
+                    if (!cd) { opRes.error = cd.error(); return; }
+                    xAxis = cd->xAxis;
+                    dataOff = cd->dataOff;
+                }
+
+                int cells = 0;
+                for (const CellWrite& c : payload.cells) {
+                    const auto ix = indexOf(xAxis, c.x);
+                    if (!ix) {
+                        opRes.error = std::format("setCells: X={} absent de l'axe de {}",
+                                                  c.x, op.entry);
+                        return;
+                    }
+                    std::size_t flat = *ix;
+                    if (rel.type == DamosType::Map) {
+                        if (!c.hasY) {
+                            opRes.error = std::format("setCells: Y manquant pour la MAP {}",
+                                                      op.entry);
+                            return;
+                        }
+                        const auto iy = indexOf(yAxis, c.y);
+                        if (!iy) {
+                            opRes.error = std::format("setCells: Y={} absent de l'axe de {}",
+                                                      c.y, op.entry);
+                            return;
+                        }
+                        // Cell order is X-outer / Y-inner: data[ix * ny + iy].
+                        flat = *ix * nyStride + *iy;
+                    } else if (c.hasY) {
+                        opRes.error = std::format("setCells: Y interdit sur la CURVE {}",
+                                                  op.entry);
+                        return;
+                    }
+
+                    const double rawD = std::round((c.phys - offset) / factor);
+                    const auto rawV = static_cast<int16_t>(
+                        std::clamp(rawD,
+                                   static_cast<double>(std::numeric_limits<int16_t>::min()),
+                                   static_cast<double>(std::numeric_limits<int16_t>::max())));
+                    const std::size_t cellOff = dataOff + flat * 2;
+                    if (cellOff + 1 >= rom.size()) {
+                        opRes.error = std::format("setCells: cellule hors ROM pour {}",
+                                                  op.entry);
+                        return;
+                    }
+                    const int16_t prev = readSwordBE(rom, cellOff);
+                    writeValue(rom, cellOff, static_cast<double>(rawV));
+                    if (prev != rawV) { ++cells; result.bytesChanged += 2; }
+                }
                 opRes.cellsChanged = cells;
             }
         }, op.payload);
