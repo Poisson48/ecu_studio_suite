@@ -8,6 +8,7 @@
 #include <QGridLayout>
 #include <QComboBox>
 #include <QPushButton>
+#include <QCheckBox>
 #include <QLabel>
 #include <QTableWidget>
 #include <QTableWidgetItem>
@@ -19,6 +20,7 @@
 #include <QTextStream>
 #include <QClipboard>
 #include <QApplication>
+#include <QTimer>
 
 namespace ecu_studio {
 
@@ -29,10 +31,15 @@ constexpr int kDtcPending = 2;
 
 ObdPanel::ObdPanel(QWidget* parent) : QWidget(parent) {
     m_elm = new Elm327(this);
+    m_reconnectTimer = new QTimer(this);
+    m_reconnectTimer->setSingleShot(true);
+    connect(m_reconnectTimer, &QTimer::timeout, this, &ObdPanel::tryAutoReconnect);
     buildUi();
 
     connect(m_elm, &Elm327::connected, this, [this](const QString& v) {
         m_connected = true;
+        m_wantConnected = true;
+        m_reconnectTimer->stop();
         m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Déconnecter"));
         setStatus(tr("Connecté — %1").arg(v));
@@ -45,15 +52,25 @@ ObdPanel::ObdPanel(QWidget* parent) : QWidget(parent) {
         m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Connecter"));
         m_datalogBtn->setText(tr("Démarrer datalog"));
-        m_canBtn->setText(tr("Sniffer CAN"));
+        m_canBtn->setText(tr("Sniffer CAN (ATMA)"));
         m_datalogBtn->setEnabled(false);
         m_dtcReadBtn->setEnabled(false); m_dtcClearBtn->setEnabled(false);
         m_vinBtn->setEnabled(false); m_canBtn->setEnabled(false);
-        setStatus(tr("Déconnecté."));
+        if (m_wantConnected && m_autoReconnect->isChecked()) {
+            scheduleAutoReconnect(tr("Lien perdu"));
+        } else {
+            setStatus(tr("Déconnecté."));
+        }
     });
     connect(m_elm, &Elm327::errorOccurred, this, [this](const QString& m) {
         m_connectBtn->setEnabled(true);
-        setStatus(m, true);
+        m_connected = false;
+        if (m_wantConnected && m_autoReconnect->isChecked()) {
+            scheduleAutoReconnect(m);
+        } else {
+            m_wantConnected = false;
+            setStatus(m, true);
+        }
     });
     connect(m_elm, &Elm327::status, this, [this](const QString& m) { setStatus(m); });
     connect(m_elm, &Elm327::rawLine, this, [this](const QString& l) { m_log->appendPlainText(l); });
@@ -133,6 +150,11 @@ void ObdPanel::buildUi() {
     m_connectBtn = new QPushButton(tr("Connecter"), this);
     m_connectBtn->setObjectName("accentBtn");
     cl->addWidget(m_connectBtn);
+    m_autoReconnect = new QCheckBox(tr("Auto-reco"), this);
+    m_autoReconnect->setToolTip(tr(
+        "Si la liaison tombe (USB débranché, ELM muet…), retente automatiquement "
+        "toutes les 2 s tant que la case est cochée. « Déconnecter » arrête les essais."));
+    cl->addWidget(m_autoReconnect);
     root->addWidget(connBox);
 
     m_statusLabel = new QLabel(tr("Branche l'adaptateur, choisis le port, puis « Connecter »."), this);
@@ -201,7 +223,13 @@ void ObdPanel::buildUi() {
     m_vinLabel = new QLabel(tr("VIN : —"), this);
     m_vinLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
     dl->addWidget(m_vinLabel);
-    m_canBtn = new QPushButton(tr("Sniffer CAN"), this); m_canBtn->setEnabled(false);
+    m_canBtn = new QPushButton(tr("Sniffer CAN (ATMA)"), this);
+    m_canBtn->setEnabled(false);
+    m_canBtn->setToolTip(tr(
+        "Monitor ELM327 ATMA : affiche le trafic OBD/CAN vu par l'adaptateur.\n"
+        "Ce n'est PAS une interface CAN complète (pas SocketCAN / pas 100 % bus).\n"
+        "Utile pour du sniff léger ; pour de la capture sérieuse, utilise un "
+        "adaptateur CAN dédié (panneau CAN / SocketSpy)."));
     dl->addWidget(m_canBtn);
     m_canTable = new QTableWidget(this);
     m_canTable->setColumnCount(3);
@@ -224,6 +252,7 @@ void ObdPanel::buildUi() {
 
     connect(m_refreshBtn, &QPushButton::clicked, this, &ObdPanel::refreshPorts);
     connect(m_connectBtn, &QPushButton::clicked, this, &ObdPanel::toggleConnect);
+    connect(m_autoReconnect, &QCheckBox::toggled, this, &ObdPanel::onAutoReconnectToggled);
     connect(m_datalogBtn, &QPushButton::clicked, this, &ObdPanel::toggleDatalog);
     connect(m_canBtn,     &QPushButton::clicked, this, &ObdPanel::toggleCanSniff);
     connect(m_csvBtn,     &QPushButton::clicked, this, &ObdPanel::toggleCsv);
@@ -278,31 +307,83 @@ void ObdPanel::refreshDtcTable() {
 }
 
 void ObdPanel::refreshPorts() {
+    const QString keep = preferredPort();
     m_portCombo->clear();
     const auto ports = Elm327::listPorts();
+    int preferIdx = -1;
     for (const auto& p : ports) {
         const QString label = (p.likelyElm ? QStringLiteral("★ ") : QString())
                               + p.port + (p.description.isEmpty() ? QString()
                                                                   : QStringLiteral("  (%1)").arg(p.description));
         m_portCombo->addItem(label, p.port);
-        if (p.likelyElm) m_portCombo->setCurrentIndex(m_portCombo->count() - 1);
+        if (!keep.isEmpty() && p.port == keep) preferIdx = m_portCombo->count() - 1;
+        else if (preferIdx < 0 && p.likelyElm) preferIdx = m_portCombo->count() - 1;
     }
+    if (preferIdx >= 0) m_portCombo->setCurrentIndex(preferIdx);
     if (ports.isEmpty()) {
-        setStatus(tr("Aucun port série USB détecté. Branche l'adaptateur (et vérifie le groupe « dialout »)."), true);
-    } else {
+        if (!m_wantConnected)
+            setStatus(tr("Aucun port série USB détecté. Branche l'adaptateur (et vérifie le groupe « dialout »)."), true);
+    } else if (!m_wantConnected && !m_connected) {
         setStatus(tr("%1 port(s) série — ★ = adaptateur ELM probable. Clique « Connecter ».")
                       .arg(ports.size()));
     }
 }
 
+QString ObdPanel::preferredPort() const {
+    if (!m_lastPort.isEmpty()) return m_lastPort;
+    if (m_portCombo && !m_portCombo->currentData().isNull())
+        return m_portCombo->currentData().toString();
+    return QString();
+}
+
 void ObdPanel::toggleConnect() {
-    if (m_connected) { m_elm->disconnectPort(); return; }
-    if (m_portCombo->currentData().isNull()) { setStatus(tr("Choisis un port."), true); return; }
+    if (m_connected || m_wantConnected) {
+        // Déconnexion manuelle : stoppe l'auto-reco pour cette session.
+        m_wantConnected = false;
+        m_reconnectTimer->stop();
+        m_elm->disconnectPort();
+        m_connectBtn->setEnabled(true);
+        m_connectBtn->setText(tr("Connecter"));
+        setStatus(tr("Déconnecté."));
+        return;
+    }
+    startConnect();
+}
+
+void ObdPanel::startConnect() {
+    refreshPorts();
+    if (m_portCombo->currentData().isNull()) {
+        setStatus(tr("Choisis un port."), true);
+        if (m_wantConnected && m_autoReconnect->isChecked())
+            scheduleAutoReconnect(tr("Port absent"));
+        return;
+    }
+    m_lastPort = m_portCombo->currentData().toString();
+    m_wantConnected = true;
     m_connectBtn->setEnabled(false);
     setStatus(tr("Connexion…"));
-    const QString port = m_portCombo->currentData().toString();
     const int baud = m_baudCombo->currentData().toInt();
-    m_elm->connectPort(port, baud);
+    m_elm->connectPort(m_lastPort, baud);
+}
+
+void ObdPanel::onAutoReconnectToggled(bool on) {
+    if (!on) {
+        m_reconnectTimer->stop();
+        return;
+    }
+    if (m_wantConnected && !m_connected)
+        scheduleAutoReconnect(tr("Auto-reco activé"));
+}
+
+void ObdPanel::scheduleAutoReconnect(const QString& why) {
+    if (!m_autoReconnect->isChecked() || !m_wantConnected) return;
+    setStatus(tr("%1 — nouvelle tentative dans 2 s…").arg(why), true);
+    m_reconnectTimer->start(2000);
+}
+
+void ObdPanel::tryAutoReconnect() {
+    if (!m_autoReconnect->isChecked() || !m_wantConnected || m_connected) return;
+    startConnect();
 }
 
 void ObdPanel::toggleDatalog() {
@@ -325,7 +406,7 @@ void ObdPanel::toggleCanSniff() {
     if (m_canSniff) {
         m_elm->stopCanMonitor();
         m_canSniff = false;
-        m_canBtn->setText(tr("Sniffer CAN"));
+        m_canBtn->setText(tr("Sniffer CAN (ATMA)"));
     } else {
         if (m_datalog) toggleDatalog();   // le sniff et le datalog s'excluent
         m_canTable->setRowCount(0); m_canRow.clear();
