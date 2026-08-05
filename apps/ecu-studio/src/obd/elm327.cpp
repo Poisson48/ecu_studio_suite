@@ -6,6 +6,8 @@
 #include <QTimer>
 #include <QRegularExpression>
 
+#include <algorithm>
+
 namespace ecu_studio {
 
 namespace {
@@ -38,11 +40,21 @@ Elm327::~Elm327() { disconnectPort(); }
 QList<SerialPortDesc> Elm327::listPorts() {
     QList<SerialPortDesc> out;
     for (const QSerialPortInfo& info : QSerialPortInfo::availablePorts()) {
+        const QString name = info.portName();
+        const bool hasVid = info.hasVendorIdentifier() && info.hasProductIdentifier();
+        // Linux expose ttyS0…ttyS31 même sans UART — ça noie le vrai ELM (ttyACM/ttyUSB).
+        const bool usbLike =
+            name.contains(QLatin1String("ACM"), Qt::CaseInsensitive)
+            || name.contains(QLatin1String("USB"), Qt::CaseInsensitive)
+            || name.contains(QLatin1String("rfcomm"), Qt::CaseInsensitive)
+            || name.startsWith(QLatin1String("cu."), Qt::CaseInsensitive)   // macOS
+            || name.startsWith(QLatin1String("COM"), Qt::CaseInsensitive);  // Windows
+        if (!hasVid && !usbLike) continue;
+
         SerialPortDesc d;
-        d.port = info.portName().startsWith(QLatin1String("/")) ? info.portName()
-                                                                : info.systemLocation();
+        d.port = name.startsWith(QLatin1String("/")) ? name : info.systemLocation();
         QString desc = info.description();
-        if (info.hasVendorIdentifier() && info.hasProductIdentifier()) {
+        if (hasVid) {
             d.likelyElm = isElmBridge(info.vendorIdentifier(), info.productIdentifier());
             desc += QStringLiteral(" [%1:%2]")
                         .arg(info.vendorIdentifier(), 4, 16, QLatin1Char('0'))
@@ -51,6 +63,10 @@ QList<SerialPortDesc> Elm327::listPorts() {
         d.description = desc.trimmed();
         out.push_back(d);
     }
+    // Adaptateurs ELM en tête pour que le combo tombe dessus sans scroller.
+    std::stable_sort(out.begin(), out.end(), [](const SerialPortDesc& a, const SerialPortDesc& b) {
+        return a.likelyElm > b.likelyElm;
+    });
     return out;
 }
 

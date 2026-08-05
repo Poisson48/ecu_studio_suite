@@ -274,15 +274,20 @@ void ObdPanel::refreshDtcTable() {
 
 void ObdPanel::refreshPorts() {
     m_portCombo->clear();
-    for (const auto& p : Elm327::listPorts()) {
+    const auto ports = Elm327::listPorts();
+    for (const auto& p : ports) {
         const QString label = (p.likelyElm ? QStringLiteral("★ ") : QString())
                               + p.port + (p.description.isEmpty() ? QString()
                                                                   : QStringLiteral("  (%1)").arg(p.description));
         m_portCombo->addItem(label, p.port);
         if (p.likelyElm) m_portCombo->setCurrentIndex(m_portCombo->count() - 1);
     }
-    if (m_portCombo->count() == 0)
-        setStatus(tr("Aucun port série détecté. Branche l'adaptateur (et vérifie le groupe « dialout »)."), true);
+    if (ports.isEmpty()) {
+        setStatus(tr("Aucun port série USB détecté. Branche l'adaptateur (et vérifie le groupe « dialout »)."), true);
+    } else {
+        setStatus(tr("%1 port(s) série — ★ = adaptateur ELM probable. Clique « Connecter ».")
+                      .arg(ports.size()));
+    }
 }
 
 void ObdPanel::toggleConnect() {
