@@ -33,6 +33,7 @@ ObdPanel::ObdPanel(QWidget* parent) : QWidget(parent) {
 
     connect(m_elm, &Elm327::connected, this, [this](const QString& v) {
         m_connected = true;
+        m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Déconnecter"));
         setStatus(tr("Connecté — %1").arg(v));
         m_datalogBtn->setEnabled(true);
@@ -41,6 +42,7 @@ ObdPanel::ObdPanel(QWidget* parent) : QWidget(parent) {
     });
     connect(m_elm, &Elm327::disconnected, this, [this]() {
         m_connected = false; m_datalog = false; m_canSniff = false;
+        m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Connecter"));
         m_datalogBtn->setText(tr("Démarrer datalog"));
         m_canBtn->setText(tr("Sniffer CAN"));
@@ -49,7 +51,10 @@ ObdPanel::ObdPanel(QWidget* parent) : QWidget(parent) {
         m_vinBtn->setEnabled(false); m_canBtn->setEnabled(false);
         setStatus(tr("Déconnecté."));
     });
-    connect(m_elm, &Elm327::errorOccurred, this, [this](const QString& m) { setStatus(m, true); });
+    connect(m_elm, &Elm327::errorOccurred, this, [this](const QString& m) {
+        m_connectBtn->setEnabled(true);
+        setStatus(m, true);
+    });
     connect(m_elm, &Elm327::status, this, [this](const QString& m) { setStatus(m); });
     connect(m_elm, &Elm327::rawLine, this, [this](const QString& l) { m_log->appendPlainText(l); });
 
@@ -293,6 +298,8 @@ void ObdPanel::refreshPorts() {
 void ObdPanel::toggleConnect() {
     if (m_connected) { m_elm->disconnectPort(); return; }
     if (m_portCombo->currentData().isNull()) { setStatus(tr("Choisis un port."), true); return; }
+    m_connectBtn->setEnabled(false);
+    setStatus(tr("Connexion…"));
     const QString port = m_portCombo->currentData().toString();
     const int baud = m_baudCombo->currentData().toInt();
     m_elm->connectPort(port, baud);

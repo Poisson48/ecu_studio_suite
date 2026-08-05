@@ -75,11 +75,13 @@ void Elm327::connectPort(const QString& port, int baud) {
     m_port = port;
     m_autoBaud = (baud == 0);
     m_triedHighBaud = false;
+    m_opening = true;
     tryOpen(m_autoBaud ? 38400 : baud);
 }
 
 void Elm327::tryOpen(int baud) {
     m_baud = baud;
+    closeSerial();
     m_serial = new QSerialPort(this);
     m_serial->setPortName(m_port);
     m_serial->setBaudRate(baud);
@@ -87,55 +89,67 @@ void Elm327::tryOpen(int baud) {
     m_serial->setParity(QSerialPort::NoParity);
     m_serial->setStopBits(QSerialPort::OneStop);
     m_serial->setFlowControl(QSerialPort::NoFlowControl);
-    // CDC ACM (ttyACM*) : certains clones ne sortent du reset que si DTR/RTS
-    // sont assertés à l'ouverture. Sans effet sur les ponts USB-série classiques.
-    m_serial->setDataTerminalReady(false);
-    m_serial->setRequestToSend(false);
     if (!m_serial->open(QIODevice::ReadWrite)) {
         const QString err = m_serial->errorString();
-        m_serial->deleteLater();
-        m_serial = nullptr;
-        failConnect(tr("Ouverture %1 impossible : %2 "
-                       "(droits ? ajoute ton user au groupe « dialout »)")
-                        .arg(m_port, err));
+        closeSerial();
+        QString hint = tr("(droits ? groupe « dialout »)");
+        if (err.contains(QLatin1String("busy"), Qt::CaseInsensitive)
+            || err.contains(QLatin1String("Device is already"), Qt::CaseInsensitive)
+            || err.contains(QLatin1String("Resource busy"), Qt::CaseInsensitive)
+            || err.contains(QLatin1String("Occupied"), Qt::CaseInsensitive))
+            hint = tr("(port déjà ouvert — ferme l'autre app / déconnecte d'abord)");
+        failConnect(tr("Ouverture %1 impossible : %2 %3").arg(m_port, err, hint));
         return;
     }
-    m_serial->setDataTerminalReady(true);
-    m_serial->setRequestToSend(true);
+    // DTR/RTS UNIQUEMENT après open (sinon Qt log « device not open » et certains
+    // CDC se mettent dans un état pourri au 2ᵉ essai → crash / refus).
+    if (isCdcAcmPort()) {
+        m_serial->setDataTerminalReady(true);
+        m_serial->setRequestToSend(true);
+    }
     m_serial->clear(QSerialPort::AllDirections);
     connect(m_serial, &QSerialPort::readyRead, this, &Elm327::onReadyRead);
     emit status(tr("Connexion à %1 @ %2 bauds…").arg(m_port).arg(baud));
 
-    // Lance l'init pilotée par prompt. Sur CDC, laisse 200 ms au chip après DTR.
     m_ready = false; m_canMode = false; m_initStep = 0; m_elmVersion.clear();
     m_queue.clear(); m_buf.clear(); m_busy = false;
     for (const QString& c : kInit) enqueue(c, Kind::Init);
-    if (isCdcAcmPort()) {
-        QTimer::singleShot(200, this, [this]() { if (m_serial) sendNext(); });
-    } else {
+
+    const int epoch = ++m_connectEpoch;
+    // Court délai post-open : laisse le PIC CDC digérer le DTR avant ATZ.
+    QTimer::singleShot(isCdcAcmPort() ? 250 : 0, this, [this, epoch]() {
+        if (epoch != m_connectEpoch || !m_serial || !m_serial->isOpen()) return;
         sendNext();
-    }
+    });
 }
 
 void Elm327::failConnect(const QString& why) {
+    m_opening = false;
     emit errorOccurred(why);
     disconnectPort();
 }
 
+void Elm327::closeSerial() {
+    if (!m_serial) return;
+    // Couper les signaux avant close : évite readyRead sur objet en destruction
+    // (symptôme fréquent au 2ᵉ « Connecter » sur ttyACM).
+    QObject::disconnect(m_serial, nullptr, this, nullptr);
+    if (m_serial->isOpen()) m_serial->close();
+    m_serial->deleteLater();
+    m_serial = nullptr;
+}
+
 void Elm327::disconnectPort() {
+    ++m_connectEpoch;   // annule tout singleShot d'init en vol
     m_poll->stop();
     m_timeout->stop();
     m_pollPids.clear();
     m_queue.clear();
     m_buf.clear();
-    m_busy = false; m_canMode = false;
+    m_busy = false; m_canMode = false; m_opening = false;
     const bool wasReady = m_ready;
     m_ready = false;
-    if (m_serial) {
-        if (m_serial->isOpen()) m_serial->close();
-        m_serial->deleteLater();
-        m_serial = nullptr;
-    }
+    closeSerial();
     if (wasReady) emit disconnected();
 }
 
@@ -253,6 +267,7 @@ void Elm327::processInitStep(const QString& resp) {
     }
     if (m_initStep >= kInit.size()) {
         m_ready = true;
+        m_opening = false;
         emit connected(m_elmVersion.isEmpty() ? tr("ELM327") : m_elmVersion);
         emit status(tr("Prêt."));
         if (!m_pollPids.isEmpty() && !m_poll->isActive())

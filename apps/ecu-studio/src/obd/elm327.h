@@ -87,6 +87,7 @@ private:
     void processInitStep(const QString& resp);
     void tryOpen(int baud);
     void failConnect(const QString& why);
+    void closeSerial();
     bool isCdcAcmPort() const {
         return m_port.contains(QLatin1String("ACM"), Qt::CaseInsensitive);
     }
@@ -100,11 +101,13 @@ private:
     bool            m_busy = false;     // une commande est en cours (attend « > »)
     bool            m_ready = false;    // init terminée
     bool            m_canMode = false;  // monitor CAN actif (flux continu, pas de « > »)
+    bool            m_opening = false;  // connect en cours (évite double-clic)
 
     QString         m_port;
     QString         m_elmVersion;
     int             m_baud = 0;
     int             m_initStep = 0;
+    int             m_connectEpoch = 0; // invalide les QTimer::singleShot en vol
     bool            m_autoBaud = false;
     bool            m_triedHighBaud = false;
 
