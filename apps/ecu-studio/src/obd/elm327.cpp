@@ -87,6 +87,10 @@ void Elm327::tryOpen(int baud) {
     m_serial->setParity(QSerialPort::NoParity);
     m_serial->setStopBits(QSerialPort::OneStop);
     m_serial->setFlowControl(QSerialPort::NoFlowControl);
+    // CDC ACM (ttyACM*) : certains clones ne sortent du reset que si DTR/RTS
+    // sont assertés à l'ouverture. Sans effet sur les ponts USB-série classiques.
+    m_serial->setDataTerminalReady(false);
+    m_serial->setRequestToSend(false);
     if (!m_serial->open(QIODevice::ReadWrite)) {
         const QString err = m_serial->errorString();
         m_serial->deleteLater();
@@ -96,14 +100,21 @@ void Elm327::tryOpen(int baud) {
                         .arg(m_port, err));
         return;
     }
+    m_serial->setDataTerminalReady(true);
+    m_serial->setRequestToSend(true);
+    m_serial->clear(QSerialPort::AllDirections);
     connect(m_serial, &QSerialPort::readyRead, this, &Elm327::onReadyRead);
     emit status(tr("Connexion à %1 @ %2 bauds…").arg(m_port).arg(baud));
 
-    // Lance l'init pilotée par prompt.
-    m_ready = false; m_canMode = false; m_initStep = 0;
+    // Lance l'init pilotée par prompt. Sur CDC, laisse 200 ms au chip après DTR.
+    m_ready = false; m_canMode = false; m_initStep = 0; m_elmVersion.clear();
     m_queue.clear(); m_buf.clear(); m_busy = false;
     for (const QString& c : kInit) enqueue(c, Kind::Init);
-    sendNext();
+    if (isCdcAcmPort()) {
+        QTimer::singleShot(200, this, [this]() { if (m_serial) sendNext(); });
+    } else {
+        sendNext();
+    }
 }
 
 void Elm327::failConnect(const QString& why) {
@@ -151,7 +162,8 @@ void Elm327::sendNext() {
 
     m_busy = true;
     writeRaw((m_current.text + "\r").toLatin1());
-    const int to = (m_current.text == QLatin1String("ATZ")) ? 3000 : 1500;
+    // ATZ = reset soft du PIC : jusqu'à ~2 s sur clones lents + marge CDC.
+    const int to = (m_current.text == QLatin1String("ATZ")) ? 5000 : 1500;
     m_timeout->start(to);
 }
 
@@ -233,15 +245,15 @@ void Elm327::handleResponse(const Cmd& cmd, const QString& resp) {
 
 void Elm327::processInitStep(const QString& resp) {
     ++m_initStep;
-    static QString version;
     if (m_initStep == 1) {   // réponse à ATZ
         for (const QString& l : resp.split(QRegularExpression(QStringLiteral("[\\r\\n]+")),
                                            Qt::SkipEmptyParts))
-            if (l.contains(QLatin1String("ELM"), Qt::CaseInsensitive)) version = l.trimmed();
+            if (l.contains(QLatin1String("ELM"), Qt::CaseInsensitive))
+                m_elmVersion = l.trimmed();
     }
     if (m_initStep >= kInit.size()) {
         m_ready = true;
-        emit connected(version.isEmpty() ? tr("ELM327") : version);
+        emit connected(m_elmVersion.isEmpty() ? tr("ELM327") : m_elmVersion);
         emit status(tr("Prêt."));
         if (!m_pollPids.isEmpty() && !m_poll->isActive())
             m_poll->start();   // reprend le polling si demandé avant connexion
@@ -250,16 +262,26 @@ void Elm327::processInitStep(const QString& resp) {
 
 void Elm327::onTimeout() {
     m_busy = false;
-    // Auto-baud : si ATZ ne répond pas, on tente l'autre vitesse usine.
+    // Auto-baud (ponts USB-série classiques) : si ATZ ne répond pas à 38400,
+    // retente à 115200. Sur CDC ACM (ttyACM / QBD 0918:…) le débit est ignoré
+    // par le bus — retenter une autre vitesse ne sert à rien.
     if (!m_ready && m_current.kind == Kind::Init && m_initStep == 0
-            && m_autoBaud && !m_triedHighBaud) {
+            && m_autoBaud && !m_triedHighBaud && !isCdcAcmPort()) {
         m_triedHighBaud = true;
         emit status(tr("Pas de réponse à 38400 — essai à 115200 bauds…"));
         if (m_serial) { m_serial->close(); m_serial->deleteLater(); m_serial = nullptr; }
         tryOpen(115200);
         return;
     }
-    if (!m_ready) { failConnect(tr("ELM327 ne répond pas sur %1.").arg(m_port)); return; }
+    if (!m_ready) {
+        failConnect(tr("ELM327 ne répond pas sur %1.\n"
+                       "Branche le dongle sur la prise OBD du véhicule et mets "
+                       "le contact : beaucoup de clones (dont QBD USB) "
+                       "s'alimentent en 12 V via l'OBD — le port USB apparaît "
+                       "même sans ça, mais le chip ELM reste muet.")
+                        .arg(m_port));
+        return;
+    }
     // En fonctionnement : on abandonne la commande courante et on continue.
     if (m_current.kind == Kind::Pid) emit pidUnsupported(m_current.pid);
     sendNext();

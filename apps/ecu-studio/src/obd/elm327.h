@@ -87,6 +87,9 @@ private:
     void processInitStep(const QString& resp);
     void tryOpen(int baud);
     void failConnect(const QString& why);
+    bool isCdcAcmPort() const {
+        return m_port.contains(QLatin1String("ACM"), Qt::CaseInsensitive);
+    }
 
     QSerialPort*    m_serial = nullptr;
     QTimer*         m_timeout = nullptr;
@@ -99,6 +102,7 @@ private:
     bool            m_canMode = false;  // monitor CAN actif (flux continu, pas de « > »)
 
     QString         m_port;
+    QString         m_elmVersion;
     int             m_baud = 0;
     int             m_initStep = 0;
     bool            m_autoBaud = false;
