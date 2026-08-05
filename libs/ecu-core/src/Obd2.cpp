@@ -131,25 +131,58 @@ QString pidUnit(std::uint8_t pid) {
     }
 }
 
-QStringList decodeDtcs(const QString& elmText) {
-    QStringList out;
-    const auto b = hexBytes(elmText);
-    // Cherche la réponse mode 03 (0x43), puis décode les paires d'octets (un DTC
-    // = 2 octets). 00 00 = padding / pas de code.
-    for (std::size_t i = 0; i + 1 < b.size(); ++i) {
-        if (b[i] != 0x43) continue;
-        for (std::size_t j = i + 1; j + 1 < b.size(); j += 2) {
-            const std::uint8_t hi = b[j], lo = b[j + 1];
-            if (hi == 0 && lo == 0) continue;     // padding
-            out << QStringLiteral("%1%2%3%4%5")
-                       .arg(dtcLetter(hi))
-                       .arg((hi >> 4) & 0x3)
-                       .arg(hi & 0xF, 0, 16)
-                       .arg((lo >> 4) & 0xF, 0, 16)
-                       .arg(lo & 0xF, 0, 16)
-                       .toUpper();
+QStringList decodeDtcs(const QString& elmText, std::uint8_t mode) {
+    const std::uint8_t resp = static_cast<std::uint8_t>(mode + 0x40);   // 03→0x43, 07→0x47
+
+    // Rassemble les octets de DONNÉES, ligne par ligne.
+    //
+    // Deux formes de multi-trames coexistent et doivent être traitées
+    // différemment :
+    //   - KWP/ISO 14230 (ex. Berlingo) : CHAQUE ligne est une trame complète et
+    //     recommence par l'octet de réponse (« 43 21 43 … » / « 43 13 51 … »).
+    //     Concaténer les lignes avant de décoder ferait consommer le 0x43 de la
+    //     2ᵉ trame comme un demi-DTC, fabriquant des codes inexistants (le
+    //     Berlingo sortait C0313/C1102/B1900 au lieu de P1351/P0299).
+    //   - ISO-TP/CAN : seule la 1ʳᵉ ligne porte l'octet de réponse, les suivantes
+    //     sont des trames de continuation faites uniquement de données.
+    // On saute donc l'en-tête sur les lignes qui portent l'octet de réponse, et
+    // on prend la ligne entière sur les lignes de continuation.
+    std::vector<std::uint8_t> data;
+    bool inFrame = false;
+    const QStringList lines =
+        elmText.split(QRegularExpression(QStringLiteral("[\r\n]+")), Qt::SkipEmptyParts);
+
+    for (const QString& line : lines) {
+        const auto b = hexBytes(line);
+        if (b.empty()) continue;                  // « SEARCHING… », « NO DATA », prompt…
+
+        std::size_t start = b.size();
+        for (std::size_t i = 0; i < b.size(); ++i) {
+            if (b[i] == resp) { start = i + 1; break; }   // saute header CAN / préfixe ISO-TP
         }
-        break;
+
+        if (start < b.size()) {
+            inFrame = true;
+        } else if (inFrame && b.size() >= 2) {
+            start = 0;                            // trame de continuation ISO-TP
+        } else {
+            continue;                             // avant toute réponse : ligne ignorée
+        }
+        data.insert(data.end(), b.begin() + static_cast<std::ptrdiff_t>(start), b.end());
+    }
+
+    // Un DTC = 2 octets. 00 00 = padding / pas de code.
+    QStringList out;
+    for (std::size_t j = 0; j + 1 < data.size(); j += 2) {
+        const std::uint8_t hi = data[j], lo = data[j + 1];
+        if (hi == 0 && lo == 0) continue;
+        out << QStringLiteral("%1%2%3%4%5")
+                   .arg(dtcLetter(hi))
+                   .arg((hi >> 4) & 0x3)
+                   .arg(hi & 0xF, 0, 16)
+                   .arg((lo >> 4) & 0xF, 0, 16)
+                   .arg(lo & 0xF, 0, 16)
+                   .toUpper();
     }
     out.removeDuplicates();
     return out;

@@ -19,6 +19,7 @@ bool isElmBridge(quint16 vid, quint16 pid) {
         case 0x0403: return true;   // FTDI (6001/6010/6011/6014/6015)
         case 0x10C4: return pid == 0xEA60 || pid == 0xEA70 || pid == 0xEA71; // CP210x
         case 0x067B: return pid == 0x2303 || pid == 0x23A3 || pid == 0x23C3; // PL2303
+        case 0x0918: return true;   // QBD / clones CDC ACM (ex. ELM327 v1.5 USB)
         default:     return false;
     }
 }
@@ -199,7 +200,11 @@ void Elm327::handleResponse(const Cmd& cmd, const QString& resp) {
             }
             break;
         }
-        case Kind::Dtc:      emit dtcsReady(ecu::obd2::decodeDtcs(resp)); break;
+        case Kind::Dtc: {
+            const bool pending = (cmd.pid == 0x07);
+            emit dtcsReady(ecu::obd2::decodeDtcs(resp, cmd.pid), pending);
+            break;
+        }
         case Kind::Vin:      emit vinReady(ecu::obd2::decodeVin(resp));   break;
         case Kind::ClearDtc:
             emit status(resp.contains(QLatin1String("44")) || resp.contains(QLatin1String("OK"))
@@ -268,7 +273,14 @@ void Elm327::onPollTick() {
     queryPid(pid);
 }
 
-void Elm327::readDtcs()  { if (m_ready) { enqueue("03", Kind::Dtc);     sendNext(); } }
+void Elm327::readDtcs(bool pending) {
+    if (!m_ready) return;
+    // cmd.pid porte le mode OBD (03 ou 07) pour que decodeDtcs sache quel
+    // octet de réponse (0x43 / 0x47) chercher.
+    const std::uint8_t mode = pending ? 0x07 : 0x03;
+    enqueue(pending ? QStringLiteral("07") : QStringLiteral("03"), Kind::Dtc, mode);
+    sendNext();
+}
 void Elm327::clearDtcs() { if (m_ready) { enqueue("04", Kind::ClearDtc);sendNext(); } }
 void Elm327::readVin()   { if (m_ready) { enqueue("0902", Kind::Vin);   sendNext(); } }
 

@@ -47,6 +47,25 @@ TEST(Obd2, DecodeDtcs) {
     EXPECT_EQ(codes[1], QStringLiteral("P0247"));
 }
 
+TEST(Obd2, DecodeDtcsMultiFrameKwp) {
+    // Réponse réelle Berlingo (ISO 14230-4, deux trames). Chaque ligne rouvre
+    // par l'octet 0x43 : ne pas le consommer comme un demi-DTC.
+    auto codes = decodeDtcs(QStringLiteral("43 21 43 04 05 04 02\r"
+                                           "43 13 51 02 99 00 00"));
+    ASSERT_EQ(codes.size(), 5);
+    EXPECT_EQ(codes[0], QStringLiteral("P2143"));
+    EXPECT_EQ(codes[1], QStringLiteral("P0405"));
+    EXPECT_EQ(codes[2], QStringLiteral("P0402"));
+    EXPECT_EQ(codes[3], QStringLiteral("P1351"));
+    EXPECT_EQ(codes[4], QStringLiteral("P0299"));
+}
+
+TEST(Obd2, DecodeDtcsPendingMode07) {
+    auto codes = decodeDtcs(QStringLiteral("47 21 43 00 00"), 0x07);
+    ASSERT_EQ(codes.size(), 1);
+    EXPECT_EQ(codes[0], QStringLiteral("P2143"));
+}
+
 TEST(Obd2, DecodeVin) {
     // 49 02 01 + ASCII de "WP0ZZZ99ZTS392124"
     const QString resp = QStringLiteral(
