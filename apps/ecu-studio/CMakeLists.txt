@@ -83,6 +83,7 @@ set(ECU_STUDIO_SOURCES
 
     # OBD-II / ELM327 (datalog + sniffing CAN via adaptateur USB)
     src/obd/elm327.cpp
+    src/obd/mcp_read_dtc.cpp
     src/panels/obd_panel.cpp
 
     # Hub ECU Studio : lanceur de sous-programmes + vérification sur bus

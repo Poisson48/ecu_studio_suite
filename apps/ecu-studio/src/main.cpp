@@ -16,6 +16,7 @@
 #include <string>
 
 #include "ecu/mcp/McpServer.hpp"
+#include "obd/mcp_read_dtc.h"
 #include "main_window.h"
 #include "splash_screen.h"
 #include "welcome_screen.h"
@@ -51,6 +52,9 @@ int runMcp(int argc, char* argv[], bool useTcp, uint16_t tcpPort) {
 
     ecu::mcp::McpServer server;
     ecu::mcp::registerAllTools(server);
+    // read_dtc vit dans apps/ (Elm327 + Qt SerialPort) — pas dans libs/ecu-mcp.
+    // clear_dtc volontairement non exposé (écriture sur véhicule connecté).
+    server.registerTool(ecu_studio::makeReadDtcTool());
 
     if (useTcp) {
         std::cerr << "ecu_studio --mcp : serveur MCP TCP sur 127.0.0.1:"

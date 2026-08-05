@@ -53,9 +53,14 @@ std::optional<double> interpret(std::uint8_t pid, const std::uint8_t* data, std:
 QString pidName(std::uint8_t pid);
 QString pidUnit(std::uint8_t pid);
 
-// Décode les codes défaut d'une réponse mode 03 (ex. "43 01 01 33 ..."), gère le
-// multi-lignes. Renvoie une liste de codes type "P0101", "U0121"...
-QStringList decodeDtcs(const QString& elmText);
+// Décode les codes défaut d'une réponse ELM327. Renvoie une liste de codes type
+// "P0101", "U0121"...
+//
+// `mode` vaut 0x03 (défauts mémorisés) ou 0x07 (défauts en attente) ; l'octet de
+// réponse attendu est mode+0x40. Gère les deux formes de multi-trames : KWP/ISO
+// (chaque ligne rouvre par l'octet de réponse) et ISO-TP/CAN (lignes de
+// continuation sans en-tête).
+QStringList decodeDtcs(const QString& elmText, std::uint8_t mode = 0x03);
 
 // Décode le VIN d'une réponse mode 09 PID 02 (multi-lignes ISO-TP).
 QString decodeVin(const QString& elmText);

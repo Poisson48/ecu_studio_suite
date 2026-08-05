@@ -49,7 +49,8 @@ public:
     void queryPid(std::uint8_t pid);                 // une lecture
     void startPolling(const QList<std::uint8_t>& pids, int intervalMs = 250);
     void stopPolling();
-    void readDtcs();
+    // Lit les DTC mémorisés (mode 03) ou en attente (mode 07 si pending=true).
+    void readDtcs(bool pending = false);
     void clearDtcs();
     void readVin();
 
@@ -64,7 +65,8 @@ signals:
     void status(const QString& message);
     void pidResult(quint8 pid, double value, const QString& name, const QString& unit);
     void pidUnsupported(quint8 pid);
-    void dtcsReady(const QStringList& codes);
+    // `pending` : true = réponse mode 07, false = mode 03.
+    void dtcsReady(const QStringList& codes, bool pending);
     void vinReady(const QString& vin);
     void canFrame(quint32 id, QByteArray data);
     void rawLine(const QString& line);   // toute ligne reçue (debug / journal)

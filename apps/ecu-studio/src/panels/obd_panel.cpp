@@ -17,8 +17,15 @@
 #include <QFileDialog>
 #include <QDateTime>
 #include <QTextStream>
+#include <QClipboard>
+#include <QApplication>
 
 namespace ecu_studio {
+
+namespace {
+constexpr int kDtcStored  = 1;
+constexpr int kDtcPending = 2;
+} // namespace
 
 ObdPanel::ObdPanel(QWidget* parent) : QWidget(parent) {
     m_elm = new Elm327(this);
@@ -63,9 +70,18 @@ ObdPanel::ObdPanel(QWidget* parent) : QWidget(parent) {
         if (row >= 0 && m_pidTable->item(row, 1)->text().isEmpty())
             m_pidTable->item(row, 1)->setText(QStringLiteral("—"));
     });
-    connect(m_elm, &Elm327::dtcsReady, this, [this](const QStringList& codes) {
-        m_dtcLabel->setText(codes.isEmpty() ? tr("Aucun code défaut")
-                                            : codes.join(QStringLiteral("  ")));
+    connect(m_elm, &Elm327::dtcsReady, this,
+            [this](const QStringList& codes, bool pending) {
+        mergeDtcCodes(codes, pending);
+        if (m_dtcAwaiting > 0) --m_dtcAwaiting;
+        if (m_dtcAwaiting == 0) {
+            refreshDtcTable();
+            const int n = m_dtcFlags.size();
+            setStatus(n == 0 ? tr("Aucun code défaut")
+                             : tr("%1 code(s) défaut (modes 03 + 07)").arg(n));
+            m_dtcCopyBtn->setEnabled(n > 0);
+            m_dtcExportBtn->setEnabled(n > 0);
+        }
     });
     connect(m_elm, &Elm327::vinReady, this, [this](const QString& vin) {
         m_vinLabel->setText(vin.isEmpty() ? tr("VIN indisponible") : vin);
@@ -154,9 +170,29 @@ void ObdPanel::buildUi() {
     m_vinBtn = new QPushButton(tr("Lire VIN"), this); m_vinBtn->setEnabled(false);
     drow->addWidget(m_dtcReadBtn); drow->addWidget(m_dtcClearBtn); drow->addWidget(m_vinBtn);
     dl->addLayout(drow);
-    m_dtcLabel = new QLabel(tr("Codes défaut : —"), this);
-    m_dtcLabel->setWordWrap(true); m_dtcLabel->setStyleSheet("color:#e5e7eb;");
-    dl->addWidget(m_dtcLabel);
+
+    m_dtcTable = new QTableWidget(this);
+    m_dtcTable->setColumnCount(3);
+    m_dtcTable->setHorizontalHeaderLabels({ tr("Code"), tr("Famille"), tr("Statut") });
+    m_dtcTable->verticalHeader()->setVisible(false);
+    m_dtcTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_dtcTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_dtcTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    m_dtcTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    m_dtcTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
+    m_dtcTable->setMinimumHeight(100);
+    dl->addWidget(m_dtcTable);
+
+    auto* dtcBtn = new QHBoxLayout;
+    m_dtcCopyBtn = new QPushButton(tr("Copier"), this);
+    m_dtcCopyBtn->setEnabled(false);
+    m_dtcCopyBtn->setToolTip(tr("Copier les codes dans le presse-papiers"));
+    m_dtcExportBtn = new QPushButton(tr("Exporter…"), this);
+    m_dtcExportBtn->setEnabled(false);
+    m_dtcExportBtn->setToolTip(tr("Exporter les codes en .txt ou .csv"));
+    dtcBtn->addWidget(m_dtcCopyBtn); dtcBtn->addWidget(m_dtcExportBtn); dtcBtn->addStretch();
+    dl->addLayout(dtcBtn);
+
     m_vinLabel = new QLabel(tr("VIN : —"), this);
     m_vinLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
     dl->addWidget(m_vinLabel);
@@ -188,12 +224,52 @@ void ObdPanel::buildUi() {
     connect(m_csvBtn,     &QPushButton::clicked, this, &ObdPanel::toggleCsv);
     connect(m_dtcReadBtn, &QPushButton::clicked, this, &ObdPanel::readDtcs);
     connect(m_dtcClearBtn,&QPushButton::clicked, this, &ObdPanel::clearDtcs);
+    connect(m_dtcCopyBtn, &QPushButton::clicked, this, &ObdPanel::copyDtcs);
+    connect(m_dtcExportBtn,&QPushButton::clicked, this, &ObdPanel::exportDtcs);
     connect(m_vinBtn,     &QPushButton::clicked, this, [this]() { m_elm->readVin(); });
 }
 
 void ObdPanel::setStatus(const QString& msg, bool error) {
     m_statusLabel->setStyleSheet(error ? "color:#ef4444;" : "color:#7c8fa6;");
     m_statusLabel->setText(msg);
+}
+
+QString ObdPanel::dtcFamily(const QString& code) const {
+    if (code.isEmpty()) return QString();
+    switch (code[0].toLatin1()) {
+        case 'P': return tr("Powertrain");
+        case 'C': return tr("Chassis");
+        case 'B': return tr("Body");
+        case 'U': return tr("Network");
+        default:  return QStringLiteral("?");
+    }
+}
+
+QString ObdPanel::dtcStatusText(int flags) const {
+    if ((flags & kDtcStored) && (flags & kDtcPending))
+        return tr("mémorisé + en attente");
+    if (flags & kDtcPending) return tr("en attente");
+    if (flags & kDtcStored)  return tr("mémorisé");
+    return QStringLiteral("—");
+}
+
+void ObdPanel::mergeDtcCodes(const QStringList& codes, bool pending) {
+    const int bit = pending ? kDtcPending : kDtcStored;
+    for (const QString& c : codes)
+        m_dtcFlags[c] = m_dtcFlags.value(c, 0) | bit;
+}
+
+void ObdPanel::refreshDtcTable() {
+    m_dtcTable->setRowCount(0);
+    QStringList keys = m_dtcFlags.keys();
+    keys.sort();
+    for (const QString& code : keys) {
+        const int row = m_dtcTable->rowCount();
+        m_dtcTable->insertRow(row);
+        m_dtcTable->setItem(row, 0, new QTableWidgetItem(code));
+        m_dtcTable->setItem(row, 1, new QTableWidgetItem(dtcFamily(code)));
+        m_dtcTable->setItem(row, 2, new QTableWidgetItem(dtcStatusText(m_dtcFlags.value(code))));
+    }
 }
 
 void ObdPanel::refreshPorts() {
@@ -270,7 +346,58 @@ void ObdPanel::toggleCsv() {
     setStatus(tr("Log CSV : %1").arg(path));
 }
 
-void ObdPanel::readDtcs()  { if (m_connected) m_elm->readDtcs(); }
+void ObdPanel::readDtcs() {
+    if (!m_connected) return;
+    m_dtcFlags.clear();
+    m_dtcTable->setRowCount(0);
+    m_dtcCopyBtn->setEnabled(false);
+    m_dtcExportBtn->setEnabled(false);
+    m_dtcAwaiting = 2;   // mode 03 puis 07 (file ELM)
+    setStatus(tr("Lecture DTC modes 03 + 07…"));
+    m_elm->readDtcs(false);
+    m_elm->readDtcs(true);
+}
+
 void ObdPanel::clearDtcs() { if (m_connected) m_elm->clearDtcs(); }
+
+void ObdPanel::copyDtcs() {
+    QStringList lines;
+    QStringList keys = m_dtcFlags.keys();
+    keys.sort();
+    for (const QString& code : keys)
+        lines << QStringLiteral("%1\t%2\t%3")
+                     .arg(code, dtcFamily(code), dtcStatusText(m_dtcFlags.value(code)));
+    QApplication::clipboard()->setText(lines.join(QLatin1Char('\n')));
+    setStatus(tr("%1 code(s) copié(s)").arg(lines.size()));
+}
+
+void ObdPanel::exportDtcs() {
+    const QString path = QFileDialog::getSaveFileName(
+        this, tr("Exporter les codes défaut"),
+        QStringLiteral("dtc_%1.csv")
+            .arg(QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss")),
+        tr("CSV (*.csv);;Texte (*.txt)"));
+    if (path.isEmpty()) return;
+    QFile f(path);
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        setStatus(tr("Impossible d'écrire %1").arg(path), true);
+        return;
+    }
+    QTextStream ts(&f);
+    const bool csv = path.endsWith(QLatin1String(".csv"), Qt::CaseInsensitive);
+    if (csv) ts << "code,famille,statut\n";
+    QStringList keys = m_dtcFlags.keys();
+    keys.sort();
+    for (const QString& code : keys) {
+        if (csv) {
+            ts << code << ',' << dtcFamily(code) << ','
+               << dtcStatusText(m_dtcFlags.value(code)) << '\n';
+        } else {
+            ts << code << '\t' << dtcFamily(code) << '\t'
+               << dtcStatusText(m_dtcFlags.value(code)) << '\n';
+        }
+    }
+    setStatus(tr("Export DTC : %1").arg(path));
+}
 
 } // namespace ecu_studio

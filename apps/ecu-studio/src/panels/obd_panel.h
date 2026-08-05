@@ -31,10 +31,16 @@ private slots:
     void toggleCsv();
     void readDtcs();
     void clearDtcs();
+    void copyDtcs();
+    void exportDtcs();
 
 private:
     void buildUi();
     void setStatus(const QString& msg, bool error = false);
+    void mergeDtcCodes(const QStringList& codes, bool pending);
+    void refreshDtcTable();
+    QString dtcFamily(const QString& code) const;
+    QString dtcStatusText(int flags) const;
 
     Elm327* m_elm = nullptr;
 
@@ -51,9 +57,14 @@ private:
 
     QPushButton*    m_dtcReadBtn  = nullptr;
     QPushButton*    m_dtcClearBtn = nullptr;
+    QPushButton*    m_dtcCopyBtn  = nullptr;
+    QPushButton*    m_dtcExportBtn = nullptr;
     QPushButton*    m_vinBtn      = nullptr;
-    QLabel*         m_dtcLabel    = nullptr;
+    QTableWidget*   m_dtcTable    = nullptr;   // code / famille / statut
     QLabel*         m_vinLabel    = nullptr;
+    // bit0 = mémorisé (03), bit1 = en attente (07)
+    QHash<QString, int> m_dtcFlags;
+    int             m_dtcAwaiting = 0;         // réponses 03/07 encore attendues
 
     QPushButton*    m_canBtn      = nullptr;
     QTableWidget*   m_canTable    = nullptr;   // trames CAN (sniff)
