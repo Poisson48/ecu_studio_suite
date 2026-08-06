@@ -12,15 +12,16 @@ The suite is a **hub** that launches two sub-programs that share one Qt6 dark th
 
 ### ECU Studio — the ECU reprogramming app
 
-> Repo: https://github.com/Poisson48/ecu_studio_suite · current release **v1.4.5** · status legend below.
+> Repo: https://github.com/Poisson48/ecu_studio_suite · current release **v1.6.6** · status legend below.
 > **Proven** = stable · **Beta** = new / works-but-unproven · **Incoming** = roadmap.
+> **Free forever (GPL-3.0)** · **no telemetry / no cloud**.
 
 | Feature | Status | What it does |
 |---------|--------|--------------|
 | **ROM read / write (MPPS)** | Draft | Simulation mode only (`ECU_MPPS_SIMULATION` on by default); **not yet verified on real hardware**. |
 | **Hex view** | Proven | Fast hex editor with search, byte-level diff overlay, and address jump. |
 | **Map editor (2D)** | Proven | 2-D heatmap visualization; edit scalar, curve and table maps; CSV import/export. |
-| **Map editor (3D)** | Beta | Pseudo-3D surface + heatmap with a *ghost* baseline overlay (original vs modified) works today; native OpenGL `Q3DSurface` rendering is **Incoming** (the AppImage currently uses the QPainter renderer). |
+| **Map editor (3D)** | Beta | Pseudo-3D surface + heatmap with a *ghost* baseline overlay (original vs modified); live OBD operating-point overlay when validating; native OpenGL `Q3DSurface` is **Incoming**. |
 | **DAMOS editor** | Proven | Create and edit `open_damos` definitions in-app: add/remove characteristics, edit fields, detect maps from a ROM, manage one-click AutoMods, export A2L. See **[OpenDAMOS](OpenDAMOS)**. |
 | **A2L browser & export** | Proven | Parse ASAP2 `.a2l` files; browse measurements/characteristics by ECU; export relocated `open_damos` maps to standard A2L. |
 | **Checksum panel** | Proven | Compute and patch checksums for supported ECU families. |
@@ -28,7 +29,8 @@ The suite is a **hub** that launches two sub-programs that share one Qt6 dark th
 | **AutoMods panel** | Proven | Apply named calibration patches from a JSON recipe; batch apply / revert. |
 | **Git versioning** | Proven | libgit2-backed ROM history — commit any state, browse the log, restore any previous version straight into the editor. |
 | **Project manager** | Proven | `.ecuproj` files holding ROM path, ECU type, notes and flash log. |
-| **CAN companion** | Beta | Launches SocketSpy side-by-side for live CAN monitoring during reprogramming — the verify half of the flash → verify loop. |
+| **OBD drive-mode tune validation** | Beta | One-button **drive session** (ELM327): live PIDs vs OpenDAMOS expected (boost/smoke), large underboost banner, auto CSV, freeze frame, DTC 03+07. See **[OBD Drive Mode](OBD-Drive-Mode)**. |
+| **CAN companion** | Beta | Launches SocketSpy side-by-side; continuous CAN validation via MCP when available. |
 | **In-app auto-update** | Proven | The AppImage checks GitHub for new signed releases and updates itself (Ed25519-signed manifest + SHA-256). |
 | **Bilingual UI + brand identity** | Proven | Complete French/English translations; the bundled EDC16C34 `open_damos` definition is fully in English. |
 
@@ -72,11 +74,12 @@ SocketSpy is the Linux SocketCAN analysis half of the suite. It is what closes t
 
 ### How they work together
 1. **ECU Studio** edits a map and flashes it through MPPS V21.
-2. **SocketSpy** reads the live CAN bus and confirms the change took effect at the right operating point.
+2. **Verify** either with **OBD drive mode** (ELM327, measured vs OpenDAMOS expected) or with **SocketSpy** on the live CAN bus.
 
 Both apps share `libs/can-core` (an alias over SocketSpy's CAN core), the Qt6 dark theme, and the sidebar nav — see **[Architecture](Architecture)** for the full picture.
 
 ### See also
+- **[OBD Drive Mode](OBD-Drive-Mode)** — road validation walkthrough.
 - **[Architecture](Architecture)** — the hub and the flash → verify loop.
 - **[OpenDAMOS](OpenDAMOS)** — the recipe format the DAMOS editor reads/writes.
 - **[Getting Started](Getting-Started)** — install both and run the loop.
@@ -92,15 +95,16 @@ La suite est un **hub** qui lance deux sous-programmes partageant un thème somb
 
 ### ECU Studio — l'app de reprogrammation ECU
 
-> Dépôt : https://github.com/Poisson48/ecu_studio_suite · version actuelle **v1.4.5** · légende ci-dessous.
+> Dépôt : https://github.com/Poisson48/ecu_studio_suite · version actuelle **v1.6.6** · légende ci-dessous.
 > **Proven** (éprouvé) = stable · **Beta** = neuf / fonctionne mais non éprouvé · **Incoming** (à venir) = feuille de route.
+> **Gratuit pour toujours (GPL-3.0)** · **aucune télémétrie / aucun cloud**.
 
 | Fonctionnalité | Statut | Ce que ça fait |
 |----------------|--------|----------------|
 | **Lecture / écriture ROM (MPPS)** | Brouillon | Mode simulation uniquement (`ECU_MPPS_SIMULATION` activé par défaut) ; **pas encore validé sur matériel réel**. |
 | **Vue hexadécimale** | Proven | Éditeur hex rapide avec recherche, overlay de diff à l'octet et saut d'adresse. |
 | **Éditeur de cartes (2D)** | Proven | Visualisation heatmap 2D ; édition scalaire/courbe/table ; import/export CSV. |
-| **Éditeur de cartes (3D)** | Beta | Surface pseudo-3D + heatmap avec overlay *fantôme* (original vs modifié) fonctionnel ; le rendu OpenGL natif `Q3DSurface` est **Incoming** (l'AppImage utilise le rendu QPainter). |
+| **Éditeur de cartes (3D)** | Beta | Surface pseudo-3D + heatmap avec overlay *fantôme* (original vs modifié) ; overlay du point de fonctionnement OBD live ; OpenGL natif `Q3DSurface` **Incoming**. |
 | **Éditeur DAMOS** | Proven | Créer/éditer des définitions `open_damos` dans l'app : ajout/suppression de caractéristiques, édition, détection de cartes depuis une ROM, AutoMods en un clic, export A2L. Voir **[OpenDAMOS](OpenDAMOS)**. |
 | **Navigateur & export A2L** | Proven | Parse les `.a2l` ASAP2 ; navigation measurements/characteristics par ECU ; export des cartes `open_damos` relocalisées en A2L standard. |
 | **Panneau Checksum** | Proven | Calcule et patche les checksums des familles d'ECU supportées. |
@@ -108,7 +112,8 @@ La suite est un **hub** qui lance deux sous-programmes partageant un thème somb
 | **Panneau AutoMods** | Proven | Applique des patches de calibration nommés depuis une recette JSON ; appliquer / annuler en lot. |
 | **Versionnement git** | Proven | Historique ROM via libgit2 — committer tout état, parcourir le log, restaurer n'importe quelle version dans l'éditeur. |
 | **Gestionnaire de projet** | Proven | Fichiers `.ecuproj` : chemin ROM, type d'ECU, notes et journal de flash. |
-| **Compagnon CAN** | Beta | Lance SocketSpy côte à côte pour le monitoring CAN live pendant la reprogrammation — la moitié « vérification » de la boucle. |
+| **Validation tune OBD mode conduite** | Beta | Session **conduite** en un bouton (ELM327) : PID live vs attendu OpenDAMOS (boost/fumée), bandeau underboost, CSV auto, freeze frame, DTC 03+07. Voir **[OBD Drive Mode](OBD-Drive-Mode)**. |
+| **Compagnon CAN** | Beta | Lance SocketSpy côte à côte ; validation CAN continue via MCP si disponible. |
 | **Mise à jour intégrée** | Proven | L'AppImage vérifie GitHub pour de nouvelles releases signées et se met à jour (manifeste Ed25519 + SHA-256). |
 | **UI bilingue + identité** | Proven | Traductions FR/EN complètes ; la définition `open_damos` EDC16C34 embarquée est entièrement en anglais. |
 
@@ -152,11 +157,12 @@ SocketSpy est la moitié analyse SocketCAN sous Linux de la suite. C'est lui qui
 
 ### Comment ils travaillent ensemble
 1. **ECU Studio** édite une carte et la flashe via MPPS V21.
-2. **SocketSpy** lit le bus CAN live et confirme que le changement a pris effet au bon point de fonctionnement.
+2. **Vérifiez** soit en **mode conduite OBD** (ELM327, mesuré vs attendu OpenDAMOS), soit avec **SocketSpy** sur le bus CAN live.
 
 Les deux apps partagent `libs/can-core` (un alias du cœur CAN de SocketSpy), le thème sombre Qt6 et la navigation latérale — voir **[Architecture](Architecture)** pour le tableau complet.
 
 ### Voir aussi
+- **[OBD Drive Mode](OBD-Drive-Mode)** — guide de validation route.
 - **[Architecture](Architecture)** — le hub et la boucle flash → vérification.
 - **[OpenDAMOS](OpenDAMOS)** — le format de recette que l'éditeur DAMOS lit/écrit.
 - **[Getting Started](Getting-Started)** — installer les deux et lancer la boucle.

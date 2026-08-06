@@ -8,11 +8,13 @@
 
 ## English
 
+**Free forever** (GPL-3.0) — no account, no subscription, no paid tier. **100% local** — no telemetry, no cloud; your ROMs and OBD logs stay on your machine. The only optional network use is AppImage auto-update from GitHub (user-triggered, signed).
+
 ### 1. Download (recommended)
 
 The fastest path is the self-contained **AppImage**. Qt6, libusb and every runtime library are bundled, so it runs on a clean PC with **nothing installed** and **no root access**.
 
-1. Grab the latest release: **[ECU Studio AppImage](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** (~37 MB, Linux x86_64).
+1. Grab the latest release: **[ECU Studio AppImage](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** (~37 MB, Linux x86_64). Current feature set includes **OBD drive-mode tune validation** (v1.6.6+).
 2. Make it executable and run it:
 
 ```bash
@@ -97,15 +99,24 @@ sudo modprobe vcan && sudo ip link add dev vcan0 type vcan && sudo ip link set u
 
 Requires a Linux kernel ≥ 5.4 with SocketCAN support.
 
-### 4. First run — the flagship loop
+**ELM327 (OBD drive mode)** — plug in USB-serial or pair Bluetooth, then pick the port in the **OBD** panel. No special udev rule beyond normal serial access (`dialout` group on many distros). Full walkthrough: **[OBD Drive Mode](OBD-Drive-Mode)**.
 
-1. In **ECU Studio**, open or create a project, load a ROM, and edit a map (or apply an [OpenDAMOS](OpenDAMOS) recipe / AutoMod).
-2. Flash it to the ECU through the MPPS panel.
-3. Launch **SocketSpy** side-by-side (ECU Studio has a CAN-companion launcher) and watch the live signal change on the bus.
+### 4. First run — two ways to verify
+
+**A. Road validation (simplest hardware)**  
+1. Load a ROM with OpenDAMOS maps in ECU Studio.  
+2. Open **OBD** → select ELM327 → **▶ Start drive session**.  
+3. Drive and watch measured vs expected (boost banner). Details: **[OBD Drive Mode](OBD-Drive-Mode)**.
+
+**B. Bench / CAN validation**  
+1. Edit a map (or apply an [OpenDAMOS](OpenDAMOS) recipe / AutoMod).  
+2. Flash via the MPPS panel.  
+3. Launch **SocketSpy** and confirm the live CAN signal at the right operating point.
 
 That round-trip — **edit → flash → verify** — is the whole point of the suite. See **[Architecture](Architecture)** for how it is wired.
 
 ### Next steps
+- **[OBD Drive Mode](OBD-Drive-Mode)** — one-button road validation with ELM327.
 - **[Architecture](Architecture)** — how the hub and sub-programs fit together.
 - **[Sub-Programs](Sub-Programs)** — full feature tour of ECU Studio and SocketSpy.
 - **[OpenDAMOS](OpenDAMOS)** — one tuning recipe across firmware variants.
@@ -117,11 +128,13 @@ That round-trip — **edit → flash → verify** — is the whole point of the 
 
 ## Français
 
+**Gratuit pour toujours** (GPL-3.0) — pas de compte, pas d’abonnement, pas d’offre payante. **100 % local** — aucune télémétrie, aucun cloud ; vos ROM et logs OBD restent sur votre machine. Le seul réseau optionnel est la mise à jour AppImage depuis GitHub (déclenchée par l’utilisateur, signée).
+
 ### 1. Télécharger (recommandé)
 
 Le plus simple est l'**AppImage** autonome. Qt6, libusb et toutes les bibliothèques runtime sont embarquées : ça tourne sur un PC vierge **sans rien installer** et **sans accès root**.
 
-1. Récupérez la dernière version : **[AppImage ECU Studio](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** (~37 Mo, Linux x86_64).
+1. Récupérez la dernière version : **[AppImage ECU Studio](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** (~37 Mo, Linux x86_64). Inclut la **validation tune OBD en mode conduite** (v1.6.6+).
 2. Rendez-la exécutable et lancez-la :
 
 ```bash
@@ -206,15 +219,24 @@ sudo modprobe vcan && sudo ip link add dev vcan0 type vcan && sudo ip link set u
 
 Nécessite un noyau Linux ≥ 5.4 avec le support SocketCAN.
 
-### 4. Premier lancement — la boucle phare
+**ELM327 (mode conduite OBD)** — branchez l’USB-série ou appairage Bluetooth, puis choisissez le port dans le panneau **OBD**. Souvent le groupe `dialout` suffit. Guide complet : **[OBD Drive Mode](OBD-Drive-Mode)**.
 
-1. Dans **ECU Studio**, ouvrez/créez un projet, chargez une ROM, éditez une carte (ou appliquez une recette [OpenDAMOS](OpenDAMOS) / un AutoMod).
-2. Flashez-la dans l'ECU via le panneau MPPS.
-3. Lancez **SocketSpy** côte à côte (ECU Studio a un lanceur compagnon CAN) et observez le signal changer en direct sur le bus.
+### 4. Premier lancement — deux façons de vérifier
+
+**A. Validation route (matériel le plus simple)**  
+1. Chargez une ROM avec cartes OpenDAMOS.  
+2. Panneau **OBD** → ELM327 → **▶ Lancer session conduite**.  
+3. Roulez et comparez mesuré vs attendu (bandeau boost). Détails : **[OBD Drive Mode](OBD-Drive-Mode)**.
+
+**B. Validation banc / CAN**  
+1. Éditez une carte (ou recette [OpenDAMOS](OpenDAMOS) / AutoMod).  
+2. Flashez via le panneau MPPS.  
+3. Lancez **SocketSpy** et confirmez le signal CAN au bon point de fonctionnement.
 
 Cet aller-retour — **éditer → flasher → vérifier** — est tout l'intérêt de la suite. Voir **[Architecture](Architecture)** pour le câblage.
 
 ### Étapes suivantes
+- **[OBD Drive Mode](OBD-Drive-Mode)** — validation route en un bouton avec ELM327.
 - **[Architecture](Architecture)** — comment le hub et les sous-programmes s'emboîtent.
 - **[Sub-Programs](Sub-Programs)** — tour complet des fonctionnalités d'ECU Studio et SocketSpy.
 - **[OpenDAMOS](OpenDAMOS)** — une seule recette de tuning sur plusieurs variantes firmware.

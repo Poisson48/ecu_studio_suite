@@ -9,10 +9,16 @@
 ## English
 
 ### What is ECU Studio Suite, in one sentence?
-A 100% local, Qt6/C++23 automotive software suite for Linux that flashes an ECU map and then verifies the change live on the CAN bus — built as a hub (**ECU Studio**) that launches a companion (**SocketSpy**). See **[Home](Home)** and **[Architecture](Architecture)**.
+A 100% local, Qt6/C++23 automotive software suite for Linux that flashes an ECU map and then verifies the change live — on the road via **OBD drive mode**, or on the CAN bus with **SocketSpy**. See **[Home](Home)** and **[Architecture](Architecture)**.
+
+### Is it free? Will it stay free?
+Yes. **GPL-3.0, €0 forever** — no subscription, no account, no paid unlock. Commercial tuners sell drivers and cloud seats; we don’t.
 
 ### Does it phone home / collect telemetry?
-No. There is **no telemetry, no network calls, no cloud**. The only network access is the optional in-app auto-update, which fetches signed AppImage releases from GitHub (Ed25519-signed manifest + SHA-256 verification) and is user-triggered.
+No. There is **no telemetry, no analytics, no cloud sync**. Your ROMs, projects and OBD CSV logs never leave the machine. The only network access is the optional in-app auto-update, which fetches signed AppImage releases from GitHub (Ed25519-signed manifest + SHA-256 verification) and is user-triggered.
+
+### What is OBD drive mode?
+A one-button ELM327 session (v1.6.6+) that polls live PIDs, compares them to **OpenDAMOS expected** values (boost / smoke), shows a large underboost banner, and can auto-log CSV — designed to use while driving. Full guide: **[OBD Drive Mode](OBD-Drive-Mode)**.
 
 ### Do I need to compile anything?
 No. Download the self-contained **[AppImage](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)**, `chmod +x`, and run — Qt6, libusb and every runtime library are bundled, no root needed. Building from source is only for developers. See **[Getting Started](Getting-Started)**.
@@ -30,7 +36,10 @@ ECU Studio currently targets **EDC16C34** and **ME7.x** (K-Line), and **MED17** 
 A manufacturer DAMOS hardcodes absolute addresses and breaks on every firmware update. OpenDAMOS describes each map by the **fingerprint of its axes** instead, so one free (CC0) recipe relocates the maps across firmware variants of the same ECU family. There is a converter that turns a manufacturer DAMOS (A2L) + ROM into an open recipe. Full details: **[OpenDAMOS](OpenDAMOS)**.
 
 ### What's the difference between ECU Studio and SocketSpy?
-**ECU Studio** is the tuning side — ROM editing, maps, DAMOS, checksums, flashing. **SocketSpy** is the analysis side — live CAN monitoring, protocol decoders, UDS, Lua, simulation. They share a theme and sidebar and are designed to be used together: edit/flash in ECU Studio, verify in SocketSpy. See **[Sub-Programs](Sub-Programs)**.
+**ECU Studio** is the tuning side — ROM editing, maps, DAMOS, checksums, flashing, and **OBD drive-mode validation**. **SocketSpy** is the deep CAN analysis side — live monitoring, protocol decoders, UDS, Lua, simulation. They share a theme and sidebar: edit/flash in ECU Studio, verify on the road (OBD) or on the bus (SocketSpy). See **[Sub-Programs](Sub-Programs)**.
+
+### My ELM327 isn’t connecting — what now?
+Confirm the serial device appears (`/dev/ttyUSB*`, `/dev/ttyACM*`, or RFCOMM), that your user is in the `dialout` group, and that the adapter speaks classic AT commands (some cheap clones are flaky). Try another USB cable/port. See **[OBD Drive Mode](OBD-Drive-Mode)** and **[Getting Started](Getting-Started)**.
 
 ### Where is SocketSpy documented?
 In its own wiki: **https://github.com/Poisson48/SocketSpy/wiki** (site: https://poisson48.github.io/SocketSpy). The **[Sub-Programs](Sub-Programs)** page summarizes its capabilities.
@@ -65,10 +74,16 @@ Make sure you installed the udev rule (`libs/60-mpps.rules`), reloaded udev, the
 ## Français
 
 ### ECU Studio Suite en une phrase ?
-Une suite logicielle automobile 100 % locale, en Qt6/C++23, pour Linux, qui flashe une cartographie d'ECU puis vérifie le changement en direct sur le bus CAN — conçue comme un hub (**ECU Studio**) qui lance un compagnon (**SocketSpy**). Voir **[Home](Home)** et **[Architecture](Architecture)**.
+Une suite logicielle automobile 100 % locale, en Qt6/C++23, pour Linux, qui flashe une cartographie d'ECU puis vérifie le changement en direct — sur la route via le **mode conduite OBD**, ou sur le bus CAN avec **SocketSpy**. Voir **[Home](Home)** et **[Architecture](Architecture)**.
+
+### C’est gratuit ? Ça le restera ?
+Oui. **GPL-3.0, 0 € pour toujours** — pas d’abonnement, pas de compte, pas de déblocage payant. Les outils commerciaux vendent des drivers et des sièges cloud ; pas nous.
 
 ### Est-ce que ça « téléphone à la maison » / collecte de la télémétrie ?
-Non. **Aucune télémétrie, aucun appel réseau, aucun cloud**. Le seul accès réseau est la mise à jour intégrée optionnelle, qui récupère des releases AppImage signées depuis GitHub (manifeste Ed25519 + vérification SHA-256) et qui est déclenchée par l'utilisateur.
+Non. **Aucune télémétrie, aucune analytics, aucune synchro cloud**. Vos ROM, projets et CSV OBD ne quittent pas la machine. Le seul accès réseau est la mise à jour intégrée optionnelle (releases AppImage signées depuis GitHub, déclenchée par l'utilisateur).
+
+### Qu’est-ce que le mode conduite OBD ?
+Une session ELM327 en un bouton (v1.6.6+) qui interroge les PID live, les compare aux valeurs **attendues OpenDAMOS** (boost / fumée), affiche un grand bandeau underboost, et peut logger un CSV — conçue pour rouler. Guide : **[OBD Drive Mode](OBD-Drive-Mode)**.
 
 ### Faut-il compiler quelque chose ?
 Non. Téléchargez l'**[AppImage](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** autonome, `chmod +x`, et lancez — Qt6, libusb et toutes les bibliothèques runtime sont embarquées, sans root. Compiler depuis les sources, c'est seulement pour les développeurs. Voir **[Getting Started](Getting-Started)**.
@@ -86,7 +101,10 @@ ECU Studio cible aujourd'hui **EDC16C34** et **ME7.x** (K-Line), et **MED17** et
 Un DAMOS constructeur hardcode des adresses absolues et casse à chaque mise à jour firmware. OpenDAMOS décrit chaque carte par l'**empreinte de ses axes**, donc une seule recette libre (CC0) relocalise les cartes sur les variantes firmware d'une même famille d'ECU. Un convertisseur transforme un DAMOS constructeur (A2L) + ROM en recette libre. Détails complets : **[OpenDAMOS](OpenDAMOS)**.
 
 ### Quelle différence entre ECU Studio et SocketSpy ?
-**ECU Studio** est le côté tuning — édition ROM, cartes, DAMOS, checksums, flash. **SocketSpy** est le côté analyse — monitoring CAN live, décodeurs de protocoles, UDS, Lua, simulation. Ils partagent thème et sidebar et sont faits pour être utilisés ensemble : éditer/flasher dans ECU Studio, vérifier dans SocketSpy. Voir **[Sub-Programs](Sub-Programs)**.
+**ECU Studio** est le côté tuning — édition ROM, cartes, DAMOS, checksums, flash, et **validation OBD mode conduite**. **SocketSpy** est l’analyse CAN approfondie — monitoring live, décodeurs, UDS, Lua, simulation. Ensemble : éditer/flasher dans ECU Studio, vérifier sur route (OBD) ou sur le bus (SocketSpy). Voir **[Sub-Programs](Sub-Programs)**.
+
+### Mon ELM327 ne se connecte pas — que faire ?
+Vérifiez le périphérique série (`/dev/ttyUSB*`, `/dev/ttyACM*` ou RFCOMM), le groupe `dialout`, et que l’adaptateur parle bien les commandes AT (certains clones sont capricieux). Essayez un autre câble/port USB. Voir **[OBD Drive Mode](OBD-Drive-Mode)** et **[Getting Started](Getting-Started)**.
 
 ### Où est documenté SocketSpy ?
 Dans son propre wiki : **https://github.com/Poisson48/SocketSpy/wiki** (site : https://poisson48.github.io/SocketSpy). La page **[Sub-Programs](Sub-Programs)** résume ses capacités.

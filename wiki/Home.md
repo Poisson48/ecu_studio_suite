@@ -49,11 +49,12 @@
 
 | Page | What's inside |
 |------|---------------|
-| **[Getting Started](Getting-Started)** | Download the AppImage, build from source, run, and connect real MPPS / CAN hardware. |
-| **[Architecture](Architecture)** | The hub, the sub-programs, the shared libraries, and the flash → verify interconnection loop. |
-| **[OpenDAMOS](OpenDAMOS)** | The free, relocatable DAMOS: axis-fingerprint relocation, supported ECUs and maturity, the A2L → OpenDAMOS converter. |
-| **[Sub-Programs](Sub-Programs)** | ECU Studio and SocketSpy feature-by-feature, with a link to the SocketSpy wiki. |
-| **[FAQ](FAQ)** | Common questions: hardware, legality, platforms, hub status, troubleshooting. |
+| **[Getting Started](Getting-Started)** | Download the AppImage, build from source, connect MPPS / CAN / ELM327. |
+| **[OBD Drive Mode](OBD-Drive-Mode)** | One-button road validation: ELM327, measured vs OpenDAMOS expected, turbo banner, CSV. |
+| **[Architecture](Architecture)** | The hub, shared libraries, and the flash → verify loops (OBD + SocketSpy). |
+| **[OpenDAMOS](OpenDAMOS)** | Axis-fingerprint relocation, supported ECUs, A2L → OpenDAMOS converter. |
+| **[Sub-Programs](Sub-Programs)** | ECU Studio and SocketSpy feature-by-feature (current: **v1.6.6**). |
+| **[FAQ](FAQ)** | Free forever, privacy, hardware, legality, ELM327 troubleshooting. |
 
 ### Maturity legend (used across this wiki)
 
@@ -87,11 +88,12 @@
 
 | Page | Contenu |
 |------|---------|
-| **[Getting Started](Getting-Started)** | Télécharger l'AppImage, compiler depuis les sources, lancer, et brancher le vrai matériel MPPS / CAN. |
-| **[Architecture](Architecture)** | Le hub, les sous-programmes, les bibliothèques partagées et la boucle d'interconnexion flash → vérification. |
-| **[OpenDAMOS](OpenDAMOS)** | Le DAMOS libre et relocalisable : relocalisation par empreinte d'axes, ECU supportés et maturité, le convertisseur A2L → OpenDAMOS. |
-| **[Sub-Programs](Sub-Programs)** | ECU Studio et SocketSpy fonctionnalité par fonctionnalité, avec un lien vers le wiki SocketSpy. |
-| **[FAQ](FAQ)** | Questions fréquentes : matériel, légalité, plateformes, statut du hub, dépannage. |
+| **[Getting Started](Getting-Started)** | Télécharger l'AppImage, compiler, brancher MPPS / CAN / ELM327. |
+| **[OBD Drive Mode](OBD-Drive-Mode)** | Validation route en un bouton : ELM327, mesuré vs attendu OpenDAMOS, bandeau turbo, CSV. |
+| **[Architecture](Architecture)** | Le hub, les bibliothèques partagées et les boucles flash → vérification (OBD + SocketSpy). |
+| **[OpenDAMOS](OpenDAMOS)** | Relocalisation par empreinte d'axes, ECU supportés, convertisseur A2L → OpenDAMOS. |
+| **[Sub-Programs](Sub-Programs)** | ECU Studio et SocketSpy fonctionnalité par fonctionnalité (actuel : **v1.6.6**). |
+| **[FAQ](FAQ)** | Gratuit pour toujours, vie privée, matériel, légalité, dépannage ELM327. |
 
 ### Légende de maturité (utilisée dans tout ce wiki)
 

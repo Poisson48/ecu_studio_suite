@@ -59,7 +59,7 @@ ecu_studio_suite/
 
 | Library | Role |
 |---------|------|
-| **`libs/ecu-core`** | The C++23 port of `open_car_reprog`. Modules: `EcuCatalog` (SQLite ECU database), `RomPatcher` (checksum-aware binary patching), `MapFinder` (heuristic map detection), `MapDiffer` (structural map diff), `A2lParser` (full ASAP2), `ProjectManager` (`.ecuproj`), `VehicleTemplates`, `OpenDamos` (recipe import + relocation), `GitManager` (libgit2 wrapper). |
+| **`libs/ecu-core`** | The C++23 port of `open_car_reprog`. Modules: `EcuCatalog`, `RomPatcher`, `MapFinder`, `MapDiffer`, `A2lParser`, `ProjectManager`, `VehicleTemplates`, `OpenDamos` (recipe import + relocation), `GitManager`, plus **`MapSampler` / `TuneValidation`** (bilinear sample of relocated maps vs live OBD for drive-mode validation) and OBD freeze-frame helpers in `Obd2`. |
 | **`libs/mpps`** | USB driver for the MPPS V21 programmer (FTDI-based, libusb on Linux). K-Line and CAN physical protocols, block read/write/erase with progress, hardware checksum verification, a **simulation mode** for hardware-free development/CI, and an optional protocol log. |
 | **`libs/can-core`** | A thin alias over **SocketSpy's** CAN core (SocketCAN access, protocol decoders). This is the shared seam that lets ECU Studio reason about the same CAN stack SocketSpy uses. |
 | **`libs/shared`** | The shared Qt6 color palette and UI utilities — the visual glue that makes the two apps look like one suite. |
@@ -68,35 +68,38 @@ ecu_studio_suite/
 
 This is the loop the whole suite is built around. It closes the gap between *"I changed a number in a map"* and *"the engine actually behaves differently at that operating point."*
 
+There are **two verify paths** after flash:
+
 ```
-   ┌──────────────┐   1. edit map / apply        ┌──────────────┐
-   │              │      OpenDAMOS recipe         │              │
-   │  ECU Studio  │ ───────────────────────────► │   The ROM    │
-   │              │   2. flash via MPPS V21       │  on the ECU  │
-   └──────┬───────┘ ───────────────────────────► └──────┬───────┘
-          │                                              │ 3. ECU runs the
-          │ launches SocketSpy                           │    new calibration
-          ▼                                              ▼
-   ┌──────────────┐   4. read live signals       ┌──────────────┐
-   │              │      (DBC / UDS / OBD-II)     │              │
-   │  SocketSpy   │ ◄─────────────────────────── │  CAN bus     │
-   │              │   5. confirm the change took  │              │
-   └──────────────┘      effect at the right RPM  └──────────────┘
-                         / load point  ✓ / ✗
+   ┌──────────────┐   1. edit map / OpenDAMOS     ┌──────────────┐
+   │  ECU Studio  │ ───────────────────────────► │  ROM on ECU  │
+   │              │   2. flash via MPPS V21       └──────┬───────┘
+   └──────┬───────┘                                     │ 3. runs new calib
+          │                                             │
+     ┌────┴────────────────────┐                        │
+     │                         │                        │
+     ▼                         ▼                        ▼
+┌────────────┐          ┌────────────┐          ┌────────────┐
+│ OBD panel  │ 4a ELM327│ SocketSpy  │ 4b CAN   │  vehicle   │
+│ drive mode │◄─────────│ DBC/UDS/…  │◄─────────│  sensors   │
+│ MapSampler │ 5a ✓/✗   │            │ 5b ✓/✗   └────────────┘
+└────────────┘          └────────────┘
 ```
 
-1. In **ECU Studio**, edit a map directly, or apply an [OpenDAMOS](OpenDAMOS) recipe / AutoMod (e.g. Stage 1, EGR off).
-2. Flash the modified ROM into the ECU over **MPPS V21** (`libs/mpps`).
-3. The ECU now runs the new calibration.
-4. Launch **SocketSpy** (ECU Studio has a CAN-companion launcher) and read the live signals on the CAN bus — decoded via DBC, or queried via UDS / OBD-II.
-5. **Confirm**: the modified value shows up on the bus at the correct operating point (the right RPM / load). The change is verified, not assumed.
+1. In **ECU Studio**, edit a map or apply an [OpenDAMOS](OpenDAMOS) recipe / AutoMod.
+2. Flash via **MPPS V21** (`libs/mpps`).
+3. The ECU runs the new calibration.
+4a. **Road (v1.6.6+):** **[OBD Drive Mode](OBD-Drive-Mode)** — ELM327 live PIDs vs OpenDAMOS expected (`MapSampler` + `TuneValidation` in `libs/ecu-core`).
+4b. **Bench / deep CAN:** launch **SocketSpy**, decode DBC / UDS / OBD-II; optional continuous validation via MCP.
+5. **Confirm** at the right RPM / load — verified, not assumed.
 
-The technical seam that makes this honest is `libs/can-core`, which aliases SocketSpy's CAN stack so both halves of the loop speak the same protocol layer.
+Shared CAN reasoning still goes through `libs/can-core` (SocketSpy’s stack). OBD sampling and map expected values live in `libs/ecu-core`.
 
 ### Design principles
-- **100% local** — no telemetry, no network calls, no cloud. Everything is on your machine.
+- **Free forever & private** — GPL-3.0, no account; no telemetry, no cloud. Everything stays on your machine.
 - **One look, two tools** — shared theme and sidebar so the suite feels unified.
-- **Hardware-optional development** — MPPS simulation mode and SocketCAN `vcan` let you run the whole stack without any hardware.
+- **Verify without a full CAN stack** — a cheap ELM327 is enough for drive-mode validation.
+- **Hardware-optional development** — MPPS simulation mode and SocketCAN `vcan` let you run the stack without hardware.
 - **Open formats** — `.ecuproj` projects, standard A2L export, and the CC0 [OpenDAMOS](OpenDAMOS) recipe format.
 
 ### Platform support
@@ -108,6 +111,7 @@ The technical seam that makes this honest is `libs/can-core`, which aliases Sock
 | macOS | Not tested | SocketCAN unavailable. |
 
 ### See also
+- **[OBD Drive Mode](OBD-Drive-Mode)** — road validation path (4a).
 - **[Sub-Programs](Sub-Programs)** — the full feature list of each app.
 - **[OpenDAMOS](OpenDAMOS)** — the recipe format flowing through step 1.
 - **[Getting Started](Getting-Started)** — build the suite and bring up the loop.
@@ -169,7 +173,7 @@ ecu_studio_suite/
 
 | Bibliothèque | Rôle |
 |--------------|------|
-| **`libs/ecu-core`** | Le portage C++23 de `open_car_reprog`. Modules : `EcuCatalog` (base ECU SQLite), `RomPatcher` (patch binaire conscient du checksum), `MapFinder` (détection heuristique de cartes), `MapDiffer` (diff structurel), `A2lParser` (ASAP2 complet), `ProjectManager` (`.ecuproj`), `VehicleTemplates`, `OpenDamos` (import de recette + relocalisation), `GitManager` (wrapper libgit2). |
+| **`libs/ecu-core`** | Le portage C++23 de `open_car_reprog`. Modules : `EcuCatalog`, `RomPatcher`, `MapFinder`, `MapDiffer`, `A2lParser`, `ProjectManager`, `VehicleTemplates`, `OpenDamos`, `GitManager`, plus **`MapSampler` / `TuneValidation`** (échantillonnage bilinéaire des cartes relocalisées vs OBD live pour le mode conduite) et aides freeze-frame OBD dans `Obd2`. |
 | **`libs/mpps`** | Pilote USB du programmateur MPPS V21 (FTDI, libusb sous Linux). Protocoles physiques K-Line et CAN, lecture/écriture/effacement par bloc avec progression, vérification matérielle du checksum, un **mode simulation** pour le dev/CI sans matériel, et un log de protocole optionnel. |
 | **`libs/can-core`** | Un alias léger du cœur CAN de **SocketSpy** (accès SocketCAN, décodeurs de protocoles). C'est la couture partagée qui permet à ECU Studio de raisonner sur la même pile CAN que SocketSpy. |
 | **`libs/shared`** | La palette de couleurs Qt6 partagée et les utilitaires UI — la colle visuelle qui fait que les deux apps ressemblent à une seule suite. |
@@ -178,35 +182,36 @@ ecu_studio_suite/
 
 C'est la boucle autour de laquelle toute la suite est construite. Elle comble l'écart entre *« j'ai changé un nombre dans une carte »* et *« le moteur se comporte vraiment différemment à ce point de fonctionnement »*.
 
+Il y a **deux chemins de vérification** après le flash :
+
 ```
-   ┌──────────────┐   1. éditer la carte /        ┌──────────────┐
-   │              │      appliquer une recette     │              │
-   │  ECU Studio  │ ───────────────────────────► │   La ROM     │
-   │              │   2. flasher via MPPS V21      │  dans l'ECU  │
-   └──────┬───────┘ ───────────────────────────► └──────┬───────┘
-          │                                              │ 3. l'ECU exécute
-          │ lance SocketSpy                              │    la nouvelle calib
-          ▼                                              ▼
-   ┌──────────────┐   4. lire les signaux live    ┌──────────────┐
-   │              │      (DBC / UDS / OBD-II)      │              │
-   │  SocketSpy   │ ◄─────────────────────────── │  Bus CAN     │
-   │              │   5. confirmer l'effet au bon  │              │
-   └──────────────┘      régime / charge  ✓ / ✗   └──────────────┘
+   ┌──────────────┐   1. éditer / OpenDAMOS       ┌──────────────┐
+   │  ECU Studio  │ ───────────────────────────► │  ROM ECU     │
+   │              │   2. flash MPPS V21           └──────┬───────┘
+   └──────┬───────┘                                     │ 3. nouvelle calib
+          │                                             │
+     ┌────┴────────────────────┐                        │
+     ▼                         ▼                        ▼
+┌────────────┐          ┌────────────┐          ┌────────────┐
+│ Panneau OBD│ 4a ELM327│ SocketSpy  │ 4b CAN   │  véhicule  │
+│ mode condu.│◄─────────│ DBC/UDS/…  │◄─────────│  capteurs  │
+│ MapSampler │ 5a ✓/✗   │            │ 5b ✓/✗   └────────────┘
+└────────────┘          └────────────┘
 ```
 
-1. Dans **ECU Studio**, éditez une carte directement, ou appliquez une recette [OpenDAMOS](OpenDAMOS) / un AutoMod (ex. Stage 1, EGR off).
-2. Flashez la ROM modifiée dans l'ECU via **MPPS V21** (`libs/mpps`).
-3. L'ECU exécute désormais la nouvelle calibration.
-4. Lancez **SocketSpy** (ECU Studio a un lanceur compagnon CAN) et lisez les signaux en direct sur le bus CAN — décodés via DBC, ou interrogés via UDS / OBD-II.
-5. **Confirmez** : la valeur modifiée apparaît sur le bus au bon point de fonctionnement (le bon régime / la bonne charge). Le changement est vérifié, pas supposé.
-
-La couture technique qui rend cela honnête est `libs/can-core`, qui aliase la pile CAN de SocketSpy pour que les deux moitiés de la boucle parlent la même couche de protocole.
+1. Dans **ECU Studio**, éditez une carte ou appliquez une recette [OpenDAMOS](OpenDAMOS) / AutoMod.
+2. Flashez via **MPPS V21** (`libs/mpps`).
+3. L'ECU exécute la nouvelle calibration.
+4a. **Route (v1.6.6+) :** **[OBD Drive Mode](OBD-Drive-Mode)** — PID ELM327 vs attendu OpenDAMOS (`MapSampler` + `TuneValidation` dans `libs/ecu-core`).
+4b. **Banc / CAN profond :** lancez **SocketSpy** (DBC / UDS / OBD-II) ; validation continue optionnelle via MCP.
+5. **Confirmez** au bon régime / charge — vérifié, pas supposé.
 
 ### Principes de conception
-- **100 % local** — aucune télémétrie, aucun appel réseau, aucun cloud. Tout est sur votre machine.
-- **Un look, deux outils** — thème et sidebar partagés pour une suite unifiée.
-- **Développement sans matériel** — le mode simulation MPPS et le `vcan` SocketCAN permettent de faire tourner toute la pile sans matériel.
-- **Formats ouverts** — projets `.ecuproj`, export A2L standard, et le format de recette CC0 [OpenDAMOS](OpenDAMOS).
+- **Gratuit pour toujours & privé** — GPL-3.0, pas de compte ; aucune télémétrie, aucun cloud.
+- **Un look, deux outils** — thème et sidebar partagés.
+- **Vérifier sans pile CAN complète** — un ELM327 suffit pour le mode conduite.
+- **Développement sans matériel** — simulation MPPS et `vcan` SocketCAN.
+- **Formats ouverts** — `.ecuproj`, export A2L, recettes CC0 [OpenDAMOS](OpenDAMOS).
 
 ### Plateformes
 
@@ -217,6 +222,7 @@ La couture technique qui rend cela honnête est `libs/can-core`, qui aliase la p
 | macOS | Non testé | SocketCAN indisponible. |
 
 ### Voir aussi
+- **[OBD Drive Mode](OBD-Drive-Mode)** — chemin de validation route (4a).
 - **[Sub-Programs](Sub-Programs)** — la liste complète des fonctionnalités de chaque app.
 - **[OpenDAMOS](OpenDAMOS)** — le format de recette qui circule à l'étape 1.
 - **[Getting Started](Getting-Started)** — compiler la suite et monter la boucle.
