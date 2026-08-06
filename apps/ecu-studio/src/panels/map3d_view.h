@@ -26,6 +26,9 @@ struct SurfaceData {
     double               liveGy = 0.0;
     double               liveMeasured = 0.0;
     double               liveExpected = 0.0;
+    // Densité de passages (session conduite) — taille ny*nx, vide = désactivé.
+    std::vector<int>     visitCounts;
+    int                  visitMax = 0;
 };
 
 // Vue de rendu pseudo-3D / heatmap basée sur QPainter — repli universel sans

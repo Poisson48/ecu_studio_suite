@@ -65,6 +65,9 @@ public:
     explicit CanPanel(QWidget* parent = nullptr);
     ~CanPanel() override;
 
+    // Résout le chemin du binaire socketspy, ou chaîne vide si introuvable.
+    static QString resolveSocketSpyPath();
+
 private:
     void buildUi();
     // Liste les interfaces CAN disponibles via /sys/class/net (can*, vcan*, slcan*).
@@ -74,8 +77,6 @@ private:
     // Lance l'app SocketSpy complète en sous-processus (résolution de chemin
     // près d'ecu_studio puis dans l'arbre de build).
     void launchSocketSpy();
-    // Résout le chemin du binaire socketspy, ou chaîne vide si introuvable.
-    static QString resolveSocketSpyPath();
 
 #ifdef ECU_HAVE_CANCORE
     void startCapture();

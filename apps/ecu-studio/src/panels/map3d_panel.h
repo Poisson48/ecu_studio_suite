@@ -35,6 +35,8 @@ public slots:
                  const QString& dataUnit = {});
 
     void setLiveOperatingPoint(int gx, int gy, double measured, double expected);
+    void recordVisit(int gx, int gy);
+    void clearVisits();
 
 private:
     struct MapEntry {

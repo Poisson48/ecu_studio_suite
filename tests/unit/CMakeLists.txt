@@ -30,6 +30,7 @@ ecu_core_test(test_git_manager)
 ecu_core_test(test_edc17_checksum)
 ecu_core_test(test_obd2)
 ecu_core_test(test_map_sampler)
+ecu_core_test(test_tune_validation)
 
 # ── ecu-mcp : serveur MCP JSON-RPC 2.0 ────────────────────────────────────────
 # ecu_mcp expose son include PUBLIC et tire nlohmann_json/ecu_core transitivement.

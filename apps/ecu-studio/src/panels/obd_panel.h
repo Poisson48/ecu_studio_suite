@@ -18,6 +18,7 @@ class QDoubleSpinBox;
 class QTabWidget;
 class QFrame;
 class QVBoxLayout;
+class QSpinBox;
 
 #include "ecu/TuneValidation.hpp"
 
@@ -68,6 +69,11 @@ private slots:
     void replayValidationCsv();
     void onDriveModeToggled(bool on);
     void onDriveSessionClicked();
+    void applyRoutePreset();
+    void exportSessionBundle();
+    void onCategoryFilterChanged();
+    void onRuleCellChanged(int row, int col);
+    void launchSocketSpy();
 
 private:
     void buildUi();
@@ -91,6 +97,10 @@ private:
     void tryAutoStartDriveSession();
     void updateValidationTable(const std::vector<ecu::ValidationResult>& results);
     void updateDriveDashboard(const std::vector<ecu::ValidationResult>& results);
+    void refreshRulesTable();
+    void applyCategoryFilters();
+    void showSessionSummary(const ecu::SessionSummary& sum);
+    void maybeAlertFail();
     std::optional<ecu::ValidationResult> primaryBoostResult(
         const std::vector<ecu::ValidationResult>& results) const;
     void appendValidationCsv(const std::vector<ecu::ValidationResult>& results);
@@ -99,6 +109,10 @@ private:
 
     RomDocument*    m_doc = nullptr;
     ecu::TuneValidator* m_validator = nullptr;
+    ecu::SessionRecorder m_session;
+    ecu::StatusHysteresis m_hyst;
+    ecu::EmaFilter m_emaMeas;
+    ecu::EmaFilter m_emaExp;
 
     Elm327* m_elm = nullptr;
     QTimer* m_reconnectTimer = nullptr;
@@ -110,8 +124,18 @@ private:
     QCheckBox*      m_autoReconnect = nullptr;
     QCheckBox*      m_driveModeChk  = nullptr;
     QPushButton*    m_driveBtn      = nullptr;
+    QPushButton*    m_presetBtn     = nullptr;
+    QPushButton*    m_exportBtn     = nullptr;
     QLabel*         m_statusLabel = nullptr;
     QLabel*         m_romInfoLabel = nullptr;
+
+    QCheckBox*      m_catBoost = nullptr;
+    QCheckBox*      m_catSmoke = nullptr;
+    QCheckBox*      m_catAir   = nullptr;
+    QCheckBox*      m_catFuel  = nullptr;
+    QTableWidget*   m_rulesTable = nullptr;
+    QSpinBox*       m_alertSpin  = nullptr;
+    QCheckBox*      m_beepChk    = nullptr;
 
     // Mode conduite — tableau de bord grand format (semi-auto)
     QFrame*         m_drivePanel    = nullptr;
@@ -121,6 +145,7 @@ private:
     QLabel*         m_boostSub      = nullptr;
     QLabel*         m_rpmLoadLabel  = nullptr;
     QLabel*         m_csvDriveLabel = nullptr;
+    QLabel*         m_sessionLiveLabel = nullptr;
 
     QTabWidget*     m_tabs        = nullptr;
     QTableWidget*   m_pidTable    = nullptr;
@@ -139,10 +164,12 @@ private:
     QPushButton*    m_freezeBtn   = nullptr;
     QTableWidget*   m_freezeTable = nullptr;
     CanTuneValidator* m_canVal    = nullptr;
+    QPushButton*    m_spyBtn      = nullptr;
     bool            m_validating  = false;
     bool            m_driveMode   = true;
     int             m_focusValRow = 0;
-    int             m_failStreak  = 0;
+    int             m_lastAlertAt = 0;
+    QString         m_lastCsvPath;
 
     QPushButton*    m_dtcReadBtn  = nullptr;
     QPushButton*    m_dtcClearBtn = nullptr;
@@ -167,6 +194,7 @@ private:
     bool            m_canSniff    = false;
     bool            m_connected   = false;
     bool            m_wantConnected = false;
+    bool            m_rulesUiMute = false;
 };
 
 } // namespace ecu_studio

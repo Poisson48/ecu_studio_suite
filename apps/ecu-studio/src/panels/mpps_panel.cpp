@@ -7,6 +7,10 @@
 #include <QMessageBox>
 #include <QDateTime>
 #include <QFile>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QCheckBox>
+#include <QLabel>
 #include <QtConcurrent/QtConcurrent>
 #include <QFutureWatcher>
 
@@ -239,11 +243,38 @@ void MppsPanel::writeRom(const QByteArray& rom) {
         data = file.readAll();
     }
 
-    if (QMessageBox::warning(this, tr("Confirmation"),
-            tr("Écriture de %1 Ko sur l'ECU.\nUne interruption risque de bricker l'ECU.\nContinuer ?")
-               .arg(data.size() / 1024),
-            QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes)
-        return;
+    // Checklist sécurité avant flash (guardrails).
+    {
+        QDialog dlg(this);
+        dlg.setWindowTitle(tr("Checklist avant flash"));
+        auto* lay = new QVBoxLayout(&dlg);
+        lay->addWidget(new QLabel(
+            tr("Écriture de %1 Ko sur l'ECU. Coche chaque point avant de continuer :")
+                .arg(data.size() / 1024), &dlg));
+        auto* c1 = new QCheckBox(tr("J'ai une sauvegarde de la ROM d'origine"), &dlg);
+        auto* c2 = new QCheckBox(tr("Les checksums ont été recalculés / vérifiés"), &dlg);
+        auto* c3 = new QCheckBox(tr("Alimentation véhicule stable (batterie / chargeur)"), &dlg);
+        auto* c4 = new QCheckBox(tr("Je comprends le risque de brick en cas d'interruption"), &dlg);
+        for (auto* c : {c1, c2, c3, c4}) lay->addWidget(c);
+        auto* warn = new QLabel(
+            tr("Une interruption pendant l'écriture peut rendre l'ECU inutilisable."), &dlg);
+        warn->setStyleSheet(QStringLiteral("color:#ef4444;"));
+        warn->setWordWrap(true);
+        lay->addWidget(warn);
+        auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+        buttons->button(QDialogButtonBox::Ok)->setText(tr("Écrire ROM"));
+        buttons->button(QDialogButtonBox::Ok)->setEnabled(false);
+        lay->addWidget(buttons);
+        auto refreshOk = [=]() {
+            buttons->button(QDialogButtonBox::Ok)->setEnabled(
+                c1->isChecked() && c2->isChecked() && c3->isChecked() && c4->isChecked());
+        };
+        for (auto* c : {c1, c2, c3, c4})
+            connect(c, &QCheckBox::toggled, &dlg, refreshOk);
+        connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+        connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+        if (dlg.exec() != QDialog::Accepted) return;
+    }
 
     m_pendingWrite = data;
     setOperating(true);

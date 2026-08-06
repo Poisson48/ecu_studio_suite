@@ -94,6 +94,9 @@ void Map3dPanel::buildUi() {
     m_baselineBtn->setToolTip(tr("ROM de référence du mode fantôme : commit git, "
                                  "fichier .bin externe ou snapshot d'origine."));
     ctl->addWidget(m_baselineBtn);
+    auto* clearVisitsBtn = new QPushButton(tr("Effacer passages"), this);
+    clearVisitsBtn->setToolTip(tr("Efface la densité de passages (session OBD)."));
+    ctl->addWidget(clearVisitsBtn);
     m_resetBtn = new QPushButton(tr("Reset vue"), this);
     m_resetBtn->setToolTip(tr("Réinitialise l'angle de rotation et le zoom."));
     ctl->addWidget(m_resetBtn);
@@ -125,6 +128,7 @@ void Map3dPanel::buildUi() {
     });
     connect(m_baselineBtn, &QPushButton::clicked, this, &Map3dPanel::pickBaseline);
     connect(m_resetBtn, &QPushButton::clicked, this, [this]() { viewReset(); });
+    connect(clearVisitsBtn, &QPushButton::clicked, this, &Map3dPanel::clearVisits);
 }
 
 void Map3dPanel::viewSetSurface(const SurfaceData& data) {
@@ -236,6 +240,9 @@ void Map3dPanel::buildUi() {
     m_baselineBtn->setToolTip(tr("ROM de référence du mode fantôme : commit git, "
                                  "fichier .bin externe ou snapshot d'origine."));
     ctl->addWidget(m_baselineBtn);
+    auto* clearVisitsBtn = new QPushButton(tr("Effacer passages"), this);
+    clearVisitsBtn->setToolTip(tr("Efface la densité de passages (session OBD)."));
+    ctl->addWidget(clearVisitsBtn);
     m_resetBtn = new QPushButton(tr("Reset vue"), this);
     m_resetBtn->setToolTip(tr("Réinitialise l'angle de rotation et le zoom."));
     ctl->addWidget(m_resetBtn);
@@ -265,6 +272,7 @@ void Map3dPanel::buildUi() {
     });
     connect(m_baselineBtn, &QPushButton::clicked, this, &Map3dPanel::pickBaseline);
     connect(m_resetBtn, &QPushButton::clicked, this, [this]() { viewReset(); });
+    connect(clearVisitsBtn, &QPushButton::clicked, this, &Map3dPanel::clearVisits);
     // Édition par clic court sur un sommet (signal du painter).
     connect(view, &Map3dViewPainter::cellClicked,
             this, &Map3dPanel::onCellClicked);
@@ -565,6 +573,19 @@ void Map3dPanel::render(quint32 address) {
     s.xAxisTitle = xUnit.isEmpty() ? tr("X") : QString("X (%1)").arg(xUnit);
     s.yAxisTitle = yUnit.isEmpty() ? tr("Y") : QString("Y (%1)").arg(yUnit);
 
+    if (m_lastSurface.nx == s.nx && m_lastSurface.ny == s.ny
+        && !m_lastSurface.visitCounts.empty()) {
+        s.visitCounts = m_lastSurface.visitCounts;
+        s.visitMax = m_lastSurface.visitMax;
+    }
+    if (m_lastSurface.hasLivePoint && m_lastSurface.nx == s.nx) {
+        s.hasLivePoint = true;
+        s.liveGx = m_lastSurface.liveGx;
+        s.liveGy = m_lastSurface.liveGy;
+        s.liveMeasured = m_lastSurface.liveMeasured;
+        s.liveExpected = m_lastSurface.liveExpected;
+    }
+
     m_lastSurface = s;
     viewSetSurface(s);
     viewSetHeatmap(m_heatChk && m_heatChk->isChecked());
@@ -630,11 +651,34 @@ void Map3dPanel::setLiveOperatingPoint(int gx, int gy, double measured, double e
     m_lastSurface.liveGy         = static_cast<double>(gy);
     m_lastSurface.liveMeasured   = measured;
     m_lastSurface.liveExpected   = expected;
+    recordVisit(gx, gy);
     viewSetSurface(m_lastSurface);
     setStatus(tr("Point live : mesuré %1 / attendu %2 (@ cellule %3,%4)")
                   .arg(measured, 0, 'f', 1)
                   .arg(expected, 0, 'f', 1)
                   .arg(gx).arg(gy));
+}
+
+void Map3dPanel::recordVisit(int gx, int gy) {
+    const int nx = m_lastSurface.nx, ny = m_lastSurface.ny;
+    if (nx <= 0 || ny <= 0) return;
+    gx = std::clamp(gx, 0, nx - 1);
+    gy = std::clamp(gy, 0, ny - 1);
+    if (static_cast<int>(m_lastSurface.visitCounts.size()) != nx * ny) {
+        m_lastSurface.visitCounts.assign(static_cast<std::size_t>(nx * ny), 0);
+        m_lastSurface.visitMax = 0;
+    }
+    const int idx = gy * nx + gx;
+    ++m_lastSurface.visitCounts[static_cast<std::size_t>(idx)];
+    m_lastSurface.visitMax = std::max(m_lastSurface.visitMax,
+                                      m_lastSurface.visitCounts[static_cast<std::size_t>(idx)]);
+}
+
+void Map3dPanel::clearVisits() {
+    m_lastSurface.visitCounts.clear();
+    m_lastSurface.visitMax = 0;
+    if (m_lastSurface.nx > 0)
+        viewSetSurface(m_lastSurface);
 }
 
 } // namespace ecu_studio

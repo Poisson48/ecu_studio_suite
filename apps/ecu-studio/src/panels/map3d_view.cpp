@@ -440,6 +440,16 @@ void Map3dViewPainter::paintHeatmap(QPainter& p) {
             const QRectF cell(area.left() + gx * cw,
                               area.top() + (ny - 1 - gy) * ch, cw + 0.5, ch + 0.5);
             p.fillRect(cell, heatColor(t));
+            // Overlay passages session (rouge translucide).
+            if (!m_data.visitCounts.empty()
+                && static_cast<int>(m_data.visitCounts.size()) == nx * ny
+                && m_data.visitMax > 0) {
+                const int vc = m_data.visitCounts[idx];
+                if (vc > 0) {
+                    const int alpha = std::clamp(40 + (180 * vc) / m_data.visitMax, 40, 220);
+                    p.fillRect(cell, QColor(239, 68, 68, alpha));
+                }
+            }
         }
     }
 

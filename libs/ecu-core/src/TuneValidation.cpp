@@ -4,6 +4,7 @@
 
 #include <QCryptographicHash>
 
+#include <algorithm>
 #include <cmath>
 #include <span>
 
@@ -19,17 +20,6 @@ AxisScale dataScale(const DamosDataInfo& d) {
     return { d.factor, d.offset };
 }
 
-MeasureKind defaultMeasureForCategory(const std::string& cat) {
-    if (cat == "boost") return MeasureKind::MapAbsMbar;
-    return MeasureKind::DirectPid;
-}
-
-std::uint8_t defaultMeasurePid(const std::string& cat) {
-    if (cat == "boost") return 0x0B;
-    if (cat == "smoke") return 0x24;
-    return 0x0B;
-}
-
 double axisYRangeMin(const DamosEntry& e) {
     if (e.axes.size() < 2 || e.axes[1].fingerprint.empty()) return 0.0;
     return axisToPhys(static_cast<int16_t>(e.axes[1].fingerprint.front()),
@@ -42,7 +32,145 @@ double axisYRangeMax(const DamosEntry& e) {
                       axisScale(e.axes[1]));
 }
 
+int hitKey(int gx, int gy) {
+    return (gx << 16) ^ (gy & 0xffff);
+}
+
 } // namespace
+
+MeasureKind TuneValidator::defaultMeasureForCategory(const std::string& cat) {
+    if (cat == "boost") return MeasureKind::MapAbsMbar;
+    return MeasureKind::DirectPid;
+}
+
+std::uint8_t TuneValidator::defaultMeasurePid(const std::string& cat) {
+    if (cat == "boost") return 0x0B; // MAP
+    if (cat == "smoke") return 0x24; // commanded AFR / equiv.
+    if (cat == "air")   return 0x10; // MAF
+    if (cat == "fuel")  return 0x23; // fuel rail pressure (absolu)
+    if (cat == "driver") return 0x04; // charge comme proxy
+    return 0x0B;
+}
+
+ValidationStatus TuneValidator::classifyDelta(double delta, double tolerance,
+                                              const std::string& unit) {
+    double tol = tolerance;
+    if (unit == "λ" || unit == "lambda") tol = 0.05;
+    else if (unit == "g/s" || unit == "g/s " || unit == "mg/stroke")
+        tol = std::max(tol * 0.02, 0.5); // air/smoke : échelle différente
+    else if (unit == "kPa" || unit == "bar")
+        tol = std::max(tol / 10.0, 5.0);
+    const double a = std::abs(delta);
+    if (a <= tol) return ValidationStatus::Ok;
+    if (a <= tol * 2.0) return ValidationStatus::Warn;
+    return ValidationStatus::Fail;
+}
+
+void SessionRecorder::reset() {
+    m_active = false;
+    m_csvPath.clear();
+    m_sum = SessionSummary{};
+    m_hits.clear();
+}
+
+void SessionRecorder::start(const QString& ecuId, const QString& romMd5) {
+    reset();
+    m_active = true;
+    m_sum.ecuId = ecuId;
+    m_sum.romMd5 = romMd5;
+    m_sum.started = QDateTime::currentDateTime();
+}
+
+void SessionRecorder::ingest(const std::vector<ValidationResult>& results) {
+    if (!m_active) return;
+    ++m_sum.ticks;
+
+    const ValidationResult* primary = nullptr;
+    for (const auto& r : results) {
+        switch (r.status) {
+            case ValidationStatus::Ok:     ++m_sum.ok; break;
+            case ValidationStatus::Warn:   ++m_sum.warn; break;
+            case ValidationStatus::Fail:   ++m_sum.fail; break;
+            case ValidationStatus::NoData: ++m_sum.noData; break;
+        }
+        if (r.status == ValidationStatus::NoData) continue;
+        const double ad = std::abs(r.delta);
+        if (ad > m_sum.peakAbsDelta) {
+            m_sum.peakAbsDelta = ad;
+            m_sum.peakMap = r.mapName;
+        }
+        if (!primary) primary = &r;
+        if (r.category == QStringLiteral("boost")
+            || r.mapName.contains(QStringLiteral("boost"), Qt::CaseInsensitive)
+            || r.mapName.contains(QStringLiteral("pAirBas"), Qt::CaseInsensitive))
+            primary = &r;
+    }
+
+    if (primary && primary->status != ValidationStatus::NoData) {
+        const int k = hitKey(primary->ix0, primary->iy0);
+        auto& cell = m_hits[k];
+        cell.gx = primary->ix0;
+        cell.gy = primary->iy0;
+        ++cell.count;
+        cell.sumAbsDelta += std::abs(primary->delta);
+    }
+}
+
+SessionSummary SessionRecorder::finish() {
+    m_sum.ended = QDateTime::currentDateTime();
+    m_sum.csvPath = m_csvPath;
+    m_sum.hotspots.clear();
+    m_sum.hotspots.reserve(m_hits.size());
+    for (auto& [_, cell] : m_hits)
+        m_sum.hotspots.push_back(cell);
+    std::sort(m_sum.hotspots.begin(), m_sum.hotspots.end(),
+              [](const SessionHitCell& a, const SessionHitCell& b) {
+                  return a.meanAbsDelta() > b.meanAbsDelta();
+              });
+    if (m_sum.hotspots.size() > 12)
+        m_sum.hotspots.resize(12);
+    m_active = false;
+    return m_sum;
+}
+
+void StatusHysteresis::reset() {
+    m_failStreak = 0;
+    m_okStreak = 0;
+    m_shown = ValidationStatus::NoData;
+}
+
+ValidationStatus StatusHysteresis::update(ValidationStatus raw) {
+    if (raw == ValidationStatus::NoData)
+        return m_shown;
+
+    if (raw == ValidationStatus::Fail) {
+        ++m_failStreak;
+        m_okStreak = 0;
+        if (m_failStreak >= m_failNeed)
+            m_shown = ValidationStatus::Fail;
+        else if (m_shown == ValidationStatus::NoData)
+            m_shown = ValidationStatus::Warn;
+        return m_shown;
+    }
+
+    if (raw == ValidationStatus::Warn) {
+        m_okStreak = 0;
+        if (m_shown != ValidationStatus::Fail)
+            m_shown = ValidationStatus::Warn;
+        return m_shown;
+    }
+
+    // Ok
+    m_failStreak = 0;
+    ++m_okStreak;
+    if (m_shown == ValidationStatus::Fail || m_shown == ValidationStatus::Warn) {
+        if (m_okStreak >= m_okNeed)
+            m_shown = ValidationStatus::Ok;
+    } else {
+        m_shown = ValidationStatus::Ok;
+    }
+    return m_shown;
+}
 
 void TuneValidator::clear() {
     m_ready = false;
@@ -52,6 +180,28 @@ void TuneValidator::clear() {
     m_reloc.clear();
     m_rules.clear();
     m_od = OpenDamos{};
+}
+
+bool TuneValidator::categoryEnabled(const std::string& cat) const {
+    return std::find(m_categories.begin(), m_categories.end(), cat) != m_categories.end();
+}
+
+void TuneValidator::setEnabledCategories(std::vector<std::string> cats) {
+    m_categories = std::move(cats);
+    if (m_od.recipe()) buildRules();
+    m_ready = !m_rules.empty();
+}
+
+void TuneValidator::setRuleEnabled(const std::string& mapName, bool on) {
+    for (auto& r : m_rules)
+        if (r.mapName == mapName) r.enabled = on;
+}
+
+void TuneValidator::setRules(std::vector<ValidationRule> rules) {
+    m_rules = std::move(rules);
+    for (auto& r : m_rules)
+        r.yMode = m_yMode;
+    m_ready = !m_rules.empty();
 }
 
 bool TuneValidator::loadRom(const QByteArray& rom, const QString& ecuId) {
@@ -81,7 +231,7 @@ void TuneValidator::buildRules() {
 
     for (const DamosEntry& e : m_od.recipe()->characteristics) {
         if (e.type != DamosType::Map) continue;
-        if (e.category != "boost" && e.category != "smoke") continue;
+        if (!categoryEnabled(e.category)) continue;
         if (m_reloc.find(e.name) == m_reloc.end()) continue;
 
         ValidationRule rule;
@@ -92,8 +242,32 @@ void TuneValidator::buildRules() {
         rule.yMode      = m_yMode;
         rule.measure    = defaultMeasureForCategory(e.category);
         rule.measurePid = defaultMeasurePid(e.category);
+        rule.enabled    = true;
         m_rules.push_back(std::move(rule));
     }
+}
+
+std::vector<std::uint8_t> TuneValidator::requiredPids() const {
+    std::vector<std::uint8_t> out;
+    auto add = [&](std::uint8_t p) {
+        if (std::find(out.begin(), out.end(), p) == out.end())
+            out.push_back(p);
+    };
+    add(0x0C); // RPM toujours
+    add(0x04); // charge
+    add(0x0D); // vitesse (contexte)
+    for (const auto& r : m_rules) {
+        if (!r.enabled) continue;
+        add(r.xPid);
+        add(r.yPid);
+        if (r.measure == MeasureKind::MapAbsMbar) {
+            add(0x0B);
+            add(0x33); // baro
+        } else {
+            add(r.measurePid);
+        }
+    }
+    return out;
 }
 
 std::optional<DamosEntry> TuneValidator::entry(const std::string& name) const {
@@ -146,12 +320,7 @@ std::optional<double> TuneValidator::measuredValue(const ValidationRule& rule,
 }
 
 ValidationStatus TuneValidator::classify(double delta, const std::string& unit) const {
-    double tol = m_tolerance;
-    if (unit == "λ" || unit == "lambda") tol = 0.05;
-    const double a = std::abs(delta);
-    if (a <= tol) return ValidationStatus::Ok;
-    if (a <= tol * 2.0) return ValidationStatus::Warn;
-    return ValidationStatus::Fail;
+    return classifyDelta(delta, m_tolerance, unit);
 }
 
 std::optional<MapSampleResult> TuneValidator::sampleMap(const std::string& mapName,
@@ -176,7 +345,13 @@ std::optional<MapSampleResult> TuneValidator::sampleMap(const std::string& mapNa
 std::optional<ValidationResult> TuneValidator::evaluateRule(const ValidationRule& rule,
                                                             const LivePidSnapshot& live) const {
     ValidationResult out;
-    out.mapName = QString::fromStdString(rule.mapName);
+    out.mapName  = QString::fromStdString(rule.mapName);
+    out.category = QString::fromStdString(rule.category);
+
+    if (!rule.enabled) {
+        out.status = ValidationStatus::NoData;
+        return out;
+    }
 
     const auto ent = entry(rule.mapName);
     const auto rel = reloc(rule.mapName);
@@ -215,8 +390,9 @@ std::vector<ValidationResult> TuneValidator::evaluateAll(const LivePidSnapshot& 
             out.push_back(std::move(*r));
         else {
             ValidationResult nd;
-            nd.mapName = QString::fromStdString(rule.mapName);
-            nd.status  = ValidationStatus::NoData;
+            nd.mapName  = QString::fromStdString(rule.mapName);
+            nd.category = QString::fromStdString(rule.category);
+            nd.status   = ValidationStatus::NoData;
             out.push_back(std::move(nd));
         }
     }

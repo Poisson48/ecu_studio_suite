@@ -1,6 +1,7 @@
 #include "obd_panel.h"
 #include "obd/elm327.h"
 #include "obd/can_tune_validator.h"
+#include "can_panel.h"
 #include "../rom_document.h"
 #include "ecu/Obd2.hpp"
 #include "ecu/TuneValidation.hpp"
@@ -26,12 +27,21 @@
 #include <QTimer>
 #include <QTabWidget>
 #include <QDoubleSpinBox>
+#include <QSpinBox>
 #include <QMessageBox>
 #include <QBrush>
 #include <QFrame>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QFileInfo>
+#include <QDir>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QProcess>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QTextBrowser>
 
 #include <optional>
 
@@ -209,6 +219,7 @@ void ObdPanel::refreshValidatorFromDoc() {
             : tr("Impossible de charger OpenDAMOS pour « %1 ».").arg(m_doc->ecuId()));
     }
     m_valBtn->setEnabled(ok && m_connected);
+    if (ok) refreshRulesTable();
     if (ok && m_connected) tryAutoStartDriveSession();
 }
 
@@ -256,6 +267,18 @@ void ObdPanel::buildUi() {
         "Connecte l'ELM327, démarre la validation tune et enregistre un CSV "
         "automatiquement — sans autre action pendant la route."));
     root->addWidget(m_driveBtn);
+
+    auto* quickRow = new QHBoxLayout;
+    m_presetBtn = new QPushButton(tr("Preset soirée route"), this);
+    m_presetBtn->setToolTip(tr(
+        "Active mode conduite, auto-reco, tolérance 50 mbar, catégories boost+fumée, bip d'alerte."));
+    m_exportBtn = new QPushButton(tr("Exporter session…"), this);
+    m_exportBtn->setToolTip(tr("ZIP / dossier : CSV + meta JSON (ROM MD5, stats)."));
+    m_exportBtn->setEnabled(false);
+    quickRow->addWidget(m_presetBtn);
+    quickRow->addWidget(m_exportBtn);
+    quickRow->addStretch();
+    root->addLayout(quickRow);
 
     buildDrivePanel(root);
 
@@ -310,8 +333,40 @@ void ObdPanel::buildUi() {
     m_yAxisCombo->addItem(tr("OpenDAMOS axe Y"), static_cast<int>(ecu::YAxisMode::OpenDamosAxis));
     valCtl->addWidget(new QLabel(tr("Axe Y :"), valPage));
     valCtl->addWidget(m_yAxisCombo);
+    m_alertSpin = new QSpinBox(valPage);
+    m_alertSpin->setRange(1, 20);
+    m_alertSpin->setValue(3);
+    m_alertSpin->setPrefix(tr("Alerte ×"));
+    m_alertSpin->setToolTip(tr("Nombre d'échecs consécutifs avant bip / flash."));
+    valCtl->addWidget(m_alertSpin);
+    m_beepChk = new QCheckBox(tr("Bip"), valPage);
+    m_beepChk->setChecked(true);
+    valCtl->addWidget(m_beepChk);
     valCtl->addStretch();
     valLay->addLayout(valCtl);
+
+    auto* catRow = new QHBoxLayout;
+    catRow->addWidget(new QLabel(tr("Catégories :"), valPage));
+    m_catBoost = new QCheckBox(tr("Boost"), valPage); m_catBoost->setChecked(true);
+    m_catSmoke = new QCheckBox(tr("Fumée"), valPage); m_catSmoke->setChecked(true);
+    m_catAir   = new QCheckBox(tr("Air/MAF"), valPage); m_catAir->setChecked(true);
+    m_catFuel  = new QCheckBox(tr("Fuel/rail"), valPage); m_catFuel->setChecked(true);
+    for (auto* c : {m_catBoost, m_catSmoke, m_catAir, m_catFuel}) {
+        catRow->addWidget(c);
+        connect(c, &QCheckBox::toggled, this, &ObdPanel::onCategoryFilterChanged);
+    }
+    catRow->addStretch();
+    valLay->addLayout(catRow);
+
+    m_rulesTable = new QTableWidget(valPage);
+    m_rulesTable->setColumnCount(4);
+    m_rulesTable->setHorizontalHeaderLabels({
+        tr("On"), tr("Map"), tr("Catégorie"), tr("PID mesuré")
+    });
+    m_rulesTable->verticalHeader()->setVisible(false);
+    m_rulesTable->setMaximumHeight(140);
+    m_rulesTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    valLay->addWidget(m_rulesTable);
 
     m_valTable = new QTableWidget(valPage);
     m_valTable->setColumnCount(6);
@@ -329,9 +384,11 @@ void ObdPanel::buildUi() {
     m_valBtn->setEnabled(false);
     m_show3dBtn = new QPushButton(tr("Voir sur map 3D"), valPage);
     m_replayBtn = new QPushButton(tr("Replay CSV…"), valPage);
+    m_spyBtn = new QPushButton(tr("Ouvrir SocketSpy"), valPage);
     vbtn->addWidget(m_valBtn);
     vbtn->addWidget(m_show3dBtn);
     vbtn->addWidget(m_replayBtn);
+    vbtn->addWidget(m_spyBtn);
     vbtn->addStretch();
     valLay->addLayout(vbtn);
 
@@ -423,6 +480,10 @@ void ObdPanel::buildUi() {
     });
     connect(m_driveModeChk, &QCheckBox::toggled, this, &ObdPanel::onDriveModeToggled);
     connect(m_driveBtn, &QPushButton::clicked, this, &ObdPanel::onDriveSessionClicked);
+    connect(m_presetBtn, &QPushButton::clicked, this, &ObdPanel::applyRoutePreset);
+    connect(m_exportBtn, &QPushButton::clicked, this, &ObdPanel::exportSessionBundle);
+    connect(m_spyBtn, &QPushButton::clicked, this, &ObdPanel::launchSocketSpy);
+    connect(m_rulesTable, &QTableWidget::cellChanged, this, &ObdPanel::onRuleCellChanged);
 }
 
 void ObdPanel::buildDrivePanel(QVBoxLayout* root) {
@@ -477,6 +538,11 @@ void ObdPanel::buildDrivePanel(QVBoxLayout* root) {
     m_csvDriveLabel->setStyleSheet(QStringLiteral("color:#64748b; font-size:11px;"));
     dl->addWidget(m_csvDriveLabel);
 
+    m_sessionLiveLabel = new QLabel(tr("Session : —"), m_drivePanel);
+    m_sessionLiveLabel->setAlignment(Qt::AlignCenter);
+    m_sessionLiveLabel->setStyleSheet(QStringLiteral("color:#64748b; font-size:11px;"));
+    dl->addWidget(m_sessionLiveLabel);
+
     root->addWidget(m_drivePanel, 1);
 }
 
@@ -488,7 +554,20 @@ void ObdPanel::loadSettings() {
     if (m_autoReconnect) m_autoReconnect->setChecked(
         s.value(QStringLiteral("autoReconnect"), true).toBool());
     m_lastPort = s.value(QStringLiteral("lastPort")).toString();
+    if (m_tolSpin) m_tolSpin->setValue(s.value(QStringLiteral("tolerance"), 50.0).toDouble());
+    if (m_alertSpin) m_alertSpin->setValue(s.value(QStringLiteral("alertStreak"), 3).toInt());
+    if (m_beepChk) m_beepChk->setChecked(s.value(QStringLiteral("beep"), true).toBool());
+    if (m_catBoost) m_catBoost->setChecked(s.value(QStringLiteral("catBoost"), true).toBool());
+    if (m_catSmoke) m_catSmoke->setChecked(s.value(QStringLiteral("catSmoke"), true).toBool());
+    if (m_catAir)   m_catAir->setChecked(s.value(QStringLiteral("catAir"), true).toBool());
+    if (m_catFuel)  m_catFuel->setChecked(s.value(QStringLiteral("catFuel"), true).toBool());
+    const int baud = s.value(QStringLiteral("baud"), 0).toInt();
+    if (m_baudCombo) {
+        const int idx = m_baudCombo->findData(baud);
+        if (idx >= 0) m_baudCombo->setCurrentIndex(idx);
+    }
     s.endGroup();
+    applyCategoryFilters();
 }
 
 void ObdPanel::saveSettings() {
@@ -497,6 +576,14 @@ void ObdPanel::saveSettings() {
     s.setValue(QStringLiteral("driveMode"), m_driveMode);
     if (m_autoReconnect) s.setValue(QStringLiteral("autoReconnect"), m_autoReconnect->isChecked());
     if (!m_lastPort.isEmpty()) s.setValue(QStringLiteral("lastPort"), m_lastPort);
+    if (m_tolSpin) s.setValue(QStringLiteral("tolerance"), m_tolSpin->value());
+    if (m_alertSpin) s.setValue(QStringLiteral("alertStreak"), m_alertSpin->value());
+    if (m_beepChk) s.setValue(QStringLiteral("beep"), m_beepChk->isChecked());
+    if (m_catBoost) s.setValue(QStringLiteral("catBoost"), m_catBoost->isChecked());
+    if (m_catSmoke) s.setValue(QStringLiteral("catSmoke"), m_catSmoke->isChecked());
+    if (m_catAir)   s.setValue(QStringLiteral("catAir"), m_catAir->isChecked());
+    if (m_catFuel)  s.setValue(QStringLiteral("catFuel"), m_catFuel->isChecked());
+    if (m_baudCombo) s.setValue(QStringLiteral("baud"), m_baudCombo->currentData().toInt());
     s.endGroup();
 }
 
@@ -548,34 +635,52 @@ void ObdPanel::startValidation() {
     if (m_canSniff) toggleCanSniff();
     if (!m_driveMode) m_tabs->setCurrentIndex(1);
 
-    // Map boost en priorité — focus auto sur la 1ʳᵉ règle boost.
     for (int i = 0; i < static_cast<int>(m_validator->rules().size()); ++i) {
-        if (m_validator->rules()[static_cast<std::size_t>(i)].category == "boost") {
+        if (m_validator->rules()[static_cast<std::size_t>(i)].category == "boost"
+            && m_validator->rules()[static_cast<std::size_t>(i)].enabled) {
             m_focusValRow = i;
             break;
         }
     }
 
-    const QList<std::uint8_t> pids = { 0x0C, 0x04, 0x0B, 0x33, 0x10, 0x0D };
-    m_elm->startPolling(pids, 180);
+    const auto pids = m_validator->requiredPids();
+    QList<std::uint8_t> qpids;
+    for (auto p : pids) qpids.append(p);
+    if (qpids.isEmpty()) qpids = { 0x0C, 0x04, 0x0B, 0x33, 0x10, 0x0D, 0x23, 0x24 };
+    m_elm->startPolling(qpids, 180);
     m_validating = true;
-    m_failStreak = 0;
+    m_hyst.reset();
+    m_hyst.setFailThreshold(m_alertSpin ? m_alertSpin->value() : 3);
+    m_hyst.setOkThreshold(5);
+    m_emaMeas.reset();
+    m_emaExp.reset();
+    m_lastAlertAt = 0;
+    m_session.start(m_validator->ecuId(), m_validator->romMd5());
     if (m_valBtn) m_valBtn->setText(tr("Arrêter validation tune"));
     if (m_driveBtn) m_driveBtn->setText(tr("■  Arrêter session"));
     if (m_driveMode) autoStartCsv();
     setStatus(tr("Session conduite active — regarde le bandeau turbo."));
     if (m_driveVerdict)
         m_driveVerdict->setText(tr("Acquisition…"));
+    if (m_sessionLiveLabel)
+        m_sessionLiveLabel->setText(tr("Session : en cours…"));
 }
 
 void ObdPanel::stopValidation() {
     if (!m_validating) return;
     m_elm->stopPolling();
     m_validating = false;
-    m_failStreak = 0;
+    if (m_driveMode) autoStopCsv();
+    const auto sum = m_session.finish();
     if (m_valBtn) m_valBtn->setText(tr("Démarrer validation tune"));
     if (m_driveBtn) m_driveBtn->setText(tr("▶  Lancer session conduite"));
-    if (m_driveMode) autoStopCsv();
+    if (m_exportBtn) m_exportBtn->setEnabled(!sum.csvPath.isEmpty() || sum.ticks > 0);
+    if (m_sessionLiveLabel)
+        m_sessionLiveLabel->setText(tr("Session : %1 ticks — OK %2 %")
+                                        .arg(sum.ticks)
+                                        .arg(sum.okRatio(), 0, 'f', 0));
+    if (sum.ticks > 0)
+        showSessionSummary(sum);
 }
 
 void ObdPanel::autoStartCsv() {
@@ -593,9 +698,12 @@ void ObdPanel::autoStartCsv() {
     }
     m_valCsv = true;
     QTextStream(m_csv) << "time,map,measured,expected,delta,unit,status,rpm,load\n";
+    m_lastCsvPath = path;
+    m_session.setCsvPath(path);
     if (m_csvDriveLabel)
         m_csvDriveLabel->setText(tr("Log CSV : %1").arg(QFileInfo(path).fileName()));
     if (m_csvBtn) m_csvBtn->setText(tr("Arrêter CSV"));
+    if (m_exportBtn) m_exportBtn->setEnabled(true);
 }
 
 void ObdPanel::autoStopCsv() {
@@ -626,6 +734,7 @@ void ObdPanel::runValidation() {
     if (!m_validator->isReady()) return;
     const auto results = m_validator->evaluateAll(liveSnapshot());
     updateValidationTable(results);
+    if (m_session.active()) m_session.ingest(results);
     if (m_driveMode) updateDriveDashboard(results);
     appendValidationCsv(results);
 
@@ -636,10 +745,22 @@ void ObdPanel::runValidation() {
                                   primary->measured, primary->expected);
         }
     }
+    if (m_sessionLiveLabel && m_session.active()) {
+        const auto& c = m_session.current();
+        m_sessionLiveLabel->setText(
+            tr("OK %1 · Warn %2 · Fail %3  (%4 %)")
+                .arg(c.ok).arg(c.warn).arg(c.fail)
+                .arg(c.okRatio(), 0, 'f', 0));
+    }
 }
 
 std::optional<ecu::ValidationResult> ObdPanel::primaryBoostResult(
     const std::vector<ecu::ValidationResult>& results) const {
+    for (const auto& r : results) {
+        if (r.category == QStringLiteral("boost")
+            && r.status != ecu::ValidationStatus::NoData)
+            return r;
+    }
     for (const auto& r : results) {
         if (r.mapName.contains(QStringLiteral("pAirBas"), Qt::CaseInsensitive)
             || r.mapName.contains(QStringLiteral("boost"), Qt::CaseInsensitive))
@@ -669,37 +790,43 @@ void ObdPanel::updateDriveDashboard(const std::vector<ecu::ValidationResult>& re
         return;
     }
 
+    const double measSm = m_emaMeas.push(boost->measured);
+    const double expSm  = m_emaExp.push(boost->expected);
+    const double deltaSm = measSm - expSm;
+    const auto shown = m_hyst.update(boost->status);
+
     const QString unit = boost->unit.isEmpty() ? QStringLiteral("mbar") : boost->unit;
     if (m_boostBig)
         m_boostBig->setText(tr("%1 / %2 %3")
-                                .arg(boost->measured, 0, 'f', 0)
-                                .arg(boost->expected, 0, 'f', 0)
+                                .arg(measSm, 0, 'f', 0)
+                                .arg(expSm, 0, 'f', 0)
                                 .arg(unit));
     if (m_boostSub)
-        m_boostSub->setText(tr("Δ %1 %2")
-                                .arg(boost->delta, 0, 'f', 0)
-                                .arg(unit));
+        m_boostSub->setText(tr("Δ %1 %2  (brut %3)")
+                                .arg(deltaSm, 0, 'f', 0)
+                                .arg(unit)
+                                .arg(boost->delta, 0, 'f', 0));
 
     QString bannerBg;
     QString verdict;
     QColor  bigColor;
-    switch (boost->status) {
+    switch (shown) {
         case ecu::ValidationStatus::Ok:
             bannerBg = QStringLiteral("QFrame { background:#14532d; border-radius:8px; }");
             verdict  = tr("TURBO OK");
             bigColor = QColor("#4ade80");
-            m_failStreak = 0;
             break;
         case ecu::ValidationStatus::Warn:
             bannerBg = QStringLiteral("QFrame { background:#78350f; border-radius:8px; }");
-            verdict  = boost->delta < 0 ? tr("LÉGER UNDERBOOST") : tr("LÉGER OVERBOOST");
+            verdict  = deltaSm < 0 ? tr("LÉGER UNDERBOOST") : tr("LÉGER OVERBOOST");
             bigColor = QColor("#fbbf24");
             break;
         case ecu::ValidationStatus::Fail:
-            bannerBg = QStringLiteral("QFrame { background:#7f1d1d; border-radius:8px; }");
-            verdict  = boost->delta < 0 ? tr("UNDERBOOST") : tr("OVERBOOST");
+            bannerBg = QStringLiteral(
+                "QFrame { background:#7f1d1d; border-radius:8px; border:3px solid #fca5a5; }");
+            verdict  = deltaSm < 0 ? tr("UNDERBOOST") : tr("OVERBOOST");
             bigColor = QColor("#f87171");
-            ++m_failStreak;
+            maybeAlertFail();
             break;
         default:
             bannerBg = QStringLiteral("QFrame { background:#1e293b; border-radius:8px; }");
@@ -1060,6 +1187,237 @@ void ObdPanel::exportDtcs() {
                << dtcStatusText(m_dtcFlags.value(code)) << '\n';
     }
     setStatus(tr("Export DTC : %1").arg(path));
+}
+
+void ObdPanel::applyCategoryFilters() {
+    if (!m_validator) return;
+    std::vector<std::string> cats;
+    if (m_catBoost && m_catBoost->isChecked()) cats.emplace_back("boost");
+    if (m_catSmoke && m_catSmoke->isChecked()) cats.emplace_back("smoke");
+    if (m_catAir && m_catAir->isChecked())     cats.emplace_back("air");
+    if (m_catFuel && m_catFuel->isChecked())   cats.emplace_back("fuel");
+    if (cats.empty()) cats = {"boost", "smoke"};
+    m_validator->setEnabledCategories(std::move(cats));
+    refreshRulesTable();
+    if (m_romInfoLabel && m_validator->isReady())
+        m_romInfoLabel->setText(tr("Tune : %1 — MD5 %2 — %3 map(s) surveillée(s)")
+                                    .arg(m_doc ? m_doc->name() : QString())
+                                    .arg(m_validator->romMd5().left(8))
+                                    .arg(static_cast<int>(m_validator->rules().size())));
+}
+
+void ObdPanel::onCategoryFilterChanged() {
+    applyCategoryFilters();
+    saveSettings();
+}
+
+void ObdPanel::refreshRulesTable() {
+    if (!m_rulesTable || !m_validator) return;
+    m_rulesUiMute = true;
+    const auto& rules = m_validator->rules();
+    m_rulesTable->setRowCount(static_cast<int>(rules.size()));
+    for (int i = 0; i < static_cast<int>(rules.size()); ++i) {
+        const auto& r = rules[static_cast<std::size_t>(i)];
+        auto* on = new QTableWidgetItem;
+        on->setFlags(Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
+        on->setCheckState(r.enabled ? Qt::Checked : Qt::Unchecked);
+        m_rulesTable->setItem(i, 0, on);
+        m_rulesTable->setItem(i, 1, new QTableWidgetItem(QString::fromStdString(r.mapName)));
+        m_rulesTable->setItem(i, 2, new QTableWidgetItem(QString::fromStdString(r.category)));
+        const QString pid = r.measure == ecu::MeasureKind::MapAbsMbar
+            ? QStringLiteral("MAP+baro")
+            : QStringLiteral("0x%1").arg(r.measurePid, 2, 16, QLatin1Char('0'));
+        m_rulesTable->setItem(i, 3, new QTableWidgetItem(pid));
+        m_rulesTable->item(i, 1)->setFlags(m_rulesTable->item(i, 1)->flags() & ~Qt::ItemIsEditable);
+        m_rulesTable->item(i, 2)->setFlags(m_rulesTable->item(i, 2)->flags() & ~Qt::ItemIsEditable);
+        m_rulesTable->item(i, 3)->setFlags(m_rulesTable->item(i, 3)->flags() & ~Qt::ItemIsEditable);
+    }
+    m_rulesUiMute = false;
+}
+
+void ObdPanel::onRuleCellChanged(int row, int col) {
+    if (m_rulesUiMute || col != 0 || !m_validator || !m_rulesTable) return;
+    auto* it = m_rulesTable->item(row, 0);
+    auto* nameIt = m_rulesTable->item(row, 1);
+    if (!it || !nameIt) return;
+    m_validator->setRuleEnabled(nameIt->text().toStdString(),
+                                it->checkState() == Qt::Checked);
+}
+
+void ObdPanel::maybeAlertFail() {
+    const int streak = m_hyst.failStreak();
+    const int need = m_alertSpin ? m_alertSpin->value() : 3;
+    if (streak < need) return;
+    if (streak == m_lastAlertAt) return;
+    if (streak % need != 0) return;
+    m_lastAlertAt = streak;
+    if (m_beepChk && m_beepChk->isChecked())
+        QApplication::beep();
+}
+
+void ObdPanel::applyRoutePreset() {
+    if (m_driveModeChk) m_driveModeChk->setChecked(true);
+    if (m_autoReconnect) m_autoReconnect->setChecked(true);
+    if (m_tolSpin) m_tolSpin->setValue(50.0);
+    if (m_alertSpin) m_alertSpin->setValue(3);
+    if (m_beepChk) m_beepChk->setChecked(true);
+    if (m_catBoost) m_catBoost->setChecked(true);
+    if (m_catSmoke) m_catSmoke->setChecked(true);
+    if (m_catAir) m_catAir->setChecked(false);
+    if (m_catFuel) m_catFuel->setChecked(false);
+    m_driveMode = true;
+    applyDriveModeUi(true);
+    applyCategoryFilters();
+    if (m_tolSpin) onToleranceChanged(m_tolSpin->value());
+    saveSettings();
+    setStatus(tr("Preset soirée route appliqué — branchez l'ELM327 et ▶ Lancer."));
+    QMessageBox::information(this, tr("Preset soirée route"),
+        tr("Mode conduite ON\n"
+           "Auto-reconnexion ON\n"
+           "Tolérance ±50 mbar\n"
+           "Catégories : boost + fumée\n"
+           "Alerte bip après 3 échecs\n\n"
+           "Ensuite : ▶ Lancer session conduite."));
+}
+
+void ObdPanel::showSessionSummary(const ecu::SessionSummary& sum) {
+    QString hot;
+    for (const auto& h : sum.hotspots) {
+        hot += tr("  • cellule (%1,%2) — %3 passages — |Δ| moy %4\n")
+                   .arg(h.gx).arg(h.gy).arg(h.count)
+                   .arg(h.meanAbsDelta(), 0, 'f', 1);
+    }
+    if (hot.isEmpty()) hot = tr("  (aucun hotspot)\n");
+
+    const QString body = tr(
+        "<h3>Résumé session conduite</h3>"
+        "<p><b>ECU</b> %1<br><b>ROM MD5</b> %2<br>"
+        "<b>Durée</b> %3 → %4</p>"
+        "<p>Échantillons : <b>%5</b><br>"
+        "OK : <b>%6</b> · Attention : <b>%7</b> · Écart : <b>%8</b> · Sans données : %9<br>"
+        "Temps dans tolérance : <b>%10 %</b><br>"
+        "Pic |Δ| : <b>%11</b> sur <code>%12</code></p>"
+        "<p><b>Zones problématiques</b> :<br>%13</p>"
+        "<p>CSV : %14</p>")
+        .arg(sum.ecuId, sum.romMd5.left(12))
+        .arg(sum.started.toString(QStringLiteral("HH:mm:ss")),
+             sum.ended.toString(QStringLiteral("HH:mm:ss")))
+        .arg(sum.ticks)
+        .arg(sum.ok).arg(sum.warn).arg(sum.fail).arg(sum.noData)
+        .arg(sum.okRatio(), 0, 'f', 1)
+        .arg(sum.peakAbsDelta, 0, 'f', 1)
+        .arg(sum.peakMap.isEmpty() ? QStringLiteral("—") : sum.peakMap)
+        .arg(hot.toHtmlEscaped().replace(QLatin1Char('\n'), QStringLiteral("<br>")))
+        .arg(sum.csvPath.isEmpty() ? tr("(aucun)") : sum.csvPath);
+
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("Fin de session"));
+    dlg.resize(520, 420);
+    auto* lay = new QVBoxLayout(&dlg);
+    auto* browser = new QTextBrowser(&dlg);
+    browser->setHtml(body);
+    lay->addWidget(browser);
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok, &dlg);
+    auto* exportBtn = buttons->addButton(tr("Exporter…"), QDialogButtonBox::ActionRole);
+    connect(exportBtn, &QPushButton::clicked, &dlg, [this, &dlg]() {
+        exportSessionBundle();
+        dlg.accept();
+    });
+    connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    lay->addWidget(buttons);
+    dlg.exec();
+}
+
+void ObdPanel::exportSessionBundle() {
+    const QString baseDir = QFileDialog::getExistingDirectory(
+        this, tr("Dossier d'export session"),
+        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
+    if (baseDir.isEmpty()) return;
+
+    const QString stamp = QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd_HHmmss"));
+    const QString outDir = baseDir + QStringLiteral("/ecu_session_") + stamp;
+    QDir().mkpath(outDir);
+
+    const auto& cur = m_session.active() ? m_session.current() : [&]() {
+        // Si session déjà finish()-ée, current() garde le résumé.
+        return m_session.current();
+    }();
+
+    QJsonObject meta;
+    meta.insert(QStringLiteral("ecuId"), m_validator ? m_validator->ecuId() : QString());
+    meta.insert(QStringLiteral("romMd5"), m_validator ? m_validator->romMd5() : QString());
+    meta.insert(QStringLiteral("ticks"), cur.ticks);
+    meta.insert(QStringLiteral("ok"), cur.ok);
+    meta.insert(QStringLiteral("warn"), cur.warn);
+    meta.insert(QStringLiteral("fail"), cur.fail);
+    meta.insert(QStringLiteral("okRatio"), cur.okRatio());
+    meta.insert(QStringLiteral("peakAbsDelta"), cur.peakAbsDelta);
+    meta.insert(QStringLiteral("peakMap"), cur.peakMap);
+    meta.insert(QStringLiteral("started"), cur.started.toString(Qt::ISODate));
+    meta.insert(QStringLiteral("ended"), cur.ended.toString(Qt::ISODate));
+    QJsonArray hot;
+    for (const auto& h : cur.hotspots) {
+        QJsonObject o;
+        o.insert(QStringLiteral("gx"), h.gx);
+        o.insert(QStringLiteral("gy"), h.gy);
+        o.insert(QStringLiteral("count"), h.count);
+        o.insert(QStringLiteral("meanAbsDelta"), h.meanAbsDelta());
+        hot.append(o);
+    }
+    meta.insert(QStringLiteral("hotspots"), hot);
+
+    QFile metaFile(outDir + QStringLiteral("/session.json"));
+    if (metaFile.open(QIODevice::WriteOnly)) {
+        metaFile.write(QJsonDocument(meta).toJson(QJsonDocument::Indented));
+        metaFile.close();
+    }
+
+    const QString csvSrc = !m_lastCsvPath.isEmpty() ? m_lastCsvPath : cur.csvPath;
+    if (!csvSrc.isEmpty() && QFile::exists(csvSrc))
+        QFile::copy(csvSrc, outDir + QStringLiteral("/") + QFileInfo(csvSrc).fileName());
+
+    QFile readme(outDir + QStringLiteral("/README.txt"));
+    if (readme.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream(&readme)
+            << "ECU Studio Suite — export session conduite\n"
+            << "Gratuit, 100% local, aucune télémétrie.\n"
+            << "Fichiers : session.json + CSV de validation.\n";
+    }
+
+    // ZIP optionnel si `zip` est disponible.
+    const QString zipPath = baseDir + QStringLiteral("/ecu_session_") + stamp + QStringLiteral(".zip");
+    QProcess zip;
+    zip.start(QStringLiteral("zip"),
+              { QStringLiteral("-r"), QStringLiteral("-q"), zipPath,
+                QFileInfo(outDir).fileName() });
+    zip.setWorkingDirectory(baseDir);
+    bool zipped = false;
+    if (zip.waitForStarted(2000) && zip.waitForFinished(15000) && zip.exitCode() == 0)
+        zipped = true;
+
+    setStatus(zipped
+        ? tr("Session exportée : %1").arg(zipPath)
+        : tr("Session exportée (dossier) : %1").arg(outDir));
+    QMessageBox::information(this, tr("Export session"),
+        zipped ? tr("ZIP créé :\n%1").arg(zipPath)
+               : tr("Dossier créé :\n%1\n\n(installez `zip` pour un archive automatique)")
+                     .arg(outDir));
+}
+
+void ObdPanel::launchSocketSpy() {
+    const QString path = CanPanel::resolveSocketSpyPath();
+    if (path.isEmpty()) {
+        QMessageBox::warning(this, tr("SocketSpy"),
+            tr("Le binaire SocketSpy est introuvable.\n"
+               "Compilez le sous-module ou placez-le près d'ecu_studio."));
+        return;
+    }
+    if (!QProcess::startDetached(path, {})) {
+        QMessageBox::warning(this, tr("SocketSpy"),
+            tr("Échec du lancement : %1").arg(path));
+        return;
+    }
+    setStatus(tr("SocketSpy lancé (%1).").arg(path));
 }
 
 } // namespace ecu_studio
