@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ECU Studio Suite — Local ECU tuning &amp; CAN diagnostics for Linux</title>
-  <meta name="description" content="A 100% local, Qt6 automotive software suite for Linux. A hub that launches ECU Studio (reflash, map editor, DAMOS, OpenDAMOS) and SocketSpy (live CAN analysis) — and interconnects them: flash a map, then verify it on the bus. No cloud, no telemetry." />
+  <title>ECU Studio Suite — Free forever · Open source · Local ECU tuning</title>
+  <meta name="description" content="Free forever open-source Qt6 automotive suite for Linux. No subscription, no account, no telemetry. Your ROMs stay on your machine. Flash a map, then verify it on the road (OBD drive mode) or on the CAN bus." />
   <meta name="color-scheme" content="dark" />
-  <meta property="og:title" content="ECU Studio Suite" />
-  <meta property="og:description" content="Local Qt6 automotive suite for Linux: ECU reflashing, map editor, DAMOS/OpenDAMOS, and SocketSpy CAN analysis. Flash a map, then verify it live on the bus." />
+  <meta property="og:title" content="ECU Studio Suite — free forever, private by design" />
+  <meta property="og:description" content="Open source · €0 forever · no cloud · no telemetry. Flash an ECU map, then verify it live on OBD or CAN — all data stays on your PC." />
   <meta property="og:type" content="website" />
   <link rel="stylesheet" href="suite.css" />
 </head>
@@ -36,6 +36,7 @@
   </a>
 
   <ul class="nav-links">
+    <li><a href="#principles" data-en="Free &amp; private" data-fr="Gratuit &amp; privé">Free &amp; private</a></li>
     <li><a href="#suite" data-en="The Suite" data-fr="La suite">The Suite</a></li>
     <li><a href="#loop" data-en="Flash → Verify" data-fr="Flash → Vérif">Flash → Verify</a></li>
     <li><a href="#status" data-en="Features" data-fr="Fonctions">Features</a></li>
@@ -56,37 +57,71 @@
 <header class="hero" id="top">
   <div class="hero-glow" aria-hidden="true"></div>
   <div class="badge">
-    <span data-en="Qt6 · C++ · Linux x86_64 · 100% local" data-fr="Qt6 · C++ · Linux x86_64 · 100% local">Qt6 · C++ · Linux x86_64 · 100% local</span>
+    <span data-en="Open source · GPL-3.0 · €0 forever · 100% local" data-fr="Open source · GPL-3.0 · 0 € pour toujours · 100% local">Open source · GPL-3.0 · €0 forever · 100% local</span>
   </div>
   <h1>
-    <span data-en="One hub for ECU tuning" data-fr="Un hub pour le tuning ECU">One hub for ECU tuning</span><br/>
-    <span class="grad" data-en="and live CAN diagnostics" data-fr="et le diagnostic CAN en direct">and live CAN diagnostics</span>
+    <span data-en="Free forever. Private by design." data-fr="Gratuit pour toujours. Privé by design.">Free forever. Private by design.</span><br/>
+    <span class="grad" data-en="Local ECU tuning &amp; live diagnostics" data-fr="Tuning ECU local &amp; diagnostic en direct">Local ECU tuning &amp; live diagnostics</span>
   </h1>
   <p class="hero-sub"
-     data-en="ECU Studio Suite is a single launcher that ties together specialized tools. Flash a map with ECU Studio, then SocketSpy verifies — live on the CAN bus — that the change actually took effect at the right operating point. Fully local. No cloud, no account, no telemetry."
-     data-fr="ECU Studio Suite est un lanceur unique qui relie des outils spécialisés. Vous flashez une cartographie avec ECU Studio, puis SocketSpy vérifie — en direct sur le bus CAN — que la modification a bien pris effet au bon point de fonctionnement. 100% local. Pas de cloud, pas de compte, pas de télémétrie.">
-    ECU Studio Suite is a single launcher that ties together specialized tools. Flash a map with ECU Studio, then SocketSpy verifies — live on the CAN bus — that the change actually took effect at the right operating point. Fully local. No cloud, no account, no telemetry.
+     data-en="No subscription. No account. No telemetry. Your ROMs, logs and VIN never leave your PC. Flash a map with ECU Studio, then prove it on the road (OBD drive mode) or on the CAN bus with SocketSpy — all open source, all yours."
+     data-fr="Pas d’abonnement. Pas de compte. Pas de télémétrie. Vos ROM, logs et VIN ne quittent jamais votre PC. Flashez une carto avec ECU Studio, puis prouvez-la sur la route (mode conduite OBD) ou sur le bus CAN avec SocketSpy — 100 % open source, 100 % à vous.">
+    No subscription. No account. No telemetry. Your ROMs, logs and VIN never leave your PC. Flash a map with ECU Studio, then prove it on the road (OBD drive mode) or on the CAN bus with SocketSpy — all open source, all yours.
   </p>
 
   <div class="cta-row">
     <a class="btn btn-primary" href="https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      <span data-en="Download AppImage" data-fr="Télécharger l'AppImage">Download AppImage</span>
+      <span data-en="Download free AppImage" data-fr="Télécharger l'AppImage gratuite">Download free AppImage</span>
     </a>
-    <a class="btn btn-ghost" href="https://github.com/Poisson48/ecu_studio_suite/wiki/Getting-Started">
-      <span data-en="Getting started →" data-fr="Bien démarrer →">Getting started →</span>
+    <a class="btn btn-ghost" href="https://github.com/Poisson48/ecu_studio_suite">
+      <span data-en="Source on GitHub →" data-fr="Sources sur GitHub →">Source on GitHub →</span>
     </a>
-    <a class="btn btn-ghost" href="https://poisson48.github.io/SocketSpy">
-      <span data-en="SocketSpy site →" data-fr="Site SocketSpy →">SocketSpy site →</span>
+    <a class="btn btn-ghost" href="#principles">
+      <span data-en="Why free &amp; private →" data-fr="Pourquoi gratuit &amp; privé →">Why free &amp; private →</span>
     </a>
   </div>
 
   <div class="hero-stats">
-    <div class="stat"><span class="stat-num">2</span><span class="stat-label" data-en="Sub-programs, one hub" data-fr="Sous-programmes, un hub">Sub-programs, one hub</span></div>
-    <div class="stat"><span class="stat-num">2</span><span class="stat-label" data-en="ECU families proven" data-fr="Familles ECU prouvées">ECU families proven</span></div>
-    <div class="stat"><span class="stat-num">100%</span><span class="stat-label" data-en="Local — no cloud" data-fr="Local — pas de cloud">Local — no cloud</span></div>
+    <div class="stat"><span class="stat-num">€0</span><span class="stat-label" data-en="Forever — no Pro tier" data-fr="Pour toujours — pas de Pro">Forever — no Pro tier</span></div>
+    <div class="stat"><span class="stat-num">0</span><span class="stat-label" data-en="Telemetry events" data-fr="Événements télémétrie">Telemetry events</span></div>
+    <div class="stat"><span class="stat-num">100%</span><span class="stat-label" data-en="Local — your disk only" data-fr="Local — votre disque seul">Local — your disk only</span></div>
   </div>
 </header>
+
+<!-- ── PRINCIPLES ──────────────────────────────────────────────────── -->
+<section id="principles">
+  <p class="kicker" data-en="Our commitments" data-fr="Nos engagements">Our commitments</p>
+  <h2 data-en="Open source. Never paid. Privacy first." data-fr="Open source. Jamais payant. Vie privée d’abord.">Open source. Never paid. Privacy first.</h2>
+  <p class="section-sub"
+     data-en="Commercial tuners sell drivers, subscriptions and cloud accounts. We refuse that model. The code is public; the price is zero; your calibrations stay yours."
+     data-fr="Les outils commerciaux vendent des drivers, des abonnements et des comptes cloud. On refuse ce modèle. Le code est public ; le prix est zéro ; vos calibrations restent les vôtres.">
+    Commercial tuners sell drivers, subscriptions and cloud accounts. We refuse that model. The code is public; the price is zero; your calibrations stay yours.
+  </p>
+  <div class="principles-grid">
+    <article class="principle-card">
+      <h3 data-en="Free forever" data-fr="Gratuit pour toujours">Free forever</h3>
+      <p data-en="No subscription, no “Pro” unlock, no paid drivers. GPL-3.0 on GitHub — forever. There will never be a paywalled edition."
+         data-fr="Pas d’abonnement, pas de déblocage « Pro », pas de drivers payants. GPL-3.0 sur GitHub — pour toujours. Il n’y aura jamais d’édition derrière un paywall.">
+        No subscription, no “Pro” unlock, no paid drivers. GPL-3.0 on GitHub — forever. There will never be a paywalled edition.
+      </p>
+    </article>
+    <article class="principle-card">
+      <h3 data-en="Open source" data-fr="Open source">Open source</h3>
+      <p data-en="Read, audit, fork and rebuild every line. No black-box vendor lock-in. OpenDAMOS recipes are CC0 so the community can share freely."
+         data-fr="Lisez, auditez, forkez et recompilez chaque ligne. Pas de verrouillage propriétaire. Les recettes OpenDAMOS sont CC0 pour un partage libre.">
+        Read, audit, fork and rebuild every line. No black-box vendor lock-in. OpenDAMOS recipes are CC0 so the community can share freely.
+      </p>
+    </article>
+    <article class="principle-card">
+      <h3 data-en="Privacy by design" data-fr="Vie privée by design">Privacy by design</h3>
+      <p data-en="ROMs, CSV logs and VIN stay on your disk. No account, no cloud sync, no analytics, no phone-home. The only optional network call is the opt-in signed updater."
+         data-fr="ROM, logs CSV et VIN restent sur votre disque. Pas de compte, pas de cloud, pas d’analytics, pas de phone-home. Le seul réseau optionnel : la mise à jour opt-in signée.">
+        ROMs, CSV logs and VIN stay on your disk. No account, no cloud sync, no analytics, no phone-home. The only optional network call is the opt-in signed updater.
+      </p>
+    </article>
+  </div>
+</section>
 
 <!-- ── THE SUITE: HUB + SUB-PROGRAMS ───────────────────────────────── -->
 <section id="suite">
@@ -122,9 +157,9 @@
           <span class="pill pill-proven" data-en="Proven" data-fr="Prouvé">Proven</span>
         </div>
       </div>
-      <p data-en="ECU reprogramming and map editing: 2D + 3D map editor, DAMOS editor, A2L parsing, hex view, checksum correction (EDC16 + EDC17), MPPS flash, ROM compare, git versioning, one-click AutoMods, OpenDAMOS recipes, and live OBD-II datalog (PIDs, DTC read &amp; clear, VIN, CAN sniff)."
-         data-fr="Reprogrammation ECU et édition de cartographies : éditeur 2D + 3D, éditeur DAMOS, analyse A2L, vue hexadécimale, correction de checksum (EDC16 + EDC17), flash MPPS, comparaison de ROM, versionnage git, AutoMods en un clic, recettes OpenDAMOS et datalog OBD-II en direct (PID, lecture &amp; effacement DTC, VIN, sniff CAN).">
-        ECU reprogramming and map editing: 2D + 3D map editor, DAMOS editor, A2L parsing, hex view, checksum correction (EDC16 + EDC17), MPPS flash, ROM compare, git versioning, one-click AutoMods, OpenDAMOS recipes, and live OBD-II datalog (PIDs, DTC read &amp; clear, VIN, CAN sniff).
+      <p data-en="ECU reprogramming and map editing: 2D + 3D map editor, DAMOS editor, A2L, hex view, checksums (EDC16 + EDC17), MPPS flash, ROM compare, git versioning, AutoMods, OpenDAMOS — plus OBD drive-mode tune validation (measured vs expected boost while driving, auto CSV, one-button session)."
+         data-fr="Reprogrammation ECU et édition de cartographies : éditeur 2D + 3D, éditeur DAMOS, A2L, vue hex, checksums (EDC16 + EDC17), flash MPPS, comparaison ROM, git, AutoMods, OpenDAMOS — plus validation tune OBD en mode conduite (mesuré vs attendu sur la route, CSV auto, session en un bouton).">
+        ECU reprogramming and map editing: 2D + 3D map editor, DAMOS editor, A2L, hex view, checksums (EDC16 + EDC17), MPPS flash, ROM compare, git versioning, AutoMods, OpenDAMOS — plus OBD drive-mode tune validation (measured vs expected boost while driving, auto CSV, one-button session).
       </p>
       <div class="prog-links">
         <a href="#status" data-en="Feature board ↓" data-fr="Tableau des fonctions ↓">Feature board ↓</a>
@@ -157,11 +192,11 @@
 <!-- ── FLAGSHIP LOOP: FLASH → VERIFY ───────────────────────────────── -->
 <section id="loop" class="loop-section">
   <p class="kicker" data-en="The flagship loop" data-fr="La boucle phare">The flagship loop</p>
-  <h2 data-en="Flash a map, then prove it on the bus" data-fr="Flashez une carto, puis prouvez-le sur le bus">Flash a map, then prove it on the bus</h2>
+  <h2 data-en="Flash a map, then prove it on the road" data-fr="Flashez une carto, puis prouvez-la sur la route">Flash a map, then prove it on the road</h2>
   <p class="section-sub"
-     data-en="The reason the Suite exists. ECU Studio writes the change; SocketSpy watches the CAN bus and confirms it landed — at the right RPM, the right load, the right operating point."
-     data-fr="La raison d'être de la Suite. ECU Studio écrit la modification ; SocketSpy observe le bus CAN et confirme qu'elle a pris effet — au bon régime, à la bonne charge, au bon point de fonctionnement.">
-    The reason the Suite exists. ECU Studio writes the change; SocketSpy watches the CAN bus and confirms it landed — at the right RPM, the right load, the right operating point.
+     data-en="The reason the Suite exists. ECU Studio writes the change; OBD drive mode (or SocketSpy on CAN) confirms it landed — at the right RPM, the right load, the right operating point. One button before you drive."
+     data-fr="La raison d’être de la Suite. ECU Studio écrit la modification ; le mode conduite OBD (ou SocketSpy sur CAN) confirme qu’elle a pris effet — au bon régime, à la bonne charge. Un bouton avant de rouler.">
+    The reason the Suite exists. ECU Studio writes the change; OBD drive mode (or SocketSpy on CAN) confirms it landed — at the right RPM, the right load, the right operating point. One button before you drive.
   </p>
 
   <div class="loop-steps">
@@ -185,10 +220,10 @@
     <div class="loop-arrow" aria-hidden="true">→</div>
     <div class="loop-step">
       <span class="loop-n">3</span>
-      <h4 data-en="Verify live on CAN" data-fr="Vérifier en direct sur CAN">Verify live on CAN</h4>
-      <p data-en="SocketSpy decodes the live bus and confirms the new behavior at the targeted operating point — closing the loop between what you wrote and what the engine does."
-         data-fr="SocketSpy décode le bus en direct et confirme le nouveau comportement au point de fonctionnement visé — bouclant la boucle entre ce que vous avez écrit et ce que fait le moteur.">
-        SocketSpy decodes the live bus and confirms the new behavior at the targeted operating point — closing the loop between what you wrote and what the engine does.
+      <h4 data-en="Verify while driving" data-fr="Vérifier en conduisant">Verify while driving</h4>
+      <p data-en="OBD drive mode compares live boost to the OpenDAMOS expected map — big green/red banner, auto CSV. Or use SocketSpy on CAN for deeper signals. Your logs never leave the laptop."
+         data-fr="Le mode conduite OBD compare le boost live à la consigne OpenDAMOS — bandeau vert/rouge, CSV auto. Ou SocketSpy sur CAN pour des signaux plus fins. Vos logs ne quittent pas le PC.">
+        OBD drive mode compares live boost to the OpenDAMOS expected map — big green/red banner, auto CSV. Or use SocketSpy on CAN for deeper signals. Your logs never leave the laptop.
       </p>
     </div>
   </div>
@@ -283,7 +318,7 @@
         <li><span data-en="The hub launcher — open &amp; share config across sub-programs" data-fr="le lanceur hub — ouvrir &amp; partager la config entre sous-programmes">The hub launcher — open &amp; share config across sub-programs</span></li>
         <li><span data-en="Flash → verify loop (ECU Studio ↔ SocketSpy)" data-fr="boucle flash → vérification (ECU Studio ↔ SocketSpy)">Flash → verify loop (ECU Studio ↔ SocketSpy)</span></li>
         <li><span data-en="3D map view — pseudo-3D surface + heatmap with ghost baseline" data-fr="vue 3D — surface pseudo-3D + heatmap avec base fantôme">3D map view — pseudo-3D surface + heatmap with ghost baseline</span></li>
-        <li><b>OBD-II datalog (ELM327)</b> <span data-en="— live PIDs, DTC read &amp; clear, VIN, CAN sniff over a USB ELM327; not yet vehicle-tested" data-fr="— PID live, lecture &amp; effacement DTC, VIN, sniff CAN via un ELM327 USB ; pas encore testé sur véhicule">— live PIDs, DTC read &amp; clear, VIN, CAN sniff over a USB ELM327; not yet vehicle-tested</span></li>
+        <li><b>OBD drive-mode tune validation</b> <span data-en="— one-button session: measured vs OpenDAMOS expected (boost), underboost banner, auto CSV, freeze frame, DTC 03+07; designed for use while driving" data-fr="— session en un bouton : mesuré vs attendu OpenDAMOS (boost), bandeau underboost, CSV auto, freeze frame, DTC 03+07 ; conçu pour la conduite">— one-button session: measured vs OpenDAMOS expected (boost), underboost banner, auto CSV, freeze frame, DTC 03+07; designed for use while driving</span></li>
         <li><b>AutoMods</b> <span data-en="— one-click Stage 1 / IMMO OFF / depollution recipes; safety-guarded but not field-proven" data-fr="— recettes Stage 1 / IMMO OFF / dépollution en un clic ; gardes de sécurité mais non éprouvé sur le terrain">— one-click Stage 1 / IMMO OFF / depollution recipes; safety-guarded but not field-proven</span></li>
         <li><span data-en="Brand-new SocketSpy panels still being hardened" data-fr="tout nouveaux panneaux SocketSpy en cours de fiabilisation">Brand-new SocketSpy panels still being hardened</span></li>
       </ul>
@@ -314,15 +349,15 @@
 <section id="download">
   <div class="download-card">
     <div class="dl-left">
-      <h2 data-en="Get the Suite" data-fr="Obtenir la Suite">Get the Suite</h2>
-      <p data-en="A self-contained AppImage — Qt6, libusb and every runtime library bundled. Runs on a clean Linux PC with nothing installed, no root needed."
-         data-fr="Une AppImage autonome — Qt6, libusb et toutes les bibliothèques d'exécution incluses. Tourne sur un PC Linux vierge sans rien installer, sans root.">
-        A self-contained AppImage — Qt6, libusb and every runtime library bundled. Runs on a clean Linux PC with nothing installed, no root needed.
+      <h2 data-en="Get the Suite — free" data-fr="Obtenir la Suite — gratuit">Get the Suite — free</h2>
+      <p data-en="A self-contained AppImage — Qt6, libusb and every runtime library bundled. Runs on a clean Linux PC with nothing installed, no root, no signup. Your data never leaves the machine."
+         data-fr="Une AppImage autonome — Qt6, libusb et toutes les bibliothèques d’exécution. Tourne sur un PC Linux vierge sans rien installer, sans root, sans inscription. Vos données ne quittent jamais la machine.">
+        A self-contained AppImage — Qt6, libusb and every runtime library bundled. Runs on a clean Linux PC with nothing installed, no root, no signup. Your data never leaves the machine.
       </p>
       <div class="dl-meta">
-        <span class="dl-pill" data-en="Platform: Linux x86_64" data-fr="Plateforme : Linux x86_64">Platform: Linux x86_64</span>
+        <span class="dl-pill">v1.6.6 · Linux x86_64</span>
         <span class="dl-pill">License: GPL-3.0</span>
-        <span class="dl-pill" data-en="No account · No telemetry" data-fr="Sans compte · Sans télémétrie">No account · No telemetry</span>
+        <span class="dl-pill" data-en="€0 forever · No account · No telemetry" data-fr="0 € pour toujours · Sans compte · Sans télémétrie">€0 forever · No account · No telemetry</span>
       </div>
     </div>
     <div class="dl-right">
@@ -385,8 +420,9 @@
     <a href="opendamos/OPENDAMOS_STANDARD.md">OpenDAMOS standard</a>
     <a href="https://github.com/Poisson48/ecu_studio_suite/blob/main/LICENSE">GPL-3.0</a>
   </div>
-  <p data-en="ECU Studio Suite — 100% local. No account, no telemetry, no cloud." data-fr="ECU Studio Suite — 100% local. Pas de compte, pas de télémétrie, pas de cloud.">
-    ECU Studio Suite — 100% local. No account, no telemetry, no cloud.
+  <p data-en="ECU Studio Suite — open source · €0 forever · no account · no telemetry · your data stays on your PC."
+     data-fr="ECU Studio Suite — open source · 0 € pour toujours · pas de compte · pas de télémétrie · vos données restent sur votre PC.">
+    ECU Studio Suite — open source · €0 forever · no account · no telemetry · your data stays on your PC.
   </p>
 </footer>
 

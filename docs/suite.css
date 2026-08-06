@@ -167,6 +167,24 @@ h2 {
 }
 .section-sub { color: var(--muted); max-width: 640px; margin-bottom: 2.8rem; font-size: 1.02rem; }
 
+/* ── PRINCIPLES ────────────────────────────────────────────────────── */
+.principles-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.2rem;
+}
+.principle-card {
+  background: linear-gradient(180deg, var(--card-2), var(--card));
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 1.5rem 1.4rem 1.3rem;
+  border-top: 2px solid rgba(34,197,94,.55);
+}
+.principle-card h3 {
+  font-size: 1.05rem; font-weight: 800; margin: 0 0 .55rem; letter-spacing: -.01em;
+  color: var(--green-2);
+}
+.principle-card p {
+  margin: 0; color: var(--muted); font-size: .92rem; line-height: 1.55;
+}
+
 .pill {
   display: inline-flex; align-items: center;
   font-size: .64rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;

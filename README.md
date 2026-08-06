@@ -2,15 +2,19 @@
 
 # ECU Studio Suite
 
-**A 100% local, Qt6 automotive software suite for Linux — flash an ECU map, then verify it live on the CAN bus.**
+**Free forever · Open source · Your data stays on your machine.**
+
+A 100% local Qt6 automotive suite for Linux — flash an ECU map, then verify it live on the road (OBD) or on the CAN bus.
 
 [![Release](https://img.shields.io/github/v/release/Poisson48/ecu_studio_suite?label=ECU%20Studio)](https://github.com/Poisson48/ecu_studio_suite/releases/latest)
 [![SocketSpy](https://img.shields.io/badge/SocketSpy-v0.8.7-blue)](https://github.com/Poisson48/SocketSpy)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green)](LICENSE)
+[![Free forever](https://img.shields.io/badge/price-€0%20forever-brightgreen)](#principles--principes)
+[![No telemetry](https://img.shields.io/badge/telemetry-none-success)](#principles--principes)
+[![Privacy](https://img.shields.io/badge/privacy-100%25%20local-blue)](#principles--principes)
 [![Platform](https://img.shields.io/badge/platform-Linux%20x86__64-lightgrey)](#platform-support--plateformes)
 [![Qt6](https://img.shields.io/badge/Qt-6-41CD52?logo=qt&logoColor=white)](https://www.qt.io/)
 [![C++23](https://img.shields.io/badge/C%2B%2B-23-00599C?logo=c%2B%2B&logoColor=white)](https://en.cppreference.com/)
-[![No telemetry](https://img.shields.io/badge/telemetry-none-success)](#)
 
 **[Website](https://poisson48.github.io/ecu_studio_suite/)** · **[Demo gallery](https://poisson48.github.io/ecu_studio_suite/demo.html)** · **[Wiki](https://github.com/Poisson48/ecu_studio_suite/wiki)** · **[SocketSpy](https://github.com/Poisson48/SocketSpy)** · **[SocketSpy site](https://poisson48.github.io/SocketSpy)**
 
@@ -24,11 +28,24 @@
 
 # English
 
+<a id="principles--principes"></a>
+
+## Principles — open source, never paid, privacy first
+
+| Promise | What it means |
+|---------|----------------|
+| **Free forever** | No subscription, no “Pro” tier, no paid unlocks. GPL-3.0 source on GitHub — forever. |
+| **Open source** | You can read, audit, fork and rebuild every line. No black-box vendor lock-in. |
+| **Privacy by design** | Your ROMs, logs and VIN stay on **your** disk. No account, no cloud sync, no analytics, no phone-home. |
+| **Optional network only** | The only outbound call is the **opt-in** in-app update check (Ed25519-signed). Disable it and the app is fully offline. |
+
+Commercial tuners sell drivers, subscriptions and cloud accounts. We don’t. Your calibrations are yours.
+
 ## What the suite is
 
-**ECU Studio Suite** is a fully offline, Qt6/C++23 automotive software suite built for Linux. **No telemetry, no network calls, no cloud** — everything runs on your machine.
+**ECU Studio Suite** is a fully offline, Qt6/C++23 automotive software suite built for Linux. **No telemetry, no mandatory network, no cloud** — everything runs on your machine.
 
-It is built as a **HUB** that launches specialized sub-programs and interconnects them. Each tool is excellent on its own, but the whole point is that they work *together*: the flagship loop is **ECU Studio flashes a map → SocketSpy verifies live on the CAN bus that the change took effect at the right operating point.**
+It is built as a **HUB** that launches specialized sub-programs and interconnects them. Each tool is excellent on its own, but the whole point is that they work *together*: the flagship loop is **ECU Studio flashes a map → verify live on OBD (drive mode) or on the CAN bus with SocketSpy.**
 
 ```
                          ┌──────────────────────────┐
@@ -50,7 +67,7 @@ The suite is a hub launcher around two flagship sub-programs that share the same
 
 | Sub-program | Role | Repo |
 |-------------|------|------|
-| **ECU Studio** | ECU reprogramming, 2D/3D map editor, DAMOS editor, A2L, hex view, checksums (EDC16 + EDC17), MPPS flashing, compare, git versioning, AutoMods, OpenDAMOS, OBD-II live datalog | *(this repo)* |
+| **ECU Studio** | ECU reprogramming, 2D/3D map editor, DAMOS editor, A2L, hex view, checksums (EDC16 + EDC17), MPPS flashing, compare, git versioning, AutoMods, OpenDAMOS, OBD tune validation (drive mode) | *(this repo)* |
 | **[SocketSpy](https://github.com/Poisson48/SocketSpy)** | Linux SocketCAN analysis — live monitor, DBC decode, signal graphs, protocol decoders, UDS tester, Lua scripting, simulator, and more | [Poisson48/SocketSpy](https://github.com/Poisson48/SocketSpy) |
 
 ## The interconnection loop
@@ -86,8 +103,8 @@ The flagship workflow — the reason the suite exists — closes the loop betwee
 | In-app auto-update | ✅ Proven | Ed25519-signed manifest + SHA-256 verification |
 | Bilingual UI (EN / FR) | ✅ Proven | Complete French / English translations |
 | 3D map view (ghost overlay) | 🧪 Beta | Pseudo-3D + heatmap with baseline ghost overlay; native `Q3DSurface` OpenGL coming |
-| OBD-II live datalog (ELM327) | 🧪 Beta | USB ELM327 adapter: live PIDs (RPM / boost / temp / MAF / λ), CSV log, **read + clear DTCs**, VIN, CAN sniffing. Compiles & unit-tested, **not yet verified on a real vehicle** |
-| CAN companion (launch SocketSpy) | 🧪 Beta | Launch SocketSpy side-by-side during reprogramming |
+| OBD-II + **drive-mode tune validation** (ELM327) | 🧪 Beta | One-button **drive session**: live PIDs, **measured vs OpenDAMOS expected** (boost/smoke), big underboost banner, auto CSV, freeze frame, DTC 03+07. Built for use while driving |
+| CAN companion (launch SocketSpy) | 🧪 Beta | Launch SocketSpy side-by-side; continuous CAN validation via MCP when available |
 
 ### SocketSpy — Linux CAN bus analysis (v0.8.7)
 
@@ -137,14 +154,14 @@ A free, **CC0** DAMOS that relocates ECU maps by **axis fingerprint** instead of
 
 ### Download (recommended)
 
-**[⬇ Download ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — v1.5.0, ~39 MB, Linux x86_64.
+**[⬇ Download ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — **v1.6.6**, free forever, Linux x86_64.
 
 ```bash
 chmod +x ECU_Studio-x86_64.AppImage
 ./ECU_Studio-x86_64.AppImage
 ```
 
-Self-contained AppImage — Qt6, libusb and every runtime library are bundled, so it runs on a clean PC with **nothing installed** and no root access. All builds are on the [releases page](https://github.com/Poisson48/ecu_studio_suite/releases/latest).
+Self-contained AppImage — Qt6, libusb and every runtime library are bundled, so it runs on a clean PC with **nothing installed** and no root access. **No signup.** All builds are on the [releases page](https://github.com/Poisson48/ecu_studio_suite/releases/latest).
 
 For SocketSpy, see the **[SocketSpy repo](https://github.com/Poisson48/SocketSpy)**.
 
@@ -200,7 +217,9 @@ Linux uses libusb directly — no FTDI D2XX driver needed. Requires kernel ≥ 5
 
 ## License
 
-**GPL-3.0** — see [LICENSE](LICENSE). OpenDAMOS recipes are recommended to be licensed **CC0-1.0**.
+**GPL-3.0** — see [LICENSE](LICENSE). Free to use, study, share and improve. OpenDAMOS recipes are recommended under **CC0-1.0**.
+
+There will never be a paid edition that locks features behind a paywall.
 
 ---
 
@@ -208,11 +227,22 @@ Linux uses libusb directly — no FTDI D2XX driver needed. Requires kernel ≥ 5
 
 # Français
 
+## Principes — open source, jamais payant, vie privée d’abord
+
+| Engagement | Ce que ça veut dire |
+|------------|---------------------|
+| **Gratuit pour toujours** | Pas d’abonnement, pas de version « Pro », pas de déblocage payant. Sources GPL-3.0 sur GitHub — pour toujours. |
+| **Open source** | Vous pouvez lire, auditer, forker et recompiler chaque ligne. Pas de boîte noire propriétaire. |
+| **Vie privée by design** | Vos ROM, logs et VIN restent **sur votre disque**. Pas de compte, pas de cloud, pas d’analytics, pas de phone-home. |
+| **Réseau optionnel seulement** | Le seul appel sortant est la vérif de mise à jour **opt-in** (manifeste signé Ed25519). Désactivez-la et l’app est 100 % hors-ligne. |
+
+Les outils commerciaux vendent des drivers, des abonnements et des comptes cloud. Pas nous. Vos calibrations vous appartiennent.
+
 ## Ce qu'est la suite
 
-**ECU Studio Suite** est une suite logicielle automobile 100 % locale, en Qt6/C++23, conçue pour Linux. **Aucune télémétrie, aucun appel réseau, aucun cloud** — tout tourne sur votre machine.
+**ECU Studio Suite** est une suite logicielle automobile 100 % locale, en Qt6/C++23, conçue pour Linux. **Aucune télémétrie, aucun réseau obligatoire, aucun cloud** — tout tourne sur votre machine.
 
-Elle est bâtie comme un **HUB** qui lance des sous-programmes spécialisés et les interconnecte. Chaque outil est excellent seul, mais l'essentiel est qu'ils fonctionnent *ensemble* : la boucle phare, c'est **ECU Studio flashe une cartographie → SocketSpy vérifie en direct sur le bus CAN que le changement a bien pris effet au bon point de fonctionnement.**
+Elle est bâtie comme un **HUB** qui lance des sous-programmes spécialisés et les interconnecte. Chaque outil est excellent seul, mais l'essentiel est qu'ils fonctionnent *ensemble* : la boucle phare, c'est **ECU Studio flashe une cartographie → validation live OBD (mode conduite) ou sur le bus CAN avec SocketSpy.**
 
 ```
                          ┌──────────────────────────┐
@@ -234,7 +264,7 @@ La suite est un lanceur (hub) autour de deux sous-programmes phares qui partagen
 
 | Sous-programme | Rôle | Dépôt |
 |----------------|------|-------|
-| **ECU Studio** | Reprogrammation ECU, éditeur de cartos 2D/3D, éditeur DAMOS, A2L, vue hex, checksums (EDC16 + EDC17), flash MPPS, comparaison, versionnement git, AutoMods, OpenDAMOS, datalog OBD-II en direct | *(ce dépôt)* |
+| **ECU Studio** | Reprogrammation ECU, éditeur de cartos 2D/3D, éditeur DAMOS, A2L, vue hex, checksums (EDC16 + EDC17), flash MPPS, comparaison, versionnement git, AutoMods, OpenDAMOS, validation tune OBD (mode conduite) | *(ce dépôt)* |
 | **[SocketSpy](https://github.com/Poisson48/SocketSpy)** | Analyse SocketCAN sous Linux — moniteur live, décodage DBC, graphes de signaux, décodeurs de protocoles, testeur UDS, scripts Lua, simulateur, et plus | [Poisson48/SocketSpy](https://github.com/Poisson48/SocketSpy) |
 
 ## La boucle d'interconnexion
@@ -270,8 +300,8 @@ Le workflow phare — la raison d'être de la suite — boucle entre *modifier* 
 | Mise à jour automatique intégrée | ✅ Éprouvé | Manifeste signé Ed25519 + vérification SHA-256 |
 | Interface bilingue (EN / FR) | ✅ Éprouvé | Traductions françaises / anglaises complètes |
 | Vue 3D des cartos (overlay fantôme) | 🧪 Bêta | Pseudo-3D + carte de chaleur avec overlay fantôme de la base ; `Q3DSurface` OpenGL natif à venir |
-| Datalog OBD-II en direct (ELM327) | 🧪 Bêta | Adaptateur USB ELM327 : PID live (RPM / boost / temp / MAF / λ), log CSV, **lecture + effacement DTC**, VIN, sniff CAN. Compile & testé unitairement, **pas encore validé sur véhicule réel** |
-| Compagnon CAN (lancer SocketSpy) | 🧪 Bêta | Lancer SocketSpy côte à côte pendant la reprogrammation |
+| Datalog OBD-II + **validation tune mode conduite** (ELM327) | 🧪 Bêta | Session **conduite** en un bouton : PID live, **mesuré vs attendu OpenDAMOS** (boost/fumée), bandeau underboost, CSV auto, freeze frame, DTC 03+07. Conçu pour rouler |
+| Compagnon CAN (lancer SocketSpy) | 🧪 Bêta | Lancer SocketSpy côte à côte ; validation CAN continue via MCP si disponible |
 
 ### SocketSpy — analyse du bus CAN sous Linux (v0.8.7)
 
@@ -321,14 +351,14 @@ Un DAMOS libre, **CC0**, qui relocalise les cartos d'ECU par **empreinte d'axe**
 
 ### Téléchargement (recommandé)
 
-**[⬇ Télécharger ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — v1.5.0, ~39 Mo, Linux x86_64.
+**[⬇ Télécharger ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — **v1.6.6**, gratuit pour toujours, Linux x86_64.
 
 ```bash
 chmod +x ECU_Studio-x86_64.AppImage
 ./ECU_Studio-x86_64.AppImage
 ```
 
-AppImage autonome — Qt6, libusb et toutes les bibliothèques d'exécution sont embarquées : ça tourne sur un PC vierge avec **rien d'installé** et sans accès root. Tous les builds sont sur la [page des releases](https://github.com/Poisson48/ecu_studio_suite/releases/latest).
+AppImage autonome — Qt6, libusb et toutes les bibliothèques d'exécution sont embarquées : ça tourne sur un PC vierge avec **rien d'installé** et sans accès root. **Pas d’inscription.** Tous les builds sont sur la [page des releases](https://github.com/Poisson48/ecu_studio_suite/releases/latest).
 
 Pour SocketSpy, voir le **[dépôt SocketSpy](https://github.com/Poisson48/SocketSpy)**.
 
@@ -384,13 +414,15 @@ Linux utilise libusb directement — aucun pilote FTDI D2XX requis. Nécessite u
 
 ## Licence
 
-**GPL-3.0** — voir [LICENSE](LICENSE). Les recettes OpenDAMOS sont recommandées sous **CC0-1.0**.
+**GPL-3.0** — voir [LICENSE](LICENSE). Libre d’usage, d’étude, de partage et d’amélioration. Les recettes OpenDAMOS sont recommandées sous **CC0-1.0**.
+
+Il n’y aura jamais d’édition payante qui enferme des fonctions derrière un paywall.
 
 ---
 
 <div align="center">
 
-**ECU Studio Suite** — flashez une carto, vérifiez-la en direct. 100 % local. ·
+**ECU Studio Suite** — open source · 0 € pour toujours · vos données restent sur votre PC ·
 [Website](https://poisson48.github.io/ecu_studio_suite/) · [SocketSpy](https://github.com/Poisson48/SocketSpy)
 
 </div>

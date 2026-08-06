@@ -31,18 +31,18 @@
 
 ## English
 
-**ECU Studio Suite** is a 100% local, Qt6/C++23 automotive software suite for Linux. There is **no telemetry, no network calls, no cloud** — everything runs on your machine. The suite is a **hub** that launches specialized sub-programs and interconnects them. The flagship loop: **ECU Studio flashes a map into an ECU, then SocketSpy verifies live on the CAN bus that the change actually took effect at the right operating point.**
+**ECU Studio Suite** is a 100% local, Qt6/C++23 automotive software suite for Linux. **Free forever (GPL-3.0), no subscription, no account.** There is **no telemetry, no cloud** — your ROMs and logs stay on your machine. The suite is a **hub** that launches specialized sub-programs and interconnects them. The flagship loop: **ECU Studio flashes a map, then OBD drive mode (or SocketSpy on CAN) verifies live that the change took effect.**
 
 - **Website:** https://poisson48.github.io/ecu_studio_suite/
 - **ECU Studio repo:** https://github.com/Poisson48/ecu_studio_suite
 - **SocketSpy repo:** https://github.com/Poisson48/SocketSpy · **site:** https://poisson48.github.io/SocketSpy · **wiki:** https://github.com/Poisson48/SocketSpy/wiki
-- **License:** GPL-3.0
+- **License:** GPL-3.0 · **Price:** €0 forever · **Privacy:** 100% local
 
 ### The two sub-programs at a glance
 
 | Sub-program | Role |
 |-------------|------|
-| **ECU Studio** | ECU reprogramming, 2D + 3D map editor, DAMOS editor, A2L browser, hex view, checksums, MPPS V21 flashing, ROM compare, git versioning, AutoMods, and OpenDAMOS. |
+| **ECU Studio** | ECU reprogramming, 2D + 3D map editor, DAMOS editor, A2L browser, hex view, checksums, MPPS V21 flashing, ROM compare, git versioning, AutoMods, OpenDAMOS, and **OBD drive-mode tune validation**. |
 | **SocketSpy** | Linux SocketCAN analysis — live monitor, DBC decode, signal graphs, transmit, protocol decoders (CANopen / J1939 / ISO-TP / UDS / OBD-II / NMEA2000), Lua scripting, CAN simulator, MCP/JSON-RPC API, io_uring capture, frame fuzzer, UDS tester + ECU simulator, BLF/MDF4 export, capture diff, multi-bus, Signal Detective, i18n. |
 
 ### Wiki pages
