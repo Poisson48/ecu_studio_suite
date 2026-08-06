@@ -28,6 +28,12 @@
 #include <QDoubleSpinBox>
 #include <QMessageBox>
 #include <QBrush>
+#include <QFrame>
+#include <QSettings>
+#include <QStandardPaths>
+#include <QFileInfo>
+
+#include <optional>
 
 namespace ecu_studio {
 
@@ -64,6 +70,8 @@ ObdPanel::ObdPanel(RomDocument* doc, QWidget* parent)
     m_reconnectTimer->setSingleShot(true);
     connect(m_reconnectTimer, &QTimer::timeout, this, &ObdPanel::tryAutoReconnect);
     buildUi();
+    loadSettings();
+    applyDriveModeUi(m_driveMode);
 
     if (m_doc) {
         connect(m_doc, &RomDocument::romLoaded, this, &ObdPanel::refreshValidatorFromDoc);
@@ -84,14 +92,16 @@ ObdPanel::ObdPanel(RomDocument* doc, QWidget* parent)
         m_dtcReadBtn->setEnabled(true); m_dtcClearBtn->setEnabled(true);
         m_freezeBtn->setEnabled(true);
         m_vinBtn->setEnabled(true); m_canBtn->setEnabled(true);
+        tryAutoStartDriveSession();
     });
     connect(m_elm, &Elm327::disconnected, this, [this]() {
-        m_connected = false; m_datalog = false; m_validating = false;
+        m_connected = false; m_datalog = false;
+        stopValidation();
         m_canSniff = false;
         m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Connecter"));
         m_datalogBtn->setText(tr("Démarrer datalog"));
-        m_valBtn->setText(tr("Démarrer validation tune"));
+        m_driveBtn->setText(tr("▶  Lancer session conduite"));
         m_canBtn->setText(tr("Sniffer CAN (ATMA)"));
         m_datalogBtn->setEnabled(false);
         m_valBtn->setEnabled(false);
@@ -176,8 +186,10 @@ ObdPanel::ObdPanel(RomDocument* doc, QWidget* parent)
 }
 
 ObdPanel::~ObdPanel() {
+    saveSettings();
+    stopValidation();
+    autoStopCsv();
     delete m_validator;
-    if (m_csv) m_csv->close();
 }
 
 void ObdPanel::refreshValidatorFromDoc() {
@@ -197,6 +209,7 @@ void ObdPanel::refreshValidatorFromDoc() {
             : tr("Impossible de charger OpenDAMOS pour « %1 ».").arg(m_doc->ecuId()));
     }
     m_valBtn->setEnabled(ok && m_connected);
+    if (ok && m_connected) tryAutoStartDriveSession();
 }
 
 void ObdPanel::buildUi() {
@@ -221,8 +234,30 @@ void ObdPanel::buildUi() {
     m_connectBtn->setObjectName("accentBtn");
     cl->addWidget(m_connectBtn);
     m_autoReconnect = new QCheckBox(tr("Auto-reco"), this);
+    m_autoReconnect->setChecked(true);
+    m_autoReconnect->setToolTip(tr("Reconnexion automatique si le lien USB tombe."));
     cl->addWidget(m_autoReconnect);
+    m_driveModeChk = new QCheckBox(tr("Mode conduite"), this);
+    m_driveModeChk->setChecked(true);
+    m_driveModeChk->setToolTip(tr(
+        "Semi-automatique : gros affichage turbo, validation + log CSV auto "
+        "dès la connexion. Idéal au volant (1 bouton avant de rouler)."));
+    cl->addWidget(m_driveModeChk);
     root->addWidget(connBox);
+
+    m_driveBtn = new QPushButton(tr("▶  Lancer session conduite"), this);
+    m_driveBtn->setObjectName("accentBtn");
+    m_driveBtn->setMinimumHeight(52);
+    QFont df = m_driveBtn->font();
+    df.setPointSizeF(df.pointSizeF() + 4.0);
+    df.setBold(true);
+    m_driveBtn->setFont(df);
+    m_driveBtn->setToolTip(tr(
+        "Connecte l'ELM327, démarre la validation tune et enregistre un CSV "
+        "automatiquement — sans autre action pendant la route."));
+    root->addWidget(m_driveBtn);
+
+    buildDrivePanel(root);
 
     m_statusLabel = new QLabel(tr("Branche l'adaptateur, choisis le port, puis « Connecter »."), this);
     m_statusLabel->setStyleSheet(QStringLiteral("color:#7c8fa6;"));
@@ -386,6 +421,193 @@ void ObdPanel::buildUi() {
     connect(m_valTable, &QTableWidget::cellClicked, this, [this](int row, int) {
         m_focusValRow = row;
     });
+    connect(m_driveModeChk, &QCheckBox::toggled, this, &ObdPanel::onDriveModeToggled);
+    connect(m_driveBtn, &QPushButton::clicked, this, &ObdPanel::onDriveSessionClicked);
+}
+
+void ObdPanel::buildDrivePanel(QVBoxLayout* root) {
+    m_drivePanel = new QFrame(this);
+    m_drivePanel->setFrameShape(QFrame::StyledPanel);
+    m_drivePanel->setStyleSheet(QStringLiteral(
+        "QFrame { background:#0f1520; border:1px solid #1e293b; border-radius:8px; }"));
+    auto* dl = new QVBoxLayout(m_drivePanel);
+    dl->setContentsMargins(12, 12, 12, 12);
+    dl->setSpacing(8);
+
+    m_driveBanner = new QFrame(m_drivePanel);
+    m_driveBanner->setMinimumHeight(72);
+    m_driveBanner->setStyleSheet(QStringLiteral(
+        "QFrame { background:#1e293b; border-radius:8px; }"));
+    auto* bl = new QVBoxLayout(m_driveBanner);
+    bl->setContentsMargins(16, 8, 16, 8);
+    m_driveVerdict = new QLabel(tr("Prêt — appuie sur ▶ Lancer"), m_driveBanner);
+    QFont vf = m_driveVerdict->font();
+    vf.setPointSizeF(20.0);
+    vf.setBold(true);
+    m_driveVerdict->setFont(vf);
+    m_driveVerdict->setAlignment(Qt::AlignCenter);
+    m_driveVerdict->setStyleSheet(QStringLiteral("color:#e6edf3;"));
+    bl->addWidget(m_driveVerdict);
+    dl->addWidget(m_driveBanner);
+
+    m_boostBig = new QLabel(tr("— / — mbar"), m_drivePanel);
+    QFont bf = m_boostBig->font();
+    bf.setPointSizeF(28.0);
+    bf.setBold(true);
+    m_boostBig->setFont(bf);
+    m_boostBig->setAlignment(Qt::AlignCenter);
+    m_boostBig->setStyleSheet(QStringLiteral("color:#60a5fa;"));
+    dl->addWidget(m_boostBig);
+
+    m_boostSub = new QLabel(tr("Δ — mbar"), m_drivePanel);
+    QFont sf = m_boostSub->font();
+    sf.setPointSizeF(16.0);
+    m_boostSub->setFont(sf);
+    m_boostSub->setAlignment(Qt::AlignCenter);
+    m_boostSub->setStyleSheet(QStringLiteral("color:#9ca3af;"));
+    dl->addWidget(m_boostSub);
+
+    m_rpmLoadLabel = new QLabel(tr("RPM —  ·  Charge — %"), m_drivePanel);
+    m_rpmLoadLabel->setAlignment(Qt::AlignCenter);
+    m_rpmLoadLabel->setStyleSheet(QStringLiteral("color:#7c8fa6; font-size:14px;"));
+    dl->addWidget(m_rpmLoadLabel);
+
+    m_csvDriveLabel = new QLabel(tr("Log CSV : inactif"), m_drivePanel);
+    m_csvDriveLabel->setAlignment(Qt::AlignCenter);
+    m_csvDriveLabel->setStyleSheet(QStringLiteral("color:#64748b; font-size:11px;"));
+    dl->addWidget(m_csvDriveLabel);
+
+    root->addWidget(m_drivePanel, 1);
+}
+
+void ObdPanel::loadSettings() {
+    QSettings s;
+    s.beginGroup(QStringLiteral("obd"));
+    m_driveMode = s.value(QStringLiteral("driveMode"), true).toBool();
+    if (m_driveModeChk) m_driveModeChk->setChecked(m_driveMode);
+    if (m_autoReconnect) m_autoReconnect->setChecked(
+        s.value(QStringLiteral("autoReconnect"), true).toBool());
+    m_lastPort = s.value(QStringLiteral("lastPort")).toString();
+    s.endGroup();
+}
+
+void ObdPanel::saveSettings() {
+    QSettings s;
+    s.beginGroup(QStringLiteral("obd"));
+    s.setValue(QStringLiteral("driveMode"), m_driveMode);
+    if (m_autoReconnect) s.setValue(QStringLiteral("autoReconnect"), m_autoReconnect->isChecked());
+    if (!m_lastPort.isEmpty()) s.setValue(QStringLiteral("lastPort"), m_lastPort);
+    s.endGroup();
+}
+
+void ObdPanel::applyDriveModeUi(bool on) {
+    if (m_tabs)       m_tabs->setVisible(!on);
+    if (m_log)        m_log->setVisible(!on);
+    if (m_drivePanel) m_drivePanel->setVisible(on);
+    if (m_statusLabel) m_statusLabel->setVisible(!on);
+    if (m_driveBtn) {
+        m_driveBtn->setVisible(on);
+        if (m_validating)
+            m_driveBtn->setText(tr("■  Arrêter session"));
+    }
+    if (m_romInfoLabel) m_romInfoLabel->setVisible(!on);
+}
+
+void ObdPanel::onDriveModeToggled(bool on) {
+    m_driveMode = on;
+    applyDriveModeUi(on);
+    saveSettings();
+    if (on && m_connected) tryAutoStartDriveSession();
+}
+
+void ObdPanel::onDriveSessionClicked() {
+    if (m_validating) {
+        stopValidation();
+        if (m_connected && m_wantConnected) {
+            m_wantConnected = false;
+            m_elm->disconnectPort();
+        }
+        return;
+    }
+    m_driveMode = true;
+    if (m_driveModeChk) m_driveModeChk->setChecked(true);
+    applyDriveModeUi(true);
+    if (!m_connected) startConnect();
+    else tryAutoStartDriveSession();
+}
+
+void ObdPanel::tryAutoStartDriveSession() {
+    if (!m_driveMode || !m_connected || !m_validator->isReady() || m_validating)
+        return;
+    startValidation();
+}
+
+void ObdPanel::startValidation() {
+    if (!m_connected || !m_validator->isReady() || m_validating) return;
+    if (m_datalog) toggleDatalog();
+    if (m_canSniff) toggleCanSniff();
+    if (!m_driveMode) m_tabs->setCurrentIndex(1);
+
+    // Map boost en priorité — focus auto sur la 1ʳᵉ règle boost.
+    for (int i = 0; i < static_cast<int>(m_validator->rules().size()); ++i) {
+        if (m_validator->rules()[static_cast<std::size_t>(i)].category == "boost") {
+            m_focusValRow = i;
+            break;
+        }
+    }
+
+    const QList<std::uint8_t> pids = { 0x0C, 0x04, 0x0B, 0x33, 0x10, 0x0D };
+    m_elm->startPolling(pids, 180);
+    m_validating = true;
+    m_failStreak = 0;
+    if (m_valBtn) m_valBtn->setText(tr("Arrêter validation tune"));
+    if (m_driveBtn) m_driveBtn->setText(tr("■  Arrêter session"));
+    if (m_driveMode) autoStartCsv();
+    setStatus(tr("Session conduite active — regarde le bandeau turbo."));
+    if (m_driveVerdict)
+        m_driveVerdict->setText(tr("Acquisition…"));
+}
+
+void ObdPanel::stopValidation() {
+    if (!m_validating) return;
+    m_elm->stopPolling();
+    m_validating = false;
+    m_failStreak = 0;
+    if (m_valBtn) m_valBtn->setText(tr("Démarrer validation tune"));
+    if (m_driveBtn) m_driveBtn->setText(tr("▶  Lancer session conduite"));
+    if (m_driveMode) autoStopCsv();
+}
+
+void ObdPanel::autoStartCsv() {
+    if (m_csv) return;
+    const QString dir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+                        + QStringLiteral("/datalog");
+    QDir().mkpath(dir);
+    const QString path = dir + QStringLiteral("/drive_%1.csv")
+        .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd_HHmmss")));
+    m_csv = new QFile(path, this);
+    if (!m_csv->open(QIODevice::WriteOnly | QIODevice::Text)) {
+        m_csv->deleteLater(); m_csv = nullptr;
+        if (m_csvDriveLabel) m_csvDriveLabel->setText(tr("Log CSV : échec écriture"));
+        return;
+    }
+    m_valCsv = true;
+    QTextStream(m_csv) << "time,map,measured,expected,delta,unit,status,rpm,load\n";
+    if (m_csvDriveLabel)
+        m_csvDriveLabel->setText(tr("Log CSV : %1").arg(QFileInfo(path).fileName()));
+    if (m_csvBtn) m_csvBtn->setText(tr("Arrêter CSV"));
+}
+
+void ObdPanel::autoStopCsv() {
+    if (!m_csv) return;
+    const QString path = m_csv->fileName();
+    m_csv->close();
+    m_csv->deleteLater();
+    m_csv = nullptr;
+    m_valCsv = false;
+    if (m_csvBtn) m_csvBtn->setText(tr("Log CSV…"));
+    if (m_csvDriveLabel)
+        m_csvDriveLabel->setText(tr("Log CSV : %1 (terminé)").arg(QFileInfo(path).fileName()));
 }
 
 ecu::LivePidSnapshot ObdPanel::liveSnapshot() const {
@@ -404,15 +626,94 @@ void ObdPanel::runValidation() {
     if (!m_validator->isReady()) return;
     const auto results = m_validator->evaluateAll(liveSnapshot());
     updateValidationTable(results);
+    if (m_driveMode) updateDriveDashboard(results);
     appendValidationCsv(results);
 
-    if (m_focusValRow >= 0 && m_focusValRow < static_cast<int>(results.size())) {
-        const auto& r = results[static_cast<std::size_t>(m_focusValRow)];
-        if (r.status != ecu::ValidationStatus::NoData && r.mapAddress > 0) {
-            emit livePointUpdated(static_cast<quint32>(r.mapAddress),
-                                  r.ix0, r.iy0, r.measured, r.expected);
+    if (const auto primary = primaryBoostResult(results)) {
+        if (primary->status != ecu::ValidationStatus::NoData && primary->mapAddress > 0) {
+            emit livePointUpdated(static_cast<quint32>(primary->mapAddress),
+                                  primary->ix0, primary->iy0,
+                                  primary->measured, primary->expected);
         }
     }
+}
+
+std::optional<ecu::ValidationResult> ObdPanel::primaryBoostResult(
+    const std::vector<ecu::ValidationResult>& results) const {
+    for (const auto& r : results) {
+        if (r.mapName.contains(QStringLiteral("pAirBas"), Qt::CaseInsensitive)
+            || r.mapName.contains(QStringLiteral("boost"), Qt::CaseInsensitive))
+            return r;
+    }
+    for (const auto& r : results) {
+        if (r.status != ecu::ValidationStatus::NoData) return r;
+    }
+    return std::nullopt;
+}
+
+void ObdPanel::updateDriveDashboard(const std::vector<ecu::ValidationResult>& results) {
+    const double rpm = m_liveValues.value(0x0C, 0.0);
+    const double load = m_liveValues.value(0x04, 0.0);
+    if (m_rpmLoadLabel)
+        m_rpmLoadLabel->setText(tr("RPM %1  ·  Charge %2 %")
+                                    .arg(rpm > 0 ? QString::number(rpm, 'f', 0) : QStringLiteral("—"))
+                                    .arg(load > 0 ? QString::number(load, 'f', 0) : QStringLiteral("—")));
+
+    const auto boost = primaryBoostResult(results);
+    if (!boost || boost->status == ecu::ValidationStatus::NoData) {
+        if (m_driveVerdict) {
+            m_driveVerdict->setText(rpm > 400 ? tr("En attente de données…") : tr("Ralenti — accélère pour tester"));
+            m_driveBanner->setStyleSheet(QStringLiteral(
+                "QFrame { background:#1e293b; border-radius:8px; }"));
+        }
+        return;
+    }
+
+    const QString unit = boost->unit.isEmpty() ? QStringLiteral("mbar") : boost->unit;
+    if (m_boostBig)
+        m_boostBig->setText(tr("%1 / %2 %3")
+                                .arg(boost->measured, 0, 'f', 0)
+                                .arg(boost->expected, 0, 'f', 0)
+                                .arg(unit));
+    if (m_boostSub)
+        m_boostSub->setText(tr("Δ %1 %2")
+                                .arg(boost->delta, 0, 'f', 0)
+                                .arg(unit));
+
+    QString bannerBg;
+    QString verdict;
+    QColor  bigColor;
+    switch (boost->status) {
+        case ecu::ValidationStatus::Ok:
+            bannerBg = QStringLiteral("QFrame { background:#14532d; border-radius:8px; }");
+            verdict  = tr("TURBO OK");
+            bigColor = QColor("#4ade80");
+            m_failStreak = 0;
+            break;
+        case ecu::ValidationStatus::Warn:
+            bannerBg = QStringLiteral("QFrame { background:#78350f; border-radius:8px; }");
+            verdict  = boost->delta < 0 ? tr("LÉGER UNDERBOOST") : tr("LÉGER OVERBOOST");
+            bigColor = QColor("#fbbf24");
+            break;
+        case ecu::ValidationStatus::Fail:
+            bannerBg = QStringLiteral("QFrame { background:#7f1d1d; border-radius:8px; }");
+            verdict  = boost->delta < 0 ? tr("UNDERBOOST") : tr("OVERBOOST");
+            bigColor = QColor("#f87171");
+            ++m_failStreak;
+            break;
+        default:
+            bannerBg = QStringLiteral("QFrame { background:#1e293b; border-radius:8px; }");
+            verdict  = tr("—");
+            bigColor = QColor("#60a5fa");
+            break;
+    }
+    if (m_driveBanner) m_driveBanner->setStyleSheet(bannerBg);
+    if (m_driveVerdict) {
+        m_driveVerdict->setText(verdict);
+        m_driveVerdict->setStyleSheet(QStringLiteral("color:#fff;"));
+    }
+    if (m_boostBig)
+        m_boostBig->setStyleSheet(QStringLiteral("color:%1;").arg(bigColor.name()));
 }
 
 void ObdPanel::updateValidationTable(const std::vector<ecu::ValidationResult>& results) {
@@ -653,22 +954,8 @@ void ObdPanel::toggleDatalog() {
 }
 
 void ObdPanel::toggleValidation() {
-    if (!m_connected || !m_validator->isReady()) return;
-    if (m_validating) {
-        m_elm->stopPolling();
-        m_validating = false;
-        m_valBtn->setText(tr("Démarrer validation tune"));
-    } else {
-        if (m_datalog) toggleDatalog();
-        if (m_canSniff) toggleCanSniff();
-        m_tabs->setCurrentIndex(1);
-        // PID prioritaires pour comparaison turbo (plus rapide qu'un full datalog).
-        const QList<std::uint8_t> pids = { 0x0C, 0x04, 0x0B, 0x33, 0x10, 0x0D };
-        m_elm->startPolling(pids, 180);
-        m_validating = true;
-        m_valBtn->setText(tr("Arrêter validation tune"));
-        setStatus(tr("Validation tune active — roule et observe mesuré vs attendu."));
-    }
+    if (m_validating) stopValidation();
+    else startValidation();
 }
 
 void ObdPanel::toggleCanSniff() {

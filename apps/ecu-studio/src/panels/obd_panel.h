@@ -3,6 +3,7 @@
 #include <QHash>
 #include <QString>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 class QComboBox;
@@ -15,6 +16,8 @@ class QFile;
 class QTimer;
 class QDoubleSpinBox;
 class QTabWidget;
+class QFrame;
+class QVBoxLayout;
 
 #include "ecu/TuneValidation.hpp"
 
@@ -63,9 +66,14 @@ private slots:
     void onYAxisModeChanged(int idx);
     void onShowMap3d();
     void replayValidationCsv();
+    void onDriveModeToggled(bool on);
+    void onDriveSessionClicked();
 
 private:
     void buildUi();
+    void buildDrivePanel(QVBoxLayout* root);
+    void loadSettings();
+    void saveSettings();
     void setStatus(const QString& msg, bool error = false);
     void mergeDtcCodes(const QStringList& codes, bool pending);
     void refreshDtcTable();
@@ -76,9 +84,18 @@ private:
     QString preferredPort() const;
     void onPidUpdate(quint8 pid, double value);
     void runValidation();
+    void startValidation();
+    void stopValidation();
+    void autoStartCsv();
+    void autoStopCsv();
+    void tryAutoStartDriveSession();
     void updateValidationTable(const std::vector<ecu::ValidationResult>& results);
+    void updateDriveDashboard(const std::vector<ecu::ValidationResult>& results);
+    std::optional<ecu::ValidationResult> primaryBoostResult(
+        const std::vector<ecu::ValidationResult>& results) const;
     void appendValidationCsv(const std::vector<ecu::ValidationResult>& results);
     ecu::LivePidSnapshot liveSnapshot() const;
+    void applyDriveModeUi(bool on);
 
     RomDocument*    m_doc = nullptr;
     ecu::TuneValidator* m_validator = nullptr;
@@ -91,8 +108,19 @@ private:
     QPushButton*    m_refreshBtn  = nullptr;
     QPushButton*    m_connectBtn  = nullptr;
     QCheckBox*      m_autoReconnect = nullptr;
+    QCheckBox*      m_driveModeChk  = nullptr;
+    QPushButton*    m_driveBtn      = nullptr;
     QLabel*         m_statusLabel = nullptr;
     QLabel*         m_romInfoLabel = nullptr;
+
+    // Mode conduite — tableau de bord grand format (semi-auto)
+    QFrame*         m_drivePanel    = nullptr;
+    QFrame*         m_driveBanner   = nullptr;
+    QLabel*         m_driveVerdict  = nullptr;
+    QLabel*         m_boostBig      = nullptr;
+    QLabel*         m_boostSub      = nullptr;
+    QLabel*         m_rpmLoadLabel  = nullptr;
+    QLabel*         m_csvDriveLabel = nullptr;
 
     QTabWidget*     m_tabs        = nullptr;
     QTableWidget*   m_pidTable    = nullptr;
@@ -112,7 +140,9 @@ private:
     QTableWidget*   m_freezeTable = nullptr;
     CanTuneValidator* m_canVal    = nullptr;
     bool            m_validating  = false;
+    bool            m_driveMode   = true;
     int             m_focusValRow = 0;
+    int             m_failStreak  = 0;
 
     QPushButton*    m_dtcReadBtn  = nullptr;
     QPushButton*    m_dtcClearBtn = nullptr;
