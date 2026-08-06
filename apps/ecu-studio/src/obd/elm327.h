@@ -53,6 +53,8 @@ public:
     void readDtcs(bool pending = false);
     void clearDtcs();
     void readVin();
+    // Lit les PID du freeze frame (mode 02, trame 0) — valeurs au moment du DTC.
+    void readFreezeFrame(const QList<std::uint8_t>& pids = {});
 
     // ── Sniffing CAN (ATMA) ──────────────────────────────────────────────────
     void startCanMonitor();
@@ -65,6 +67,8 @@ signals:
     void status(const QString& message);
     void pidResult(quint8 pid, double value, const QString& name, const QString& unit);
     void pidUnsupported(quint8 pid);
+    // Résultat mode 02 (freeze frame) — pid identique au mode 01.
+    void freezeFrameResult(quint8 pid, double value, const QString& name, const QString& unit);
     // `pending` : true = réponse mode 07, false = mode 03.
     void dtcsReady(const QStringList& codes, bool pending);
     void vinReady(const QString& vin);
@@ -77,7 +81,7 @@ private slots:
     void onPollTick();
 
 private:
-    enum class Kind { Init, Pid, Dtc, ClearDtc, Vin, CanStart, Raw };
+    enum class Kind { Init, Pid, Dtc, ClearDtc, Vin, FreezeFrame, CanStart, Raw };
     struct Cmd { QString text; Kind kind; std::uint8_t pid = 0; };
 
     void enqueue(const QString& text, Kind kind, std::uint8_t pid = 0);

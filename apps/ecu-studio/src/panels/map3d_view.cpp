@@ -295,6 +295,29 @@ void Map3dViewPainter::paint3d(QPainter& p) {
         }
     }
 
+    // ── Point live (validation tune en conduite) ─────────────────────────────
+    if (m_data.hasLivePoint && nx > 0 && ny > 0) {
+        const double gx = std::clamp(m_data.liveGx, 0.0, static_cast<double>(nx - 1));
+        const double gy = std::clamp(m_data.liveGy, 0.0, static_cast<double>(ny - 1));
+        const QPointF ptMeas = project(gx, gy, m_data.liveMeasured);
+        const QPointF ptExp  = project(gx, gy, m_data.liveExpected);
+        p.setPen(QPen(QColor("#60a5fa"), 3));
+        p.setBrush(QColor("#60a5fa"));
+        p.drawEllipse(ptMeas, 6, 6);
+        p.setPen(QPen(QColor("#f97316"), 2, Qt::DashLine));
+        p.setBrush(QColor("#f97316"));
+        p.drawEllipse(ptExp, 5, 5);
+        p.drawLine(ptExp, ptMeas);
+        p.setPen(QColor("#e6edf3"));
+        QFont lf = p.font();
+        lf.setPointSize(8);
+        p.setFont(lf);
+        p.drawText(QRectF(ptMeas.x() + 8, ptMeas.y() - 16, 160, 14), Qt::AlignLeft,
+                   tr("mesuré %1").arg(m_data.liveMeasured, 0, 'f', 0));
+        p.drawText(QRectF(ptExp.x() + 8, ptExp.y() + 4, 160, 14), Qt::AlignLeft,
+                   tr("attendu %1").arg(m_data.liveExpected, 0, 'f', 0));
+    }
+
     // ── Axes 3D : labels d'axes le long des bords inférieurs du volume ────────
     // On projette à la valeur zMin (« sol ») pour suivre la base de la surface.
     // Ticks répartis : jusqu'à 5 par axe pour ne pas surcharger.
@@ -447,6 +470,17 @@ void Map3dViewPainter::paintHeatmap(QPainter& p) {
                    Qt::AlignRight, label(m_data.yLabels, ny - 1));
         p.drawText(QRectF(0, area.bottom() - 10, marginL - 4, 16),
                    Qt::AlignRight, label(m_data.yLabels, 0));
+    }
+
+    if (m_data.hasLivePoint && nx > 0 && ny > 0) {
+        const int gx = std::clamp(static_cast<int>(std::round(m_data.liveGx)), 0, nx - 1);
+        const int gy = std::clamp(static_cast<int>(std::round(m_data.liveGy)), 0, ny - 1);
+        const QRectF cell(area.left() + gx * cw,
+                          area.top() + (ny - 1 - gy) * ch, cw, ch);
+        p.setPen(QPen(QColor("#60a5fa"), 3));
+        p.setBrush(Qt::NoBrush);
+        p.drawRect(cell);
+        p.drawEllipse(cell.center(), 4, 4);
     }
 }
 

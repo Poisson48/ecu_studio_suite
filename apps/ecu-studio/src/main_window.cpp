@@ -129,7 +129,7 @@ void MainWindow::setupUi() {
     m_gitPanel      = new GitPanel(m_doc, this);
     m_a2lPanel      = new A2lPanel(m_doc, this);
     m_canPanel      = new CanPanel(this);
-    m_obdPanel      = new ObdPanel(this);
+    m_obdPanel      = new ObdPanel(m_doc, this);
     m_libraryPanel  = new OpenDamosLibraryPanel(m_doc, this);
     m_hubPanel      = new HubLauncherPanel(m_doc, this);
 
@@ -295,6 +295,21 @@ void MainWindow::wirePanels() {
     connect(m_doc, &RomDocument::modifiedStateChanged, this, [this](bool) { updateRomStatus(); });
     connect(m_doc, &RomDocument::romModified,         this,
             [this](qsizetype, qsizetype) { updateRomStatus(); });
+
+    // Validation tune OBD → map 3D (point live + navigation).
+    connect(m_obdPanel, &ObdPanel::showMapOn3dRequested, this,
+            [this](quint32 address, const QString& name,
+                   double xPhys, double yPhys, double measured, double expected,
+                   const QString& xUnit, const QString& yUnit, const QString& dUnit) {
+                Q_UNUSED(xPhys); Q_UNUSED(yPhys); Q_UNUSED(measured); Q_UNUSED(expected);
+                m_map3dPanel->showMap(address, name, xUnit, yUnit, dUnit);
+                m_sidebar->showPanel(m_map3dPanel);
+            });
+    connect(m_obdPanel, &ObdPanel::livePointUpdated, this,
+            [this](quint32 address, int gx, int gy, double measured, double expected) {
+                if (m_map3dPanel && address > 0)
+                    m_map3dPanel->setLiveOperatingPoint(gx, gy, measured, expected);
+            });
 }
 
 void MainWindow::importWinols() {

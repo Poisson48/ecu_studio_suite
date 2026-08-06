@@ -1,7 +1,9 @@
 #pragma once
 #include <QWidget>
 #include <QHash>
+#include <QString>
 #include <cstdint>
+#include <vector>
 
 class QComboBox;
 class QPushButton;
@@ -11,32 +13,56 @@ class QTableWidget;
 class QPlainTextEdit;
 class QFile;
 class QTimer;
+class QDoubleSpinBox;
+class QTabWidget;
+
+#include "ecu/TuneValidation.hpp"
 
 namespace ecu_studio {
 
+class RomDocument;
 class Elm327;
+class CanTuneValidator;
 
-// Panneau OBD-II / ELM327 : connexion à un adaptateur USB, datalog live des PID
-// (RPM, boost, températures…), lecture/effacement des codes défaut, VIN, et
-// sniffing CAN via ATMA (pas un vrai interface SocketCAN).
+// Panneau OBD-II / ELM327 : connexion adaptateur, datalog live, validation tune
+// (mesuré vs attendu depuis OpenDAMOS), freeze frame, replay CSV, CAN avancé.
 class ObdPanel : public QWidget {
     Q_OBJECT
 public:
-    explicit ObdPanel(QWidget* parent = nullptr);
+    explicit ObdPanel(RomDocument* doc = nullptr, QWidget* parent = nullptr);
     ~ObdPanel() override;
+
+signals:
+    // Bascule vers la map 3D avec le point de fonctionnement live.
+    void showMapOn3dRequested(quint32 address, const QString& name,
+                              double xPhys, double yPhys,
+                              double measured, double expected,
+                              const QString& xUnit, const QString& yUnit,
+                              const QString& dataUnit);
+    void livePointUpdated(quint32 address, int gx, int gy,
+                          double measured, double expected);
+
+public slots:
+    void refreshValidatorFromDoc();
 
 private slots:
     void refreshPorts();
     void toggleConnect();
     void toggleDatalog();
+    void toggleValidation();
     void toggleCanSniff();
     void toggleCsv();
     void readDtcs();
+    void readFreezeFrame();
     void clearDtcs();
     void copyDtcs();
     void exportDtcs();
     void onAutoReconnectToggled(bool on);
     void tryAutoReconnect();
+    void onToleranceChanged(double v);
+    void onYAxisModeChanged(int idx);
+    void onShowMap3d();
+    void replayValidationCsv();
 
 private:
     void buildUi();
@@ -48,6 +74,14 @@ private:
     QString dtcFamily(const QString& code) const;
     QString dtcStatusText(int flags) const;
     QString preferredPort() const;
+    void onPidUpdate(quint8 pid, double value);
+    void runValidation();
+    void updateValidationTable(const std::vector<ecu::ValidationResult>& results);
+    void appendValidationCsv(const std::vector<ecu::ValidationResult>& results);
+    ecu::LivePidSnapshot liveSnapshot() const;
+
+    RomDocument*    m_doc = nullptr;
+    ecu::TuneValidator* m_validator = nullptr;
 
     Elm327* m_elm = nullptr;
     QTimer* m_reconnectTimer = nullptr;
@@ -58,35 +92,51 @@ private:
     QPushButton*    m_connectBtn  = nullptr;
     QCheckBox*      m_autoReconnect = nullptr;
     QLabel*         m_statusLabel = nullptr;
+    QLabel*         m_romInfoLabel = nullptr;
 
-    QTableWidget*   m_pidTable    = nullptr;   // dashboard live
+    QTabWidget*     m_tabs        = nullptr;
+    QTableWidget*   m_pidTable    = nullptr;
     QPushButton*    m_datalogBtn  = nullptr;
     QPushButton*    m_csvBtn      = nullptr;
-    QHash<quint8,int> m_pidRow;                // pid -> ligne du tableau
+    QHash<quint8,int> m_pidRow;
+    QHash<quint8, double> m_liveValues;
+
+    // Validation tune
+    QTableWidget*   m_valTable    = nullptr;
+    QPushButton*    m_valBtn      = nullptr;
+    QDoubleSpinBox* m_tolSpin     = nullptr;
+    QComboBox*      m_yAxisCombo  = nullptr;
+    QPushButton*    m_show3dBtn   = nullptr;
+    QPushButton*    m_replayBtn   = nullptr;
+    QPushButton*    m_freezeBtn   = nullptr;
+    QTableWidget*   m_freezeTable = nullptr;
+    CanTuneValidator* m_canVal    = nullptr;
+    bool            m_validating  = false;
+    int             m_focusValRow = 0;
 
     QPushButton*    m_dtcReadBtn  = nullptr;
     QPushButton*    m_dtcClearBtn = nullptr;
     QPushButton*    m_dtcCopyBtn  = nullptr;
     QPushButton*    m_dtcExportBtn = nullptr;
     QPushButton*    m_vinBtn      = nullptr;
-    QTableWidget*   m_dtcTable    = nullptr;   // code / famille / statut
+    QTableWidget*   m_dtcTable    = nullptr;
     QLabel*         m_vinLabel    = nullptr;
-    // bit0 = mémorisé (03), bit1 = en attente (07)
     QHash<QString, int> m_dtcFlags;
-    int             m_dtcAwaiting = 0;         // réponses 03/07 encore attendues
+    int             m_dtcAwaiting = 0;
 
     QPushButton*    m_canBtn      = nullptr;
-    QTableWidget*   m_canTable    = nullptr;   // trames CAN (sniff)
+    QTableWidget*   m_canTable    = nullptr;
     QHash<quint32,int> m_canRow;
 
     QPlainTextEdit* m_log         = nullptr;
 
     QFile*          m_csv         = nullptr;
-    QString         m_lastPort;                // port cible auto-reconnect
+    bool            m_valCsv      = false;
+    QString         m_lastPort;
     bool            m_datalog     = false;
     bool            m_canSniff    = false;
     bool            m_connected   = false;
-    bool            m_wantConnected = false;   // true tant qu'on veut rester en ligne
+    bool            m_wantConnected = false;
 };
 
 } // namespace ecu_studio

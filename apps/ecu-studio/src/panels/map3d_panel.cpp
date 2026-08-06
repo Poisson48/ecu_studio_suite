@@ -565,6 +565,7 @@ void Map3dPanel::render(quint32 address) {
     s.xAxisTitle = xUnit.isEmpty() ? tr("X") : QString("X (%1)").arg(xUnit);
     s.yAxisTitle = yUnit.isEmpty() ? tr("Y") : QString("Y (%1)").arg(yUnit);
 
+    m_lastSurface = s;
     viewSetSurface(s);
     viewSetHeatmap(m_heatChk && m_heatChk->isChecked());
 
@@ -620,6 +621,20 @@ void Map3dPanel::searchMaps() {
         m_mapCombo->setCurrentIndex(0);
         onMapSelected(0);
     }
+}
+
+void Map3dPanel::setLiveOperatingPoint(int gx, int gy, double measured, double expected) {
+    if (m_lastSurface.nx <= 0 || m_lastSurface.ny <= 0) return;
+    m_lastSurface.hasLivePoint   = true;
+    m_lastSurface.liveGx         = static_cast<double>(gx);
+    m_lastSurface.liveGy         = static_cast<double>(gy);
+    m_lastSurface.liveMeasured   = measured;
+    m_lastSurface.liveExpected   = expected;
+    viewSetSurface(m_lastSurface);
+    setStatus(tr("Point live : mesuré %1 / attendu %2 (@ cellule %3,%4)")
+                  .arg(measured, 0, 'f', 1)
+                  .arg(expected, 0, 'f', 1)
+                  .arg(gx).arg(gy));
 }
 
 } // namespace ecu_studio

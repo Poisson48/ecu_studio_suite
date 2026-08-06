@@ -20,6 +20,12 @@ struct SurfaceData {
     QString              title;      // nom de la map (+ [unit] si connue)
     QString              xAxisTitle; // titre axe X (ex. "X (rpm)")
     QString              yAxisTitle; // titre axe Y (ex. "Y (%)")
+    // Point de fonctionnement live (validation tune en conduite).
+    bool                 hasLivePoint = false;
+    double               liveGx = 0.0;  // position grille 0..nx-1
+    double               liveGy = 0.0;
+    double               liveMeasured = 0.0;
+    double               liveExpected = 0.0;
 };
 
 // Vue de rendu pseudo-3D / heatmap basée sur QPainter — repli universel sans

@@ -248,6 +248,18 @@ void Elm327::handleResponse(const Cmd& cmd, const QString& resp) {
             break;
         }
         case Kind::Vin:      emit vinReady(ecu::obd2::decodeVin(resp));   break;
+        case Kind::FreezeFrame: {
+            auto r = ecu::obd2::parseResponse(resp, 0x02, cmd.pid);
+            if (r.ok) {
+                if (auto v = ecu::obd2::interpret(cmd.pid, r.data.data(), r.len))
+                    emit freezeFrameResult(cmd.pid, *v, ecu::obd2::pidName(cmd.pid),
+                                           ecu::obd2::pidUnit(cmd.pid));
+                else emit pidUnsupported(cmd.pid);
+            } else {
+                emit pidUnsupported(cmd.pid);
+            }
+            break;
+        }
         case Kind::ClearDtc:
             emit status(resp.contains(QLatin1String("44")) || resp.contains(QLatin1String("OK"))
                             ? tr("Codes défaut effacés.")
@@ -336,6 +348,18 @@ void Elm327::readDtcs(bool pending) {
 }
 void Elm327::clearDtcs() { if (m_ready) { enqueue("04", Kind::ClearDtc);sendNext(); } }
 void Elm327::readVin()   { if (m_ready) { enqueue("0902", Kind::Vin);   sendNext(); } }
+
+void Elm327::readFreezeFrame(const QList<std::uint8_t>& pids) {
+    if (!m_ready) return;
+    QList<std::uint8_t> list = pids;
+    if (list.isEmpty()) {
+        for (const auto& p : ecu::obd2::freezeFramePids()) list.push_back(p.pid);
+    }
+    for (std::uint8_t pid : list) {
+        enqueue(ecu::obd2::freezeFrameRequest(pid), Kind::FreezeFrame, pid);
+    }
+    sendNext();
+}
 
 void Elm327::startCanMonitor() {
     if (!m_ready) return;

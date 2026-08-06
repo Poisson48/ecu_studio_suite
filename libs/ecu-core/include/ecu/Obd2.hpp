@@ -32,6 +32,12 @@ const QList<LivePid>& livePids();
 // Requête ELM327 d'un PID mode 01 : pid 0x0C -> "010C".
 QString pidRequest(std::uint8_t pid, std::uint8_t mode = 0x01);
 
+// Requête freeze frame mode 02 (frame 0 par défaut) : pid 0x0B -> "02000B".
+QString freezeFrameRequest(std::uint8_t pid, std::uint8_t frame = 0);
+
+// PID mode 02 « freeze frame » utiles au diagnostic turbo / charge.
+const QList<LivePid>& freezeFramePids();
+
 // Résultat de parsing d'une réponse OBD-II.
 struct Obd2Resp {
     bool                    ok   = false;

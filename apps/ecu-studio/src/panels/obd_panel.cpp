@@ -1,6 +1,9 @@
 #include "obd_panel.h"
 #include "obd/elm327.h"
+#include "obd/can_tune_validator.h"
+#include "../rom_document.h"
 #include "ecu/Obd2.hpp"
+#include "ecu/TuneValidation.hpp"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -21,20 +24,53 @@
 #include <QClipboard>
 #include <QApplication>
 #include <QTimer>
+#include <QTabWidget>
+#include <QDoubleSpinBox>
+#include <QMessageBox>
+#include <QBrush>
 
 namespace ecu_studio {
 
 namespace {
 constexpr int kDtcStored  = 1;
 constexpr int kDtcPending = 2;
+
+QString statusLabel(ecu::ValidationStatus s) {
+    switch (s) {
+        case ecu::ValidationStatus::Ok:     return ObdPanel::tr("OK");
+        case ecu::ValidationStatus::Warn:   return ObdPanel::tr("Attention");
+        case ecu::ValidationStatus::Fail:   return ObdPanel::tr("Écart");
+        case ecu::ValidationStatus::NoData: return ObdPanel::tr("—");
+    }
+    return QStringLiteral("?");
+}
+
+QColor statusColor(ecu::ValidationStatus s) {
+    switch (s) {
+        case ecu::ValidationStatus::Ok:     return QColor("#22c55e");
+        case ecu::ValidationStatus::Warn:   return QColor("#f59e0b");
+        case ecu::ValidationStatus::Fail:   return QColor("#ef4444");
+        default:                            return QColor("#6b7280");
+    }
+}
+
 } // namespace
 
-ObdPanel::ObdPanel(QWidget* parent) : QWidget(parent) {
+ObdPanel::ObdPanel(RomDocument* doc, QWidget* parent)
+    : QWidget(parent), m_doc(doc) {
+    m_validator = new ecu::TuneValidator;
     m_elm = new Elm327(this);
     m_reconnectTimer = new QTimer(this);
     m_reconnectTimer->setSingleShot(true);
     connect(m_reconnectTimer, &QTimer::timeout, this, &ObdPanel::tryAutoReconnect);
     buildUi();
+
+    if (m_doc) {
+        connect(m_doc, &RomDocument::romLoaded, this, &ObdPanel::refreshValidatorFromDoc);
+        connect(m_doc, &RomDocument::ecuChanged, this, &ObdPanel::refreshValidatorFromDoc);
+        connect(m_doc, &RomDocument::romModified, this, &ObdPanel::refreshValidatorFromDoc);
+        refreshValidatorFromDoc();
+    }
 
     connect(m_elm, &Elm327::connected, this, [this](const QString& v) {
         m_connected = true;
@@ -44,30 +80,35 @@ ObdPanel::ObdPanel(QWidget* parent) : QWidget(parent) {
         m_connectBtn->setText(tr("Déconnecter"));
         setStatus(tr("Connecté — %1").arg(v));
         m_datalogBtn->setEnabled(true);
+        m_valBtn->setEnabled(m_validator->isReady());
         m_dtcReadBtn->setEnabled(true); m_dtcClearBtn->setEnabled(true);
+        m_freezeBtn->setEnabled(true);
         m_vinBtn->setEnabled(true); m_canBtn->setEnabled(true);
     });
     connect(m_elm, &Elm327::disconnected, this, [this]() {
-        m_connected = false; m_datalog = false; m_canSniff = false;
+        m_connected = false; m_datalog = false; m_validating = false;
+        m_canSniff = false;
         m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Connecter"));
         m_datalogBtn->setText(tr("Démarrer datalog"));
+        m_valBtn->setText(tr("Démarrer validation tune"));
         m_canBtn->setText(tr("Sniffer CAN (ATMA)"));
         m_datalogBtn->setEnabled(false);
+        m_valBtn->setEnabled(false);
         m_dtcReadBtn->setEnabled(false); m_dtcClearBtn->setEnabled(false);
+        m_freezeBtn->setEnabled(false);
         m_vinBtn->setEnabled(false); m_canBtn->setEnabled(false);
-        if (m_wantConnected && m_autoReconnect->isChecked()) {
+        if (m_wantConnected && m_autoReconnect->isChecked())
             scheduleAutoReconnect(tr("Lien perdu"));
-        } else {
+        else
             setStatus(tr("Déconnecté."));
-        }
     });
     connect(m_elm, &Elm327::errorOccurred, this, [this](const QString& m) {
         m_connectBtn->setEnabled(true);
         m_connected = false;
-        if (m_wantConnected && m_autoReconnect->isChecked()) {
+        if (m_wantConnected && m_autoReconnect->isChecked())
             scheduleAutoReconnect(m);
-        } else {
+        else {
             m_wantConnected = false;
             setStatus(m, true);
         }
@@ -77,15 +118,23 @@ ObdPanel::ObdPanel(QWidget* parent) : QWidget(parent) {
 
     connect(m_elm, &Elm327::pidResult, this,
             [this](quint8 pid, double value, const QString& name, const QString& unit) {
+        onPidUpdate(pid, value);
         const int row = m_pidRow.value(pid, -1);
-        if (row >= 0) {
+        if (row >= 0)
             m_pidTable->item(row, 1)->setText(QString::number(value, 'f', 2));
-        }
-        if (m_csv) {
+        if (m_csv && !m_valCsv) {
             QTextStream ts(m_csv);
-            ts << QDateTime::currentDateTime().toString("HH:mm:ss.zzz") << ','
-               << name << ',' << QString::number(value, 'f', 3) << ',' << unit << '\n';
+            ts << QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd HH:mm:ss.zzz"))
+               << ',' << name << ',' << QString::number(value, 'f', 3) << ',' << unit << '\n';
         }
+    });
+    connect(m_elm, &Elm327::freezeFrameResult, this,
+            [this](quint8 pid, double value, const QString& name, const QString& unit) {
+        const int row = m_freezeTable->rowCount();
+        m_freezeTable->insertRow(row);
+        m_freezeTable->setItem(row, 0, new QTableWidgetItem(name));
+        m_freezeTable->setItem(row, 1, new QTableWidgetItem(QString::number(value, 'f', 2)));
+        m_freezeTable->setItem(row, 2, new QTableWidgetItem(unit));
     });
     connect(m_elm, &Elm327::pidUnsupported, this, [this](quint8 pid) {
         const int row = m_pidRow.value(pid, -1);
@@ -126,47 +175,69 @@ ObdPanel::ObdPanel(QWidget* parent) : QWidget(parent) {
     refreshPorts();
 }
 
-ObdPanel::~ObdPanel() { if (m_csv) { m_csv->close(); } }
+ObdPanel::~ObdPanel() {
+    delete m_validator;
+    if (m_csv) m_csv->close();
+}
+
+void ObdPanel::refreshValidatorFromDoc() {
+    if (!m_doc || !m_doc->isLoaded() || m_doc->ecuId().isEmpty()) {
+        m_validator->clear();
+        if (m_romInfoLabel)
+            m_romInfoLabel->setText(tr("Charge une ROM avec recipe OpenDAMOS pour valider le tune."));
+        m_valBtn->setEnabled(false);
+        return;
+    }
+    const bool ok = m_validator->loadRom(m_doc->rom(), m_doc->ecuId());
+    if (m_romInfoLabel) {
+        m_romInfoLabel->setText(ok
+            ? tr("Tune : %1 — MD5 %2 — %3 map(s) surveillée(s)")
+                  .arg(m_doc->name(), m_validator->romMd5().left(8))
+                  .arg(static_cast<int>(m_validator->rules().size()))
+            : tr("Impossible de charger OpenDAMOS pour « %1 ».").arg(m_doc->ecuId()));
+    }
+    m_valBtn->setEnabled(ok && m_connected);
+}
 
 void ObdPanel::buildUi() {
     auto* root = new QVBoxLayout(this);
-    root->setContentsMargins(8, 8, 8, 8); root->setSpacing(8);
+    root->setContentsMargins(8, 8, 8, 8);
+    root->setSpacing(8);
 
-    // ── Connexion ────────────────────────────────────────────────────────────
     auto* connBox = new QGroupBox(tr("Adaptateur ELM327 (USB)"), this);
     auto* cl = new QHBoxLayout(connBox);
     cl->addWidget(new QLabel(tr("Port :"), this));
-    m_portCombo = new QComboBox(this); m_portCombo->setMinimumWidth(260);
+    m_portCombo = new QComboBox(this); m_portCombo->setMinimumWidth(220);
     cl->addWidget(m_portCombo, 1);
     m_refreshBtn = new QPushButton(tr("↻"), this);
-    m_refreshBtn->setToolTip(tr("Rafraîchir la liste des ports"));
     cl->addWidget(m_refreshBtn);
     cl->addWidget(new QLabel(tr("Débit :"), this));
     m_baudCombo = new QComboBox(this);
     m_baudCombo->addItem(tr("Auto"), 0);
-    m_baudCombo->addItem("38400", 38400);
-    m_baudCombo->addItem("115200", 115200);
+    m_baudCombo->addItem(QStringLiteral("38400"), 38400);
+    m_baudCombo->addItem(QStringLiteral("115200"), 115200);
     cl->addWidget(m_baudCombo);
     m_connectBtn = new QPushButton(tr("Connecter"), this);
     m_connectBtn->setObjectName("accentBtn");
     cl->addWidget(m_connectBtn);
     m_autoReconnect = new QCheckBox(tr("Auto-reco"), this);
-    m_autoReconnect->setToolTip(tr(
-        "Si la liaison tombe (USB débranché, ELM muet…), retente automatiquement "
-        "toutes les 2 s tant que la case est cochée. « Déconnecter » arrête les essais."));
     cl->addWidget(m_autoReconnect);
     root->addWidget(connBox);
 
     m_statusLabel = new QLabel(tr("Branche l'adaptateur, choisis le port, puis « Connecter »."), this);
-    m_statusLabel->setStyleSheet("color:#7c8fa6;");
+    m_statusLabel->setStyleSheet(QStringLiteral("color:#7c8fa6;"));
     root->addWidget(m_statusLabel);
 
-    auto* mid = new QHBoxLayout;
+    m_romInfoLabel = new QLabel(this);
+    m_romInfoLabel->setStyleSheet(QStringLiteral("color:#60a5fa; font-size:11px;"));
+    root->addWidget(m_romInfoLabel);
 
-    // ── Datalog live ─────────────────────────────────────────────────────────
-    auto* logBox = new QGroupBox(tr("Données live (datalog)"), this);
-    auto* ll = new QVBoxLayout(logBox);
-    m_pidTable = new QTableWidget(this);
+    m_tabs = new QTabWidget(this);
+
+    // ── Onglet Live ──────────────────────────────────────────────────────────
+    auto* livePage = new QWidget(this);
+    auto* liveLay = new QVBoxLayout(livePage);
+    m_pidTable = new QTableWidget(livePage);
     m_pidTable->setColumnCount(3);
     m_pidTable->setHorizontalHeaderLabels({ tr("Paramètre"), tr("Valeur"), tr("Unité") });
     m_pidTable->verticalHeader()->setVisible(false);
@@ -180,91 +251,284 @@ void ObdPanel::buildUi() {
         m_pidTable->setItem(i, 2, new QTableWidgetItem(QString::fromUtf8(pids[i].unit)));
         m_pidRow.insert(pids[i].pid, i);
     }
-    ll->addWidget(m_pidTable);
+    liveLay->addWidget(m_pidTable);
     auto* lbtn = new QHBoxLayout;
-    m_datalogBtn = new QPushButton(tr("Démarrer datalog"), this); m_datalogBtn->setEnabled(false);
-    m_csvBtn = new QPushButton(tr("Log CSV…"), this);
+    m_datalogBtn = new QPushButton(tr("Démarrer datalog"), livePage);
+    m_datalogBtn->setEnabled(false);
+    m_csvBtn = new QPushButton(tr("Log CSV…"), livePage);
     lbtn->addWidget(m_datalogBtn); lbtn->addWidget(m_csvBtn); lbtn->addStretch();
-    ll->addLayout(lbtn);
-    mid->addWidget(logBox, 1);
+    liveLay->addLayout(lbtn);
+    m_tabs->addTab(livePage, tr("Live"));
 
-    // ── Diagnostic + CAN ─────────────────────────────────────────────────────
-    auto* diagBox = new QGroupBox(tr("Diagnostic & CAN"), this);
-    auto* dl = new QVBoxLayout(diagBox);
+    // ── Onglet Validation tune ───────────────────────────────────────────────
+    auto* valPage = new QWidget(this);
+    auto* valLay = new QVBoxLayout(valPage);
+    auto* valCtl = new QHBoxLayout;
+    m_tolSpin = new QDoubleSpinBox(valPage);
+    m_tolSpin->setRange(1, 500);
+    m_tolSpin->setValue(50);
+    m_tolSpin->setSuffix(tr(" mbar"));
+    valCtl->addWidget(new QLabel(tr("Tolérance ±"), valPage));
+    valCtl->addWidget(m_tolSpin);
+    m_yAxisCombo = new QComboBox(valPage);
+    m_yAxisCombo->addItem(tr("Charge moteur % → axe Y"), static_cast<int>(ecu::YAxisMode::EngineLoadPct));
+    m_yAxisCombo->addItem(tr("OpenDAMOS axe Y"), static_cast<int>(ecu::YAxisMode::OpenDamosAxis));
+    valCtl->addWidget(new QLabel(tr("Axe Y :"), valPage));
+    valCtl->addWidget(m_yAxisCombo);
+    valCtl->addStretch();
+    valLay->addLayout(valCtl);
+
+    m_valTable = new QTableWidget(valPage);
+    m_valTable->setColumnCount(6);
+    m_valTable->setHorizontalHeaderLabels({
+        tr("Map"), tr("Mesuré"), tr("Attendu"), tr("Δ"), tr("Unité"), tr("Statut")
+    });
+    m_valTable->verticalHeader()->setVisible(false);
+    m_valTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_valTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    valLay->addWidget(m_valTable, 1);
+
+    auto* vbtn = new QHBoxLayout;
+    m_valBtn = new QPushButton(tr("Démarrer validation tune"), valPage);
+    m_valBtn->setObjectName("accentBtn");
+    m_valBtn->setEnabled(false);
+    m_show3dBtn = new QPushButton(tr("Voir sur map 3D"), valPage);
+    m_replayBtn = new QPushButton(tr("Replay CSV…"), valPage);
+    vbtn->addWidget(m_valBtn);
+    vbtn->addWidget(m_show3dBtn);
+    vbtn->addWidget(m_replayBtn);
+    vbtn->addStretch();
+    valLay->addLayout(vbtn);
+
+    m_canVal = new CanTuneValidator(valPage);
+    valLay->addWidget(new QLabel(tr("Validation CAN avancée (SocketSpy MCP) :"), valPage));
+    valLay->addWidget(m_canVal);
+    m_tabs->addTab(valPage, tr("Validation tune"));
+
+    // ── Onglet Diagnostic ────────────────────────────────────────────────────
+    auto* diagPage = new QWidget(this);
+    auto* dl = new QVBoxLayout(diagPage);
     auto* drow = new QHBoxLayout;
-    m_dtcReadBtn = new QPushButton(tr("Lire DTC"), this); m_dtcReadBtn->setEnabled(false);
-    m_dtcClearBtn = new QPushButton(tr("Effacer DTC"), this); m_dtcClearBtn->setEnabled(false);
-    m_vinBtn = new QPushButton(tr("Lire VIN"), this); m_vinBtn->setEnabled(false);
-    drow->addWidget(m_dtcReadBtn); drow->addWidget(m_dtcClearBtn); drow->addWidget(m_vinBtn);
+    m_dtcReadBtn = new QPushButton(tr("Lire DTC"), diagPage); m_dtcReadBtn->setEnabled(false);
+    m_dtcClearBtn = new QPushButton(tr("Effacer DTC"), diagPage); m_dtcClearBtn->setEnabled(false);
+    m_freezeBtn = new QPushButton(tr("Freeze frame"), diagPage); m_freezeBtn->setEnabled(false);
+    m_vinBtn = new QPushButton(tr("Lire VIN"), diagPage); m_vinBtn->setEnabled(false);
+    drow->addWidget(m_dtcReadBtn); drow->addWidget(m_dtcClearBtn);
+    drow->addWidget(m_freezeBtn); drow->addWidget(m_vinBtn);
     dl->addLayout(drow);
 
-    m_dtcTable = new QTableWidget(this);
+    m_dtcTable = new QTableWidget(diagPage);
     m_dtcTable->setColumnCount(3);
     m_dtcTable->setHorizontalHeaderLabels({ tr("Code"), tr("Famille"), tr("Statut") });
     m_dtcTable->verticalHeader()->setVisible(false);
     m_dtcTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_dtcTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_dtcTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    m_dtcTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
     m_dtcTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
-    m_dtcTable->setMinimumHeight(100);
+    m_dtcTable->setMaximumHeight(120);
     dl->addWidget(m_dtcTable);
 
     auto* dtcBtn = new QHBoxLayout;
-    m_dtcCopyBtn = new QPushButton(tr("Copier"), this);
-    m_dtcCopyBtn->setEnabled(false);
-    m_dtcCopyBtn->setToolTip(tr("Copier les codes dans le presse-papiers"));
-    m_dtcExportBtn = new QPushButton(tr("Exporter…"), this);
-    m_dtcExportBtn->setEnabled(false);
-    m_dtcExportBtn->setToolTip(tr("Exporter les codes en .txt ou .csv"));
+    m_dtcCopyBtn = new QPushButton(tr("Copier"), diagPage); m_dtcCopyBtn->setEnabled(false);
+    m_dtcExportBtn = new QPushButton(tr("Exporter…"), diagPage); m_dtcExportBtn->setEnabled(false);
     dtcBtn->addWidget(m_dtcCopyBtn); dtcBtn->addWidget(m_dtcExportBtn); dtcBtn->addStretch();
     dl->addLayout(dtcBtn);
 
-    m_vinLabel = new QLabel(tr("VIN : —"), this);
+    m_vinLabel = new QLabel(tr("VIN : —"), diagPage);
     m_vinLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
     dl->addWidget(m_vinLabel);
-    m_canBtn = new QPushButton(tr("Sniffer CAN (ATMA)"), this);
+
+    m_freezeTable = new QTableWidget(diagPage);
+    m_freezeTable->setColumnCount(3);
+    m_freezeTable->setHorizontalHeaderLabels({ tr("Paramètre"), tr("Valeur"), tr("Unité") });
+    m_freezeTable->verticalHeader()->setVisible(false);
+    m_freezeTable->setMaximumHeight(120);
+    dl->addWidget(new QLabel(tr("Freeze frame (mode 02, trame 0) :"), diagPage));
+    dl->addWidget(m_freezeTable);
+
+    m_canBtn = new QPushButton(tr("Sniffer CAN (ATMA)"), diagPage);
     m_canBtn->setEnabled(false);
-    m_canBtn->setToolTip(tr(
-        "Monitor ELM327 ATMA : affiche le trafic OBD/CAN vu par l'adaptateur.\n"
-        "Ce n'est PAS une interface CAN complète (pas SocketCAN / pas 100 % bus).\n"
-        "Utile pour du sniff léger ; pour de la capture sérieuse, utilise un "
-        "adaptateur CAN dédié (panneau CAN / SocketSpy)."));
     dl->addWidget(m_canBtn);
-    m_canTable = new QTableWidget(this);
+    m_canTable = new QTableWidget(diagPage);
     m_canTable->setColumnCount(3);
     m_canTable->setHorizontalHeaderLabels({ tr("ID"), tr("DLC"), tr("Données") });
     m_canTable->verticalHeader()->setVisible(false);
-    m_canTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_canTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
     dl->addWidget(m_canTable, 1);
-    mid->addWidget(diagBox, 1);
+    m_tabs->addTab(diagPage, tr("Diagnostic"));
 
-    root->addLayout(mid, 1);
+    root->addWidget(m_tabs, 1);
 
-    // ── Journal ──────────────────────────────────────────────────────────────
     m_log = new QPlainTextEdit(this);
     m_log->setReadOnly(true);
     m_log->setMaximumBlockCount(500);
-    m_log->setFixedHeight(120);
-    m_log->setStyleSheet("background:#111827; color:#9ca3af; font-family:monospace;");
+    m_log->setFixedHeight(90);
+    m_log->setStyleSheet(QStringLiteral("background:#111827; color:#9ca3af; font-family:monospace;"));
     root->addWidget(m_log);
 
     connect(m_refreshBtn, &QPushButton::clicked, this, &ObdPanel::refreshPorts);
     connect(m_connectBtn, &QPushButton::clicked, this, &ObdPanel::toggleConnect);
     connect(m_autoReconnect, &QCheckBox::toggled, this, &ObdPanel::onAutoReconnectToggled);
     connect(m_datalogBtn, &QPushButton::clicked, this, &ObdPanel::toggleDatalog);
-    connect(m_canBtn,     &QPushButton::clicked, this, &ObdPanel::toggleCanSniff);
-    connect(m_csvBtn,     &QPushButton::clicked, this, &ObdPanel::toggleCsv);
+    connect(m_valBtn, &QPushButton::clicked, this, &ObdPanel::toggleValidation);
+    connect(m_canBtn, &QPushButton::clicked, this, &ObdPanel::toggleCanSniff);
+    connect(m_csvBtn, &QPushButton::clicked, this, &ObdPanel::toggleCsv);
     connect(m_dtcReadBtn, &QPushButton::clicked, this, &ObdPanel::readDtcs);
-    connect(m_dtcClearBtn,&QPushButton::clicked, this, &ObdPanel::clearDtcs);
+    connect(m_dtcClearBtn, &QPushButton::clicked, this, &ObdPanel::clearDtcs);
+    connect(m_freezeBtn, &QPushButton::clicked, this, &ObdPanel::readFreezeFrame);
     connect(m_dtcCopyBtn, &QPushButton::clicked, this, &ObdPanel::copyDtcs);
-    connect(m_dtcExportBtn,&QPushButton::clicked, this, &ObdPanel::exportDtcs);
-    connect(m_vinBtn,     &QPushButton::clicked, this, [this]() { m_elm->readVin(); });
+    connect(m_dtcExportBtn, &QPushButton::clicked, this, &ObdPanel::exportDtcs);
+    connect(m_vinBtn, &QPushButton::clicked, this, [this]() { m_elm->readVin(); });
+    connect(m_tolSpin, qOverload<double>(&QDoubleSpinBox::valueChanged),
+            this, &ObdPanel::onToleranceChanged);
+    connect(m_yAxisCombo, qOverload<int>(&QComboBox::currentIndexChanged),
+            this, &ObdPanel::onYAxisModeChanged);
+    connect(m_show3dBtn, &QPushButton::clicked, this, &ObdPanel::onShowMap3d);
+    connect(m_replayBtn, &QPushButton::clicked, this, &ObdPanel::replayValidationCsv);
+    connect(m_valTable, &QTableWidget::cellClicked, this, [this](int row, int) {
+        m_focusValRow = row;
+    });
+}
+
+ecu::LivePidSnapshot ObdPanel::liveSnapshot() const {
+    ecu::LivePidSnapshot snap;
+    for (auto it = m_liveValues.constBegin(); it != m_liveValues.constEnd(); ++it)
+        snap[it.key()] = it.value();
+    return snap;
+}
+
+void ObdPanel::onPidUpdate(quint8 pid, double value) {
+    m_liveValues[pid] = value;
+    if (m_validating) runValidation();
+}
+
+void ObdPanel::runValidation() {
+    if (!m_validator->isReady()) return;
+    const auto results = m_validator->evaluateAll(liveSnapshot());
+    updateValidationTable(results);
+    appendValidationCsv(results);
+
+    if (m_focusValRow >= 0 && m_focusValRow < static_cast<int>(results.size())) {
+        const auto& r = results[static_cast<std::size_t>(m_focusValRow)];
+        if (r.status != ecu::ValidationStatus::NoData && r.mapAddress > 0) {
+            emit livePointUpdated(static_cast<quint32>(r.mapAddress),
+                                  r.ix0, r.iy0, r.measured, r.expected);
+        }
+    }
+}
+
+void ObdPanel::updateValidationTable(const std::vector<ecu::ValidationResult>& results) {
+    m_valTable->setRowCount(static_cast<int>(results.size()));
+    for (int i = 0; i < static_cast<int>(results.size()); ++i) {
+        const auto& r = results[static_cast<std::size_t>(i)];
+        m_valTable->setItem(i, 0, new QTableWidgetItem(r.mapName));
+        m_valTable->setItem(i, 1, new QTableWidgetItem(
+            r.status == ecu::ValidationStatus::NoData ? QStringLiteral("—")
+                : QString::number(r.measured, 'f', 1)));
+        m_valTable->setItem(i, 2, new QTableWidgetItem(
+            r.status == ecu::ValidationStatus::NoData ? QStringLiteral("—")
+                : QString::number(r.expected, 'f', 1)));
+        m_valTable->setItem(i, 3, new QTableWidgetItem(
+            r.status == ecu::ValidationStatus::NoData ? QStringLiteral("—")
+                : QString::number(r.delta, 'f', 1)));
+        m_valTable->setItem(i, 4, new QTableWidgetItem(r.unit));
+        auto* st = new QTableWidgetItem(statusLabel(r.status));
+        st->setForeground(QBrush(statusColor(r.status)));
+        m_valTable->setItem(i, 5, st);
+    }
+}
+
+void ObdPanel::appendValidationCsv(const std::vector<ecu::ValidationResult>& results) {
+    if (!m_csv || !m_valCsv) return;
+    QTextStream ts(m_csv);
+    const QString tsStr = QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd HH:mm:ss.zzz"));
+    for (const auto& r : results) {
+        ts << tsStr << ','
+           << r.mapName << ','
+           << (r.status == ecu::ValidationStatus::NoData ? QString() : QString::number(r.measured, 'f', 2))
+           << ','
+           << (r.status == ecu::ValidationStatus::NoData ? QString() : QString::number(r.expected, 'f', 2))
+           << ','
+           << (r.status == ecu::ValidationStatus::NoData ? QString() : QString::number(r.delta, 'f', 2))
+           << ','
+           << r.unit << ','
+           << statusLabel(r.status) << ','
+           << r.xPhys << ',' << r.yPhys << '\n';
+    }
+}
+
+void ObdPanel::onToleranceChanged(double v) {
+    m_validator->setToleranceMbar(v);
+}
+
+void ObdPanel::onYAxisModeChanged(int idx) {
+    m_validator->setYAxisMode(static_cast<ecu::YAxisMode>(m_yAxisCombo->itemData(idx).toInt()));
+    if (m_doc && m_doc->isLoaded()) refreshValidatorFromDoc();
+}
+
+void ObdPanel::onShowMap3d() {
+    if (m_focusValRow < 0 || m_focusValRow >= m_valTable->rowCount()) {
+        setStatus(tr("Sélectionne une map dans le tableau."), true);
+        return;
+    }
+    const QString mapName = m_valTable->item(m_focusValRow, 0)->text();
+    const auto snap = liveSnapshot();
+    for (const auto& rule : m_validator->rules()) {
+        if (QString::fromStdString(rule.mapName) != mapName) continue;
+        if (auto r = m_validator->evaluateRule(rule, snap)) {
+            const auto ent = m_validator->entry(rule.mapName);
+            QString xU, yU, dU;
+            if (ent) {
+                if (!ent->axes.empty()) xU = QString::fromStdString(ent->axes[0].unit);
+                if (ent->axes.size() >= 2) yU = QString::fromStdString(ent->axes[1].unit);
+                dU = QString::fromStdString(ent->data.unit);
+            }
+            emit showMapOn3dRequested(static_cast<quint32>(r->mapAddress), mapName,
+                                      r->xPhys, r->yPhys, r->measured, r->expected,
+                                      xU, yU, dU);
+            emit livePointUpdated(static_cast<quint32>(r->mapAddress),
+                                  r->ix0, r->iy0, r->measured, r->expected);
+            return;
+        }
+    }
+}
+
+void ObdPanel::replayValidationCsv() {
+    const QString path = QFileDialog::getOpenFileName(
+        this, tr("Replay session validation"),
+        {}, tr("CSV (*.csv)"));
+    if (path.isEmpty()) return;
+
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        setStatus(tr("Impossible d'ouvrir %1").arg(path), true);
+        return;
+    }
+
+    int ok = 0, warn = 0, fail = 0, total = 0;
+    QTextStream ts(&f);
+    const QString header = ts.readLine();
+    Q_UNUSED(header);
+
+    while (!ts.atEnd()) {
+        const QStringList cols = ts.readLine().split(QLatin1Char(','));
+        if (cols.size() < 7) continue;
+        ++total;
+        const QString st = cols[6].trimmed();
+        if (st == tr("OK") || st == QStringLiteral("OK")) ++ok;
+        else if (st == tr("Attention") || st == QStringLiteral("Attention")) ++warn;
+        else if (st == tr("Écart") || st == QStringLiteral("Écart")) ++fail;
+    }
+
+    QMessageBox::information(this, tr("Replay session"),
+        tr("%1 échantillons analysés.\n\n"
+           "OK : %2\nAttention : %3\nÉcart : %4\n\n"
+           "Temps dans tolérance : %5 %")
+            .arg(total).arg(ok).arg(warn).arg(fail)
+            .arg(total > 0 ? QString::number(100.0 * ok / total, 'f', 1) : QStringLiteral("0")));
 }
 
 void ObdPanel::setStatus(const QString& msg, bool error) {
-    m_statusLabel->setStyleSheet(error ? "color:#ef4444;" : "color:#7c8fa6;");
+    m_statusLabel->setStyleSheet(error ? QStringLiteral("color:#ef4444;")
+                                       : QStringLiteral("color:#7c8fa6;"));
     m_statusLabel->setText(msg);
 }
 
@@ -280,8 +544,7 @@ QString ObdPanel::dtcFamily(const QString& code) const {
 }
 
 QString ObdPanel::dtcStatusText(int flags) const {
-    if ((flags & kDtcStored) && (flags & kDtcPending))
-        return tr("mémorisé + en attente");
+    if ((flags & kDtcStored) && (flags & kDtcPending)) return tr("mémorisé + en attente");
     if (flags & kDtcPending) return tr("en attente");
     if (flags & kDtcStored)  return tr("mémorisé");
     return QStringLiteral("—");
@@ -320,13 +583,6 @@ void ObdPanel::refreshPorts() {
         else if (preferIdx < 0 && p.likelyElm) preferIdx = m_portCombo->count() - 1;
     }
     if (preferIdx >= 0) m_portCombo->setCurrentIndex(preferIdx);
-    if (ports.isEmpty()) {
-        if (!m_wantConnected)
-            setStatus(tr("Aucun port série USB détecté. Branche l'adaptateur (et vérifie le groupe « dialout »)."), true);
-    } else if (!m_wantConnected && !m_connected) {
-        setStatus(tr("%1 port(s) série — ★ = adaptateur ELM probable. Clique « Connecter ».")
-                      .arg(ports.size()));
-    }
 }
 
 QString ObdPanel::preferredPort() const {
@@ -338,7 +594,6 @@ QString ObdPanel::preferredPort() const {
 
 void ObdPanel::toggleConnect() {
     if (m_connected || m_wantConnected) {
-        // Déconnexion manuelle : stoppe l'auto-reco pour cette session.
         m_wantConnected = false;
         m_reconnectTimer->stop();
         m_elm->disconnectPort();
@@ -362,17 +617,12 @@ void ObdPanel::startConnect() {
     m_wantConnected = true;
     m_connectBtn->setEnabled(false);
     setStatus(tr("Connexion…"));
-    const int baud = m_baudCombo->currentData().toInt();
-    m_elm->connectPort(m_lastPort, baud);
+    m_elm->connectPort(m_lastPort, m_baudCombo->currentData().toInt());
 }
 
 void ObdPanel::onAutoReconnectToggled(bool on) {
-    if (!on) {
-        m_reconnectTimer->stop();
-        return;
-    }
-    if (m_wantConnected && !m_connected)
-        scheduleAutoReconnect(tr("Auto-reco activé"));
+    if (!on) { m_reconnectTimer->stop(); return; }
+    if (m_wantConnected && !m_connected) scheduleAutoReconnect(tr("Auto-reco activé"));
 }
 
 void ObdPanel::scheduleAutoReconnect(const QString& why) {
@@ -393,11 +643,31 @@ void ObdPanel::toggleDatalog() {
         m_datalog = false;
         m_datalogBtn->setText(tr("Démarrer datalog"));
     } else {
+        if (m_validating) toggleValidation();
         QList<std::uint8_t> pids;
         for (const auto& p : ecu::obd2::livePids()) pids.push_back(p.pid);
         m_elm->startPolling(pids, 200);
         m_datalog = true;
         m_datalogBtn->setText(tr("Arrêter datalog"));
+    }
+}
+
+void ObdPanel::toggleValidation() {
+    if (!m_connected || !m_validator->isReady()) return;
+    if (m_validating) {
+        m_elm->stopPolling();
+        m_validating = false;
+        m_valBtn->setText(tr("Démarrer validation tune"));
+    } else {
+        if (m_datalog) toggleDatalog();
+        if (m_canSniff) toggleCanSniff();
+        m_tabs->setCurrentIndex(1);
+        // PID prioritaires pour comparaison turbo (plus rapide qu'un full datalog).
+        const QList<std::uint8_t> pids = { 0x0C, 0x04, 0x0B, 0x33, 0x10, 0x0D };
+        m_elm->startPolling(pids, 180);
+        m_validating = true;
+        m_valBtn->setText(tr("Arrêter validation tune"));
+        setStatus(tr("Validation tune active — roule et observe mesuré vs attendu."));
     }
 }
 
@@ -408,7 +678,8 @@ void ObdPanel::toggleCanSniff() {
         m_canSniff = false;
         m_canBtn->setText(tr("Sniffer CAN (ATMA)"));
     } else {
-        if (m_datalog) toggleDatalog();   // le sniff et le datalog s'excluent
+        if (m_datalog) toggleDatalog();
+        if (m_validating) toggleValidation();
         m_canTable->setRowCount(0); m_canRow.clear();
         m_elm->startCanMonitor();
         m_canSniff = true;
@@ -419,14 +690,15 @@ void ObdPanel::toggleCanSniff() {
 void ObdPanel::toggleCsv() {
     if (m_csv) {
         m_csv->close(); m_csv->deleteLater(); m_csv = nullptr;
+        m_valCsv = false;
         m_csvBtn->setText(tr("Log CSV…"));
         setStatus(tr("Log CSV arrêté."));
         return;
     }
     const QString path = QFileDialog::getSaveFileName(
-        this, tr("Enregistrer le log datalog"),
-        QStringLiteral("datalog_%1.csv")
-            .arg(QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss")),
+        this, tr("Enregistrer le log"),
+        QStringLiteral("validation_%1.csv")
+            .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd_HHmmss"))),
         tr("CSV (*.csv)"));
     if (path.isEmpty()) return;
     m_csv = new QFile(path, this);
@@ -434,7 +706,11 @@ void ObdPanel::toggleCsv() {
         setStatus(tr("Impossible d'écrire %1").arg(path), true);
         m_csv->deleteLater(); m_csv = nullptr; return;
     }
-    QTextStream(m_csv) << "time,parametre,valeur,unite\n";
+    m_valCsv = m_validating;
+    if (m_valCsv)
+        QTextStream(m_csv) << "time,map,measured,expected,delta,unit,status,rpm,load\n";
+    else
+        QTextStream(m_csv) << "time,parametre,valeur,unite\n";
     m_csvBtn->setText(tr("Arrêter CSV"));
     setStatus(tr("Log CSV : %1").arg(path));
 }
@@ -445,10 +721,17 @@ void ObdPanel::readDtcs() {
     m_dtcTable->setRowCount(0);
     m_dtcCopyBtn->setEnabled(false);
     m_dtcExportBtn->setEnabled(false);
-    m_dtcAwaiting = 2;   // mode 03 puis 07 (file ELM)
+    m_dtcAwaiting = 2;
     setStatus(tr("Lecture DTC modes 03 + 07…"));
     m_elm->readDtcs(false);
     m_elm->readDtcs(true);
+}
+
+void ObdPanel::readFreezeFrame() {
+    if (!m_connected) return;
+    m_freezeTable->setRowCount(0);
+    setStatus(tr("Lecture freeze frame (mode 02)…"));
+    m_elm->readFreezeFrame();
 }
 
 void ObdPanel::clearDtcs() { if (m_connected) m_elm->clearDtcs(); }
@@ -468,7 +751,7 @@ void ObdPanel::exportDtcs() {
     const QString path = QFileDialog::getSaveFileName(
         this, tr("Exporter les codes défaut"),
         QStringLiteral("dtc_%1.csv")
-            .arg(QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss")),
+            .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd_HHmmss"))),
         tr("CSV (*.csv);;Texte (*.txt)"));
     if (path.isEmpty()) return;
     QFile f(path);
@@ -482,13 +765,12 @@ void ObdPanel::exportDtcs() {
     QStringList keys = m_dtcFlags.keys();
     keys.sort();
     for (const QString& code : keys) {
-        if (csv) {
+        if (csv)
             ts << code << ',' << dtcFamily(code) << ','
                << dtcStatusText(m_dtcFlags.value(code)) << '\n';
-        } else {
+        else
             ts << code << '\t' << dtcFamily(code) << '\t'
                << dtcStatusText(m_dtcFlags.value(code)) << '\n';
-        }
     }
     setStatus(tr("Export DTC : %1").arg(path));
 }

@@ -62,6 +62,8 @@ list(APPEND ECU_CORE_SOURCES src/OlsImport.cpp)
 list(APPEND ECU_CORE_SOURCES src/DamosImport.cpp)
 list(APPEND ECU_CORE_SOURCES src/Edc17Checksum.cpp)
 list(APPEND ECU_CORE_SOURCES src/Obd2.cpp)
+list(APPEND ECU_CORE_SOURCES src/MapSampler.cpp)
+list(APPEND ECU_CORE_SOURCES src/TuneValidation.cpp)
 
 # GitManager optionnel (libgit2 requis)
 if(LIBGIT2_FOUND)

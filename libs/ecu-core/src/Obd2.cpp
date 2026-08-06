@@ -59,6 +59,25 @@ QString pidRequest(std::uint8_t pid, std::uint8_t mode) {
         .toUpper();
 }
 
+QString freezeFrameRequest(std::uint8_t pid, std::uint8_t frame) {
+    return QStringLiteral("02%1%2")
+        .arg(frame, 2, 16, QLatin1Char('0'))
+        .arg(pid,   2, 16, QLatin1Char('0'))
+        .toUpper();
+}
+
+const QList<LivePid>& freezeFramePids() {
+    static const QList<LivePid> kFreeze = {
+        { 0x02, "DTC déclencheur",   ""     },
+        { 0x04, "Charge (freeze)",   "%"    },
+        { 0x0B, "Pression (freeze)", "kPa"  },
+        { 0x0C, "Régime (freeze)",   "rpm"  },
+        { 0x0D, "Vitesse (freeze)",  "km/h" },
+        { 0x0F, "Temp. admission (freeze)", "°C" },
+    };
+    return kFreeze;
+}
+
 Obd2Resp parseResponse(const QString& elmText, std::uint8_t wantMode, std::uint8_t wantPid) {
     Obd2Resp r;
     const auto b = hexBytes(elmText);

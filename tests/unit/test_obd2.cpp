@@ -72,3 +72,16 @@ TEST(Obd2, DecodeVin) {
         "49 02 01 57 50 30 5A 5A 5A 39 39 5A 54 53 33 39 32 31 32 34");
     EXPECT_EQ(decodeVin(resp), QStringLiteral("WP0ZZZ99ZTS392124"));
 }
+
+TEST(Obd2, FreezeFrameRequest) {
+    EXPECT_EQ(freezeFrameRequest(0x0B), QStringLiteral("02000B"));
+    EXPECT_EQ(freezeFrameRequest(0x0C, 1), QStringLiteral("02010C"));
+}
+
+TEST(Obd2, ParseFreezeFrameRpm) {
+    auto r = parseResponse(QStringLiteral("42 0C 1A F8"), 0x02, 0x0C);
+    ASSERT_TRUE(r.ok);
+    auto v = interpret(0x0C, r.data.data(), r.len);
+    ASSERT_TRUE(v.has_value());
+    EXPECT_DOUBLE_EQ(*v, 1726.0);
+}
