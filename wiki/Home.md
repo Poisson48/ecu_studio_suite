@@ -69,18 +69,18 @@
 
 ## Français
 
-**ECU Studio Suite** est une suite logicielle automobile 100 % locale, en Qt6/C++23, pour Linux. **Aucune télémétrie, aucun appel réseau, aucun cloud** — tout tourne sur votre machine. La suite est un **hub** qui lance des sous-programmes spécialisés et les interconnecte. La boucle phare : **ECU Studio flashe une cartographie dans un calculateur, puis SocketSpy vérifie en direct sur le bus CAN que le changement a bien pris effet au bon point de fonctionnement.**
+**ECU Studio Suite** est une suite logicielle automobile 100 % locale, en Qt6/C++23, pour Linux. **Gratuit pour toujours (GPL-3.0), pas d’abonnement, pas de compte.** **Aucune télémétrie, aucun cloud** — vos ROM et logs restent sur votre machine. La suite est un **hub** qui lance des sous-programmes spécialisés et les interconnecte. La boucle phare : **ECU Studio flashe une cartographie, puis le mode conduite OBD (ou SocketSpy sur CAN) vérifie en direct que le changement a bien pris effet.**
 
 - **Site :** https://poisson48.github.io/ecu_studio_suite/
 - **Dépôt ECU Studio :** https://github.com/Poisson48/ecu_studio_suite
 - **Dépôt SocketSpy :** https://github.com/Poisson48/SocketSpy · **site :** https://poisson48.github.io/SocketSpy · **wiki :** https://github.com/Poisson48/SocketSpy/wiki
-- **Licence :** GPL-3.0
+- **Licence :** GPL-3.0 · **Prix :** 0 € pour toujours · **Vie privée :** 100 % local
 
 ### Les deux sous-programmes en un coup d'œil
 
 | Sous-programme | Rôle |
 |----------------|------|
-| **ECU Studio** | Reprogrammation ECU, éditeur de cartographies 2D + 3D, éditeur DAMOS, navigateur A2L, vue hexadécimale, checksums, flash MPPS V21, comparaison de ROM, versionnement git, AutoMods et OpenDAMOS. |
+| **ECU Studio** | Reprogrammation ECU, éditeur de cartographies 2D + 3D, éditeur DAMOS, navigateur A2L, vue hexadécimale, checksums, flash MPPS V21, comparaison de ROM, versionnement git, AutoMods, OpenDAMOS, et **validation tune OBD en mode conduite**. |
 | **SocketSpy** | Analyse SocketCAN sous Linux — moniteur live, décodage DBC, graphes de signaux, émission, décodeurs de protocoles (CANopen / J1939 / ISO-TP / UDS / OBD-II / NMEA2000), scripting Lua, simulateur CAN, API MCP/JSON-RPC, capture io_uring, fuzzer de trames, testeur UDS + simulateur d'ECU, export BLF/MDF4, diff de captures, multi-bus, Signal Detective, i18n. |
 
 ### Pages du wiki
