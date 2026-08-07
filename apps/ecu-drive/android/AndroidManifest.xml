@@ -10,22 +10,34 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_MEDIA_FILES"/>
     <uses-feature android:name="android.hardware.usb.host" android:required="false"/>
     <uses-feature android:name="android.hardware.bluetooth" android:required="false"/>
 
-    <application android:hardwareAccelerated="true"
+    <supports-screens
+        android:anyDensity="true"
+        android:largeScreens="true"
+        android:normalScreens="true"
+        android:smallScreens="true"/>
+
+    <application
+        android:name="org.qtproject.qt.android.bindings.QtApplication"
+        android:hardwareAccelerated="true"
         android:label="ECU Drive"
         android:extractNativeLibs="true"
-        android:requestLegacyExternalStorage="true">
+        android:requestLegacyExternalStorage="true"
+        android:allowNativeHeapPointerTagging="false">
+
         <activity android:name="org.qtproject.qt.android.bindings.QtActivity"
             android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation|mcc|mnc|density"
             android:label="ECU Drive"
             android:launchMode="singleTop"
             android:screenOrientation="portrait"
-            android:exported="true">
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -43,6 +55,11 @@
             </intent-filter>
             <meta-data android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
                 android:resource="@xml/device_filter"/>
+
+            <!-- Remplacés par androiddeployqt — sans lib_name, QtLoader cherche lib_<abi>.so. -->
+            <meta-data android:name="android.app.lib_name" android:value="-- %%INSERT_APP_LIB_NAME%% --"/>
+            <meta-data android:name="android.app.arguments" android:value="-- %%INSERT_APP_ARGUMENTS%% --"/>
+            <meta-data android:name="android.app.extract_android_style" android:value="minimal"/>
         </activity>
 
         <receiver android:name="org.poisson48.ecudrive.UpdateHelper$InstallReceiver"
