@@ -53,7 +53,12 @@ jobs:
             -G Ninja
 
       - name: CMake build (ecu_studio + ecu_drive + tests)
-        run: cmake --build build --parallel "$(nproc)" --target ecu_studio ecu_drive
+        run: |
+          # Construire les apps ET tous les binaires de test (sinon ctest → *_NOT_BUILT).
+          cmake --build build --parallel "$(nproc)"
+          # Smoke : les exécutables de test doivent exister.
+          test -x build/tests/unit/test_ecu_drive_updater
+          test -x build/tests/unit/test_tune_package
 
       - name: Run tests (ctest)
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --output-on-failure --parallel "$(nproc)"
