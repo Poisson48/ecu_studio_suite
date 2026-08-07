@@ -71,16 +71,18 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/Qt
-          key: qt-${{ env.QT_VER }}-linux-android-arm64-ecudrive-v1
+          key: qt-${{ env.QT_VER }}-linux-android-arm64-x86_64-ecudrive-v2
 
-      - name: Qt ${{ env.QT_VER }} (hôte + android_arm64_v8a)
+      - name: Qt ${{ env.QT_VER }} (hôte + android arm64 + x86_64)
         if: steps.cache-qt.outputs.cache-hit != 'true'
         run: |
           python3 -m pip install --user aqtinstall
-          # Desktop host (androiddeployqt / moc) + target Android.
+          # Desktop host (androiddeployqt / moc) + targets Android (phone + émulateur).
           python3 -m aqt install-qt linux desktop "$QT_VER" linux_gcc_64 \
             -m qtconnectivity qtserialport -O "$HOME/Qt"
           python3 -m aqt install-qt linux android "$QT_VER" android_arm64_v8a \
+            -m qtconnectivity qtserialport -O "$HOME/Qt"
+          python3 -m aqt install-qt linux android "$QT_VER" android_x86_64 \
             -m qtconnectivity qtserialport -O "$HOME/Qt"
 
       - name: Résoudre version (workflow_dispatch vs call)
@@ -118,6 +120,7 @@ jobs:
           QT_VER: ${{ env.QT_VER }}
           NDK_VER: ${{ env.NDK_VER }}
           BUILD_TOOLS_VER: ${{ env.BUILD_TOOLS_VER }}
+          QT_ANDROID_ABIS: "arm64-v8a;x86_64"
         run: |
           chmod +x scripts/build-android-drive.sh
           SDK_ROOT="$ANDROID_SDK_ROOT" bash scripts/build-android-drive.sh
