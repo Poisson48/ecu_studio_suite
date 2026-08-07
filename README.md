@@ -12,7 +12,8 @@ A 100% local Qt6 automotive suite for Linux — flash an ECU map, then verify it
 [![Free forever](https://img.shields.io/badge/price-€0%20forever-brightgreen)](#principles--principes)
 [![No telemetry](https://img.shields.io/badge/telemetry-none-success)](#principles--principes)
 [![Privacy](https://img.shields.io/badge/privacy-100%25%20local-blue)](#principles--principes)
-[![Platform](https://img.shields.io/badge/platform-Linux%20x86__64-lightgrey)](#platform-support--plateformes)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Android%20beta-lightgrey)](#platform-support--plateformes)
+[![ECU Drive](https://img.shields.io/badge/ECU%20Drive-Android%20beta-orange)](https://github.com/Poisson48/ecu_studio_suite/releases/latest)
 [![Qt6](https://img.shields.io/badge/Qt-6-41CD52?logo=qt&logoColor=white)](https://www.qt.io/)
 [![C++23](https://img.shields.io/badge/C%2B%2B-23-00599C?logo=c%2B%2B&logoColor=white)](https://en.cppreference.com/)
 
@@ -68,6 +69,7 @@ The suite is a hub launcher around two flagship sub-programs that share the same
 | Sub-program | Role | Repo |
 |-------------|------|------|
 | **ECU Studio** | ECU reprogramming, 2D/3D map editor, DAMOS editor, A2L, hex view, checksums (EDC16 + EDC17), MPPS flashing, compare, git versioning, AutoMods, OpenDAMOS, OBD tune validation (drive mode) | *(this repo)* |
+| **ECU Drive** 🧪 **Beta** | Phone companion (Android APK): import `.ecutune`, ELM327 BT/USB, live measured vs OpenDAMOS expected — without a PC | *(this repo)* · [releases](https://github.com/Poisson48/ecu_studio_suite/releases/latest) |
 | **[SocketSpy](https://github.com/Poisson48/SocketSpy)** | Linux SocketCAN analysis — live monitor, DBC decode, signal graphs, protocol decoders, UDS tester, Lua scripting, simulator, and more | [Poisson48/SocketSpy](https://github.com/Poisson48/SocketSpy) |
 
 ## The interconnection loop
@@ -138,6 +140,7 @@ A free, **CC0** DAMOS that relocates ECU maps by **axis fingerprint** instead of
 |------------|:--------:|
 | Hub launcher | 🧪 Beta |
 | Flash → verify loop (ECU Studio → SocketSpy) | 🧪 Beta |
+| **ECU Drive (Android APK)** — road validation without a PC | 🧪 Beta |
 | Full bidirectional interconnection | 🔜 Incoming |
 | More ECUs (broader catalog) | 🔜 Incoming |
 
@@ -154,16 +157,18 @@ A free, **CC0** DAMOS that relocates ECU maps by **axis fingerprint** instead of
 
 ### Download (recommended)
 
-**[⬇ Download ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — **v1.6.6**, free forever, Linux x86_64.
+**[⬇ Download ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — free forever, Linux x86_64.
 
 ```bash
 chmod +x ECU_Studio-x86_64.AppImage
 ./ECU_Studio-x86_64.AppImage
 ```
 
-Self-contained AppImage — Qt6, libusb and every runtime library are bundled, so it runs on a clean PC with **nothing installed** and no root access. **No signup.** All builds are on the [releases page](https://github.com/Poisson48/ecu_studio_suite/releases/latest).
+Self-contained AppImage — Qt6, libusb and every runtime library are bundled, so it runs on a clean PC with **nothing installed** and no root access. **No signup.**
 
-For SocketSpy, see the **[SocketSpy repo](https://github.com/Poisson48/SocketSpy)**.
+**[⬇ ECU Drive Android APK](https://github.com/Poisson48/ecu_studio_suite/releases/latest)** 🧪 **Beta** — `ecu-drive-*-arm64.apk` on the same release (multi-ABI arm64 + x86_64). Install sideloaded (allow unknown sources). Pair ELM327 Classic first (PIN `1234` / `0000`). Wiki: **[ECU Drive Android](https://github.com/Poisson48/ecu_studio_suite/wiki/ECU-Drive-Android)**.
+
+All builds: [releases page](https://github.com/Poisson48/ecu_studio_suite/releases/latest). For SocketSpy, see the **[SocketSpy repo](https://github.com/Poisson48/SocketSpy)**.
 
 ### Build from source (developers)
 
@@ -211,7 +216,8 @@ Linux uses libusb directly — no FTDI D2XX driver needed. Requires kernel ≥ 5
 
 | Platform | Status | Notes |
 |----------|--------|-------|
-| Linux x86_64 | Primary target | libusb, SocketCAN, full feature set |
+| Linux x86_64 | Primary target | libusb, SocketCAN, full feature set (AppImage) |
+| Android (arm64 / x86_64) | 🧪 **Beta** | **ECU Drive** APK — road OBD validation; not a full Studio port |
 | Windows (cross-compile) | Supported | MinGW toolchain; ftd2xx for MPPS |
 | macOS | Not tested | SocketCAN unavailable |
 
@@ -265,6 +271,7 @@ La suite est un lanceur (hub) autour de deux sous-programmes phares qui partagen
 | Sous-programme | Rôle | Dépôt |
 |----------------|------|-------|
 | **ECU Studio** | Reprogrammation ECU, éditeur de cartos 2D/3D, éditeur DAMOS, A2L, vue hex, checksums (EDC16 + EDC17), flash MPPS, comparaison, versionnement git, AutoMods, OpenDAMOS, validation tune OBD (mode conduite) | *(ce dépôt)* |
+| **ECU Drive** 🧪 **Bêta** | Compagnon téléphone (APK Android) : import `.ecutune`, ELM327 BT/USB, mesuré vs attendu OpenDAMOS — sans PC | *(ce dépôt)* · [releases](https://github.com/Poisson48/ecu_studio_suite/releases/latest) |
 | **[SocketSpy](https://github.com/Poisson48/SocketSpy)** | Analyse SocketCAN sous Linux — moniteur live, décodage DBC, graphes de signaux, décodeurs de protocoles, testeur UDS, scripts Lua, simulateur, et plus | [Poisson48/SocketSpy](https://github.com/Poisson48/SocketSpy) |
 
 ## La boucle d'interconnexion
@@ -335,6 +342,7 @@ Un DAMOS libre, **CC0**, qui relocalise les cartos d'ECU par **empreinte d'axe**
 |----------|:--------:|
 | Lanceur (hub) | 🧪 Bêta |
 | Boucle flash → vérification (ECU Studio → SocketSpy) | 🧪 Bêta |
+| **ECU Drive (APK Android)** — validation route sans PC | 🧪 Bêta |
 | Interconnexion bidirectionnelle complète | 🔜 À venir |
 | Davantage d'ECU (catalogue élargi) | 🔜 À venir |
 
@@ -351,16 +359,18 @@ Un DAMOS libre, **CC0**, qui relocalise les cartos d'ECU par **empreinte d'axe**
 
 ### Téléchargement (recommandé)
 
-**[⬇ Télécharger ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — **v1.6.6**, gratuit pour toujours, Linux x86_64.
+**[⬇ Télécharger ECU Studio (AppImage)](https://github.com/Poisson48/ecu_studio_suite/releases/latest/download/ECU_Studio-x86_64.AppImage)** — gratuit pour toujours, Linux x86_64.
 
 ```bash
 chmod +x ECU_Studio-x86_64.AppImage
 ./ECU_Studio-x86_64.AppImage
 ```
 
-AppImage autonome — Qt6, libusb et toutes les bibliothèques d'exécution sont embarquées : ça tourne sur un PC vierge avec **rien d'installé** et sans accès root. **Pas d’inscription.** Tous les builds sont sur la [page des releases](https://github.com/Poisson48/ecu_studio_suite/releases/latest).
+AppImage autonome — Qt6, libusb et toutes les bibliothèques d'exécution sont embarquées : ça tourne sur un PC vierge avec **rien d'installé** et sans accès root. **Pas d’inscription.**
 
-Pour SocketSpy, voir le **[dépôt SocketSpy](https://github.com/Poisson48/SocketSpy)**.
+**[⬇ APK ECU Drive Android](https://github.com/Poisson48/ecu_studio_suite/releases/latest)** 🧪 **Bêta** — `ecu-drive-*-arm64.apk` sur la même release (multi-ABI arm64 + x86_64). Installation hors Play Store (autoriser sources inconnues). Appairer d’abord l’ELM327 Classic (PIN `1234` / `0000`). Wiki : **[ECU Drive Android](https://github.com/Poisson48/ecu_studio_suite/wiki/ECU-Drive-Android)**.
+
+Tous les builds : [page des releases](https://github.com/Poisson48/ecu_studio_suite/releases/latest). Pour SocketSpy, voir le **[dépôt SocketSpy](https://github.com/Poisson48/SocketSpy)**.
 
 ### Compilation depuis les sources (développeurs)
 
@@ -408,7 +418,8 @@ Linux utilise libusb directement — aucun pilote FTDI D2XX requis. Nécessite u
 
 | Plateforme | Statut | Notes |
 |------------|--------|-------|
-| Linux x86_64 | Cible principale | libusb, SocketCAN, ensemble complet de fonctionnalités |
+| Linux x86_64 | Cible principale | libusb, SocketCAN, ensemble complet (AppImage) |
+| Android (arm64 / x86_64) | 🧪 **Bêta** | APK **ECU Drive** — validation OBD route ; pas un port complet de Studio |
 | Windows (cross-compile) | Supporté | Chaîne MinGW ; ftd2xx pour le MPPS |
 | macOS | Non testé | SocketCAN indisponible |
 

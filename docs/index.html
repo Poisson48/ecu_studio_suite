@@ -186,6 +186,25 @@
       </div>
     </article>
 
+    <article class="prog-card">
+      <div class="prog-head">
+        <div class="prog-icon es">📱</div>
+        <div>
+          <h3>ECU Drive</h3>
+          <span class="pill pill-beta">Beta</span>
+          <span class="ver" data-en="Android" data-fr="Android">Android</span>
+        </div>
+      </div>
+      <p data-en="Phone companion: import a portable <code>.ecutune</code> package from ECU Studio, connect an ELM327 (Bluetooth Classic or USB OTG), and validate the flashed tune on the road — measured vs OpenDAMOS expected, without a PC."
+         data-fr="Compagnon téléphone : importez un package <code>.ecutune</code> depuis ECU Studio, branchez un ELM327 (Bluetooth classique ou USB OTG), et validez la carto sur la route — mesuré vs attendu OpenDAMOS, sans PC.">
+        Phone companion: import a portable .ecutune package from ECU Studio, connect an ELM327 (Bluetooth Classic or USB OTG), and validate the flashed tune on the road — measured vs OpenDAMOS expected, without a PC.
+      </p>
+      <div class="prog-links">
+        <a href="https://github.com/Poisson48/ecu_studio_suite/releases/latest" data-en="Download APK (beta) →" data-fr="Télécharger l'APK (bêta) →">Download APK (beta) →</a>
+        <a href="https://github.com/Poisson48/ecu_studio_suite/wiki/ECU-Drive-Android" data-en="Wiki →" data-fr="Wiki →">Wiki →</a>
+      </div>
+    </article>
+
   </div>
 </section>
 
@@ -319,6 +338,7 @@
         <li><span data-en="Flash → verify loop (ECU Studio ↔ SocketSpy)" data-fr="boucle flash → vérification (ECU Studio ↔ SocketSpy)">Flash → verify loop (ECU Studio ↔ SocketSpy)</span></li>
         <li><span data-en="3D map view — pseudo-3D surface + heatmap with ghost baseline" data-fr="vue 3D — surface pseudo-3D + heatmap avec base fantôme">3D map view — pseudo-3D surface + heatmap with ghost baseline</span></li>
         <li><b>OBD drive-mode tune validation</b> <span data-en="— one-button session: measured vs OpenDAMOS expected (boost), underboost banner, auto CSV, freeze frame, DTC 03+07; designed for use while driving" data-fr="— session en un bouton : mesuré vs attendu OpenDAMOS (boost), bandeau underboost, CSV auto, freeze frame, DTC 03+07 ; conçu pour la conduite">— one-button session: measured vs OpenDAMOS expected (boost), underboost banner, auto CSV, freeze frame, DTC 03+07; designed for use while driving</span></li>
+        <li><b>ECU Drive (Android)</b> <span data-en="— phone APK: import .ecutune, ELM327 BT/USB, road validation without a PC" data-fr="— APK téléphone : import .ecutune, ELM327 BT/USB, validation route sans PC">— phone APK: import .ecutune, ELM327 BT/USB, road validation without a PC</span></li>
         <li><b>AutoMods</b> <span data-en="— one-click Stage 1 / IMMO OFF / depollution recipes; safety-guarded but not field-proven" data-fr="— recettes Stage 1 / IMMO OFF / dépollution en un clic ; gardes de sécurité mais non éprouvé sur le terrain">— one-click Stage 1 / IMMO OFF / depollution recipes; safety-guarded but not field-proven</span></li>
         <li><span data-en="Brand-new SocketSpy panels still being hardened" data-fr="tout nouveaux panneaux SocketSpy en cours de fiabilisation">Brand-new SocketSpy panels still being hardened</span></li>
       </ul>
@@ -350,12 +370,13 @@
   <div class="download-card">
     <div class="dl-left">
       <h2 data-en="Get the Suite — free" data-fr="Obtenir la Suite — gratuit">Get the Suite — free</h2>
-      <p data-en="A self-contained AppImage — Qt6, libusb and every runtime library bundled. Runs on a clean Linux PC with nothing installed, no root, no signup. Your data never leaves the machine."
-         data-fr="Une AppImage autonome — Qt6, libusb et toutes les bibliothèques d’exécution. Tourne sur un PC Linux vierge sans rien installer, sans root, sans inscription. Vos données ne quittent jamais la machine.">
-        A self-contained AppImage — Qt6, libusb and every runtime library bundled. Runs on a clean Linux PC with nothing installed, no root, no signup. Your data never leaves the machine.
+      <p data-en="Linux AppImage for ECU Studio (desktop). Android APK for ECU Drive (road companion, beta). No account, no telemetry — your data never leaves the device."
+         data-fr="AppImage Linux pour ECU Studio (bureau). APK Android pour ECU Drive (compagnon route, bêta). Pas de compte, pas de télémétrie — vos données ne quittent jamais l’appareil.">
+        Linux AppImage for ECU Studio (desktop). Android APK for ECU Drive (road companion, beta). No account, no telemetry — your data never leaves the device.
       </p>
       <div class="dl-meta">
-        <span class="dl-pill">v1.6.6 · Linux x86_64</span>
+        <span class="dl-pill">Linux x86_64 · AppImage</span>
+        <span class="dl-pill">Android · APK <span class="pill pill-beta" style="margin-left:.35rem">Beta</span></span>
         <span class="dl-pill">License: GPL-3.0</span>
         <span class="dl-pill" data-en="€0 forever · No account · No telemetry" data-fr="0 € pour toujours · Sans compte · Sans télémétrie">€0 forever · No account · No telemetry</span>
       </div>
@@ -366,6 +387,9 @@
         <span data-en="Download AppImage" data-fr="Télécharger l'AppImage">Download AppImage</span>
       </a>
       <div class="code-block">chmod +x ECU_Studio-x86_64.AppImage<br>./ECU_Studio-x86_64.AppImage</div>
+      <a class="btn btn-ghost" href="https://github.com/Poisson48/ecu_studio_suite/releases/latest" style="justify-content:center;font-size:.85rem">
+        <span data-en="ECU Drive Android APK (beta) →" data-fr="APK ECU Drive Android (bêta) →">ECU Drive Android APK (beta) →</span>
+      </a>
       <a class="btn btn-ghost" href="https://github.com/Poisson48/ecu_studio_suite#build-from-source-developers" style="justify-content:center;font-size:.85rem">
         <span data-en="Build from source →" data-fr="Compiler depuis les sources →">Build from source →</span>
       </a>
@@ -394,6 +418,10 @@
     <a class="learn-card" href="https://github.com/Poisson48/ecu_studio_suite/wiki/OBD-Drive-Mode">
       <h4 data-en="OBD Drive Mode" data-fr="Mode conduite OBD">OBD Drive Mode</h4>
       <p data-en="One-button road validation: ELM327 vs OpenDAMOS expected." data-fr="Validation route en un bouton : ELM327 vs attendu OpenDAMOS.">One-button road validation: ELM327 vs OpenDAMOS expected.</p>
+    </a>
+    <a class="learn-card" href="https://github.com/Poisson48/ecu_studio_suite/wiki/ECU-Drive-Android">
+      <h4 data-en="ECU Drive Android (beta)" data-fr="ECU Drive Android (bêta)">ECU Drive Android (beta)</h4>
+      <p data-en="Phone APK: .ecutune, ELM BT/USB, validate without a PC." data-fr="APK téléphone : .ecutune, ELM BT/USB, valider sans PC.">Phone APK: .ecutune, ELM BT/USB, validate without a PC.</p>
     </a>
     <a class="learn-card" href="https://github.com/Poisson48/ecu_studio_suite/wiki/OpenDAMOS">
       <h4>OpenDAMOS</h4>

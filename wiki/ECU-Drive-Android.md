@@ -8,7 +8,12 @@
 
 ## English
 
-**ECU Drive** is the simplified Qt6 companion for validating a flashed tune **on the road without a PC**. It imports a portable **`.ecutune`** package, connects an **ELM327** (Bluetooth SPP or USB OTG), and compares live OBD PIDs to OpenDAMOS expected values — same `TuneValidator` as ECU Studio.
+**ECU Drive** (**Beta**) is the simplified Qt6 companion for validating a flashed tune **on the road without a PC**. It imports a portable **`.ecutune`** package, connects an **ELM327** (Bluetooth SPP or USB OTG), and compares live OBD PIDs to OpenDAMOS expected values — same `TuneValidator` as ECU Studio.
+
+> **Maturity:** 🧪 **Beta** — shipped as a signed APK on GitHub Releases; works on device/emulator, not yet field-hardened.
+
+### Download
+**[GitHub Releases](https://github.com/Poisson48/ecu_studio_suite/releases/latest)** — asset `ecu-drive-*-arm64.apk` (multi-ABI arm64 + x86_64).
 
 ### Workflow
 1. On desktop **ECU Studio** → *File → Export for ECU Drive (.ecutune)…*
@@ -52,9 +57,12 @@ Secondary. Host permission + VID filter (CH340/FTDI/CP210x/QBD). `UsbSerialHelpe
 
 ## Français
 
-**ECU Drive** est le compagnon Qt6 simplifié pour valider une carto **en roulant sans PC**. Il importe un package **`.ecutune`**, se connecte à un **ELM327** (Bluetooth SPP ou USB OTG), et compare les PID OBD live aux valeurs OpenDAMOS attendues — même `TuneValidator` qu’ECU Studio.
+**ECU Drive** (**Bêta**) est le compagnon Qt6 simplifié pour valider une carto **en roulant sans PC**. Il importe un package **`.ecutune`**, se connecte à un **ELM327** (Bluetooth SPP ou USB OTG), et compare les PID OBD live aux valeurs OpenDAMOS attendues — même `TuneValidator` qu’ECU Studio.
 
-### Déroulement
+> **Maturité :** 🧪 **Bêta** — APK signé sur les Releases GitHub ; fonctionne sur appareil/émulateur, pas encore durci sur le terrain.
+
+### Téléchargement
+**[Releases GitHub](https://github.com/Poisson48/ecu_studio_suite/releases/latest)** — asset `ecu-drive-*-arm64.apk` (multi-ABI arm64 + x86_64).
 1. Sur **ECU Studio** → *Fichier → Exporter pour ECU Drive (.ecutune)…*
 2. Copie le `.ecutune` sur le téléphone
 3. **ECU Drive** → Importer → Connecter ELM (scan BT ou USB) → **▶ Lancer session conduite**
