@@ -53,4 +53,8 @@ if(ANDROID)
     )
 endif()
 
-install(TARGETS ecu_drive RUNTIME DESTINATION bin)
+# Sur Android, qt_add_executable produit un MODULE (pas un RUNTIME) — pas
+# d'install système ; l'APK est produit par la cible `apk` / androiddeployqt.
+if(NOT ANDROID)
+    install(TARGETS ecu_drive RUNTIME DESTINATION bin)
+endif()

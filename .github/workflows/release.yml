@@ -78,7 +78,7 @@ jobs:
             -DECU_MPPS_SIMULATION=OFF \
             -DECU_BUILD_TESTS=OFF \
             -DECU_BUILD_SOCKETSPY=OFF \
-            -DECU_BUILD_ECU_DRIVE=ON \
+            -DECU_BUILD_ECU_DRIVE=OFF \
             ${VERSION_OVERRIDE} \
             -G Ninja
 

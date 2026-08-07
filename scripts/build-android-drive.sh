@@ -11,7 +11,7 @@
 set -euo pipefail
 
 SDK_ROOT="${SDK_ROOT:-${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}}"
-NDK_VER="${NDK_VER:-26.1.10909125}"
+NDK_VER="${NDK_VER:-27.3.13750724}"
 QT_VER="${QT_VER:-6.8.3}"
 QT_ROOT="${QT_ROOT:-$HOME/Qt}"
 QT_ANDROID="${QT_ANDROID:-$QT_ROOT/$QT_VER/android_arm64_v8a}"
@@ -22,7 +22,17 @@ OUT="${OUT:-$ROOT/ecu-drive-arm64.apk}"
 
 export ANDROID_SDK_ROOT="$SDK_ROOT"
 export ANDROID_NDK_ROOT="${ANDROID_NDK_ROOT:-$SDK_ROOT/ndk/$NDK_VER}"
+# Certains toolchains Qt lisent ANDROID_NDK (sans _ROOT).
+export ANDROID_NDK="$ANDROID_NDK_ROOT"
 export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}"
+
+if [ ! -d "$ANDROID_NDK_ROOT" ]; then
+  echo "NDK introuvable: $ANDROID_NDK_ROOT" >&2
+  echo "NDKs présents:" >&2
+  ls -la "$SDK_ROOT/ndk" 2>/dev/null || true
+  exit 1
+fi
+echo "Using NDK: $ANDROID_NDK_ROOT"
 
 VERSION_NAME="${VERSION_NAME:-0.1.0}"
 VERSION_CODE="${VERSION_CODE:-1}"
@@ -39,6 +49,7 @@ rm -rf "$ROOT/build-android"
   -DQT_HOST_PATH="$QT_HOST" \
   -DANDROID_SDK_ROOT="$SDK_ROOT" \
   -DANDROID_NDK_ROOT="$ANDROID_NDK_ROOT" \
+  -DANDROID_NDK="$ANDROID_NDK_ROOT" \
   -DCMAKE_BUILD_TYPE=Release \
   -DQT_ANDROID_ABIS="arm64-v8a" \
   -DQT_ANDROID_COMPILE_SDK_VERSION=35 \
