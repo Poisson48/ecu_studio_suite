@@ -75,7 +75,7 @@ QColor statusColor(ecu::ValidationStatus s) {
 ObdPanel::ObdPanel(RomDocument* doc, QWidget* parent)
     : QWidget(parent), m_doc(doc) {
     m_validator = new ecu::TuneValidator;
-    m_elm = new Elm327(this);
+    m_elm = new elm::Elm327(this);
     m_reconnectTimer = new QTimer(this);
     m_reconnectTimer->setSingleShot(true);
     connect(m_reconnectTimer, &QTimer::timeout, this, &ObdPanel::tryAutoReconnect);
@@ -90,7 +90,7 @@ ObdPanel::ObdPanel(RomDocument* doc, QWidget* parent)
         refreshValidatorFromDoc();
     }
 
-    connect(m_elm, &Elm327::connected, this, [this](const QString& v) {
+    connect(m_elm, &elm::Elm327::connected, this, [this](const QString& v) {
         m_connected = true;
         m_wantConnected = true;
         m_reconnectTimer->stop();
@@ -104,7 +104,7 @@ ObdPanel::ObdPanel(RomDocument* doc, QWidget* parent)
         m_vinBtn->setEnabled(true); m_canBtn->setEnabled(true);
         tryAutoStartDriveSession();
     });
-    connect(m_elm, &Elm327::disconnected, this, [this]() {
+    connect(m_elm, &elm::Elm327::disconnected, this, [this]() {
         m_connected = false; m_datalog = false;
         stopValidation();
         m_canSniff = false;
@@ -123,7 +123,7 @@ ObdPanel::ObdPanel(RomDocument* doc, QWidget* parent)
         else
             setStatus(tr("Déconnecté."));
     });
-    connect(m_elm, &Elm327::errorOccurred, this, [this](const QString& m) {
+    connect(m_elm, &elm::Elm327::errorOccurred, this, [this](const QString& m) {
         m_connectBtn->setEnabled(true);
         m_connected = false;
         if (m_wantConnected && m_autoReconnect->isChecked())
@@ -133,10 +133,10 @@ ObdPanel::ObdPanel(RomDocument* doc, QWidget* parent)
             setStatus(m, true);
         }
     });
-    connect(m_elm, &Elm327::status, this, [this](const QString& m) { setStatus(m); });
-    connect(m_elm, &Elm327::rawLine, this, [this](const QString& l) { m_log->appendPlainText(l); });
+    connect(m_elm, &elm::Elm327::status, this, [this](const QString& m) { setStatus(m); });
+    connect(m_elm, &elm::Elm327::rawLine, this, [this](const QString& l) { m_log->appendPlainText(l); });
 
-    connect(m_elm, &Elm327::pidResult, this,
+    connect(m_elm, &elm::Elm327::pidResult, this,
             [this](quint8 pid, double value, const QString& name, const QString& unit) {
         onPidUpdate(pid, value);
         const int row = m_pidRow.value(pid, -1);
@@ -148,7 +148,7 @@ ObdPanel::ObdPanel(RomDocument* doc, QWidget* parent)
                << ',' << name << ',' << QString::number(value, 'f', 3) << ',' << unit << '\n';
         }
     });
-    connect(m_elm, &Elm327::freezeFrameResult, this,
+    connect(m_elm, &elm::Elm327::freezeFrameResult, this,
             [this](quint8 pid, double value, const QString& name, const QString& unit) {
         const int row = m_freezeTable->rowCount();
         m_freezeTable->insertRow(row);
@@ -156,12 +156,12 @@ ObdPanel::ObdPanel(RomDocument* doc, QWidget* parent)
         m_freezeTable->setItem(row, 1, new QTableWidgetItem(QString::number(value, 'f', 2)));
         m_freezeTable->setItem(row, 2, new QTableWidgetItem(unit));
     });
-    connect(m_elm, &Elm327::pidUnsupported, this, [this](quint8 pid) {
+    connect(m_elm, &elm::Elm327::pidUnsupported, this, [this](quint8 pid) {
         const int row = m_pidRow.value(pid, -1);
         if (row >= 0 && m_pidTable->item(row, 1)->text().isEmpty())
             m_pidTable->item(row, 1)->setText(QStringLiteral("—"));
     });
-    connect(m_elm, &Elm327::dtcsReady, this,
+    connect(m_elm, &elm::Elm327::dtcsReady, this,
             [this](const QStringList& codes, bool pending) {
         mergeDtcCodes(codes, pending);
         if (m_dtcAwaiting > 0) --m_dtcAwaiting;
@@ -174,10 +174,10 @@ ObdPanel::ObdPanel(RomDocument* doc, QWidget* parent)
             m_dtcExportBtn->setEnabled(n > 0);
         }
     });
-    connect(m_elm, &Elm327::vinReady, this, [this](const QString& vin) {
+    connect(m_elm, &elm::Elm327::vinReady, this, [this](const QString& vin) {
         m_vinLabel->setText(vin.isEmpty() ? tr("VIN indisponible") : vin);
     });
-    connect(m_elm, &Elm327::canFrame, this, [this](quint32 id, QByteArray data) {
+    connect(m_elm, &elm::Elm327::canFrame, this, [this](quint32 id, QByteArray data) {
         int row = m_canRow.value(id, -1);
         if (row < 0) {
             row = m_canTable->rowCount();
@@ -1000,7 +1000,7 @@ void ObdPanel::refreshDtcTable() {
 void ObdPanel::refreshPorts() {
     const QString keep = preferredPort();
     m_portCombo->clear();
-    const auto ports = Elm327::listPorts();
+    const auto ports = elm::Elm327::listPorts();
     int preferIdx = -1;
     for (const auto& p : ports) {
         const QString label = (p.likelyElm ? QStringLiteral("★ ") : QString())

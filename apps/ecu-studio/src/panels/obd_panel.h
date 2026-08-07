@@ -22,10 +22,11 @@ class QSpinBox;
 
 #include "ecu/TuneValidation.hpp"
 
+namespace elm { class Elm327; }
+
 namespace ecu_studio {
 
 class RomDocument;
-class Elm327;
 class CanTuneValidator;
 
 // Panneau OBD-II / ELM327 : connexion adaptateur, datalog live, validation tune
@@ -114,7 +115,7 @@ private:
     ecu::EmaFilter m_emaMeas;
     ecu::EmaFilter m_emaExp;
 
-    Elm327* m_elm = nullptr;
+    elm::Elm327* m_elm = nullptr;
     QTimer* m_reconnectTimer = nullptr;
 
     QComboBox*      m_portCombo   = nullptr;

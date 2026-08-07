@@ -81,8 +81,7 @@ set(ECU_STUDIO_SOURCES
     src/panels/can_panel.cpp
     src/panels/opendamos_library_panel.cpp
 
-    # OBD-II / ELM327 (datalog + sniffing CAN via adaptateur USB)
-    src/obd/elm327.cpp
+    # OBD-II / ELM327 (driver partagé libs/elm327)
     src/obd/mcp_read_dtc.cpp
     src/obd/can_tune_validator.cpp
     src/panels/obd_panel.cpp
@@ -118,6 +117,7 @@ target_include_directories(ecu_studio
         ${CMAKE_SOURCE_DIR}/libs/mpps/include
         ${CMAKE_SOURCE_DIR}/libs/ecu-core/include
         ${CMAKE_SOURCE_DIR}/libs/shared/include
+        ${CMAKE_SOURCE_DIR}/libs/elm327/include
 )
 
 target_compile_definitions(ecu_studio PRIVATE
@@ -134,6 +134,7 @@ target_link_libraries(ecu_studio
         ecu_core
         ecu_mcp
         ecu_shared
+        elm327
         OpenSSL::Crypto
 )
 

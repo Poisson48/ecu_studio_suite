@@ -74,6 +74,7 @@ private:
     void openRomFromDialog();
 
     void importWinols();    // importe un export WinOLS (.zip/.hex/.bin) dans le document
+    void exportEcutune();   // exporte .ecutune pour ECU Drive (Android)
     void generateReport();  // génère un rapport HTML des modifications de la ROM
     void showAbout();       // dialogue « À propos »
 

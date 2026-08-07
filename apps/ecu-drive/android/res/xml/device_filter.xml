@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Filtres USB host pour clones ELM327 courants (CDC / CH340 / FTDI / CP210x). -->
+<resources>
+    <usb-device vendor-id="2207" /> <!-- 0x089E? keep broad: -->
+    <usb-device class="2" subclass="2" protocol="1" /> <!-- CDC ACM -->
+    <usb-device vendor-id="6790" />  <!-- 0x1A86 CH340 -->
+    <usb-device vendor-id="1027" />  <!-- 0x0403 FTDI -->
+    <usb-device vendor-id="4292" />  <!-- 0x10C4 Silicon Labs -->
+    <usb-device vendor-id="1659" />  <!-- 0x067B Prolific -->
+    <usb-device vendor-id="2328" />  <!-- 0x0918 QBD -->
+</resources>

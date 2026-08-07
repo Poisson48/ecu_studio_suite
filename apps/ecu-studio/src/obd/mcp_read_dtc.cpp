@@ -12,7 +12,7 @@ namespace {
 
 QString pickPort(const QString& requested) {
     if (!requested.isEmpty()) return requested;
-    const auto ports = Elm327::listPorts();
+    const auto ports = elm::Elm327::listPorts();
     for (const auto& p : ports) {
         if (p.likelyElm) return p.port;
     }
@@ -66,24 +66,24 @@ ecu::mcp::Tool makeReadDtcTool() {
         const bool pending = p.contains("pending") && p["pending"].is_boolean()
                                  && p["pending"].get<bool>();
 
-        Elm327 elm;
+        elm::Elm327 elm;
         QEventLoop loop;
         QStringList codes;
         QString error;
         bool gotCodes = false;
         bool connected = false;
 
-        QObject::connect(&elm, &Elm327::connected, &loop, [&](const QString&) {
+        QObject::connect(&elm, &elm::Elm327::connected, &loop, [&](const QString&) {
             connected = true;
             elm.readDtcs(pending);
         });
-        QObject::connect(&elm, &Elm327::dtcsReady, &loop,
+        QObject::connect(&elm, &elm::Elm327::dtcsReady, &loop,
                          [&](const QStringList& c, bool) {
                              codes = c;
                              gotCodes = true;
                              loop.quit();
                          });
-        QObject::connect(&elm, &Elm327::errorOccurred, &loop,
+        QObject::connect(&elm, &elm::Elm327::errorOccurred, &loop,
                          [&](const QString& m) {
                              error = m;
                              loop.quit();

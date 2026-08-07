@@ -48,11 +48,12 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DECU_MPPS_SIMULATION=OFF \
             -DECU_BUILD_TESTS=ON \
+            -DECU_BUILD_ECU_DRIVE=ON \
             -DECU_BUILD_SOCKETSPY=OFF \
             -G Ninja
 
-      - name: CMake build (ecu_studio + tests)
-        run: cmake --build build --parallel "$(nproc)"
+      - name: CMake build (ecu_studio + ecu_drive + tests)
+        run: cmake --build build --parallel "$(nproc)" --target ecu_studio ecu_drive
 
       - name: Run tests (ctest)
         run: ctest --test-dir build --output-on-failure

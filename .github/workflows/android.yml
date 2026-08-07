@@ -1,0 +1,129 @@
+name: Android
+
+# Build APK arm64 ECU Drive — réutilisé par release.yml (tag v*) et déclenchable à la main.
+on:
+  workflow_call:
+    inputs:
+      version_name:
+        description: "android:versionName / APP_VERSION"
+        type: string
+        default: "0.1.0"
+      version_code:
+        description: "android:versionCode"
+        type: string
+        default: "1"
+      require_release_key:
+        description: "Échouer si la clé de publication manque (releases)"
+        type: boolean
+        default: false
+    secrets:
+      ANDROID_KEYSTORE_B64:
+        required: false
+      ANDROID_KEY_ALIAS:
+        required: false
+      ANDROID_KEYSTORE_PASS:
+        required: false
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: "android:versionName"
+        type: string
+        default: "0.0.0-ci"
+      version_code:
+        description: "android:versionCode"
+        type: string
+        default: "1"
+
+env:
+  QT_VER: "6.8.3"
+  NDK_VER: "26.1.10909125"
+  BUILD_TOOLS_VER: "35.0.0"
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Outils de build
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y ninja-build cmake
+
+      - name: Android NDK + build-tools
+        run: |
+          SDKMANAGER="$(find "$ANDROID_SDK_ROOT/cmdline-tools" -name sdkmanager -type f | head -1)"
+          [ -n "$SDKMANAGER" ] || { echo "sdkmanager introuvable dans $ANDROID_SDK_ROOT" >&2; exit 1; }
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --install "platforms;android-35" \
+                                  "build-tools;${BUILD_TOOLS_VER}" \
+                                  "ndk;${NDK_VER}"
+
+      - name: Cache Qt
+        id: cache-qt
+        uses: actions/cache@v4
+        with:
+          path: ~/Qt
+          key: qt-${{ env.QT_VER }}-linux-android-arm64-ecudrive-v1
+
+      - name: Qt ${{ env.QT_VER }} (hôte + android_arm64_v8a)
+        if: steps.cache-qt.outputs.cache-hit != 'true'
+        run: |
+          python3 -m pip install --user aqtinstall
+          # Desktop host (androiddeployqt / moc) + target Android.
+          python3 -m aqt install-qt linux desktop "$QT_VER" linux_gcc_64 \
+            -m qtconnectivity qtserialport -O "$HOME/Qt"
+          python3 -m aqt install-qt linux android "$QT_VER" android_arm64_v8a \
+            -m qtconnectivity qtserialport -O "$HOME/Qt"
+
+      - name: Résoudre version (workflow_dispatch vs call)
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ inputs.version_name }}" >> "$GITHUB_OUTPUT"
+            echo "code=${{ inputs.version_code }}" >> "$GITHUB_OUTPUT"
+            echo "require_key=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${{ inputs.version_name }}" >> "$GITHUB_OUTPUT"
+            echo "code=${{ inputs.version_code }}" >> "$GITHUB_OUTPUT"
+            echo "require_key=${{ inputs.require_release_key }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Vérifier la clé de publication
+        if: steps.ver.outputs.require_key == 'true'
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::Secret ANDROID_KEYSTORE_B64 absent. Créez la clé :" \
+                 "bash scripts/make-android-release-key.sh"
+            exit 1
+          fi
+
+      - name: Build + signature de l'APK
+        env:
+          VERSION_NAME: ${{ steps.ver.outputs.name }}
+          VERSION_CODE: ${{ steps.ver.outputs.code }}
+          OUT: ${{ github.workspace }}/ecu-drive-arm64.apk
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KEYALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          STOREPASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          QT_VER: ${{ env.QT_VER }}
+          NDK_VER: ${{ env.NDK_VER }}
+          BUILD_TOOLS_VER: ${{ env.BUILD_TOOLS_VER }}
+        run: |
+          chmod +x scripts/build-android-drive.sh
+          SDK_ROOT="$ANDROID_SDK_ROOT" bash scripts/build-android-drive.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ecu-drive-arm64-apk
+          path: ecu-drive-arm64.apk
+          if-no-files-found: error

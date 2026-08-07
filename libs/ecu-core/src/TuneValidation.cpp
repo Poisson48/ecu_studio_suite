@@ -1,4 +1,5 @@
 #include "ecu/TuneValidation.hpp"
+#include "ecu/TunePackage.hpp"
 
 #include "ecu/RomPatcher.hpp"
 
@@ -223,6 +224,32 @@ bool TuneValidator::loadRom(const QByteArray& rom, const QString& ecuId) {
     buildRules();
     m_ready = !m_rules.empty();
     return m_ready;
+}
+
+bool TuneValidator::loadRomWithRecipe(const QByteArray& rom, const QString& ecuId,
+                                      const QByteArray& recipeJsonUtf8) {
+    clear();
+    if (rom.isEmpty() || ecuId.isEmpty() || recipeJsonUtf8.isEmpty()) return false;
+
+    auto recipe = OpenDamos::parseRecipe(recipeJsonUtf8.toStdString());
+    if (!recipe) return false;
+
+    m_od.setRecipe(std::move(*recipe));
+    m_ecuId  = ecuId;
+    m_rom    = rom;
+    m_romMd5 = QString::fromLatin1(
+        QCryptographicHash::hash(rom, QCryptographicHash::Md5).toHex());
+
+    for (auto& r : m_od.relocate(rom))
+        m_reloc.emplace(r.name, std::move(r));
+
+    buildRules();
+    m_ready = !m_rules.empty();
+    return m_ready;
+}
+
+bool TuneValidator::loadTunePackage(const TunePackage& pkg) {
+    return loadRomWithRecipe(pkg.rom, pkg.manifest.ecuId, pkg.recipeJson);
 }
 
 void TuneValidator::buildRules() {

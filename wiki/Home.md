@@ -51,6 +51,7 @@
 |------|---------------|
 | **[Getting Started](Getting-Started)** | Download the AppImage, build from source, connect MPPS / CAN / ELM327. |
 | **[OBD Drive Mode](OBD-Drive-Mode)** | One-button road validation: ELM327, measured vs OpenDAMOS expected, turbo banner, CSV. |
+| **[ECU Drive Android](ECU-Drive-Android)** | Qt phone app: import `.ecutune`, BT/USB ELM, validate on the road without a PC. |
 | **[Architecture](Architecture)** | The hub, shared libraries, and the flash → verify loops (OBD + SocketSpy). |
 | **[OpenDAMOS](OpenDAMOS)** | Axis-fingerprint relocation, supported ECUs, A2L → OpenDAMOS converter. |
 | **[Sub-Programs](Sub-Programs)** | ECU Studio and SocketSpy feature-by-feature (current: **v1.6.6**). |
@@ -90,6 +91,7 @@
 |------|---------|
 | **[Getting Started](Getting-Started)** | Télécharger l'AppImage, compiler, brancher MPPS / CAN / ELM327. |
 | **[OBD Drive Mode](OBD-Drive-Mode)** | Validation route en un bouton : ELM327, mesuré vs attendu OpenDAMOS, bandeau turbo, CSV. |
+| **[ECU Drive Android](ECU-Drive-Android)** | App Qt téléphone : import `.ecutune`, ELM BT/USB, validation sans PC. |
 | **[Architecture](Architecture)** | Le hub, les bibliothèques partagées et les boucles flash → vérification (OBD + SocketSpy). |
 | **[OpenDAMOS](OpenDAMOS)** | Relocalisation par empreinte d'axes, ECU supportés, convertisseur A2L → OpenDAMOS. |
 | **[Sub-Programs](Sub-Programs)** | ECU Studio et SocketSpy fonctionnalité par fonctionnalité (actuel : **v1.6.6**). |

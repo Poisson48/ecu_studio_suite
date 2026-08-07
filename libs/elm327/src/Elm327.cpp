@@ -1,27 +1,33 @@
-#include "obd/elm327.h"
+#include "elm/Elm327.hpp"
 #include "ecu/Obd2.hpp"
 
 #include <QSerialPort>
 #include <QSerialPortInfo>
 #include <QTimer>
 #include <QRegularExpression>
+#include <QIODevice>
+
+#if defined(ELM_HAVE_BLUETOOTH)
+#  include <QBluetoothSocket>
+#  include <QBluetoothAddress>
+#  include <QBluetoothServiceInfo>
+#  include <QBluetoothUuid>
+#endif
 
 #include <algorithm>
 
-namespace ecu_studio {
+namespace elm {
 
 namespace {
-// Séquence d'init OBD : echo off, pas de linefeeds, espaces ON (le parseur OBD2
-// attend des octets séparés), headers off (réponses PID propres), protocole auto.
 const QStringList kInit = { "ATZ", "ATE0", "ATL0", "ATS1", "ATH0", "ATSP0" };
 
 bool isElmBridge(quint16 vid, quint16 pid) {
     switch (vid) {
-        case 0x1A86: return pid == 0x7523 || pid == 0x5523 || pid == 0x55D4; // CH340/341
-        case 0x0403: return true;   // FTDI (6001/6010/6011/6014/6015)
-        case 0x10C4: return pid == 0xEA60 || pid == 0xEA70 || pid == 0xEA71; // CP210x
-        case 0x067B: return pid == 0x2303 || pid == 0x23A3 || pid == 0x23C3; // PL2303
-        case 0x0918: return true;   // QBD / clones CDC ACM (ex. ELM327 v1.5 USB)
+        case 0x1A86: return pid == 0x7523 || pid == 0x5523 || pid == 0x55D4;
+        case 0x0403: return true;
+        case 0x10C4: return pid == 0xEA60 || pid == 0xEA70 || pid == 0xEA71;
+        case 0x067B: return pid == 0x2303 || pid == 0x23A3 || pid == 0x23C3;
+        case 0x0918: return true;
         default:     return false;
     }
 }
@@ -33,6 +39,11 @@ Elm327::Elm327(QObject* parent) : QObject(parent) {
     connect(m_timeout, &QTimer::timeout, this, &Elm327::onTimeout);
     m_poll = new QTimer(this);
     connect(m_poll, &QTimer::timeout, this, &Elm327::onPollTick);
+#if defined(ELM_HAVE_BLUETOOTH)
+    m_btConnectTimeout = new QTimer(this);
+    m_btConnectTimeout->setSingleShot(true);
+    connect(m_btConnectTimeout, &QTimer::timeout, this, &Elm327::onBtConnectTimeout);
+#endif
 }
 
 Elm327::~Elm327() { disconnectPort(); }
@@ -42,13 +53,12 @@ QList<SerialPortDesc> Elm327::listPorts() {
     for (const QSerialPortInfo& info : QSerialPortInfo::availablePorts()) {
         const QString name = info.portName();
         const bool hasVid = info.hasVendorIdentifier() && info.hasProductIdentifier();
-        // Linux expose ttyS0…ttyS31 même sans UART — ça noie le vrai ELM (ttyACM/ttyUSB).
         const bool usbLike =
             name.contains(QLatin1String("ACM"), Qt::CaseInsensitive)
             || name.contains(QLatin1String("USB"), Qt::CaseInsensitive)
             || name.contains(QLatin1String("rfcomm"), Qt::CaseInsensitive)
-            || name.startsWith(QLatin1String("cu."), Qt::CaseInsensitive)   // macOS
-            || name.startsWith(QLatin1String("COM"), Qt::CaseInsensitive);  // Windows
+            || name.startsWith(QLatin1String("cu."), Qt::CaseInsensitive)
+            || name.startsWith(QLatin1String("COM"), Qt::CaseInsensitive);
         if (!hasVid && !usbLike) continue;
 
         SerialPortDesc d;
@@ -63,7 +73,6 @@ QList<SerialPortDesc> Elm327::listPorts() {
         d.description = desc.trimmed();
         out.push_back(d);
     }
-    // Adaptateurs ELM en tête pour que le combo tombe dessus sans scroller.
     std::stable_sort(out.begin(), out.end(), [](const SerialPortDesc& a, const SerialPortDesc& b) {
         return a.likelyElm > b.likelyElm;
     });
@@ -73,15 +82,133 @@ QList<SerialPortDesc> Elm327::listPorts() {
 void Elm327::connectPort(const QString& port, int baud) {
     disconnectPort();
     m_port = port;
+    m_label = port;
     m_autoBaud = (baud == 0);
     m_triedHighBaud = false;
     m_opening = true;
-    tryOpen(m_autoBaud ? 38400 : baud);
+    tryOpenSerial(m_autoBaud ? 38400 : baud);
 }
 
-void Elm327::tryOpen(int baud) {
+void Elm327::attachDevice(QIODevice* device, bool ownDevice, const QString& label) {
+    disconnectPort();
+    if (!device) {
+        failConnect(tr("Périphérique invalide"));
+        return;
+    }
+    m_io = device;
+    m_ownIo = ownDevice;
+    m_label = label.isEmpty() ? QStringLiteral("device") : label;
+    m_port = m_label;
+    m_opening = true;
+    if (!m_io->isOpen() && !m_io->open(QIODevice::ReadWrite)) {
+        failConnect(tr("Ouverture impossible : %1").arg(m_io->errorString()));
+        return;
+    }
+    connect(m_io, &QIODevice::readyRead, this, &Elm327::onReadyRead);
+    beginInit();
+}
+
+#if defined(ELM_HAVE_BLUETOOTH)
+void Elm327::connectBluetooth(const QString& address) {
+    disconnectPort();
+    const QBluetoothAddress addr(address);
+    if (addr.isNull()) {
+        failConnect(tr("Adresse Bluetooth invalide"));
+        return;
+    }
+    m_btAddress = address;
+    m_btAttempt = 0;
+    m_btTransport = true;
+    m_atzRetried = false;
+    m_opening = true;
+    m_label = address;
+    m_port = address;
+    tryNextBtAttempt();
+}
+
+void Elm327::tryNextBtAttempt() {
+    if (m_btAttempt > 2) {
+        failConnect(tr("Bluetooth : impossible de joindre %1\n"
+                       "(SPP / canaux 1–2).\n"
+                       "Appaire le module (PIN 1234 ou 0000) puis réessaie.")
+                        .arg(m_btAddress));
+        return;
+    }
+    startBtSocket();
+}
+
+void Elm327::startBtSocket() {
+    // Ferme l'essai précédent sans toucher m_connectEpoch / m_opening.
+    if (m_bt) {
+        QObject::disconnect(m_bt, nullptr, this, nullptr);
+        if (m_bt->isOpen()) m_bt->close();
+        m_bt->deleteLater();
+        m_bt = nullptr;
+    }
+    m_io = nullptr;
+
+    m_bt = new QBluetoothSocket(QBluetoothServiceInfo::RfcommProtocol, this);
+    connect(m_bt, &QBluetoothSocket::connected, this, &Elm327::onBtConnected);
+    connect(m_bt, &QBluetoothSocket::errorOccurred, this, &Elm327::onBtError);
+
+    const QBluetoothAddress addr(m_btAddress);
+    if (m_btAttempt == 0) {
+        emit status(tr("Bluetooth → %1 (SPP UUID)…").arg(m_btAddress));
+        m_bt->connectToService(
+            addr, QBluetoothUuid(QBluetoothUuid::ServiceClassUuid::SerialPort));
+    } else {
+        const quint16 ch = (m_btAttempt == 1) ? quint16(1) : quint16(2);
+        emit status(tr("Bluetooth → %1 (RFCOMM %2)…").arg(m_btAddress).arg(ch));
+        m_bt->connectToService(addr, ch);
+    }
+    m_btConnectTimeout->start(18000);
+}
+
+void Elm327::onBtConnected() {
+    if (m_btConnectTimeout) m_btConnectTimeout->stop();
+    m_io = m_bt;
+    m_ownIo = false;
+    connect(m_bt, &QIODevice::readyRead, this, &Elm327::onReadyRead);
+    // Clones chinois : jettent souvent les premiers octets juste après RFCOMM up.
+    const int epoch = m_connectEpoch;
+    QTimer::singleShot(400, this, [this, epoch]() {
+        if (epoch != m_connectEpoch || !m_bt || !m_bt->isOpen()) return;
+        beginInit();
+    });
+}
+
+void Elm327::onBtError() {
+    if (!m_bt || !m_opening) return;
+    if (m_btConnectTimeout) m_btConnectTimeout->stop();
+    const QString err = m_bt->errorString();
+    ++m_btAttempt;
+    if (m_btAttempt <= 2) {
+        emit status(tr("BT échec (%1) — nouvel essai…").arg(err));
+        QTimer::singleShot(250, this, [this]() {
+            if (m_opening) tryNextBtAttempt();
+        });
+        return;
+    }
+    failConnect(tr("Bluetooth : %1").arg(err));
+}
+
+void Elm327::onBtConnectTimeout() {
+    if (!m_opening || !m_btTransport) return;
+    ++m_btAttempt;
+    if (m_btAttempt <= 2) {
+        emit status(tr("BT timeout — nouvel essai…"));
+        tryNextBtAttempt();
+        return;
+    }
+    failConnect(tr("Bluetooth : délai dépassé pour %1.\n"
+                   "Module allumé (contact ON) et appairé ?")
+                    .arg(m_btAddress));
+}
+#endif
+
+void Elm327::tryOpenSerial(int baud) {
     m_baud = baud;
-    closeSerial();
+    closeTransport();
     m_serial = new QSerialPort(this);
     m_serial->setPortName(m_port);
     m_serial->setBaudRate(baud);
@@ -91,34 +218,39 @@ void Elm327::tryOpen(int baud) {
     m_serial->setFlowControl(QSerialPort::NoFlowControl);
     if (!m_serial->open(QIODevice::ReadWrite)) {
         const QString err = m_serial->errorString();
-        closeSerial();
+        closeTransport();
         QString hint = tr("(droits ? groupe « dialout »)");
-        if (err.contains(QLatin1String("busy"), Qt::CaseInsensitive)
-            || err.contains(QLatin1String("Device is already"), Qt::CaseInsensitive)
-            || err.contains(QLatin1String("Resource busy"), Qt::CaseInsensitive)
-            || err.contains(QLatin1String("Occupied"), Qt::CaseInsensitive))
-            hint = tr("(port déjà ouvert — ferme l'autre app / déconnecte d'abord)");
+        if (err.contains(QLatin1String("busy"), Qt::CaseInsensitive))
+            hint = tr("(port déjà ouvert)");
         failConnect(tr("Ouverture %1 impossible : %2 %3").arg(m_port, err, hint));
         return;
     }
-    // DTR/RTS UNIQUEMENT après open (sinon Qt log « device not open » et certains
-    // CDC se mettent dans un état pourri au 2ᵉ essai → crash / refus).
     if (isCdcAcmPort()) {
         m_serial->setDataTerminalReady(true);
         m_serial->setRequestToSend(true);
     }
     m_serial->clear(QSerialPort::AllDirections);
+    m_io = m_serial;
+    m_ownIo = false;
     connect(m_serial, &QSerialPort::readyRead, this, &Elm327::onReadyRead);
     emit status(tr("Connexion à %1 @ %2 bauds…").arg(m_port).arg(baud));
+    beginInit();
+}
 
+void Elm327::beginInit() {
     m_ready = false; m_canMode = false; m_initStep = 0; m_elmVersion.clear();
     m_queue.clear(); m_buf.clear(); m_busy = false;
+#if defined(ELM_HAVE_BLUETOOTH)
+    m_atzRetried = false;
+#endif
     for (const QString& c : kInit) enqueue(c, Kind::Init);
-
     const int epoch = ++m_connectEpoch;
-    // Court délai post-open : laisse le PIC CDC digérer le DTR avant ATZ.
-    QTimer::singleShot(isCdcAcmPort() ? 250 : 0, this, [this, epoch]() {
-        if (epoch != m_connectEpoch || !m_serial || !m_serial->isOpen()) return;
+    int delayMs = isCdcAcmPort() ? 250 : 0;
+#if defined(ELM_HAVE_BLUETOOTH)
+    if (m_btTransport) delayMs = 0; // déjà attendu dans onBtConnected
+#endif
+    QTimer::singleShot(delayMs, this, [this, epoch]() {
+        if (epoch != m_connectEpoch || !m_io || !m_io->isOpen()) return;
         sendNext();
     });
 }
@@ -129,32 +261,54 @@ void Elm327::failConnect(const QString& why) {
     disconnectPort();
 }
 
-void Elm327::closeSerial() {
-    if (!m_serial) return;
-    // Couper les signaux avant close : évite readyRead sur objet en destruction
-    // (symptôme fréquent au 2ᵉ « Connecter » sur ttyACM).
-    QObject::disconnect(m_serial, nullptr, this, nullptr);
-    if (m_serial->isOpen()) m_serial->close();
-    m_serial->deleteLater();
-    m_serial = nullptr;
+void Elm327::closeTransport() {
+    if (m_serial) {
+        QObject::disconnect(m_serial, nullptr, this, nullptr);
+        if (m_serial->isOpen()) m_serial->close();
+        m_serial->deleteLater();
+        m_serial = nullptr;
+    }
+#if defined(ELM_HAVE_BLUETOOTH)
+    if (m_bt) {
+        QObject::disconnect(m_bt, nullptr, this, nullptr);
+        if (m_bt->isOpen()) m_bt->close();
+        m_bt->deleteLater();
+        m_bt = nullptr;
+    }
+#endif
+    if (m_io && m_ownIo) {
+        QObject::disconnect(m_io, nullptr, this, nullptr);
+        if (m_io->isOpen()) m_io->close();
+        m_io->deleteLater();
+    } else if (m_io) {
+        QObject::disconnect(m_io, nullptr, this, nullptr);
+    }
+    m_io = nullptr;
+    m_ownIo = false;
 }
 
 void Elm327::disconnectPort() {
-    ++m_connectEpoch;   // annule tout singleShot d'init en vol
+    ++m_connectEpoch;
     m_poll->stop();
     m_timeout->stop();
+#if defined(ELM_HAVE_BLUETOOTH)
+    if (m_btConnectTimeout) m_btConnectTimeout->stop();
+    m_btTransport = false;
+    m_btAddress.clear();
+    m_btAttempt = 0;
+#endif
     m_pollPids.clear();
     m_queue.clear();
     m_buf.clear();
     m_busy = false; m_canMode = false; m_opening = false;
     const bool wasReady = m_ready;
     m_ready = false;
-    closeSerial();
+    closeTransport();
     if (wasReady) emit disconnected();
 }
 
 void Elm327::writeRaw(const QByteArray& bytes) {
-    if (m_serial && m_serial->isOpen()) m_serial->write(bytes);
+    if (m_io && m_io->isOpen()) m_io->write(bytes);
 }
 
 void Elm327::enqueue(const QString& text, Kind kind, std::uint8_t pid) {
@@ -167,7 +321,6 @@ void Elm327::sendNext() {
     m_buf.clear();
 
     if (m_current.kind == Kind::CanStart) {
-        // ATMA : flux continu, pas de prompt « > » attendu.
         writeRaw("ATMA\r");
         m_canMode = true;
         emit status(tr("Monitor CAN actif (ATMA)."));
@@ -176,17 +329,20 @@ void Elm327::sendNext() {
 
     m_busy = true;
     writeRaw((m_current.text + "\r").toLatin1());
-    // ATZ = reset soft du PIC : jusqu'à ~2 s sur clones lents + marge CDC.
-    const int to = (m_current.text == QLatin1String("ATZ")) ? 5000 : 1500;
+    int to = (m_current.text == QLatin1String("ATZ")) ? 5000 : 1500;
+#if defined(ELM_HAVE_BLUETOOTH)
+    if (m_btTransport) {
+        to = (m_current.text == QLatin1String("ATZ")) ? 8000 : 3000;
+    }
+#endif
     m_timeout->start(to);
 }
 
 void Elm327::onReadyRead() {
-    if (!m_serial) return;
-    m_buf += m_serial->readAll();
+    if (!m_io) return;
+    m_buf += m_io->readAll();
 
     if (m_canMode) {
-        // Flux de trames : on découpe sur \r / \n et on parse chaque ligne.
         for (;;) {
             int idx = m_buf.indexOf('\r');
             if (idx < 0) idx = m_buf.indexOf('\n');
@@ -213,7 +369,6 @@ void Elm327::onReadyRead() {
         return;
     }
 
-    // Mode commande : la réponse est complète à l'arrivée du prompt « > ».
     const int p = m_buf.indexOf('>');
     if (p < 0) return;
     m_timeout->stop();
@@ -271,7 +426,7 @@ void Elm327::handleResponse(const Cmd& cmd, const QString& resp) {
 
 void Elm327::processInitStep(const QString& resp) {
     ++m_initStep;
-    if (m_initStep == 1) {   // réponse à ATZ
+    if (m_initStep == 1) {
         for (const QString& l : resp.split(QRegularExpression(QStringLiteral("[\\r\\n]+")),
                                            Qt::SkipEmptyParts))
             if (l.contains(QLatin1String("ELM"), Qt::CaseInsensitive))
@@ -283,38 +438,44 @@ void Elm327::processInitStep(const QString& resp) {
         emit connected(m_elmVersion.isEmpty() ? tr("ELM327") : m_elmVersion);
         emit status(tr("Prêt."));
         if (!m_pollPids.isEmpty() && !m_poll->isActive())
-            m_poll->start();   // reprend le polling si demandé avant connexion
+            m_poll->start();
     }
 }
 
 void Elm327::onTimeout() {
     m_busy = false;
-    // Auto-baud (ponts USB-série classiques) : si ATZ ne répond pas à 38400,
-    // retente à 115200. Sur CDC ACM (ttyACM / QBD 0918:…) le débit est ignoré
-    // par le bus — retenter une autre vitesse ne sert à rien.
     if (!m_ready && m_current.kind == Kind::Init && m_initStep == 0
-            && m_autoBaud && !m_triedHighBaud && !isCdcAcmPort()) {
+            && m_autoBaud && !m_triedHighBaud && !isCdcAcmPort() && m_serial) {
         m_triedHighBaud = true;
         emit status(tr("Pas de réponse à 38400 — essai à 115200 bauds…"));
-        if (m_serial) { m_serial->close(); m_serial->deleteLater(); m_serial = nullptr; }
-        tryOpen(115200);
+        tryOpenSerial(115200);
         return;
     }
+#if defined(ELM_HAVE_BLUETOOTH)
+    // Un ATZ raté sur clone BT : un seul retry avant d'abandonner.
+    if (!m_ready && m_btTransport && m_current.kind == Kind::Init
+            && m_initStep == 0 && !m_atzRetried
+            && m_current.text == QLatin1String("ATZ")) {
+        m_atzRetried = true;
+        emit status(tr("Pas de réponse ATZ — nouvel essai…"));
+        QQueue<Cmd> rest = m_queue;
+        m_queue.clear();
+        m_queue.enqueue({ QStringLiteral("ATZ"), Kind::Init, 0 });
+        while (!rest.isEmpty())
+            m_queue.enqueue(rest.dequeue());
+        QTimer::singleShot(300, this, [this]() { sendNext(); });
+        return;
+    }
+#endif
     if (!m_ready) {
         failConnect(tr("ELM327 ne répond pas sur %1.\n"
-                       "Branche le dongle sur la prise OBD du véhicule et mets "
-                       "le contact : beaucoup de clones (dont QBD USB) "
-                       "s'alimentent en 12 V via l'OBD — le port USB apparaît "
-                       "même sans ça, mais le chip ELM reste muet.")
-                        .arg(m_port));
+                       "Contact ON + adaptateur OBD alimenté.")
+                        .arg(m_label));
         return;
     }
-    // En fonctionnement : on abandonne la commande courante et on continue.
     if (m_current.kind == Kind::Pid) emit pidUnsupported(m_current.pid);
     sendNext();
 }
-
-// ── API publique ─────────────────────────────────────────────────────────────
 
 void Elm327::queryPid(std::uint8_t pid) {
     if (!m_ready) return;
@@ -332,7 +493,7 @@ void Elm327::stopPolling() { m_poll->stop(); m_pollPids.clear(); }
 
 void Elm327::onPollTick() {
     if (!m_ready || m_canMode || m_pollPids.isEmpty()) return;
-    if (m_busy || !m_queue.isEmpty()) return;   // n'empile pas : attend le tour précédent
+    if (m_busy || !m_queue.isEmpty()) return;
     const std::uint8_t pid = m_pollPids[m_pollIdx % m_pollPids.size()];
     m_pollIdx = (m_pollIdx + 1) % m_pollPids.size();
     queryPid(pid);
@@ -340,14 +501,12 @@ void Elm327::onPollTick() {
 
 void Elm327::readDtcs(bool pending) {
     if (!m_ready) return;
-    // cmd.pid porte le mode OBD (03 ou 07) pour que decodeDtcs sache quel
-    // octet de réponse (0x43 / 0x47) chercher.
     const std::uint8_t mode = pending ? 0x07 : 0x03;
     enqueue(pending ? QStringLiteral("07") : QStringLiteral("03"), Kind::Dtc, mode);
     sendNext();
 }
-void Elm327::clearDtcs() { if (m_ready) { enqueue("04", Kind::ClearDtc);sendNext(); } }
-void Elm327::readVin()   { if (m_ready) { enqueue("0902", Kind::Vin);   sendNext(); } }
+void Elm327::clearDtcs() { if (m_ready) { enqueue("04", Kind::ClearDtc); sendNext(); } }
+void Elm327::readVin()   { if (m_ready) { enqueue("0902", Kind::Vin); sendNext(); } }
 
 void Elm327::readFreezeFrame(const QList<std::uint8_t>& pids) {
     if (!m_ready) return;
@@ -355,28 +514,27 @@ void Elm327::readFreezeFrame(const QList<std::uint8_t>& pids) {
     if (list.isEmpty()) {
         for (const auto& p : ecu::obd2::freezeFramePids()) list.push_back(p.pid);
     }
-    for (std::uint8_t pid : list) {
+    for (std::uint8_t pid : list)
         enqueue(ecu::obd2::freezeFrameRequest(pid), Kind::FreezeFrame, pid);
-    }
     sendNext();
 }
 
 void Elm327::startCanMonitor() {
     if (!m_ready) return;
     stopPolling();
-    enqueue("ATH1", Kind::Raw);     // headers ON pour voir les IDs
+    enqueue("ATH1", Kind::Raw);
     enqueue("ATMA", Kind::CanStart);
     sendNext();
 }
 
 void Elm327::stopCanMonitor() {
     if (!m_canMode) return;
-    writeRaw("\r");          // tout caractère interrompt ATMA
+    writeRaw("\r");
     m_canMode = false;
     m_buf.clear();
-    enqueue("ATH0", Kind::Raw);   // retour mode OBD (headers off)
+    enqueue("ATH0", Kind::Raw);
     m_busy = false;
     sendNext();
 }
 
-} // namespace ecu_studio
+} // namespace elm

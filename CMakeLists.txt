@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(ecu-studio-suite VERSION 1.6.6 LANGUAGES CXX C)
+project(ecu-studio-suite VERSION 1.7.0 LANGUAGES CXX C)
 
 # ── Version ───────────────────────────────────────────────────────────────────
 # APP_VERSION (compilé dans le binaire via PROJECT_VERSION) DOIT correspondre au
@@ -13,7 +13,12 @@ if(ECU_VERSION_OVERRIDE)
     message(STATUS "Version surchargée depuis le tag git : ${PROJECT_VERSION}")
 endif()
 
-set(CMAKE_CXX_STANDARD 23)
+# Android NDK : C++20 suffit et évite les trous C++23 du clang NDK.
+if(ANDROID)
+    set(CMAKE_CXX_STANDARD 20)
+else()
+    set(CMAKE_CXX_STANDARD 23)
+endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -26,15 +31,23 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # `socketspy`, qu'ECU Studio peut lancer depuis le panneau « CAN ».
 option(ECU_BUILD_SOCKETSPY       "Build complet de l'app SocketSpy"    OFF)
 option(ECU_BUILD_ECU_STUDIO      "Build ECU Studio"                    ON)
+option(ECU_BUILD_ECU_DRIVE       "Build ECU Drive (validation route)"  ON)
 option(ECU_BUILD_TESTS           "Build tests"                         ON)
 option(ECU_MPPS_SIMULATION       "Simulate MPPS (pas de vrai USB)"     OFF)
 option(ECU_MPPS_PROTOCOL_LOG     "Logger toutes les trames MPPS"       OFF)
 
 # ── Qt6 ──────────────────────────────────────────────────────────────────────
-find_package(Qt6 REQUIRED COMPONENTS
-    Core Widgets Charts SerialBus SerialPort
-    Concurrent Sql Network OpenGL
-)
+# ECU Drive seul (Android / CI minimale) : pas besoin de Charts/SerialBus/OpenGL.
+if(ECU_BUILD_ECU_STUDIO)
+    find_package(Qt6 REQUIRED COMPONENTS
+        Core Widgets Charts SerialBus SerialPort
+        Concurrent Sql Network OpenGL
+    )
+else()
+    find_package(Qt6 REQUIRED COMPONENTS
+        Core Widgets SerialPort Network Sql
+    )
+endif()
 qt_standard_project_setup()
 
 # ── Autres dépendances ───────────────────────────────────────────────────────
@@ -50,17 +63,27 @@ endif()
 # libusb : requis uniquement pour le vrai accès USB (MPPS). En simulation — le cas
 # par défaut sous Windows tant que le hardware MPPS n'est pas finalisé — on s'en
 # passe (chaque sous-lib gère son propre fallback).
-if(NOT ECU_MPPS_SIMULATION)
+if(ECU_BUILD_ECU_STUDIO AND NOT ECU_MPPS_SIMULATION)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
 else()
-    # Mode simulation : pas besoin de libusb
+    # Mode simulation / build Drive-only : pas besoin de libusb
     set(LIBUSB_FOUND FALSE)
     set(LIBUSB_LIBRARIES "")
     set(LIBUSB_INCLUDE_DIRS "")
 endif()
 
-find_package(nlohmann_json REQUIRED)
+# nlohmann_json : paquet système en CI desktop ; FetchContent sur Android / Windows
+# sans vcpkg.
+find_package(nlohmann_json QUIET)
+if(NOT nlohmann_json_FOUND)
+    include(FetchContent)
+    FetchContent_Declare(nlohmann_json
+        URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
+        URL_HASH SHA256=d6c65aca6b1ed68e7a182f4757257b107ae403032760ed6ef121c9d55e81757d
+    )
+    FetchContent_MakeAvailable(nlohmann_json)
+endif()
 # GTest n'est nécessaire que pour la suite de tests (tests/).
 if(ECU_BUILD_TESTS)
     find_package(GTest REQUIRED)
@@ -90,10 +113,14 @@ endif()
 
 # ── Sous-répertoires ─────────────────────────────────────────────────────────
 add_subdirectory(libs/shared)
-add_subdirectory(libs/can-core)
-add_subdirectory(libs/mpps)
 add_subdirectory(libs/ecu-core)
-add_subdirectory(libs/ecu-mcp)
+add_subdirectory(libs/elm327)
+# Libs réservées à ECU Studio (flash MPPS, CAN, MCP) — pas pour ECU Drive Android.
+if(ECU_BUILD_ECU_STUDIO)
+    add_subdirectory(libs/can-core)
+    add_subdirectory(libs/mpps)
+    add_subdirectory(libs/ecu-mcp)
+endif()
 
 # ── SocketSpy ────────────────────────────────────────────────────────────────
 # Le submodule SocketSpy est utilisé de deux manières :
@@ -118,6 +145,9 @@ endif()
 
 if(ECU_BUILD_ECU_STUDIO)
     add_subdirectory(apps/ecu-studio)
+endif()
+if(ECU_BUILD_ECU_DRIVE)
+    add_subdirectory(apps/ecu-drive)
 endif()
 if(ECU_BUILD_TESTS)
     include(CTest)

@@ -23,6 +23,7 @@
 #include "ecu/WinolsParser.hpp"
 #include "ecu/ReportGenerator.hpp"
 #include "ecu/OpenDamos.hpp"
+#include "ecu/TunePackage.hpp"
 
 #include <QApplication>
 #include <QMenuBar>
@@ -319,6 +320,52 @@ void MainWindow::importWinols() {
     importWinolsFile(f);
 }
 
+void MainWindow::exportEcutune() {
+    if (!m_doc || !m_doc->isLoaded()) {
+        QMessageBox::information(this, tr("ECU Drive"),
+                                 tr("Charge d'abord une ROM."));
+        return;
+    }
+    const QString ecuId = m_doc->ecuId();
+    if (ecuId.isEmpty()) {
+        QMessageBox::warning(this, tr("ECU Drive"),
+                             tr("Sélectionne un type d'ECU (OpenDAMOS) avant d'exporter."));
+        return;
+    }
+    auto recipe = ecu::OpenDamos::loadRecipe(ecuId);
+    if (!recipe) {
+        QMessageBox::warning(this, tr("ECU Drive"),
+                             tr("Impossible de charger la recipe OpenDAMOS pour « %1 ».")
+                                 .arg(ecuId));
+        return;
+    }
+    const QByteArray recipeJson = QByteArray::fromStdString(
+        ecu::OpenDamos::serializeRecipe(*recipe));
+    const QString suggested = QStringLiteral("%1_%2.ecutune")
+                                  .arg(ecuId, m_doc->name().isEmpty()
+                                                   ? QStringLiteral("tune")
+                                                   : QFileInfo(m_doc->name()).baseName());
+    const QString out = QFileDialog::getSaveFileName(
+        this, tr("Exporter pour ECU Drive"), suggested,
+        tr("Package ECU Drive (*.ecutune)"));
+    if (out.isEmpty()) return;
+
+    const auto pkg = ecu::TunePackageIo::make(
+        m_doc->rom(), ecuId, recipeJson,
+        QStringLiteral(APP_VERSION),
+        tr("Exporté depuis ECU Studio"));
+    auto w = ecu::TunePackageIo::writeZipFile(out, pkg);
+    if (!w) {
+        QMessageBox::warning(this, tr("ECU Drive"), w.error());
+        return;
+    }
+    statusBar()->showMessage(tr("Package ECU Drive écrit : %1").arg(out), 6000);
+    QMessageBox::information(this, tr("ECU Drive"),
+        tr("Fichier .ecutune créé.\n\n"
+           "Transfère-le sur le téléphone (USB / cloud local) et ouvre-le dans ECU Drive.\n\n"
+           "%1").arg(out));
+}
+
 void MainWindow::importWinolsFile(const QString& f) {
     QFile file(f);
     if (!file.open(QIODevice::ReadOnly)) {
@@ -462,6 +509,7 @@ void MainWindow::setupMenuBar() {
     connect(m_recentMenu, &QMenu::aboutToShow, this, &MainWindow::rebuildRecentMenu);
 
     fileMenu->addAction(tr("Importer projet WinOLS..."), this, &MainWindow::importWinols);
+    fileMenu->addAction(tr("Exporter pour ECU Drive (.ecutune)…"), this, &MainWindow::exportEcutune);
     fileMenu->addSeparator();
     fileMenu->addAction(tr("Enregistrer ROM..."), QKeySequence::Save, this, [this]() {
         if (!m_doc->isLoaded()) {

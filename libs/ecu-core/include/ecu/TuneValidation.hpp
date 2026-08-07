@@ -5,6 +5,7 @@
 //
 #include "ecu/OpenDamos.hpp"
 #include "ecu/MapSampler.hpp"
+#include "ecu/TunePackage.hpp"
 
 #include <QByteArray>
 #include <QDateTime>
@@ -158,6 +159,10 @@ class TuneValidator {
 public:
     void clear();
     bool loadRom(const QByteArray& rom, const QString& ecuId);
+    // Charge ROM + recipe JSON embarquée (package .ecutune) — sans filesystem recettes.
+    bool loadRomWithRecipe(const QByteArray& rom, const QString& ecuId,
+                           const QByteArray& recipeJsonUtf8);
+    bool loadTunePackage(const TunePackage& pkg);
 
     bool isReady() const { return m_ready; }
     QString ecuId() const { return m_ecuId; }

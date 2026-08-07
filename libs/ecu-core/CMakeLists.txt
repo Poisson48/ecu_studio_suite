@@ -1,5 +1,8 @@
 find_package(Qt6 REQUIRED COMPONENTS Core Sql)
-find_package(nlohmann_json QUIET)   # optionnel
+# nlohmann_json : fourni par le CMake racine (find_package ou FetchContent).
+if(NOT TARGET nlohmann_json::nlohmann_json)
+    find_package(nlohmann_json REQUIRED)
+endif()
 
 # libgit2 (optionnel) — active GitManager (historique/undo-redo des ROMs).
 # Sous Linux on passe par pkg-config ; sous Windows (vcpkg) il n'y a pas de
@@ -64,6 +67,7 @@ list(APPEND ECU_CORE_SOURCES src/Edc17Checksum.cpp)
 list(APPEND ECU_CORE_SOURCES src/Obd2.cpp)
 list(APPEND ECU_CORE_SOURCES src/MapSampler.cpp)
 list(APPEND ECU_CORE_SOURCES src/TuneValidation.cpp)
+list(APPEND ECU_CORE_SOURCES src/TunePackage.cpp)
 
 # GitManager optionnel (libgit2 requis)
 if(LIBGIT2_FOUND)
@@ -81,12 +85,9 @@ target_include_directories(ecu_core
 find_package(ZLIB REQUIRED)
 
 target_link_libraries(ecu_core
-    PUBLIC  Qt6::Core Qt6::Sql
+    PUBLIC  Qt6::Core Qt6::Sql nlohmann_json::nlohmann_json
     PRIVATE ZLIB::ZLIB
 )
-if(nlohmann_json_FOUND)
-    target_link_libraries(ecu_core PUBLIC nlohmann_json::nlohmann_json)
-endif()
 if(LIBGIT2_FOUND)
     target_link_libraries(ecu_core PRIVATE ${LIBGIT2_LIBRARIES})
     # PUBLIC : la macro doit être visible par les consommateurs (ecu-studio) qui
