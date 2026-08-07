@@ -158,7 +158,7 @@ void Updater::setState(State s)
         qInfo() << "[Updater] version" << m_latestVersion
                 << "disponible (installée :" << currentVersion() << ")";
     else if (s == Failed)
-        qWarning() << "[Updater] échec téléchargement" << m_apkUrl;
+        qWarning() << "[Updater] échec" << m_lastError << m_apkUrl;
     emit stateChanged();
 }
 
@@ -167,6 +167,7 @@ void Updater::check()
     if (m_state == Checking || m_state == Downloading)
         return;
 
+    m_lastError.clear();
     setState(Checking);
 
     QNetworkRequest req{ QUrl(QString::fromLatin1(kReleasesApi)) };
@@ -180,11 +181,18 @@ void Updater::check()
         reply->deleteLater();
 
         if (reply->error() != QNetworkReply::NoError) {
-            setState(Idle);
+            m_lastError = reply->errorString();
+            qWarning() << "[Updater] check réseau:" << m_lastError;
+            setState(Failed);
             return;
         }
 
         const QJsonArray arr = QJsonDocument::fromJson(reply->readAll()).array();
+        if (arr.isEmpty()) {
+            m_lastError = QStringLiteral("Réponse GitHub vide ou invalide.");
+            setState(Failed);
+            return;
+        }
 
         m_changelog.clear();
         m_apkUrl.clear();
@@ -251,6 +259,10 @@ void Updater::check()
         }
 
         m_latestVersion = bestNewer;
+        if (m_apkUrl.isEmpty()) {
+            m_lastError = QStringLiteral("Release %1 sans APK ecu-drive.").arg(bestNewer);
+            qWarning() << "[Updater]" << m_lastError;
+        }
         setState(Available);
     });
 }
@@ -264,6 +276,7 @@ void Updater::download()
     if (m_state == Downloading)
         return;
 
+    m_lastError.clear();
     const QString dir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
     QDir().mkpath(dir);
     m_apkPath = dir + QStringLiteral("/ecu-drive-") + m_latestVersion
@@ -291,12 +304,14 @@ void Updater::download()
         reply->deleteLater();
 
         if (reply->error() != QNetworkReply::NoError) {
+            m_lastError = reply->errorString();
             setState(Failed);
             return;
         }
 
         QFile out(m_apkPath);
         if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+            m_lastError = QStringLiteral("Impossible d'écrire %1").arg(m_apkPath);
             setState(Failed);
             return;
         }
@@ -306,6 +321,7 @@ void Updater::download()
 
         if (written != body.size() || body.isEmpty()) {
             QFile::remove(m_apkPath);
+            m_lastError = QStringLiteral("Téléchargement APK incomplet.");
             setState(Failed);
             return;
         }
@@ -319,6 +335,7 @@ void Updater::install()
     if (canInstall() && m_state == Ready && !m_apkPath.isEmpty()) {
         if (platformInstallApk(m_apkPath))
             return;
+        m_lastError = QStringLiteral("PackageInstaller a refusé l'APK.");
         setState(Failed);
         return;
     }

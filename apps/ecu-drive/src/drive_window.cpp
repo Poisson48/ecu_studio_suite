@@ -771,7 +771,10 @@ void DriveWindow::refreshUpdateBanner() {
         m_updateActionBtn->setText(tr("Installer"));
     } else if (st == S::Failed) {
         m_updateTitle->setText(tr("Échec de la mise à jour"));
-        m_updateSub->setText(tr("Réessaie ou ouvre la page GitHub."));
+        const QString err = m_updater->lastError();
+        m_updateSub->setText(err.isEmpty()
+                                 ? tr("Réessaie ou ouvre la page GitHub.")
+                                 : err);
         m_updateActionBtn->setText(tr("Réessayer"));
     } else {
         m_updateTitle->setText(tr("Version %1 disponible").arg(m_updater->latestVersion()));
@@ -811,6 +814,22 @@ void DriveWindow::onUpdateDismiss() {
 void DriveWindow::checkUpdatesManual() {
     if (!m_updater) return;
     setStatus(tr("Vérification des mises à jour…"));
+    // Afficher le résultat même si déjà Idle / à jour.
+    connect(m_updater, &Updater::stateChanged, this, [this]() {
+        if (!m_updater) return;
+        using S = Updater::State;
+        const S st = m_updater->state();
+        if (st == S::Checking || st == S::Downloading) return;
+        if (st == S::Available || st == S::Ready)
+            setStatus(tr("Mise à jour %1 disponible.").arg(m_updater->latestVersion()));
+        else if (st == S::Failed)
+            setStatus(m_updater->lastError().isEmpty()
+                          ? tr("Échec de la vérification des mises à jour.")
+                          : m_updater->lastError(),
+                      true);
+        else
+            setStatus(tr("À jour (v%1).").arg(m_updater->currentVersion()));
+    }, Qt::SingleShotConnection);
     m_updater->check();
 }
 

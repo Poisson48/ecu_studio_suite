@@ -52,6 +52,16 @@ if(ANDROID)
     set_target_properties(ecu_drive PROPERTIES
         QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android"
     )
+    # Qt Network HTTPS : le plugin qopensslbackend est dans l'APK, mais sans
+    # libssl/libcrypto le check GitHub Releases échoue (TLS init failed).
+    include(FetchContent)
+    FetchContent_Declare(android_openssl
+        URL https://github.com/KDAB/android_openssl/archive/b71f1470962019bd89534a2919f5925f93bc5779.zip
+        URL_HASH SHA256=9277d62ecdb4809801e2c369e0a639c154e0d9137e8d60863b44bf07d16ed5b3
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+    FetchContent_MakeAvailable(android_openssl)
+    include(${android_openssl_SOURCE_DIR}/android_openssl.cmake)
+    add_android_openssl_libraries(ecu_drive)
 endif()
 
 # Sur Android, qt_add_executable produit un MODULE (pas un RUNTIME) — pas

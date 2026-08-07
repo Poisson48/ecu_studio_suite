@@ -71,7 +71,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/Qt
-          key: qt-${{ env.QT_VER }}-linux-android-arm64-x86_64-ecudrive-v2
+          key: qt-${{ env.QT_VER }}-linux-android-arm64-x86_64-ecudrive-v3
 
       - name: Qt ${{ env.QT_VER }} (hôte + android arm64 + x86_64)
         if: steps.cache-qt.outputs.cache-hit != 'true'

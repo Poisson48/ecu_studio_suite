@@ -30,6 +30,7 @@ public:
     QString currentVersion() const;
     QString latestVersion() const { return m_latestVersion; }
     QString releaseNotes() const { return m_releaseNotes; }
+    QString lastError() const { return m_lastError; }
     QVariantList changelog() const { return m_changelog; }
     QString whatsNewNotes() const { return m_whatsNewNotes; }
     bool    hasWhatsNew() const { return !m_whatsNewNotes.isEmpty(); }
@@ -70,6 +71,7 @@ private:
     QString m_apkUrl;
     QString m_releaseUrl;
     QString m_apkPath;
+    QString m_lastError;
     qreal   m_progress = 0.0;
 };
 

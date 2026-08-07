@@ -71,7 +71,11 @@ public class UpdateHelper {
             if (status != PackageInstaller.STATUS_PENDING_USER_ACTION)
                 return;
 
-            Intent confirm = intent.getParcelableExtra(Intent.EXTRA_INTENT);
+            Intent confirm;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                confirm = intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
+            else
+                confirm = intent.getParcelableExtra(Intent.EXTRA_INTENT);
             if (confirm == null)
                 return;
             confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
