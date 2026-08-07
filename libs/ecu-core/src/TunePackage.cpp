@@ -91,9 +91,13 @@ std::expected<QByteArray, QString> extractNamed(const QByteArray& zip, const QSt
     const std::span<const uint8_t> buf(raw, static_cast<std::size_t>(zip.size()));
     const auto eocdOff = findEOCD(buf);
     if (!eocdOff)
-        return std::unexpected(QStringLiteral("ZIP: EOCD introuvable"));
+        return std::unexpected(QStringLiteral(
+            "Fichier .ecutune invalide ou tronqué (ZIP EOCD introuvable).\n"
+            "Réexporte depuis ECU Studio (Fichier → Exporter pour ECU Drive) "
+            "et transfère par USB/adb — pas WhatsApp/SMS."));
     if (*eocdOff + 22u > buf.size())
-        return std::unexpected(QStringLiteral("ZIP: EOCD tronqué"));
+        return std::unexpected(QStringLiteral(
+            "Fichier .ecutune tronqué (ZIP EOCD incomplet). Re-transfère le fichier."));
 
     const uint32_t cdOffset = le32(buf.data() + *eocdOff + 16);
     const uint32_t cdSize   = le32(buf.data() + *eocdOff + 12);

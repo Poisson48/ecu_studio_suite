@@ -264,6 +264,8 @@ OpenDamos::loadRecipe(const QString& ecu, const QString& baseDir) {
     QStringList candidates;
     if (!baseDir.isEmpty())
         candidates << QDir(baseDir).filePath(rel);
+    // Recettes embarquées (Qt resource, APK / AppImage).
+    candidates << QStringLiteral(":/ressources/") + rel;
     // Cache utilisateur : <AppDataLocation>/opendamos/<ecu>/open_damos.json
     candidates << QDir(userRecipeDir()).filePath(rel);
     candidates << QDir(QStringLiteral("ressources")).filePath(rel);

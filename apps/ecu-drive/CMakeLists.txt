@@ -18,6 +18,9 @@ if(ANDROID)
     )
 endif()
 
+# Recettes OpenDAMOS embarquées (:/ressources/<ecu>/open_damos.json) — import .bin.
+qt_add_resources(ECU_DRIVE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/opendamos_recipes.qrc")
+
 qt_add_executable(ecu_drive ${ECU_DRIVE_SOURCES})
 
 target_include_directories(ecu_drive PRIVATE

@@ -43,7 +43,7 @@
 | Sub-program | Role |
 |-------------|------|
 | **ECU Studio** | ECU reprogramming, 2D + 3D map editor, DAMOS editor, A2L browser, hex view, checksums, MPPS V21 flashing, ROM compare, git versioning, AutoMods, OpenDAMOS, and **OBD drive-mode tune validation**. |
-| **ECU Drive** (**Beta**) | Android phone companion: import `.ecutune`, ELM327 BT/USB, validate on the road without a PC. |
+| **ECU Drive** (**Beta**) | Android phone companion: import `.ecutune` or ROM `.bin`, ELM327 BT/USB, validate on the road without a PC. |
 | **SocketSpy** | Linux SocketCAN analysis — live monitor, DBC decode, signal graphs, transmit, protocol decoders (CANopen / J1939 / ISO-TP / UDS / OBD-II / NMEA2000), Lua scripting, CAN simulator, MCP/JSON-RPC API, io_uring capture, frame fuzzer, UDS tester + ECU simulator, BLF/MDF4 export, capture diff, multi-bus, Signal Detective, i18n. |
 
 ### Wiki pages
@@ -52,7 +52,7 @@
 |------|---------------|
 | **[Getting Started](Getting-Started)** | Download the AppImage, build from source, connect MPPS / CAN / ELM327. |
 | **[OBD Drive Mode](OBD-Drive-Mode)** | One-button road validation: ELM327, measured vs OpenDAMOS expected, turbo banner, CSV. |
-| **[ECU Drive Android](ECU-Drive-Android)** | **Beta** phone app: import `.ecutune`, BT/USB ELM, validate on the road without a PC. |
+| **[ECU Drive Android](ECU-Drive-Android)** | **Beta** phone app: import `.ecutune` / `.bin`, BT/USB ELM, validate on the road without a PC. |
 | **[Architecture](Architecture)** | The hub, shared libraries, and the flash → verify loops (OBD + SocketSpy). |
 | **[OpenDAMOS](OpenDAMOS)** | Axis-fingerprint relocation, supported ECUs, A2L → OpenDAMOS converter. |
 | **[Sub-Programs](Sub-Programs)** | ECU Studio and SocketSpy feature-by-feature (current: **v1.6.6**). |
@@ -84,7 +84,7 @@
 | Sous-programme | Rôle |
 |----------------|------|
 | **ECU Studio** | Reprogrammation ECU, éditeur de cartographies 2D + 3D, éditeur DAMOS, navigateur A2L, vue hexadécimale, checksums, flash MPPS V21, comparaison de ROM, versionnement git, AutoMods, OpenDAMOS, et **validation tune OBD en mode conduite**. |
-| **ECU Drive** (**Bêta**) | Compagnon Android : import `.ecutune`, ELM327 BT/USB, validation sur la route sans PC. |
+| **ECU Drive** (**Bêta**) | Compagnon Android : import `.ecutune` ou ROM `.bin`, ELM327 BT/USB, validation sur la route sans PC. |
 | **SocketSpy** | Analyse SocketCAN sous Linux — moniteur live, décodage DBC, graphes de signaux, émission, décodeurs de protocoles (CANopen / J1939 / ISO-TP / UDS / OBD-II / NMEA2000), scripting Lua, simulateur CAN, API MCP/JSON-RPC, capture io_uring, fuzzer de trames, testeur UDS + simulateur d'ECU, export BLF/MDF4, diff de captures, multi-bus, Signal Detective, i18n. |
 
 ### Pages du wiki
@@ -93,7 +93,7 @@
 |------|---------|
 | **[Getting Started](Getting-Started)** | Télécharger l'AppImage, compiler, brancher MPPS / CAN / ELM327. |
 | **[OBD Drive Mode](OBD-Drive-Mode)** | Validation route en un bouton : ELM327, mesuré vs attendu OpenDAMOS, bandeau turbo, CSV. |
-| **[ECU Drive Android](ECU-Drive-Android)** | App téléphone **bêta** : import `.ecutune`, ELM BT/USB, validation sans PC. |
+| **[ECU Drive Android](ECU-Drive-Android)** | App téléphone **bêta** : import `.ecutune` / `.bin`, ELM BT/USB, validation sans PC. |
 | **[Architecture](Architecture)** | Le hub, les bibliothèques partagées et les boucles flash → vérification (OBD + SocketSpy). |
 | **[OpenDAMOS](OpenDAMOS)** | Relocalisation par empreinte d'axes, ECU supportés, convertisseur A2L → OpenDAMOS. |
 | **[Sub-Programs](Sub-Programs)** | ECU Studio et SocketSpy fonctionnalité par fonctionnalité (actuel : **v1.6.6**). |

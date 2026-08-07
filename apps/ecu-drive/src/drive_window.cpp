@@ -2,6 +2,7 @@
 
 #include "elm/Elm327.hpp"
 #include "ecu/TunePackage.hpp"
+#include "ecu/OpenDamos.hpp"
 #include "updater.h"
 
 #include <QVBoxLayout>
@@ -27,7 +28,8 @@
 #include <QFileInfo>
 #include <QTimer>
 #include <QProgressBar>
-#include <QApplication>
+#include <QInputDialog>
+#include <QDirIterator>
 
 #if defined(ELM_HAVE_BLUETOOTH)
 #  include <QBluetoothDeviceDiscoveryAgent>
@@ -97,10 +99,8 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
     QTimer::singleShot(0, this, [this]() {
         QSettings s;
         const QString last = s.value(QStringLiteral("drive/lastTune")).toString();
-        if (!last.isEmpty() && QFile::exists(last)) {
-            if (auto pkg = ecu::TunePackageIo::readZipFile(last))
-                applyTunePackage(*pkg, last);
-        }
+        if (!last.isEmpty() && QFile::exists(last))
+            loadTuneFile(last);
         refreshPorts();
 #if defined(ELM_HAVE_BLUETOOTH)
         selectLastBtDevice();
@@ -209,12 +209,12 @@ void DriveWindow::buildUi() {
     ub->addLayout(ubRow);
     root->addWidget(m_updateBanner);
 
-    m_tuneLabel = new QLabel(tr("Aucun tune — importe un fichier .ecutune"), central);
+    m_tuneLabel = new QLabel(tr("Aucun tune — importe un .ecutune ou une ROM .bin"), central);
     m_tuneLabel->setWordWrap(true);
     m_tuneLabel->setStyleSheet(QStringLiteral("color:#60a5fa; font-size:13px;"));
     root->addWidget(m_tuneLabel);
 
-    auto* importBtn = new QPushButton(tr("Importer .ecutune…"), central);
+    auto* importBtn = new QPushButton(tr("Importer tune / ROM…"), central);
     importBtn->setMinimumHeight(44);
     importBtn->setObjectName("accentBtn");
     connect(importBtn, &QPushButton::clicked, this, &DriveWindow::importTune);
@@ -334,20 +334,134 @@ void DriveWindow::setStatus(const QString& msg, bool error) {
 
 void DriveWindow::importTune() {
     const QString path = QFileDialog::getOpenFileName(
-        this, tr("Importer tune ECU Drive"),
+        this, tr("Importer tune / ROM"),
         QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
-        tr("Tune ECU Drive (*.ecutune *.zip);;Tous (*.*)"));
+        tr("Tune / ROM (*.ecutune *.bin *.zip);;ROM brute (*.bin);;Package ECU Drive (*.ecutune *.zip);;Tous (*.*)"));
     if (path.isEmpty()) return;
     loadTuneFile(path);
 }
 
+QStringList DriveWindow::availableEcuIds() {
+    QStringList ids;
+    auto addFrom = [&](const QString& root) {
+        QDirIterator it(root, QStringList{QStringLiteral("open_damos.json")},
+                        QDir::Files, QDirIterator::Subdirectories);
+        while (it.hasNext()) {
+            it.next();
+            const QString ecu = QFileInfo(it.filePath()).dir().dirName();
+            if (!ecu.isEmpty() && !ids.contains(ecu))
+                ids << ecu;
+        }
+    };
+    addFrom(QStringLiteral(":/ressources"));
+    addFrom(ecu::OpenDamos::userRecipeDir());
+    addFrom(QStringLiteral("ressources"));
+    ids.sort(Qt::CaseInsensitive);
+    return ids;
+}
+
+QString DriveWindow::promptEcuId(const QString& hint) {
+    const QStringList ids = availableEcuIds();
+    if (ids.isEmpty()) {
+        QMessageBox::warning(this, tr("Import ROM"),
+            tr("Aucune recette OpenDAMOS embarquée.\n"
+               "Utilise un fichier .ecutune exporté depuis ECU Studio."));
+        return {};
+    }
+    QString initial = hint;
+    if (initial.isEmpty())
+        initial = QSettings().value(QStringLiteral("drive/lastEcu"), QStringLiteral("edc16c34")).toString();
+    int idx = ids.indexOf(initial);
+    if (idx < 0) idx = 0;
+    bool ok = false;
+    const QString ecu = QInputDialog::getItem(
+        this, tr("Choisir l'ECU"),
+        tr("ROM brute (.bin) — sélectionne le type d'ECU\n"
+           "(recette OpenDAMOS pour relocaliser les maps) :"),
+        ids, idx, false, &ok);
+    if (!ok || ecu.isEmpty()) return {};
+    QSettings().setValue(QStringLiteral("drive/lastEcu"), ecu);
+    return ecu;
+}
+
+bool DriveWindow::loadRomBinaryFile(const QString& path) {
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(this, tr("Import"),
+                             tr("Impossible d'ouvrir %1").arg(path));
+        return false;
+    }
+    const QByteArray rom = f.readAll();
+    if (rom.size() < 1024) {
+        QMessageBox::warning(this, tr("Import"),
+            tr("Fichier trop petit pour une ROM ECU (%1 octet(s)).").arg(rom.size()));
+        return false;
+    }
+    // ZIP / .ecutune mal nommé : laisser l'appelant tenter le package.
+    if (rom.size() >= 4) {
+        const quint32 sig = quint32(quint8(rom[0])) | (quint32(quint8(rom[1])) << 8)
+                          | (quint32(quint8(rom[2])) << 16) | (quint32(quint8(rom[3])) << 24);
+        if (sig == 0x04034B50u) // PK\3\4 local file header
+            return false;
+    }
+
+    const QString ecu = promptEcuId();
+    if (ecu.isEmpty()) return true; // annulé
+    applyRomBinary(rom, ecu, path);
+    return true;
+}
+
 void DriveWindow::loadTuneFile(const QString& path) {
-    auto pkg = ecu::TunePackageIo::readZipFile(path);
-    if (!pkg) {
-        QMessageBox::warning(this, tr("Import"), pkg.error());
+    const QString suffix = QFileInfo(path).suffix().toLower();
+    if (suffix == QLatin1String("bin") || suffix == QLatin1String("rom")) {
+        if (loadRomBinaryFile(path))
+            return;
+        // Si c'était un ZIP déguisé, tombe sur readZip ci-dessous.
+    }
+    if (suffix == QLatin1String("ecutune") || suffix == QLatin1String("zip")
+        || suffix == QLatin1String("bin") || suffix == QLatin1String("rom")
+        || suffix.isEmpty()) {
+        auto pkg = ecu::TunePackageIo::readZipFile(path);
+        if (pkg) {
+            applyTunePackage(*pkg, path);
+            return;
+        }
+        if (suffix == QLatin1String("ecutune") || suffix == QLatin1String("zip")) {
+            QMessageBox::warning(this, tr("Import"), pkg.error());
+            return;
+        }
+    }
+    // Dernier recours : ROM brute
+    if (!loadRomBinaryFile(path)) {
+        QMessageBox::warning(this, tr("Import"),
+            tr("Format non reconnu. Utilise un .ecutune (export ECU Studio) ou une ROM .bin."));
+    }
+}
+
+void DriveWindow::applyRomBinary(const QByteArray& rom, const QString& ecuId,
+                                 const QString& path) {
+    if (!m_validator.loadRom(rom, ecuId)) {
+        QMessageBox::warning(this, tr("Import ROM"),
+            tr("Impossible de relocaliser les maps pour l'ECU « %1 ».\n"
+               "Vérifie le type d'ECU, ou exporte un .ecutune depuis ECU Studio "
+               "(qui embarque la recette OpenDAMOS).").arg(ecuId));
         return;
     }
-    applyTunePackage(*pkg, path);
+    m_tunePath = path;
+    QSettings().setValue(QStringLiteral("drive/lastTune"), path);
+    const int n = static_cast<int>(m_validator.rules().size());
+    m_tuneLabel->setText(
+        tr("ROM : %1\nECU %2 · MD5 %3 · %4 map(s) · prêt=%5")
+            .arg(QFileInfo(path).fileName(),
+                 ecuId,
+                 m_validator.romMd5().left(8))
+            .arg(n)
+            .arg(m_validator.isReady() ? tr("oui") : tr("non")));
+    m_sessionBtn->setEnabled(m_connected && m_validator.isReady());
+    setStatus(m_validator.isReady()
+                  ? tr("ROM chargée — connecte l'ELM puis lance la session.")
+                  : tr("ROM chargée mais aucune map validable."),
+              !m_validator.isReady());
 }
 
 void DriveWindow::applyTunePackage(const ecu::TunePackage& pkg, const QString& path) {
@@ -367,7 +481,7 @@ void DriveWindow::applyTunePackage(const ecu::TunePackage& pkg, const QString& p
             .arg(m_validator.isReady() ? tr("oui") : tr("non (relocalisation)")));
     m_sessionBtn->setEnabled(m_connected && m_validator.isReady());
     setStatus(m_validator.isReady()
-                  ? tr("Tune chargé — connecte l'ELM327.")
+                  ? tr("Tune prêt — connecte l'ELM puis lance la session.")
                   : tr("Tune chargé mais aucune map validable (ROM/recipe)."),
               !m_validator.isReady());
 }

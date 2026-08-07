@@ -8,7 +8,7 @@
 
 ## English
 
-**ECU Drive** (**Beta**) is the simplified Qt6 companion for validating a flashed tune **on the road without a PC**. It imports a portable **`.ecutune`** package, connects an **ELM327** (Bluetooth SPP or USB OTG), and compares live OBD PIDs to OpenDAMOS expected values — same `TuneValidator` as ECU Studio.
+**ECU Drive** (**Beta**) is the simplified Qt6 companion for validating a flashed tune **on the road without a PC**. It imports a portable **`.ecutune`** package **or a raw ROM `.bin`** (pick ECU / OpenDAMOS recipe), connects an **ELM327** (Bluetooth SPP or USB OTG), and compares live OBD PIDs to OpenDAMOS expected values — same `TuneValidator` as ECU Studio.
 
 > **Maturity:** 🧪 **Beta** — shipped as a signed APK on GitHub Releases; works on device/emulator, not yet field-hardened.
 
@@ -16,8 +16,9 @@
 **[GitHub Releases](https://github.com/Poisson48/ecu_studio_suite/releases/latest)** — asset `ecu-drive-*-arm64.apk` (multi-ABI arm64 + x86_64).
 
 ### Workflow
-1. On desktop **ECU Studio** → *File → Export for ECU Drive (.ecutune)…*
-2. Copy the `.ecutune` file to the phone
+1. Prefer: desktop **ECU Studio** → *File → Export for ECU Drive (.ecutune)…* (embeds recipe + fingerprints).
+   Or: copy the flashed ROM **`.bin`** and choose the ECU type in-app.
+2. Copy the file to the phone
 3. Open **ECU Drive** → Import → Connect ELM (BT scan or USB) → **▶ Start drive session**
 4. After the drive: session summary + CSV under app data (Share opens the folder)
 
@@ -57,14 +58,17 @@ Secondary. Host permission + VID filter (CH340/FTDI/CP210x/QBD). `UsbSerialHelpe
 
 ## Français
 
-**ECU Drive** (**Bêta**) est le compagnon Qt6 simplifié pour valider une carto **en roulant sans PC**. Il importe un package **`.ecutune`**, se connecte à un **ELM327** (Bluetooth SPP ou USB OTG), et compare les PID OBD live aux valeurs OpenDAMOS attendues — même `TuneValidator` qu’ECU Studio.
+**ECU Drive** (**Bêta**) est le compagnon Qt6 simplifié pour valider une carto **en roulant sans PC**. Il importe un package **`.ecutune`** **ou une ROM `.bin` brute** (choix de l’ECU / recette OpenDAMOS), se connecte à un **ELM327** (Bluetooth SPP ou USB OTG), et compare les PID OBD live aux valeurs OpenDAMOS attendues — même `TuneValidator` qu’ECU Studio.
 
 > **Maturité :** 🧪 **Bêta** — APK signé sur les Releases GitHub ; fonctionne sur appareil/émulateur, pas encore durci sur le terrain.
 
 ### Téléchargement
 **[Releases GitHub](https://github.com/Poisson48/ecu_studio_suite/releases/latest)** — asset `ecu-drive-*-arm64.apk` (multi-ABI arm64 + x86_64).
-1. Sur **ECU Studio** → *Fichier → Exporter pour ECU Drive (.ecutune)…*
-2. Copie le `.ecutune` sur le téléphone
+
+### Déroulement
+1. Idéal : **ECU Studio** → *Fichier → Exporter pour ECU Drive (.ecutune)…* (recette + fingerprints inclus).
+   Ou : copie la ROM flashée **`.bin`** et choisis le type d’ECU dans l’app.
+2. Copie le fichier sur le téléphone
 3. **ECU Drive** → Importer → Connecter ELM (scan BT ou USB) → **▶ Lancer session conduite**
 4. Après : résumé + CSV (Partager ouvre le dossier)
 

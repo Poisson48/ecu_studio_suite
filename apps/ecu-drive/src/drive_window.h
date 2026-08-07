@@ -30,7 +30,7 @@ public:
     explicit DriveWindow(QWidget* parent = nullptr);
     ~DriveWindow() override;
 
-    /** Charge un .ecutune (ex. --tune CLI). */
+    /** Charge un .ecutune ou une ROM .bin/.hex (ex. --tune CLI). */
     void loadTuneFile(const QString& path);
 
 private slots:
@@ -49,6 +49,12 @@ private:
     void buildUi();
     void setStatus(const QString& msg, bool error = false);
     void applyTunePackage(const ecu::TunePackage& pkg, const QString& path);
+    void applyRomBinary(const QByteArray& rom, const QString& ecuId, const QString& path);
+    /** Liste les ECU ayant une recette OpenDAMOS (qrc + disque). */
+    static QStringList availableEcuIds();
+    /** Dialogue : choisir l'ECU pour une ROM brute. */
+    QString promptEcuId(const QString& hint = {});
+    bool loadRomBinaryFile(const QString& path);
     void startSession();
     void stopSession();
     void runValidation();
