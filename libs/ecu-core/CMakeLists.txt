@@ -79,8 +79,10 @@ add_library(ecu_core STATIC ${ECU_CORE_SOURCES})
 target_include_directories(ecu_core
     PUBLIC  include
     PRIVATE src
-            ${LIBGIT2_INCLUDE_DIRS}
 )
+if(LIBGIT2_FOUND AND LIBGIT2_INCLUDE_DIRS)
+    target_include_directories(ecu_core PRIVATE ${LIBGIT2_INCLUDE_DIRS})
+endif()
 
 find_package(ZLIB REQUIRED)
 
