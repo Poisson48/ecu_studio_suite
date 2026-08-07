@@ -13,12 +13,8 @@ if(ECU_VERSION_OVERRIDE)
     message(STATUS "Version surchargée depuis le tag git : ${PROJECT_VERSION}")
 endif()
 
-# Android NDK : C++20 suffit et évite les trous C++23 du clang NDK.
-if(ANDROID)
-    set(CMAKE_CXX_STANDARD 20)
-else()
-    set(CMAKE_CXX_STANDARD 23)
-endif()
+# C++23 partout (y compris Android / NDK 27) : ecu_core utilise std::expected.
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

@@ -45,9 +45,7 @@ if(Qt6Bluetooth_FOUND)
     target_compile_definitions(ecu_drive PRIVATE ELM_HAVE_BLUETOOTH)
 endif()
 
-# Android: C++20 si NDK capricieux sur C++23 pour ce target uniquement
 if(ANDROID)
-    set_property(TARGET ecu_drive PROPERTY CXX_STANDARD 20)
     set_target_properties(ecu_drive PROPERTIES
         QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android"
     )
