@@ -30,6 +30,11 @@
 #include <QProgressBar>
 #include <QInputDialog>
 #include <QDirIterator>
+#include <QEventLoop>
+#include <thread>
+#include <functional>
+#include <type_traits>
+#include <exception>
 
 #if defined(ELM_HAVE_BLUETOOTH)
 #  include <QBluetoothDeviceDiscoveryAgent>
@@ -60,6 +65,7 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
 
     connect(m_elm, &elm::Elm327::connected, this, [this](const QString& v) {
         m_connected = true;
+        m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Déconnecter"));
         setStatus(tr("Connecté — %1").arg(v));
         m_sessionBtn->setEnabled(m_validator.isReady());
@@ -74,12 +80,14 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
     connect(m_elm, &elm::Elm327::disconnected, this, [this]() {
         m_connected = false;
         if (m_sessionOn) stopSession();
+        m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Connecter"));
         m_sessionBtn->setEnabled(false);
         setStatus(tr("Déconnecté."));
     });
     connect(m_elm, &elm::Elm327::errorOccurred, this, [this](const QString& e) {
         m_connected = false;
+        m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Connecter"));
         setStatus(e, true);
     });
@@ -220,6 +228,22 @@ void DriveWindow::buildUi() {
     connect(importBtn, &QPushButton::clicked, this, &DriveWindow::importTune);
     root->addWidget(importBtn);
 
+    m_busyFrame = new QFrame(central);
+    m_busyFrame->setVisible(false);
+    m_busyFrame->setStyleSheet(QStringLiteral(
+        "QFrame { background:#1e293b; border:1px solid #334155; border-radius:8px; }"));
+    auto* busyLay = new QVBoxLayout(m_busyFrame);
+    busyLay->setContentsMargins(12, 10, 12, 10);
+    m_busyLabel = new QLabel(m_busyFrame);
+    m_busyLabel->setWordWrap(true);
+    m_busyLabel->setStyleSheet(QStringLiteral("color:#e2e8f0; font-size:13px; font-weight:600;"));
+    m_busyBar = new QProgressBar(m_busyFrame);
+    m_busyBar->setTextVisible(true);
+    m_busyBar->setMinimumHeight(18);
+    busyLay->addWidget(m_busyLabel);
+    busyLay->addWidget(m_busyBar);
+    root->addWidget(m_busyFrame);
+
     // Connexion
     auto* connRow = new QHBoxLayout;
     m_portCombo = new QComboBox(central);
@@ -332,16 +356,82 @@ void DriveWindow::setStatus(const QString& msg, bool error) {
     m_statusLabel->setText(msg);
 }
 
+void DriveWindow::beginBusy(const QString& message, int max) {
+    ++m_busyDepth;
+    if (!m_busyFrame) return;
+    m_busyFrame->setVisible(true);
+    m_busyLabel->setText(message);
+    if (max <= 0) {
+        m_busyBar->setRange(0, 0); // indéterminé
+        m_busyBar->setFormat(QStringLiteral("%p%"));
+    } else {
+        m_busyBar->setRange(0, max);
+        m_busyBar->setValue(0);
+        m_busyBar->setFormat(QStringLiteral("%v / %m"));
+    }
+    setStatus(message);
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+}
+
+void DriveWindow::setBusy(int value, const QString& message) {
+    if (!m_busyFrame || !m_busyFrame->isVisible()) return;
+    if (!message.isEmpty()) {
+        m_busyLabel->setText(message);
+        setStatus(message);
+    }
+    if (m_busyBar->maximum() > 0 && value >= 0)
+        m_busyBar->setValue(value);
+    QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+}
+
+void DriveWindow::endBusy() {
+    if (m_busyDepth > 0)
+        --m_busyDepth;
+    if (m_busyDepth > 0) return;
+    if (m_busyFrame)
+        m_busyFrame->setVisible(false);
+    while (QApplication::overrideCursor())
+        QApplication::restoreOverrideCursor();
+}
+
+namespace {
+/** Exécute un travail lourd hors UI tout en laissant animer la barre busy. */
+template <typename Fn>
+auto runWhileBusy(Fn&& fn) {
+    using R = std::invoke_result_t<Fn>;
+    QEventLoop loop;
+    R result{};
+    std::exception_ptr exc;
+    std::thread worker([&]() {
+        try {
+            result = fn();
+        } catch (...) {
+            exc = std::current_exception();
+        }
+        QMetaObject::invokeMethod(&loop, &QEventLoop::quit, Qt::QueuedConnection);
+    });
+    loop.exec();
+    worker.join();
+    if (exc)
+        std::rethrow_exception(exc);
+    return result;
+}
+} // namespace
+
 void DriveWindow::importTune() {
     const QString path = QFileDialog::getOpenFileName(
         this, tr("Importer tune / ROM"),
         QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
         tr("Tune / ROM (*.ecutune *.bin *.zip);;ROM brute (*.bin);;Package ECU Drive (*.ecutune *.zip);;Tous (*.*)"));
     if (path.isEmpty()) return;
-    loadTuneFile(path);
+    // Laisser le dialogue fichier se fermer avant le busy.
+    QTimer::singleShot(0, this, [this, path]() { loadTuneFile(path); });
 }
 
 QStringList DriveWindow::availableEcuIds() {
+    if (!m_ecuIdsCache.isEmpty())
+        return m_ecuIdsCache;
     QStringList ids;
     auto addFrom = [&](const QString& root) {
         QDirIterator it(root, QStringList{QStringLiteral("open_damos.json")},
@@ -353,11 +443,15 @@ QStringList DriveWindow::availableEcuIds() {
                 ids << ecu;
         }
     };
+    beginBusy(tr("Indexation des recettes ECU…"));
     addFrom(QStringLiteral(":/ressources"));
+    setBusy(0, tr("Indexation des recettes (cache utilisateur)…"));
     addFrom(ecu::OpenDamos::userRecipeDir());
     addFrom(QStringLiteral("ressources"));
     ids.sort(Qt::CaseInsensitive);
-    return ids;
+    m_ecuIdsCache = ids;
+    endBusy();
+    return m_ecuIdsCache;
 }
 
 QString DriveWindow::promptEcuId(const QString& hint) {
@@ -385,13 +479,16 @@ QString DriveWindow::promptEcuId(const QString& hint) {
 }
 
 bool DriveWindow::loadRomBinaryFile(const QString& path) {
+    beginBusy(tr("Lecture de la ROM…"));
     QFile f(path);
     if (!f.open(QIODevice::ReadOnly)) {
+        endBusy();
         QMessageBox::warning(this, tr("Import"),
                              tr("Impossible d'ouvrir %1").arg(path));
         return false;
     }
     const QByteArray rom = f.readAll();
+    endBusy();
     if (rom.size() < 1024) {
         QMessageBox::warning(this, tr("Import"),
             tr("Fichier trop petit pour une ROM ECU (%1 octet(s)).").arg(rom.size()));
@@ -406,13 +503,18 @@ bool DriveWindow::loadRomBinaryFile(const QString& path) {
     }
 
     const QString ecu = promptEcuId();
-    if (ecu.isEmpty()) return true; // annulé
+    if (ecu.isEmpty()) {
+        setStatus(tr("Import annulé."));
+        return true; // annulé
+    }
     applyRomBinary(rom, ecu, path);
     return true;
 }
 
 void DriveWindow::loadTuneFile(const QString& path) {
     const QString suffix = QFileInfo(path).suffix().toLower();
+    setStatus(tr("Import de %1…").arg(QFileInfo(path).fileName()));
+
     if (suffix == QLatin1String("bin") || suffix == QLatin1String("rom")) {
         if (loadRomBinaryFile(path))
             return;
@@ -421,13 +523,18 @@ void DriveWindow::loadTuneFile(const QString& path) {
     if (suffix == QLatin1String("ecutune") || suffix == QLatin1String("zip")
         || suffix == QLatin1String("bin") || suffix == QLatin1String("rom")
         || suffix.isEmpty()) {
-        auto pkg = ecu::TunePackageIo::readZipFile(path);
+        beginBusy(tr("Lecture du package .ecutune…"));
+        auto pkg = runWhileBusy([&]() {
+            return ecu::TunePackageIo::readZipFile(path);
+        });
+        endBusy();
         if (pkg) {
             applyTunePackage(*pkg, path);
             return;
         }
         if (suffix == QLatin1String("ecutune") || suffix == QLatin1String("zip")) {
             QMessageBox::warning(this, tr("Import"), pkg.error());
+            setStatus(tr("Import échoué."), true);
             return;
         }
     }
@@ -435,16 +542,24 @@ void DriveWindow::loadTuneFile(const QString& path) {
     if (!loadRomBinaryFile(path)) {
         QMessageBox::warning(this, tr("Import"),
             tr("Format non reconnu. Utilise un .ecutune (export ECU Studio) ou une ROM .bin."));
+        setStatus(tr("Import échoué."), true);
     }
 }
 
 void DriveWindow::applyRomBinary(const QByteArray& rom, const QString& ecuId,
                                  const QString& path) {
-    if (!m_validator.loadRom(rom, ecuId)) {
+    beginBusy(tr("Relocalisation des maps (%1)…\nCela peut prendre plusieurs secondes.")
+                  .arg(ecuId));
+    const bool ok = runWhileBusy([&]() {
+        return m_validator.loadRom(rom, ecuId);
+    });
+    endBusy();
+    if (!ok) {
         QMessageBox::warning(this, tr("Import ROM"),
             tr("Impossible de relocaliser les maps pour l'ECU « %1 ».\n"
                "Vérifie le type d'ECU, ou exporte un .ecutune depuis ECU Studio "
                "(qui embarque la recette OpenDAMOS).").arg(ecuId));
+        setStatus(tr("Relocalisation échouée (%1).").arg(ecuId), true);
         return;
     }
     m_tunePath = path;
@@ -459,16 +574,22 @@ void DriveWindow::applyRomBinary(const QByteArray& rom, const QString& ecuId,
             .arg(m_validator.isReady() ? tr("oui") : tr("non")));
     m_sessionBtn->setEnabled(m_connected && m_validator.isReady());
     setStatus(m_validator.isReady()
-                  ? tr("ROM chargée — connecte l'ELM puis lance la session.")
+                  ? tr("ROM chargée (%1 maps) — connecte l'ELM puis lance la session.")
+                        .arg(n)
                   : tr("ROM chargée mais aucune map validable."),
               !m_validator.isReady());
 }
 
 void DriveWindow::applyTunePackage(const ecu::TunePackage& pkg, const QString& path) {
-    if (!m_validator.loadTunePackage(pkg)) {
-        // Peut échouer si fingerprints absents — on charge quand même les meta.
-        m_validator.loadRomWithRecipe(pkg.rom, pkg.manifest.ecuId, pkg.recipeJson);
-    }
+    beginBusy(tr("Application du tune (%1)…").arg(pkg.manifest.ecuId));
+    runWhileBusy([&]() {
+        if (!m_validator.loadTunePackage(pkg)) {
+            // Peut échouer si fingerprints absents — on charge quand même les meta.
+            m_validator.loadRomWithRecipe(pkg.rom, pkg.manifest.ecuId, pkg.recipeJson);
+        }
+        return true;
+    });
+    endBusy();
     m_tunePath = path;
     QSettings().setValue(QStringLiteral("drive/lastTune"), path);
     const int n = static_cast<int>(m_validator.rules().size());
@@ -481,7 +602,8 @@ void DriveWindow::applyTunePackage(const ecu::TunePackage& pkg, const QString& p
             .arg(m_validator.isReady() ? tr("oui") : tr("non (relocalisation)")));
     m_sessionBtn->setEnabled(m_connected && m_validator.isReady());
     setStatus(m_validator.isReady()
-                  ? tr("Tune prêt — connecte l'ELM puis lance la session.")
+                  ? tr("Tune prêt (%1 maps) — connecte l'ELM puis lance la session.")
+                        .arg(n)
                   : tr("Tune chargé mais aucune map validable (ROM/recipe)."),
               !m_validator.isReady());
 }
@@ -517,7 +639,10 @@ void DriveWindow::startBtScan() {
 
 void DriveWindow::toggleConnect() {
     if (m_connected) {
+        setStatus(tr("Déconnexion…"));
+        m_connectBtn->setEnabled(false);
         m_elm->disconnectPort();
+        m_connectBtn->setEnabled(true);
         return;
     }
 #if defined(ELM_HAVE_BLUETOOTH)
@@ -542,7 +667,13 @@ void DriveWindow::toggleConnect() {
             }
         }
 #endif
+        m_connectBtn->setEnabled(false);
+        setStatus(tr("Connexion Bluetooth… (%1)").arg(m_btCombo->currentText()));
         m_elm->connectBluetooth(addr);
+        QTimer::singleShot(8000, this, [this]() {
+            if (!m_connected && m_connectBtn)
+                m_connectBtn->setEnabled(true);
+        });
         return;
     }
 #endif
@@ -551,7 +682,13 @@ void DriveWindow::toggleConnect() {
         setStatus(tr("Choisis un port USB ou un appareil Bluetooth."), true);
         return;
     }
+    m_connectBtn->setEnabled(false);
+    setStatus(tr("Connexion USB… (%1)").arg(port));
     m_elm->connectPort(port, 0);
+    QTimer::singleShot(8000, this, [this]() {
+        if (!m_connected && m_connectBtn)
+            m_connectBtn->setEnabled(true);
+    });
 }
 
 void DriveWindow::toggleSession() {
@@ -561,6 +698,7 @@ void DriveWindow::toggleSession() {
 
 void DriveWindow::startSession() {
     if (!m_connected || !m_validator.isReady() || m_sessionOn) return;
+    beginBusy(tr("Démarrage de la session…"));
     m_hyst.reset();
     m_hyst.setFailThreshold(3);
     m_hyst.setOkThreshold(5);
@@ -577,17 +715,21 @@ void DriveWindow::startSession() {
     m_sessionBtn->setText(tr("■  Arrêter session"));
     autoStartCsv();
     m_verdict->setText(tr("Acquisition…"));
-    setStatus(tr("Session conduite active."));
+    endBusy();
+    setStatus(tr("Session conduite active — %1 PID(s).").arg(qp.size()));
 }
 
 void DriveWindow::stopSession() {
     if (!m_sessionOn) return;
+    beginBusy(tr("Arrêt de la session…"));
     m_elm->stopPolling();
     m_sessionOn = false;
     autoStopCsv();
     const auto sum = m_session.finish();
     m_sessionBtn->setText(tr("▶  Lancer session conduite"));
+    endBusy();
     if (sum.ticks > 0) showSummary(sum);
+    else setStatus(tr("Session arrêtée (aucune donnée)."));
 }
 
 void DriveWindow::onPid(quint8 pid, double value, const QString&, const QString&) {

@@ -17,6 +17,7 @@ class QCheckBox;
 class QFrame;
 class QFile;
 class QProgressBar;
+class QWidget;
 
 namespace elm { class Elm327; }
 
@@ -48,10 +49,14 @@ private slots:
 private:
     void buildUi();
     void setStatus(const QString& msg, bool error = false);
+    /** Affiche une barre de progression (indéterminée si max<=0). */
+    void beginBusy(const QString& message, int max = 0);
+    void setBusy(int value, const QString& message = {});
+    void endBusy();
     void applyTunePackage(const ecu::TunePackage& pkg, const QString& path);
     void applyRomBinary(const QByteArray& rom, const QString& ecuId, const QString& path);
-    /** Liste les ECU ayant une recette OpenDAMOS (qrc + disque). */
-    static QStringList availableEcuIds();
+    /** Liste les ECU ayant une recette OpenDAMOS (qrc + disque), mise en cache. */
+    QStringList availableEcuIds();
     /** Dialogue : choisir l'ECU pour une ROM brute. */
     QString promptEcuId(const QString& hint = {});
     bool loadRomBinaryFile(const QString& path);
@@ -85,6 +90,9 @@ private:
 
     QLabel*  m_tuneLabel = nullptr;
     QLabel*  m_statusLabel = nullptr;
+    QFrame*  m_busyFrame = nullptr;
+    QLabel*  m_busyLabel = nullptr;
+    QProgressBar* m_busyBar = nullptr;
     QComboBox* m_portCombo = nullptr;
     QComboBox* m_btCombo = nullptr;
     QPushButton* m_connectBtn = nullptr;
@@ -109,6 +117,8 @@ private:
     QHash<quint8, double> m_live;
     bool m_connected = false;
     bool m_sessionOn = false;
+    int  m_busyDepth = 0;
+    QStringList m_ecuIdsCache;
     QString m_tunePath;
     QString m_lastCsv;
     QFile* m_csv = nullptr;
