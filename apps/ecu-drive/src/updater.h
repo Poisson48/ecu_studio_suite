@@ -36,6 +36,10 @@ public:
     QString whatsNewNotes() const { return m_whatsNewNotes; }
     bool    hasWhatsNew() const { return !m_whatsNewNotes.isEmpty(); }
     qreal   progress() const { return m_progress; }
+    qint64  bytesReceived() const { return m_bytesReceived; }
+    qint64  bytesTotal() const { return m_bytesTotal; }
+    /** Libellé UI : « 42 % » ou « 12,3 Mo… » si taille inconnue (CDN GitHub). */
+    QString progressLabel() const;
     bool    canInstall() const;
     bool    updateAvailable() const { return m_state == Available; }
     bool    downloading() const { return m_state == Downloading; }
@@ -76,6 +80,8 @@ private:
     QString m_apkPath;
     QString m_lastError;
     qreal   m_progress = 0.0;
+    qint64  m_bytesReceived = 0;
+    qint64  m_bytesTotal = 0;
 };
 
 } // namespace ecu_drive

@@ -15,6 +15,7 @@
 #include <QFileInfo>
 #include <QDebug>
 #include <algorithm>
+#include <cmath>
 
 namespace ecu_drive {
 
@@ -276,6 +277,21 @@ void Updater::check()
     });
 }
 
+QString Updater::progressLabel() const
+{
+    const auto mo = [](qint64 b) {
+        return QString::number(qreal(b) / (1024.0 * 1024.0), 'f', 1);
+    };
+    if (m_bytesTotal > 0) {
+        return QStringLiteral("%1 % (%2 / %3 Mo)")
+            .arg(int(m_progress * 100))
+            .arg(mo(m_bytesReceived), mo(m_bytesTotal));
+    }
+    if (m_bytesReceived > 0)
+        return QStringLiteral("%1 Mo…").arg(mo(m_bytesReceived));
+    return QStringLiteral("0 %");
+}
+
 void Updater::download()
 {
     if (m_apkUrl.isEmpty()) {
@@ -310,13 +326,14 @@ void Updater::download()
                      QNetworkRequest::NoLessSafeRedirectPolicy);
 
     m_progress = 0.0;
+    m_bytesReceived = 0;
+    m_bytesTotal = 0;
     emit progressChanged();
     setState(Downloading);
 
     QNetworkReply* reply = m_net.get(req);
     m_reply = reply;
 
-    // Écriture au fil de l'eau — évite OOM (APK ~30 Mo) qui plantait l'app Android.
     auto* out = new QFile(m_apkPath);
     if (!out->open(QIODevice::WriteOnly | QIODevice::Truncate)) {
         m_lastError = QStringLiteral("Impossible d'écrire %1").arg(m_apkPath);
@@ -326,22 +343,44 @@ void Updater::download()
         return;
     }
 
-    connect(reply, &QNetworkReply::readyRead, this, [reply, out]() {
+    // GitHub CDN : souvent pas de Content-Length → downloadProgress total=-1.
+    // On avance la barre avec les octets réellement écrits.
+    auto updateProgress = [this](qint64 received, qint64 total) {
+        m_bytesReceived = received;
+        if (total > 0)
+            m_bytesTotal = total;
+        if (m_bytesTotal > 0) {
+            m_progress = qBound(0.0, qreal(m_bytesReceived) / qreal(m_bytesTotal), 0.99);
+        } else if (m_bytesReceived > 0) {
+            // Courbe asymptotique vers ~90 % (APK typique ~35 Mo).
+            constexpr qreal kExpect = 35.0 * 1024.0 * 1024.0;
+            m_progress = 0.90 * (1.0 - std::exp(-qreal(m_bytesReceived) / kExpect));
+        } else {
+            m_progress = 0.0;
+        }
+        emit progressChanged();
+    };
+
+    connect(reply, &QNetworkReply::readyRead, this, [this, reply, out, updateProgress]() {
         if (!out->isOpen()) return;
         out->write(reply->readAll());
+        qint64 total = m_bytesTotal;
+        if (total <= 0) {
+            const QVariant cl = reply->header(QNetworkRequest::ContentLengthHeader);
+            if (cl.isValid())
+                total = cl.toLongLong();
+        }
+        updateProgress(out->size(), total);
     });
 
     connect(reply, &QNetworkReply::downloadProgress, this,
-            [this](qint64 received, qint64 total) {
-        m_progress = (total > 0) ? qreal(received) / qreal(total)
-                                 : (received > 0 ? 0.05 : 0.0);
-        emit progressChanged();
+            [updateProgress](qint64 received, qint64 total) {
+        updateProgress(received, total);
     });
 
     connect(reply, &QNetworkReply::finished, this, [this, reply, out]() {
         reply->deleteLater();
         if (out->isOpen()) {
-            // Derniers octets éventuellement encore en buffer.
             if (reply->bytesAvailable() > 0)
                 out->write(reply->readAll());
             out->close();
@@ -365,6 +404,9 @@ void Updater::download()
         }
 
         qInfo() << "[Updater] APK prêt" << m_apkPath << sz << "octets";
+        m_bytesReceived = sz;
+        if (m_bytesTotal <= 0)
+            m_bytesTotal = sz;
         m_progress = 1.0;
         emit progressChanged();
         setState(Ready);

@@ -5,6 +5,7 @@
 #include "ecu/OpenDamos.hpp"
 #include "ecu/Obd2.hpp"
 #include "updater.h"
+#include "platform.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -121,6 +122,9 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
 
     // Différer ports / dernier tune : éviter de bloquer le premier show().
     QTimer::singleShot(0, this, [this]() {
+        // Précharge la liste ECU en arrière-plan (évite le trou sans feedback
+        // au premier import ROM sur Android).
+        (void)availableEcuIds();
         QSettings s;
         const QString last = s.value(QStringLiteral("drive/lastTune")).toString();
         if (!last.isEmpty() && QFile::exists(last))
@@ -282,7 +286,7 @@ void DriveWindow::buildUi() {
     m_busyOverlay = new QWidget(central);
     m_busyOverlay->setObjectName(QStringLiteral("busyOverlay"));
     m_busyOverlay->setStyleSheet(QStringLiteral(
-        "#busyOverlay { background-color: #e60f1520; }"));
+        "#busyOverlay { background-color: #0f1520; }"));
     m_busyOverlay->setVisible(false);
     m_busyOverlay->raise();
     auto* ovLay = new QVBoxLayout(m_busyOverlay);
@@ -632,6 +636,7 @@ void DriveWindow::beginBusy(const QString& message, int max) {
     layoutBusyOverlay();
     m_busyOverlay->setVisible(true);
     m_busyOverlay->raise();
+    m_busyOverlay->show();
     m_busyStartedMs = QDateTime::currentMSecsSinceEpoch();
     if (m_busyLabel) m_busyLabel->setText(message);
     if (m_busyDetail)
@@ -647,10 +652,16 @@ void DriveWindow::beginBusy(const QString& message, int max) {
         }
     }
     setStatus(message);
+    platformToast(message.split(QLatin1Char('\n')).first());
     if (m_busyPulse && !m_busyPulse->isActive())
         m_busyPulse->start();
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    // Plusieurs tours : Android peint souvent seulement après 2–3 processEvents.
+    for (int i = 0; i < 3; ++i)
+        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    m_busyOverlay->repaint();
+    if (m_busyLabel) m_busyLabel->repaint();
+    if (m_busyBar) m_busyBar->repaint();
 }
 
 void DriveWindow::setBusy(int value, const QString& message) {
@@ -725,14 +736,13 @@ QStringList DriveWindow::availableEcuIds() {
                 ids << ecu;
         }
     };
-    beginBusy(tr("Indexation des recettes ECU…"));
+    // Pas de busy ici : appelé au démarrage + à l'import ; l'appelant affiche
+    // déjà l'overlay si besoin (évite double feedback / flash).
     addFrom(QStringLiteral(":/ressources"));
-    setBusy(0, tr("Indexation des recettes (cache utilisateur)…"));
     addFrom(ecu::OpenDamos::userRecipeDir());
     addFrom(QStringLiteral("ressources"));
     ids.sort(Qt::CaseInsensitive);
     m_ecuIdsCache = ids;
-    endBusy();
     return m_ecuIdsCache;
 }
 
@@ -816,17 +826,36 @@ bool DriveWindow::loadRomBinaryFile(const QString& path) {
 }
 
 void DriveWindow::loadTuneFile(const QString& path) {
-    const QString suffix = QFileInfo(path).suffix().toLower();
-    setStatus(tr("Import de %1…").arg(QFileInfo(path).fileName()));
+    QString suffix = QFileInfo(path).suffix().toLower();
+    // Android content:// : souvent sans extension → on lit la signature.
+    if (suffix.isEmpty() || suffix.size() > 5) {
+        QFile probe(path);
+        if (probe.open(QIODevice::ReadOnly)) {
+            const QByteArray head = probe.read(4);
+            probe.close();
+            if (head.size() >= 4) {
+                const quint32 sig = quint32(quint8(head[0])) | (quint32(quint8(head[1])) << 8)
+                                  | (quint32(quint8(head[2])) << 16) | (quint32(quint8(head[3])) << 24);
+                if (sig == 0x04034B50u)
+                    suffix = QStringLiteral("zip");
+                else
+                    suffix = QStringLiteral("bin"); // ROM brute typique
+            } else {
+                suffix = QStringLiteral("bin");
+            }
+        }
+    }
 
-    if (suffix == QLatin1String("bin") || suffix == QLatin1String("rom")) {
+    setStatus(tr("Import de %1…").arg(QFileInfo(path).fileName()));
+    platformToast(tr("Import ROM en cours…"));
+
+    if (suffix == QLatin1String("bin") || suffix == QLatin1String("rom")
+        || suffix == QLatin1String("hex")) {
         if (loadRomBinaryFile(path))
             return;
-        // Si c'était un ZIP déguisé, tombe sur readZip ci-dessous.
+        // ZIP mal nommé : tombe sur readZip ci-dessous.
     }
-    if (suffix == QLatin1String("ecutune") || suffix == QLatin1String("zip")
-        || suffix == QLatin1String("bin") || suffix == QLatin1String("rom")
-        || suffix.isEmpty()) {
+    if (suffix == QLatin1String("ecutune") || suffix == QLatin1String("zip")) {
         beginBusy(tr("Lecture du package .ecutune…"));
         auto pkg = runWhileBusy([&]() {
             return ecu::TunePackageIo::readZipFile(path);
@@ -836,11 +865,9 @@ void DriveWindow::loadTuneFile(const QString& path) {
             applyTunePackage(*pkg, path);
             return;
         }
-        if (suffix == QLatin1String("ecutune") || suffix == QLatin1String("zip")) {
-            QMessageBox::warning(this, tr("Import"), pkg.error());
-            setStatus(tr("Import échoué."), true);
-            return;
-        }
+        QMessageBox::warning(this, tr("Import"), pkg.error());
+        setStatus(tr("Import échoué."), true);
+        return;
     }
     // Dernier recours : ROM brute
     if (!loadRomBinaryFile(path)) {
@@ -855,6 +882,7 @@ void DriveWindow::applyRomBinary(const QByteArray& rom, const QString& ecuId,
     beginBusy(tr("Analyse ROM %1…\nRecherche des maps turbo / air / fuel.\n"
                  "Peut prendre 10–60 s — ne ferme pas l'app.")
                   .arg(ecuId));
+    platformToast(tr("Analyse %1 en cours…").arg(ecuId));
     m_tuneLabel->setText(tr("Chargement ROM %1…").arg(ecuId));
 
     const qint64 t0 = QDateTime::currentMSecsSinceEpoch();
@@ -1286,8 +1314,8 @@ void DriveWindow::refreshUpdateBanner() {
 
     if (st == S::Downloading) {
         m_updateTitle->setText(tr("Téléchargement %1…").arg(m_updater->latestVersion()));
-        m_updateSub->setText(tr("%1 % — ne ferme pas l'app")
-                                 .arg(int(m_updater->progress() * 100)));
+        m_updateSub->setText(tr("%1 — ne ferme pas l'app")
+                                 .arg(m_updater->progressLabel()));
     } else if (st == S::Ready) {
         m_updateTitle->setText(tr("Version %1 prête").arg(m_updater->latestVersion()));
         m_updateSub->setText(tr("Appuie sur Installer pour lancer l'écran Android."));
