@@ -4,6 +4,8 @@
 #include <QFile>
 #include <QIcon>
 #include <QTimer>
+#include <QMetaObject>
+
 
 static const char* kDarkQss = R"(
 QWidget { background-color: #0f1520; color: #e6edf3; font-size: 14px; }
@@ -39,8 +41,13 @@ int main(int argc, char* argv[]) {
     app.setStyleSheet(QString::fromUtf8(kDarkQss));
 
     QString tuneArg;
+    bool smokeUi = false;
     const QStringList args = app.arguments();
     for (int i = 1; i < args.size(); ++i) {
+        if (args[i] == QLatin1String("--smoke-ui")) {
+            smokeUi = true;
+            continue;
+        }
         if ((args[i] == QLatin1String("--tune") || args[i] == QLatin1String("-t"))
             && i + 1 < args.size()) {
             tuneArg = args[++i];
@@ -49,6 +56,20 @@ int main(int argc, char* argv[]) {
 
     ecu_drive::DriveWindow w;
     w.show();
+    if (smokeUi) {
+        // Enchaîne Conduite ↔ Capteurs sans matériel (CI / repro crash Android).
+        QTimer::singleShot(50, &w, [&w]() {
+            QMetaObject::invokeMethod(&w, "showSensorsPage");
+        });
+        QTimer::singleShot(150, &w, [&w]() {
+            QMetaObject::invokeMethod(&w, "showDrivePage");
+        });
+        QTimer::singleShot(250, &w, [&w]() {
+            QMetaObject::invokeMethod(&w, "showSensorsPage");
+        });
+        QTimer::singleShot(400, &app, &QApplication::quit);
+        return app.exec();
+    }
     if (!tuneArg.isEmpty()) {
         const QString path = tuneArg;
         QTimer::singleShot(50, &w, [path, &w]() { w.loadTuneFile(path); });

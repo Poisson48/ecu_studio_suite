@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <manifest package="org.poisson48.ecudrive" xmlns:android="http://schemas.android.com/apk/res/android"
-    android:versionCode="177" android:versionName="1.7.7" android:installLocation="auto">
+    android:versionCode="178" android:versionName="1.7.8" android:installLocation="auto">
 
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
@@ -70,5 +70,15 @@
                 <action android:name="org.poisson48.ecudrive.INSTALL_STATUS"/>
             </intent-filter>
         </receiver>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="org.poisson48.ecudrive.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"/>
+        </provider>
     </application>
 </manifest>

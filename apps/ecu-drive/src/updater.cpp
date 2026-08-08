@@ -12,6 +12,7 @@
 #include <QSettings>
 #include <QStandardPaths>
 #include <QUrl>
+#include <QFileInfo>
 #include <QDebug>
 #include <algorithm>
 
@@ -278,17 +279,30 @@ void Updater::check()
 void Updater::download()
 {
     if (m_apkUrl.isEmpty()) {
-        install();
+        m_lastError = QStringLiteral("Pas d'APK dans la release — ouverture GitHub.");
+        setState(Failed);
+        if (!m_releaseUrl.isEmpty())
+            QDesktopServices::openUrl(QUrl(m_releaseUrl));
         return;
     }
     if (m_state == Downloading)
         return;
 
+    if (m_reply) {
+        m_reply->abort();
+        m_reply.clear();
+    }
+
     m_lastError.clear();
     const QString dir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
-    QDir().mkpath(dir);
+    if (!QDir().mkpath(dir)) {
+        m_lastError = QStringLiteral("Cache inaccessible (%1)").arg(dir);
+        setState(Failed);
+        return;
+    }
     m_apkPath = dir + QStringLiteral("/ecu-drive-") + m_latestVersion
               + QStringLiteral(".apk");
+    QFile::remove(m_apkPath);
 
     QNetworkRequest req{ QUrl(m_apkUrl) };
     req.setRawHeader("User-Agent", "ECU-Drive");
@@ -302,38 +316,57 @@ void Updater::download()
     QNetworkReply* reply = m_net.get(req);
     m_reply = reply;
 
+    // Écriture au fil de l'eau — évite OOM (APK ~30 Mo) qui plantait l'app Android.
+    auto* out = new QFile(m_apkPath);
+    if (!out->open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        m_lastError = QStringLiteral("Impossible d'écrire %1").arg(m_apkPath);
+        delete out;
+        reply->abort();
+        setState(Failed);
+        return;
+    }
+
+    connect(reply, &QNetworkReply::readyRead, this, [reply, out]() {
+        if (!out->isOpen()) return;
+        out->write(reply->readAll());
+    });
+
     connect(reply, &QNetworkReply::downloadProgress, this,
             [this](qint64 received, qint64 total) {
-        m_progress = (total > 0) ? qreal(received) / qreal(total) : 0.0;
+        m_progress = (total > 0) ? qreal(received) / qreal(total)
+                                 : (received > 0 ? 0.05 : 0.0);
         emit progressChanged();
     });
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, out]() {
         reply->deleteLater();
+        if (out->isOpen()) {
+            // Derniers octets éventuellement encore en buffer.
+            if (reply->bytesAvailable() > 0)
+                out->write(reply->readAll());
+            out->close();
+        }
+        out->deleteLater();
 
         if (reply->error() != QNetworkReply::NoError) {
-            m_lastError = reply->errorString();
-            setState(Failed);
-            return;
-        }
-
-        QFile out(m_apkPath);
-        if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-            m_lastError = QStringLiteral("Impossible d'écrire %1").arg(m_apkPath);
-            setState(Failed);
-            return;
-        }
-        const QByteArray body = reply->readAll();
-        const qint64 written = out.write(body);
-        out.close();
-
-        if (written != body.size() || body.isEmpty()) {
             QFile::remove(m_apkPath);
-            m_lastError = QStringLiteral("Téléchargement APK incomplet.");
+            m_lastError = reply->errorString();
+            qWarning() << "[Updater] download:" << m_lastError;
             setState(Failed);
             return;
         }
 
+        const qint64 sz = QFileInfo(m_apkPath).size();
+        if (sz < 1024) {
+            QFile::remove(m_apkPath);
+            m_lastError = QStringLiteral("APK téléchargé invalide (%1 o).").arg(sz);
+            setState(Failed);
+            return;
+        }
+
+        qInfo() << "[Updater] APK prêt" << m_apkPath << sz << "octets";
+        m_progress = 1.0;
+        emit progressChanged();
         setState(Ready);
     });
 }
@@ -341,10 +374,17 @@ void Updater::download()
 void Updater::install()
 {
     if (canInstall() && m_state == Ready && !m_apkPath.isEmpty()) {
-        if (platformInstallApk(m_apkPath))
+        qInfo() << "[Updater] install APK" << m_apkPath;
+        if (platformInstallApk(m_apkPath)) {
+            // L'UI système (install / autoriser sources) prend le relais.
             return;
-        m_lastError = QStringLiteral("PackageInstaller a refusé l'APK.");
+        }
+        m_lastError = QStringLiteral(
+            "Installation refusée. Autorise « installer des apps » pour ECU Drive "
+            "dans les réglages Android, ou ouvre la page GitHub.");
         setState(Failed);
+        if (!m_releaseUrl.isEmpty())
+            QDesktopServices::openUrl(QUrl(m_releaseUrl));
         return;
     }
 

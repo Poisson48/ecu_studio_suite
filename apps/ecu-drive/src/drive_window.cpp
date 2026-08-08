@@ -16,9 +16,6 @@
 #include <QFrame>
 #include <QStackedWidget>
 #include <QScrollArea>
-#include <QTableWidget>
-#include <QHeaderView>
-#include <QAbstractItemView>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QFile>
@@ -107,10 +104,17 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
     connect(m_updater, &Updater::stateChanged, this, &DriveWindow::onUpdaterState);
     connect(m_updater, &Updater::progressChanged, this, &DriveWindow::onUpdaterState);
     connect(m_updater, &Updater::changelogChanged, this, [this]() {
-        if (m_updater->hasWhatsNew() && !m_updater->updateAvailable()) {
-            QMessageBox::information(this, tr("Quoi de neuf"), m_updater->whatsNewNotes());
-            m_updater->acknowledgeNotes();
-        }
+        if (!m_updater->hasWhatsNew() || m_updater->updateAvailable())
+            return;
+#if defined(Q_OS_ANDROID)
+        // QMessageBox modal plante souvent sous Qt Android — notes en status.
+        setStatus(tr("Quoi de neuf (v%1) : ouvre Vérifier les mises à jour.")
+                      .arg(m_updater->currentVersion()));
+        m_updater->acknowledgeNotes();
+#else
+        QMessageBox::information(this, tr("Quoi de neuf"), m_updater->whatsNewNotes());
+        m_updater->acknowledgeNotes();
+#endif
     });
 
     // Différer ports / dernier tune : éviter de bloquer le premier show().
@@ -442,6 +446,7 @@ QWidget* DriveWindow::buildSensorsPage(QWidget* parent) {
     auto* scroll = new QScrollArea(parent);
     scroll->setWidgetResizable(true);
     scroll->setFrameShape(QFrame::NoFrame);
+    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     auto* page = new QWidget;
     auto* root = new QVBoxLayout(page);
@@ -457,36 +462,42 @@ QWidget* DriveWindow::buildSensorsPage(QWidget* parent) {
     m_sensorsStatus->setStyleSheet(QStringLiteral("color:#93c5fd; font-size:12px;"));
     root->addWidget(m_sensorsStatus);
 
-    m_sensorsTable = new QTableWidget(0, 3, page);
-    m_sensorsTable->setHorizontalHeaderLabels(
-        {tr("Capteur"), tr("Valeur"), tr("Unité")});
-    m_sensorsTable->horizontalHeader()->setStretchLastSection(true);
-    m_sensorsTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-    m_sensorsTable->verticalHeader()->setVisible(false);
-    m_sensorsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_sensorsTable->setSelectionMode(QAbstractItemView::NoSelection);
-    m_sensorsTable->setMinimumHeight(360);
-    m_sensorsTable->setStyleSheet(QStringLiteral(
-        "QTableWidget { background:#111827; gridline-color:#334155; }"
-        "QHeaderView::section { background:#1e293b; color:#e6edf3; padding:6px; }"));
+    // Liste de labels (pas de QTableWidget : plantage fréquent sur Android
+    // dans un QScrollArea / QStackedWidget).
+    m_sensorValueLabels.clear();
+    for (const auto& p : ecu::obd2::livePids()) {
+        auto* row = new QWidget(page);
+        auto* hl = new QHBoxLayout(row);
+        hl->setContentsMargins(8, 6, 8, 6);
+        row->setStyleSheet(QStringLiteral(
+            "QWidget { background:#111827; border:1px solid #334155; border-radius:8px; }"));
 
-    const auto& pids = ecu::obd2::livePids();
-    m_sensorsTable->setRowCount(pids.size());
-    for (int i = 0; i < pids.size(); ++i) {
-        auto* name = new QTableWidgetItem(QString::fromUtf8(pids[i].name));
-        auto* val  = new QTableWidgetItem(QStringLiteral("—"));
-        auto* unit = new QTableWidgetItem(QString::fromUtf8(pids[i].unit));
-        val->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        val->setData(Qt::UserRole, pids[i].pid);
-        m_sensorsTable->setItem(i, 0, name);
-        m_sensorsTable->setItem(i, 1, val);
-        m_sensorsTable->setItem(i, 2, unit);
+        auto* name = new QLabel(QString::fromUtf8(p.name), row);
+        name->setStyleSheet(QStringLiteral("color:#e6edf3; border:none; background:transparent;"));
+        name->setWordWrap(true);
+
+        auto* val = new QLabel(QStringLiteral("—"), row);
+        val->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        val->setStyleSheet(QStringLiteral(
+            "color:#60a5fa; font-weight:700; font-size:16px; border:none; background:transparent;"));
+        val->setMinimumWidth(72);
+
+        auto* unit = new QLabel(QString::fromUtf8(p.unit), row);
+        unit->setStyleSheet(QStringLiteral("color:#94a3b8; border:none; background:transparent;"));
+        unit->setMinimumWidth(40);
+
+        hl->addWidget(name, 1);
+        hl->addWidget(val);
+        hl->addWidget(unit);
+        root->addWidget(row);
+        m_sensorValueLabels.insert(p.pid, val);
     }
-    root->addWidget(m_sensorsTable, 1);
 
     auto* refreshBtn = new QPushButton(tr("Rafraîchir le polling"), page);
+    refreshBtn->setMinimumHeight(44);
     connect(refreshBtn, &QPushButton::clicked, this, &DriveWindow::ensureSensorsPolling);
     root->addWidget(refreshBtn);
+    root->addStretch();
 
     scroll->setWidget(page);
     return scroll;
@@ -495,15 +506,18 @@ QWidget* DriveWindow::buildSensorsPage(QWidget* parent) {
 void DriveWindow::showDrivePage() {
     if (m_stack) m_stack->setCurrentIndex(0);
     if (m_sessionOn) return;
-    // Revenir au polling minimal si connecté sans session.
     if (m_connected && m_elm)
         m_elm->stopPolling();
 }
 
 void DriveWindow::showSensorsPage() {
-    if (m_stack) m_stack->setCurrentIndex(1);
-    ensureSensorsPolling();
-    refreshSensorsTable();
+    if (!m_stack) return;
+    m_stack->setCurrentIndex(1);
+    // Différer le polling : laisser le stack peindre d'abord (évite crash Android).
+    QTimer::singleShot(0, this, [this]() {
+        ensureSensorsPolling();
+        refreshSensorsTable();
+    });
 }
 
 void DriveWindow::ensureSensorsPolling() {
@@ -526,22 +540,26 @@ void DriveWindow::ensureSensorsPolling() {
 }
 
 void DriveWindow::refreshSensorsTable() {
-    if (!m_sensorsTable) return;
-    for (int r = 0; r < m_sensorsTable->rowCount(); ++r) {
-        auto* valItem = m_sensorsTable->item(r, 1);
+    for (auto it = m_sensorValueLabels.begin(); it != m_sensorValueLabels.end(); ++it) {
+        QLabel* valItem = it.value();
         if (!valItem) continue;
-        const quint8 pid = static_cast<quint8>(valItem->data(Qt::UserRole).toUInt());
+        const quint8 pid = it.key();
         if (!m_live.contains(pid)) {
             valItem->setText(QStringLiteral("—"));
             continue;
         }
         const double v = m_live.value(pid);
+        const QString unit = m_liveUnit.value(pid);
+        QString text;
         if (pid == 0x0C || pid == 0x0D || pid == 0x1F)
-            valItem->setText(QString::number(v, 'f', 0));
+            text = QString::number(v, 'f', 0);
         else if (pid == 0x24 || pid == 0x42)
-            valItem->setText(QString::number(v, 'f', 3));
+            text = QString::number(v, 'f', 3);
         else
-            valItem->setText(QString::number(v, 'f', 1));
+            text = QString::number(v, 'f', 1);
+        if (!unit.isEmpty())
+            valItem->setToolTip(unit);
+        valItem->setText(text);
     }
 }
 
@@ -1111,10 +1129,11 @@ void DriveWindow::refreshUpdateBanner() {
 
     if (st == S::Downloading) {
         m_updateTitle->setText(tr("Téléchargement %1…").arg(m_updater->latestVersion()));
-        m_updateSub->setText(tr("%1 %").arg(int(m_updater->progress() * 100)));
+        m_updateSub->setText(tr("%1 % — ne ferme pas l'app")
+                                 .arg(int(m_updater->progress() * 100)));
     } else if (st == S::Ready) {
         m_updateTitle->setText(tr("Version %1 prête").arg(m_updater->latestVersion()));
-        m_updateSub->setText(tr("Tu as la %1").arg(m_updater->currentVersion()));
+        m_updateSub->setText(tr("Appuie sur Installer pour lancer l'écran Android."));
         m_updateActionBtn->setText(tr("Installer"));
     } else if (st == S::Failed) {
         m_updateTitle->setText(tr("Échec de la mise à jour"));
@@ -1125,7 +1144,18 @@ void DriveWindow::refreshUpdateBanner() {
         m_updateActionBtn->setText(tr("Réessayer"));
     } else {
         m_updateTitle->setText(tr("Version %1 disponible").arg(m_updater->latestVersion()));
-        m_updateSub->setText(tr("Tu as la %1").arg(m_updater->currentVersion()));
+        const QString notes = m_updater->releaseNotes().trimmed();
+        if (!notes.isEmpty()) {
+            // Aperçu des notes dans la bannière (évite QMessageBox qui plante sur Android).
+            QString preview = notes;
+            preview.replace(QLatin1Char('\n'), QLatin1Char(' '));
+            if (preview.size() > 160)
+                preview = preview.left(157) + QStringLiteral("…");
+            m_updateSub->setText(tr("Tu as la %1 — %2")
+                                     .arg(m_updater->currentVersion(), preview));
+        } else {
+            m_updateSub->setText(tr("Tu as la %1").arg(m_updater->currentVersion()));
+        }
         m_updateActionBtn->setText(tr("Mettre à jour"));
     }
 }
@@ -1135,21 +1165,24 @@ void DriveWindow::onUpdateAction() {
     using S = Updater::State;
     const S st = m_updater->state();
     if (st == S::Ready) {
+        setStatus(tr("Lancement de l'installateur Android…"));
         m_updater->install();
         return;
     }
     if (st == S::Failed) {
-        m_updater->check();
+        setStatus(tr("Nouvelle tentative de mise à jour…"));
+        // Si on a déjà un APK prêt, réessayer l'install ; sinon re-check.
+        if (!m_updater->latestVersion().isEmpty() && m_updater->canInstall())
+            m_updater->check();
+        else
+            m_updater->check();
         return;
     }
     if (st == S::Available) {
-        if (!m_updater->releaseNotes().isEmpty()) {
-            const auto r = QMessageBox::information(
-                this, tr("Nouveautés — %1").arg(m_updater->latestVersion()),
-                m_updater->releaseNotes(),
-                QMessageBox::Ok | QMessageBox::Cancel, QMessageBox::Ok);
-            if (r != QMessageBox::Ok) return;
-        }
+        // Pas de QMessageBox modal sur Android : il plantait / restait sans UI.
+        // Les notes sont déjà dans la bannière ; on télécharge tout de suite.
+        setStatus(tr("Téléchargement de la mise à jour %1…")
+                      .arg(m_updater->latestVersion()));
         m_updater->download();
     }
 }

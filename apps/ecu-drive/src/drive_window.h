@@ -21,7 +21,7 @@ class QProgressBar;
 class QWidget;
 class QStackedWidget;
 class QScrollArea;
-class QTableWidget;
+
 
 namespace elm { class Elm327; }
 
@@ -126,8 +126,8 @@ private:
     QLabel*  m_sessionLive = nullptr;
     QLabel*  m_csvLabel = nullptr;
     QCheckBox* m_beepChk = nullptr;
-    QTableWidget* m_sensorsTable = nullptr;
     QLabel* m_sensorsStatus = nullptr;
+    QHash<quint8, QLabel*> m_sensorValueLabels;
 
     QFrame*       m_updateBanner = nullptr;
     QLabel*       m_updateTitle = nullptr;
