@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <manifest package="org.poisson48.ecudrive" xmlns:android="http://schemas.android.com/apk/res/android"
-    android:versionCode="170" android:versionName="1.7.0" android:installLocation="auto">
+    android:versionCode="177" android:versionName="1.7.7" android:installLocation="auto">
 
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
