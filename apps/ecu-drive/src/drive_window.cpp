@@ -34,6 +34,8 @@
 #include <QDir>
 #include <QEventLoop>
 #include <QSizePolicy>
+#include <QEvent>
+#include <QResizeEvent>
 #include <QPixmap>
 #include <thread>
 #include <functional>
@@ -252,22 +254,6 @@ void DriveWindow::buildUi() {
     ub->addLayout(ubRow);
     outer->addWidget(m_updateBanner);
 
-    m_busyFrame = new QFrame(central);
-    m_busyFrame->setVisible(false);
-    m_busyFrame->setStyleSheet(QStringLiteral(
-        "QFrame { background:#1e3a5f; border:2px solid #3b82f6; border-radius:10px; margin:8px; }"));
-    auto* busyLay = new QVBoxLayout(m_busyFrame);
-    busyLay->setContentsMargins(14, 12, 14, 12);
-    m_busyLabel = new QLabel(m_busyFrame);
-    m_busyLabel->setWordWrap(true);
-    m_busyLabel->setStyleSheet(QStringLiteral("color:#e2e8f0; font-size:14px; font-weight:700;"));
-    m_busyBar = new QProgressBar(m_busyFrame);
-    m_busyBar->setTextVisible(true);
-    m_busyBar->setMinimumHeight(22);
-    busyLay->addWidget(m_busyLabel);
-    busyLay->addWidget(m_busyBar);
-    outer->addWidget(m_busyFrame);
-
     // Nav Drive / Capteurs
     auto* nav = new QHBoxLayout;
     nav->setContentsMargins(12, 4, 12, 4);
@@ -285,11 +271,68 @@ void DriveWindow::buildUi() {
     m_stack->addWidget(buildSensorsPage(m_stack));
     outer->addWidget(m_stack, 1);
 
-    m_statusLabel = new QLabel(tr("100 % local — aucune télémétrie."), central);
+    m_statusLabel = new QLabel(tr("100 % local — aucune télémétrie.  v%1")
+                                   .arg(QStringLiteral(APP_VERSION)), central);
     m_statusLabel->setWordWrap(true);
     m_statusLabel->setContentsMargins(12, 4, 12, 8);
     m_statusLabel->setStyleSheet(QStringLiteral("color:#7c8fa6; font-size:12px;"));
     outer->addWidget(m_statusLabel);
+
+    // Overlay plein écran — impossible à rater (contrairement à une bande en haut).
+    m_busyOverlay = new QWidget(central);
+    m_busyOverlay->setObjectName(QStringLiteral("busyOverlay"));
+    m_busyOverlay->setStyleSheet(QStringLiteral(
+        "#busyOverlay { background-color: #e60f1520; }"));
+    m_busyOverlay->setVisible(false);
+    m_busyOverlay->raise();
+    auto* ovLay = new QVBoxLayout(m_busyOverlay);
+    ovLay->setContentsMargins(24, 24, 24, 24);
+    ovLay->addStretch();
+    m_busyFrame = new QFrame(m_busyOverlay);
+    m_busyFrame->setStyleSheet(QStringLiteral(
+        "QFrame { background:#1e3a5f; border:2px solid #60a5fa; border-radius:14px; }"));
+    auto* busyLay = new QVBoxLayout(m_busyFrame);
+    busyLay->setContentsMargins(20, 18, 20, 18);
+    busyLay->setSpacing(12);
+    m_busyLabel = new QLabel(m_busyFrame);
+    m_busyLabel->setWordWrap(true);
+    m_busyLabel->setAlignment(Qt::AlignCenter);
+    m_busyLabel->setStyleSheet(QStringLiteral(
+        "color:#f8fafc; font-size:16px; font-weight:700; background:transparent; border:none;"));
+    m_busyDetail = new QLabel(m_busyFrame);
+    m_busyDetail->setWordWrap(true);
+    m_busyDetail->setAlignment(Qt::AlignCenter);
+    m_busyDetail->setStyleSheet(QStringLiteral(
+        "color:#93c5fd; font-size:13px; background:transparent; border:none;"));
+    m_busyBar = new QProgressBar(m_busyFrame);
+    m_busyBar->setTextVisible(true);
+    m_busyBar->setMinimumHeight(28);
+    m_busyBar->setStyleSheet(QStringLiteral(
+        "QProgressBar { background:#0f172a; border:1px solid #334155; border-radius:6px; text-align:center; color:#e2e8f0; }"
+        "QProgressBar::chunk { background:#3b82f6; border-radius:5px; }"));
+    busyLay->addWidget(m_busyLabel);
+    busyLay->addWidget(m_busyDetail);
+    busyLay->addWidget(m_busyBar);
+    ovLay->addWidget(m_busyFrame);
+    ovLay->addStretch();
+    central->installEventFilter(this);
+    layoutBusyOverlay();
+
+    m_busyPulse = new QTimer(this);
+    m_busyPulse->setInterval(250);
+    connect(m_busyPulse, &QTimer::timeout, this, [this]() {
+        if (!m_busyOverlay || !m_busyOverlay->isVisible()) return;
+        const int sec = int((QDateTime::currentMSecsSinceEpoch() - m_busyStartedMs) / 1000);
+        if (m_busyDetail) {
+            m_busyDetail->setText(tr("Temps écoulé : %1 s — ne ferme pas l'app").arg(sec));
+        }
+        if (m_busyBar && m_busyBar->maximum() <= 0) {
+            // Fait bouger la barre indéterminée / force le paint Android.
+            m_busyBar->setValue(0);
+            m_busyBar->update();
+            m_busyOverlay->update();
+        }
+    });
 }
 
 QWidget* DriveWindow::buildDrivePage(QWidget* parent) {
@@ -569,31 +612,54 @@ void DriveWindow::setStatus(const QString& msg, bool error) {
     m_statusLabel->setText(msg);
 }
 
+void DriveWindow::layoutBusyOverlay() {
+    if (!m_busyOverlay || !centralWidget()) return;
+    m_busyOverlay->setGeometry(centralWidget()->rect());
+    m_busyOverlay->raise();
+}
+
+bool DriveWindow::eventFilter(QObject* watched, QEvent* event) {
+    if (watched == centralWidget()
+        && (event->type() == QEvent::Resize || event->type() == QEvent::Show)) {
+        layoutBusyOverlay();
+    }
+    return QMainWindow::eventFilter(watched, event);
+}
+
 void DriveWindow::beginBusy(const QString& message, int max) {
     ++m_busyDepth;
-    if (!m_busyFrame) return;
-    m_busyFrame->setVisible(true);
-    m_busyLabel->setText(message);
-    if (max <= 0) {
-        m_busyBar->setRange(0, 0); // indéterminé
-        m_busyBar->setFormat(QStringLiteral("%p%"));
-    } else {
-        m_busyBar->setRange(0, max);
-        m_busyBar->setValue(0);
-        m_busyBar->setFormat(QStringLiteral("%v / %m"));
+    if (!m_busyOverlay) return;
+    layoutBusyOverlay();
+    m_busyOverlay->setVisible(true);
+    m_busyOverlay->raise();
+    m_busyStartedMs = QDateTime::currentMSecsSinceEpoch();
+    if (m_busyLabel) m_busyLabel->setText(message);
+    if (m_busyDetail)
+        m_busyDetail->setText(tr("Temps écoulé : 0 s — ne ferme pas l'app"));
+    if (m_busyBar) {
+        if (max <= 0) {
+            m_busyBar->setRange(0, 0); // indéterminé
+            m_busyBar->setFormat(tr("En cours…"));
+        } else {
+            m_busyBar->setRange(0, max);
+            m_busyBar->setValue(0);
+            m_busyBar->setFormat(QStringLiteral("%v / %m"));
+        }
     }
     setStatus(message);
+    if (m_busyPulse && !m_busyPulse->isActive())
+        m_busyPulse->start();
     QApplication::setOverrideCursor(Qt::WaitCursor);
     QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 }
 
 void DriveWindow::setBusy(int value, const QString& message) {
-    if (!m_busyFrame || !m_busyFrame->isVisible()) return;
+    if (!m_busyOverlay || !m_busyOverlay->isVisible()) return;
     if (!message.isEmpty()) {
-        m_busyLabel->setText(message);
+        if (m_busyLabel) m_busyLabel->setText(message);
         setStatus(message);
     }
-    if (m_busyBar->maximum() > 0 && value >= 0)
+    if (m_busyBar && m_busyBar->maximum() > 0 && value >= 0)
         m_busyBar->setValue(value);
     QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 }
@@ -602,8 +668,9 @@ void DriveWindow::endBusy() {
     if (m_busyDepth > 0)
         --m_busyDepth;
     if (m_busyDepth > 0) return;
-    if (m_busyFrame)
-        m_busyFrame->setVisible(false);
+    if (m_busyPulse) m_busyPulse->stop();
+    if (m_busyOverlay)
+        m_busyOverlay->setVisible(false);
     while (QApplication::overrideCursor())
         QApplication::restoreOverrideCursor();
 }
@@ -695,30 +762,44 @@ QString DriveWindow::promptEcuId(const QString& hint) {
 
 bool DriveWindow::loadRomBinaryFile(const QString& path) {
     const QFileInfo fi(path);
+    const double mo = fi.size() > 0 ? fi.size() / (1024.0 * 1024.0) : 0.0;
     beginBusy(tr("Lecture de la ROM…\n%1 (%2 Mo)")
                   .arg(fi.fileName())
-                  .arg(fi.size() / (1024.0 * 1024.0), 0, 'f', 1));
-    QFile f(path);
-    if (!f.open(QIODevice::ReadOnly)) {
-        endBusy();
-        QMessageBox::warning(this, tr("Import"),
-                             tr("Impossible d'ouvrir %1").arg(path));
+                  .arg(mo, 0, 'f', 1));
+
+    // Lecture hors UI : sinon readAll() bloque le paint (écran figé = « planté »).
+    struct ReadResult {
+        bool ok = false;
+        QByteArray data;
+        QString error;
+    };
+    const ReadResult read = runWhileBusy([&]() {
+        ReadResult r;
+        QFile f(path);
+        if (!f.open(QIODevice::ReadOnly)) {
+            r.error = tr("Impossible d'ouvrir %1").arg(path);
+            return r;
+        }
+        r.data = f.readAll();
+        r.ok = true;
+        return r;
+    });
+    endBusy();
+
+    if (!read.ok) {
+        QMessageBox::warning(this, tr("Import"), read.error);
         return false;
     }
-    setBusy(0, tr("Lecture en mémoire… (%1 Mo)")
-                   .arg(fi.size() / (1024.0 * 1024.0), 0, 'f', 1));
-    const QByteArray rom = f.readAll();
-    endBusy();
+    const QByteArray& rom = read.data;
     if (rom.size() < 1024) {
         QMessageBox::warning(this, tr("Import"),
             tr("Fichier trop petit pour une ROM ECU (%1 octet(s)).").arg(rom.size()));
         return false;
     }
-    // ZIP / .ecutune mal nommé : laisser l'appelant tenter le package.
     if (rom.size() >= 4) {
         const quint32 sig = quint32(quint8(rom[0])) | (quint32(quint8(rom[1])) << 8)
                           | (quint32(quint8(rom[2])) << 16) | (quint32(quint8(rom[3])) << 24);
-        if (sig == 0x04034B50u) // PK\3\4 local file header
+        if (sig == 0x04034B50u)
             return false;
     }
 
@@ -726,9 +807,9 @@ bool DriveWindow::loadRomBinaryFile(const QString& path) {
     const QString ecu = promptEcuId();
     if (ecu.isEmpty()) {
         setStatus(tr("Import annulé."));
-        return true; // annulé
+        return true;
     }
-    setStatus(tr("ECU %1 sélectionné — démarrage de l'analyse…").arg(ecu));
+    // Overlay immédiat avant le travail lourd (sinon trou sans feedback).
     QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     applyRomBinary(rom, ecu, path);
     return true;
@@ -771,35 +852,16 @@ void DriveWindow::loadTuneFile(const QString& path) {
 
 void DriveWindow::applyRomBinary(const QByteArray& rom, const QString& ecuId,
                                  const QString& path) {
-    // Feedback immédiat : l'utilisateur vient de valider le dialogue ECU.
-    beginBusy(tr("Préparation de la ROM %1…\nNe ferme pas l'app — ça peut prendre 10–60 s.")
-                  .arg(ecuId), /*max*/ 0);
+    beginBusy(tr("Analyse ROM %1…\nRecherche des maps turbo / air / fuel.\n"
+                 "Peut prendre 10–60 s — ne ferme pas l'app.")
+                  .arg(ecuId));
     m_tuneLabel->setText(tr("Chargement ROM %1…").arg(ecuId));
 
-    // Heartbeat : prouve que l'app vit même si une map prend longtemps.
     const qint64 t0 = QDateTime::currentMSecsSinceEpoch();
-    QTimer heart;
-    heart.setInterval(400);
-    QObject::connect(&heart, &QTimer::timeout, this, [this, ecuId, t0]() {
-        const int sec = int((QDateTime::currentMSecsSinceEpoch() - t0) / 1000);
-        if (m_busyBar && m_busyBar->maximum() <= 0) {
-            m_busyLabel->setText(
-                tr("Analyse ROM %1… %2 s\nRecherche des maps turbo / air / fuel…")
-                    .arg(ecuId)
-                    .arg(sec));
-            setStatus(tr("Chargement en cours (%1 s) — patience.").arg(sec));
-        }
-        // Force un repaint (Android : barre indéterminée sinon figée).
-        if (m_busyBar) m_busyBar->update();
-        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-    });
-    heart.start();
-
     m_validator.setProgressCallback(
         [this, ecuId, t0](int cur, int total, const QString& mapName) {
-            // Appelé depuis le worker : remonter à l'UI thread.
             QMetaObject::invokeMethod(this, [this, ecuId, t0, cur, total, mapName]() {
-                if (!m_busyFrame || !m_busyBar) return;
+                if (!m_busyOverlay || !m_busyBar || !m_busyLabel) return;
                 const int sec = int((QDateTime::currentMSecsSinceEpoch() - t0) / 1000);
                 if (total > 0) {
                     if (m_busyBar->maximum() != total) {
@@ -808,29 +870,26 @@ void DriveWindow::applyRomBinary(const QByteArray& rom, const QString& ecuId,
                     }
                     m_busyBar->setValue(std::min(cur, total));
                 }
-                const QString map = mapName.isEmpty()
-                    ? tr("finalisation…")
-                    : mapName;
+                const QString map = mapName.isEmpty() ? tr("finalisation…") : mapName;
                 const int shown = total > 0 ? std::min(cur + 1, total) : 1;
                 const int tot   = total > 0 ? total : 1;
-                const QString msg =
-                    tr("Map %1/%2 — %3\nECU %4 · %5 s — ne ferme pas l'app")
-                        .arg(shown)
-                        .arg(tot)
-                        .arg(map, ecuId)
-                        .arg(sec);
-                m_busyLabel->setText(msg);
-                setStatus(msg);
+                m_busyLabel->setText(
+                    tr("Map %1 / %2\n%3\nECU %4")
+                        .arg(shown).arg(tot).arg(map, ecuId));
+                if (m_busyDetail)
+                    m_busyDetail->setText(
+                        tr("Temps écoulé : %1 s — ne ferme pas l'app").arg(sec));
+                setStatus(tr("Analyse %1/%2 (%3 s)").arg(shown).arg(tot).arg(sec));
+                m_busyOverlay->raise();
+                m_busyOverlay->update();
             }, Qt::QueuedConnection);
         });
 
     const bool ok = runWhileBusy([&]() {
         return m_validator.loadRom(rom, ecuId);
     });
-    heart.stop();
     m_validator.clearProgressCallback();
     endBusy();
-    // Si beginBusy a été rappelé par erreur dans le callback, nettoyer.
     while (m_busyDepth > 0) endBusy();
 
     if (!ok) {

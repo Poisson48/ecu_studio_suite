@@ -64,6 +64,8 @@ private:
     void beginBusy(const QString& message, int max = 0);
     void setBusy(int value, const QString& message = {});
     void endBusy();
+    void layoutBusyOverlay();
+    bool eventFilter(QObject* watched, QEvent* event) override;
     void applyTunePackage(const ecu::TunePackage& pkg, const QString& path);
     void applyRomBinary(const QByteArray& rom, const QString& ecuId, const QString& path);
     /** Liste les ECU ayant une recette OpenDAMOS (qrc + disque), mise en cache. */
@@ -109,9 +111,13 @@ private:
     QStackedWidget* m_stack = nullptr;
     QLabel*  m_tuneLabel = nullptr;
     QLabel*  m_statusLabel = nullptr;
+    QWidget* m_busyOverlay = nullptr;
     QFrame*  m_busyFrame = nullptr;
     QLabel*  m_busyLabel = nullptr;
+    QLabel*  m_busyDetail = nullptr;
     QProgressBar* m_busyBar = nullptr;
+    QTimer*  m_busyPulse = nullptr;
+    qint64   m_busyStartedMs = 0;
     QComboBox* m_portCombo = nullptr;
     QComboBox* m_btCombo = nullptr;
     QCheckBox* m_btObdOnlyChk = nullptr;
