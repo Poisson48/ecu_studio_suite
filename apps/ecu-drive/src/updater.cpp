@@ -72,6 +72,29 @@ QString Updater::notesFromBody(const QString& body)
     return kept.join(QLatin1Char('\n')).trimmed();
 }
 
+QString Updater::pickApkAssetUrl(const QJsonArray& assets)
+{
+    QString apkUrl;
+    for (const QJsonValue& a : assets) {
+        const QJsonObject asset = a.toObject();
+        const QString name = asset.value(QStringLiteral("name")).toString();
+        if (!name.endsWith(QStringLiteral(".apk"), Qt::CaseInsensitive))
+            continue;
+        const QString url = asset.value(QStringLiteral("browser_download_url")).toString();
+        if (url.isEmpty())
+            continue;
+        if (apkUrl.isEmpty()
+            || name.contains(QStringLiteral("ecu-drive"), Qt::CaseInsensitive)
+            || name.contains(QStringLiteral("ecu_drive"), Qt::CaseInsensitive)) {
+            apkUrl = url;
+            if (name.contains(QStringLiteral("ecu-drive"), Qt::CaseInsensitive)
+                || name.contains(QStringLiteral("ecu_drive"), Qt::CaseInsensitive))
+                break;
+        }
+    }
+    return apkUrl;
+}
+
 bool Updater::isNewer(const QString& candidate, const QString& current)
 {
     const auto parts = [](QString v) {
@@ -230,23 +253,8 @@ void Updater::check()
                     bestNewer = ver;
                     m_releaseUrl = obj.value(QStringLiteral("html_url")).toString();
                     m_apkUrl.clear();
-                    for (const QJsonValue& a : obj.value(QStringLiteral("assets")).toArray()) {
-                        const QJsonObject asset = a.toObject();
-                        const QString name = asset.value(QStringLiteral("name")).toString();
-                        // Préférer ecu-drive*.apk, sinon premier .apk
-                        if (!name.endsWith(QStringLiteral(".apk"), Qt::CaseInsensitive))
-                            continue;
-                        const QString url = asset.value(QStringLiteral("browser_download_url"))
-                                               .toString();
-                        if (m_apkUrl.isEmpty()
-                            || name.contains(QStringLiteral("ecu-drive"), Qt::CaseInsensitive)
-                            || name.contains(QStringLiteral("ecu_drive"), Qt::CaseInsensitive)) {
-                            m_apkUrl = url;
-                            if (name.contains(QStringLiteral("ecu-drive"), Qt::CaseInsensitive)
-                                || name.contains(QStringLiteral("ecu_drive"), Qt::CaseInsensitive))
-                                break;
-                        }
-                    }
+                    m_apkUrl = pickApkAssetUrl(obj.value(QStringLiteral("assets")).toArray());
+                    // (assets déjà filtrés : ecu-drive*.apk prioritaire)
                 }
             }
         }

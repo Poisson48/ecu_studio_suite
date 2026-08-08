@@ -329,6 +329,29 @@ OpenDamos::findMapByFingerprint(QByteArrayView rom, const DamosEntry& entry,
     if (!isMap && !isCurve) return {};
     if (entry.axes.empty()) return {};
 
+    // Raccourci Drive : d'abord une fenêtre autour de defaultAddress.
+    // Si un candidat haute confiance apparaît, on évite le scan ROM complet.
+    if (opts.preferDefaultWindow && !opts.startOffset && !opts.endOffset
+        && opts.defaultWindow > 0) {
+        const std::int64_t def = parseAddr(entry.defaultAddress);
+        if (def > 0) {
+            RelocateOptions narrow = opts;
+            narrow.preferDefaultWindow = false;
+            const std::int64_t half = static_cast<std::int64_t>(opts.defaultWindow);
+            const std::int64_t lo = std::max<std::int64_t>(0, def - half);
+            const std::int64_t hi = std::min<std::int64_t>(
+                static_cast<std::int64_t>(rom.size()), def + half);
+            narrow.startOffset = static_cast<std::size_t>(lo);
+            narrow.endOffset   = static_cast<std::size_t>(hi);
+            auto cands = findMapByFingerprint(rom, entry, narrow);
+            if (!cands.empty() && cands.front().score >= 0.90)
+                return cands;
+            RelocateOptions full = opts;
+            full.preferDefaultWindow = false;
+            return findMapByFingerprint(rom, entry, full);
+        }
+    }
+
     // COM_AXIS layout (separate axis blocks, no inline header): different scan.
     if (entry.comAxis) return findComAxis(rom, entry, opts);
 
@@ -548,6 +571,21 @@ OpenDamos::findValueByAnchor(QByteArrayView rom, const DamosEntry& entry,
 // Full relocation.
 // ---------------------------------------------------------------------------
 
+namespace {
+
+bool entryWanted(const DamosEntry& c, const RelocateOptions& opts) {
+    if (opts.mapsOnly && c.type != DamosType::Map)
+        return false;
+    if (!opts.categories.empty()) {
+        const auto& cats = opts.categories;
+        if (std::find(cats.begin(), cats.end(), c.category) == cats.end())
+            return false;
+    }
+    return true;
+}
+
+} // namespace
+
 std::vector<RelocResult>
 OpenDamos::relocate(const DamosRecipe& recipe, QByteArrayView rom,
                     const RelocateOptions& opts) const {
@@ -564,10 +602,12 @@ OpenDamos::relocate(const DamosRecipe& recipe, QByteArrayView rom,
     std::vector<const DamosEntry*> mapEntries;
     std::map<std::string, std::vector<FingerprintCandidate>> entryCandidates;
     for (const auto& c : recipe.characteristics) {
-        if (c.type == DamosType::Map || c.type == DamosType::Curve) {
-            mapEntries.push_back(&c);
-            entryCandidates[c.name] = findMapByFingerprint(rom, c, opts);
-        }
+        if (c.type != DamosType::Map && c.type != DamosType::Curve)
+            continue;
+        if (!entryWanted(c, opts))
+            continue;
+        mapEntries.push_back(&c);
+        entryCandidates[c.name] = findMapByFingerprint(rom, c, opts);
     }
 
     // Phase 1.b: greedy attribution. Entries are processed in recipe order
@@ -645,6 +685,7 @@ OpenDamos::relocate(const DamosRecipe& recipe, QByteArrayView rom,
     // to defaultAddress with a warning.
     for (const auto& c : recipe.characteristics) {
         if (c.type != DamosType::Value) continue;
+        if (!entryWanted(c, opts)) continue;
 
         const std::optional<std::string>& anchorName = c.relocation.anchorMap;
         const MapMatch* anchor = nullptr;

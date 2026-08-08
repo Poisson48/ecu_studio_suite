@@ -3,6 +3,7 @@
 #include "elm/Elm327.hpp"
 #include "ecu/TunePackage.hpp"
 #include "ecu/OpenDamos.hpp"
+#include "ecu/Obd2.hpp"
 #include "updater.h"
 
 #include <QVBoxLayout>
@@ -14,6 +15,10 @@
 #include <QCheckBox>
 #include <QFrame>
 #include <QStackedWidget>
+#include <QScrollArea>
+#include <QTableWidget>
+#include <QHeaderView>
+#include <QAbstractItemView>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QFile>
@@ -29,12 +34,15 @@
 #include <QTimer>
 #include <QProgressBar>
 #include <QInputDialog>
-#include <QDirIterator>
+#include <QDir>
 #include <QEventLoop>
+#include <QSizePolicy>
+#include <QPixmap>
 #include <thread>
 #include <functional>
 #include <type_traits>
 #include <exception>
+#include <algorithm>
 
 #if defined(ELM_HAVE_BLUETOOTH)
 #  include <QBluetoothDeviceDiscoveryAgent>
@@ -69,6 +77,8 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
         m_connectBtn->setText(tr("Déconnecter"));
         setStatus(tr("Connecté — %1").arg(v));
         m_sessionBtn->setEnabled(m_validator.isReady());
+        if (m_stack && m_stack->currentIndex() == 1)
+            ensureSensorsPolling();
 #if defined(ELM_HAVE_BLUETOOTH)
         if (m_btCombo && !m_btCombo->currentData().toString().isEmpty()
             && m_elm->isBluetoothTransport()) {
@@ -136,30 +146,51 @@ void DriveWindow::ensureBtAgent() {
         if (!(info.coreConfigurations() & QBluetoothDeviceInfo::BaseRateCoreConfiguration))
             return;
         const QString addr = info.address().toString();
-        for (int i = 0; i < m_btCombo->count(); ++i)
-            if (m_btCombo->itemData(i).toString() == addr) return;
-        const QString name = info.name();
-        const bool star = likelyElmBtName(name);
-        const QString label = (star ? QStringLiteral("★ ") : QString())
-            + (name.isEmpty() ? addr : QStringLiteral("%1 (%2)").arg(name, addr));
-        // Prioriser les ELM en tête de liste
-        if (star)
-            m_btCombo->insertItem(0, label, addr);
-        else
-            m_btCombo->addItem(label, addr);
+        for (const auto& d : m_btDevices)
+            if (d.addr == addr) return;
+        BtDevice d;
+        d.addr = addr;
+        d.name = info.name();
+        d.likelyObd = likelyElmBtName(d.name);
+        m_btDevices.push_back(std::move(d));
+        rebuildBtCombo();
     });
     connect(m_btAgent, &QBluetoothDeviceDiscoveryAgent::finished, this, [this]() {
         m_scanBtBtn->setEnabled(true);
+        rebuildBtCombo();
         selectLastBtDevice();
-        setStatus(tr("Scan BT classique terminé (%1 appareil(s)).\n"
+        int shown = m_btCombo ? m_btCombo->count() : 0;
+        setStatus(tr("Scan BT terminé — %1 affiché(s) / %2 trouvé(s).\n"
                      "Module bleu : appairé (PIN 1234/0000) ?")
-                      .arg(m_btCombo->count()));
+                      .arg(shown)
+                      .arg(static_cast<int>(m_btDevices.size())));
     });
     connect(m_btAgent, &QBluetoothDeviceDiscoveryAgent::errorOccurred, this,
             [this](QBluetoothDeviceDiscoveryAgent::Error) {
         m_scanBtBtn->setEnabled(true);
         setStatus(tr("Échec scan Bluetooth (adaptateur / permissions)."), true);
     });
+}
+
+void DriveWindow::rebuildBtCombo() {
+    if (!m_btCombo) return;
+    const QString keep = m_btCombo->currentData().toString();
+    m_btCombo->clear();
+    const bool onlyObd = m_btObdOnlyChk && m_btObdOnlyChk->isChecked();
+    std::vector<BtDevice> ordered = m_btDevices;
+    std::stable_partition(ordered.begin(), ordered.end(),
+                          [](const BtDevice& d) { return d.likelyObd; });
+    for (const auto& d : ordered) {
+        if (onlyObd && !d.likelyObd) continue;
+        const QString label = (d.likelyObd ? QStringLiteral("★ ") : QString())
+            + (d.name.isEmpty() ? d.addr
+                                : QStringLiteral("%1 (%2)").arg(d.name, d.addr));
+        m_btCombo->addItem(label, d.addr);
+    }
+    if (m_btCombo->count() == 0 && onlyObd && !m_btDevices.empty())
+        m_btCombo->setPlaceholderText(tr("Aucun OBD — décoche le filtre"));
+    const int idx = m_btCombo->findData(keep);
+    if (idx >= 0) m_btCombo->setCurrentIndex(idx);
 }
 
 void DriveWindow::selectLastBtDevice() {
@@ -184,15 +215,15 @@ DriveWindow::~DriveWindow() {
 void DriveWindow::buildUi() {
     auto* central = new QWidget(this);
     setCentralWidget(central);
-    auto* root = new QVBoxLayout(central);
-    root->setContentsMargins(12, 12, 12, 12);
-    root->setSpacing(10);
+    auto* outer = new QVBoxLayout(central);
+    outer->setContentsMargins(0, 0, 0, 0);
+    outer->setSpacing(0);
 
-    // Bannière MAJ (style ColoCourse)
+    // Bannière MAJ (style ColoCourse) — hors scroll pour rester visible
     m_updateBanner = new QFrame(central);
     m_updateBanner->setVisible(false);
     m_updateBanner->setStyleSheet(QStringLiteral(
-        "QFrame { background:#1e3a5f; border:1px solid #3b82f6; border-radius:10px; }"));
+        "QFrame { background:#1e3a5f; border:1px solid #3b82f6; border-radius:10px; margin:8px; }"));
     auto* ub = new QVBoxLayout(m_updateBanner);
     ub->setContentsMargins(10, 8, 10, 8);
     m_updateTitle = new QLabel(m_updateBanner);
@@ -215,23 +246,12 @@ void DriveWindow::buildUi() {
     ub->addWidget(m_updateSub);
     ub->addWidget(m_updateProgress);
     ub->addLayout(ubRow);
-    root->addWidget(m_updateBanner);
-
-    m_tuneLabel = new QLabel(tr("Aucun tune — importe un .ecutune ou une ROM .bin"), central);
-    m_tuneLabel->setWordWrap(true);
-    m_tuneLabel->setStyleSheet(QStringLiteral("color:#60a5fa; font-size:13px;"));
-    root->addWidget(m_tuneLabel);
-
-    auto* importBtn = new QPushButton(tr("Importer tune / ROM…"), central);
-    importBtn->setMinimumHeight(44);
-    importBtn->setObjectName("accentBtn");
-    connect(importBtn, &QPushButton::clicked, this, &DriveWindow::importTune);
-    root->addWidget(importBtn);
+    outer->addWidget(m_updateBanner);
 
     m_busyFrame = new QFrame(central);
     m_busyFrame->setVisible(false);
     m_busyFrame->setStyleSheet(QStringLiteral(
-        "QFrame { background:#1e293b; border:1px solid #334155; border-radius:8px; }"));
+        "QFrame { background:#1e293b; border:1px solid #334155; border-radius:8px; margin:8px; }"));
     auto* busyLay = new QVBoxLayout(m_busyFrame);
     busyLay->setContentsMargins(12, 10, 12, 10);
     m_busyLabel = new QLabel(m_busyFrame);
@@ -242,13 +262,70 @@ void DriveWindow::buildUi() {
     m_busyBar->setMinimumHeight(18);
     busyLay->addWidget(m_busyLabel);
     busyLay->addWidget(m_busyBar);
-    root->addWidget(m_busyFrame);
+    outer->addWidget(m_busyFrame);
+
+    // Nav Drive / Capteurs
+    auto* nav = new QHBoxLayout;
+    nav->setContentsMargins(12, 4, 12, 4);
+    auto* driveNav = new QPushButton(tr("Conduite"), central);
+    auto* sensNav = new QPushButton(tr("Capteurs OBD"), central);
+    driveNav->setObjectName("accentBtn");
+    connect(driveNav, &QPushButton::clicked, this, &DriveWindow::showDrivePage);
+    connect(sensNav, &QPushButton::clicked, this, &DriveWindow::showSensorsPage);
+    nav->addWidget(driveNav, 1);
+    nav->addWidget(sensNav, 1);
+    outer->addLayout(nav);
+
+    m_stack = new QStackedWidget(central);
+    m_stack->addWidget(buildDrivePage(m_stack));
+    m_stack->addWidget(buildSensorsPage(m_stack));
+    outer->addWidget(m_stack, 1);
+
+    m_statusLabel = new QLabel(tr("100 % local — aucune télémétrie."), central);
+    m_statusLabel->setWordWrap(true);
+    m_statusLabel->setContentsMargins(12, 4, 12, 8);
+    m_statusLabel->setStyleSheet(QStringLiteral("color:#7c8fa6; font-size:12px;"));
+    outer->addWidget(m_statusLabel);
+}
+
+QWidget* DriveWindow::buildDrivePage(QWidget* parent) {
+    auto* scroll = new QScrollArea(parent);
+    scroll->setWidgetResizable(true);
+    scroll->setFrameShape(QFrame::NoFrame);
+    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    auto* page = new QWidget;
+    auto* root = new QVBoxLayout(page);
+    root->setContentsMargins(12, 8, 12, 12);
+    root->setSpacing(10);
+
+    auto* logoRow = new QHBoxLayout;
+    auto* logo = new QLabel(page);
+    QPixmap pm(QStringLiteral(":/ecu_studio_logo.png"));
+    if (!pm.isNull())
+        logo->setPixmap(pm.scaled(40, 40, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    logoRow->addWidget(logo);
+    auto* brand = new QLabel(tr("ECU Drive"), page);
+    brand->setStyleSheet(QStringLiteral("color:#e6edf3; font-weight:700; font-size:18px;"));
+    logoRow->addWidget(brand, 1);
+    root->addLayout(logoRow);
+
+    m_tuneLabel = new QLabel(tr("Aucun tune — importe un .ecutune ou une ROM .bin"), page);
+    m_tuneLabel->setWordWrap(true);
+    m_tuneLabel->setStyleSheet(QStringLiteral("color:#60a5fa; font-size:13px;"));
+    root->addWidget(m_tuneLabel);
+
+    auto* importBtn = new QPushButton(tr("Importer tune / ROM…"), page);
+    importBtn->setMinimumHeight(44);
+    importBtn->setObjectName("accentBtn");
+    connect(importBtn, &QPushButton::clicked, this, &DriveWindow::importTune);
+    root->addWidget(importBtn);
 
     // Connexion
     auto* connRow = new QHBoxLayout;
-    m_portCombo = new QComboBox(central);
+    m_portCombo = new QComboBox(page);
     m_portCombo->setMinimumHeight(36);
-    auto* refresh = new QPushButton(tr("↻"), central);
+    auto* refresh = new QPushButton(tr("↻"), page);
     connect(refresh, &QPushButton::clicked, this, &DriveWindow::refreshPorts);
     connRow->addWidget(m_portCombo, 1);
     connRow->addWidget(refresh);
@@ -256,33 +333,47 @@ void DriveWindow::buildUi() {
 
 #if defined(ELM_HAVE_BLUETOOTH)
     auto* btRow = new QHBoxLayout;
-    m_btCombo = new QComboBox(central);
+    m_btCombo = new QComboBox(page);
     m_btCombo->setMinimumHeight(36);
+    m_btCombo->setMaxVisibleItems(12);
+    m_btCombo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    m_btCombo->setMinimumContentsLength(18);
     m_btCombo->setPlaceholderText(tr("Bluetooth ELM327…"));
-    m_scanBtBtn = new QPushButton(tr("Scan BT"), central);
+    m_scanBtBtn = new QPushButton(tr("Scan BT"), page);
     connect(m_scanBtBtn, &QPushButton::clicked, this, &DriveWindow::startBtScan);
     btRow->addWidget(m_btCombo, 1);
     btRow->addWidget(m_scanBtBtn);
     root->addLayout(btRow);
+
+    m_btObdOnlyChk = new QCheckBox(tr("Filtrer OBD / ELM uniquement"), page);
+    m_btObdOnlyChk->setChecked(
+        QSettings().value(QStringLiteral("drive/btObdOnly"), true).toBool());
+    connect(m_btObdOnlyChk, &QCheckBox::toggled, this, [this](bool on) {
+        QSettings().setValue(QStringLiteral("drive/btObdOnly"), on);
+        rebuildBtCombo();
+        selectLastBtDevice();
+    });
+    root->addWidget(m_btObdOnlyChk);
 #else
     m_btCombo = nullptr;
     m_scanBtBtn = nullptr;
-    auto* noBt = new QLabel(tr("Bluetooth non compilé — USB seulement."), central);
+    m_btObdOnlyChk = nullptr;
+    auto* noBt = new QLabel(tr("Bluetooth non compilé — USB seulement."), page);
     noBt->setStyleSheet(QStringLiteral("color:#f59e0b;"));
     root->addWidget(noBt);
 #endif
 
-    m_connectBtn = new QPushButton(tr("Connecter"), central);
+    m_connectBtn = new QPushButton(tr("Connecter"), page);
     m_connectBtn->setMinimumHeight(44);
     connect(m_connectBtn, &QPushButton::clicked, this, &DriveWindow::toggleConnect);
     root->addWidget(m_connectBtn);
 
-    m_beepChk = new QCheckBox(tr("Bip d'alerte underboost"), central);
+    m_beepChk = new QCheckBox(tr("Bip d'alerte underboost"), page);
     m_beepChk->setChecked(true);
     root->addWidget(m_beepChk);
 
     // Drive panel
-    m_banner = new QFrame(central);
+    m_banner = new QFrame(page);
     m_banner->setMinimumHeight(80);
     m_banner->setStyleSheet(QStringLiteral(
         "QFrame { background:#1e293b; border-radius:10px; }"));
@@ -296,7 +387,7 @@ void DriveWindow::buildUi() {
     bl->addWidget(m_verdict);
     root->addWidget(m_banner);
 
-    m_boostBig = new QLabel(tr("— / — mbar"), central);
+    m_boostBig = new QLabel(tr("— / — mbar"), page);
     QFont bf = m_boostBig->font();
     bf.setPointSizeF(26); bf.setBold(true);
     m_boostBig->setFont(bf);
@@ -304,27 +395,27 @@ void DriveWindow::buildUi() {
     m_boostBig->setStyleSheet(QStringLiteral("color:#60a5fa;"));
     root->addWidget(m_boostBig);
 
-    m_boostSub = new QLabel(tr("Δ —"), central);
+    m_boostSub = new QLabel(tr("Δ —"), page);
     m_boostSub->setAlignment(Qt::AlignCenter);
     m_boostSub->setStyleSheet(QStringLiteral("color:#9ca3af; font-size:16px;"));
     root->addWidget(m_boostSub);
 
-    m_rpmLoad = new QLabel(tr("RPM —  ·  Charge — %"), central);
+    m_rpmLoad = new QLabel(tr("RPM —  ·  Charge — %"), page);
     m_rpmLoad->setAlignment(Qt::AlignCenter);
     m_rpmLoad->setStyleSheet(QStringLiteral("color:#7c8fa6;"));
     root->addWidget(m_rpmLoad);
 
-    m_sessionLive = new QLabel(tr("Session : —"), central);
+    m_sessionLive = new QLabel(tr("Session : —"), page);
     m_sessionLive->setAlignment(Qt::AlignCenter);
     m_sessionLive->setStyleSheet(QStringLiteral("color:#64748b; font-size:12px;"));
     root->addWidget(m_sessionLive);
 
-    m_csvLabel = new QLabel(tr("CSV : inactif"), central);
+    m_csvLabel = new QLabel(tr("CSV : inactif"), page);
     m_csvLabel->setAlignment(Qt::AlignCenter);
     m_csvLabel->setStyleSheet(QStringLiteral("color:#64748b; font-size:11px;"));
     root->addWidget(m_csvLabel);
 
-    m_sessionBtn = new QPushButton(tr("▶  Lancer session conduite"), central);
+    m_sessionBtn = new QPushButton(tr("▶  Lancer session conduite"), page);
     m_sessionBtn->setObjectName("accentBtn");
     m_sessionBtn->setMinimumHeight(56);
     QFont sf = m_sessionBtn->font();
@@ -334,20 +425,124 @@ void DriveWindow::buildUi() {
     connect(m_sessionBtn, &QPushButton::clicked, this, &DriveWindow::toggleSession);
     root->addWidget(m_sessionBtn);
 
-    auto* shareBtn = new QPushButton(tr("Partager dernier log…"), central);
+    auto* shareBtn = new QPushButton(tr("Partager dernier log…"), page);
     connect(shareBtn, &QPushButton::clicked, this, &DriveWindow::shareLastLog);
     root->addWidget(shareBtn);
 
-    auto* updBtn = new QPushButton(tr("Vérifier les mises à jour"), central);
+    auto* updBtn = new QPushButton(tr("Vérifier les mises à jour"), page);
     connect(updBtn, &QPushButton::clicked, this, &DriveWindow::checkUpdatesManual);
     root->addWidget(updBtn);
 
     root->addStretch();
+    scroll->setWidget(page);
+    return scroll;
+}
 
-    m_statusLabel = new QLabel(tr("100 % local — aucune télémétrie."), central);
-    m_statusLabel->setWordWrap(true);
-    m_statusLabel->setStyleSheet(QStringLiteral("color:#7c8fa6; font-size:12px;"));
-    root->addWidget(m_statusLabel);
+QWidget* DriveWindow::buildSensorsPage(QWidget* parent) {
+    auto* scroll = new QScrollArea(parent);
+    scroll->setWidgetResizable(true);
+    scroll->setFrameShape(QFrame::NoFrame);
+
+    auto* page = new QWidget;
+    auto* root = new QVBoxLayout(page);
+    root->setContentsMargins(12, 8, 12, 12);
+    root->setSpacing(8);
+
+    auto* title = new QLabel(tr("Tous les capteurs OBD (mode 01)"), page);
+    title->setStyleSheet(QStringLiteral("color:#e6edf3; font-weight:700; font-size:16px;"));
+    root->addWidget(title);
+
+    m_sensorsStatus = new QLabel(tr("Connecte un ELM327 pour lire les PID."), page);
+    m_sensorsStatus->setWordWrap(true);
+    m_sensorsStatus->setStyleSheet(QStringLiteral("color:#93c5fd; font-size:12px;"));
+    root->addWidget(m_sensorsStatus);
+
+    m_sensorsTable = new QTableWidget(0, 3, page);
+    m_sensorsTable->setHorizontalHeaderLabels(
+        {tr("Capteur"), tr("Valeur"), tr("Unité")});
+    m_sensorsTable->horizontalHeader()->setStretchLastSection(true);
+    m_sensorsTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    m_sensorsTable->verticalHeader()->setVisible(false);
+    m_sensorsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_sensorsTable->setSelectionMode(QAbstractItemView::NoSelection);
+    m_sensorsTable->setMinimumHeight(360);
+    m_sensorsTable->setStyleSheet(QStringLiteral(
+        "QTableWidget { background:#111827; gridline-color:#334155; }"
+        "QHeaderView::section { background:#1e293b; color:#e6edf3; padding:6px; }"));
+
+    const auto& pids = ecu::obd2::livePids();
+    m_sensorsTable->setRowCount(pids.size());
+    for (int i = 0; i < pids.size(); ++i) {
+        auto* name = new QTableWidgetItem(QString::fromUtf8(pids[i].name));
+        auto* val  = new QTableWidgetItem(QStringLiteral("—"));
+        auto* unit = new QTableWidgetItem(QString::fromUtf8(pids[i].unit));
+        val->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        val->setData(Qt::UserRole, pids[i].pid);
+        m_sensorsTable->setItem(i, 0, name);
+        m_sensorsTable->setItem(i, 1, val);
+        m_sensorsTable->setItem(i, 2, unit);
+    }
+    root->addWidget(m_sensorsTable, 1);
+
+    auto* refreshBtn = new QPushButton(tr("Rafraîchir le polling"), page);
+    connect(refreshBtn, &QPushButton::clicked, this, &DriveWindow::ensureSensorsPolling);
+    root->addWidget(refreshBtn);
+
+    scroll->setWidget(page);
+    return scroll;
+}
+
+void DriveWindow::showDrivePage() {
+    if (m_stack) m_stack->setCurrentIndex(0);
+    if (m_sessionOn) return;
+    // Revenir au polling minimal si connecté sans session.
+    if (m_connected && m_elm)
+        m_elm->stopPolling();
+}
+
+void DriveWindow::showSensorsPage() {
+    if (m_stack) m_stack->setCurrentIndex(1);
+    ensureSensorsPolling();
+    refreshSensorsTable();
+}
+
+void DriveWindow::ensureSensorsPolling() {
+    if (!m_connected || !m_elm) {
+        if (m_sensorsStatus)
+            m_sensorsStatus->setText(tr("Hors ligne — connecte un ELM327 d'abord."));
+        return;
+    }
+    if (m_sessionOn) {
+        if (m_sensorsStatus)
+            m_sensorsStatus->setText(tr("Session conduite active — PID de validation."));
+        return;
+    }
+    QList<std::uint8_t> qp;
+    for (const auto& p : ecu::obd2::livePids())
+        qp.append(p.pid);
+    m_elm->startPolling(qp, 200);
+    if (m_sensorsStatus)
+        m_sensorsStatus->setText(tr("Polling %1 PID(s)…").arg(qp.size()));
+}
+
+void DriveWindow::refreshSensorsTable() {
+    if (!m_sensorsTable) return;
+    for (int r = 0; r < m_sensorsTable->rowCount(); ++r) {
+        auto* valItem = m_sensorsTable->item(r, 1);
+        if (!valItem) continue;
+        const quint8 pid = static_cast<quint8>(valItem->data(Qt::UserRole).toUInt());
+        if (!m_live.contains(pid)) {
+            valItem->setText(QStringLiteral("—"));
+            continue;
+        }
+        const double v = m_live.value(pid);
+        if (pid == 0x0C || pid == 0x0D || pid == 0x1F)
+            valItem->setText(QString::number(v, 'f', 0));
+        else if (pid == 0x24 || pid == 0x42)
+            valItem->setText(QString::number(v, 'f', 3));
+        else
+            valItem->setText(QString::number(v, 'f', 1));
+    }
 }
 
 void DriveWindow::setStatus(const QString& msg, bool error) {
@@ -434,12 +629,14 @@ QStringList DriveWindow::availableEcuIds() {
         return m_ecuIdsCache;
     QStringList ids;
     auto addFrom = [&](const QString& root) {
-        QDirIterator it(root, QStringList{QStringLiteral("open_damos.json")},
-                        QDir::Files, QDirIterator::Subdirectories);
-        while (it.hasNext()) {
-            it.next();
-            const QString ecu = QFileInfo(it.filePath()).dir().dirName();
-            if (!ecu.isEmpty() && !ids.contains(ecu))
+        // entryList sur le préfixe qrc est bien plus rapide qu'un QDirIterator
+        // récursif (surtout sur Android avec ~130 recettes embarquées).
+        QDir dir(root);
+        const QStringList subs = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+        for (const QString& ecu : subs) {
+            if (QFile::exists(root + QLatin1Char('/') + ecu
+                              + QStringLiteral("/open_damos.json"))
+                && !ids.contains(ecu))
                 ids << ecu;
         }
     };
@@ -548,7 +745,8 @@ void DriveWindow::loadTuneFile(const QString& path) {
 
 void DriveWindow::applyRomBinary(const QByteArray& rom, const QString& ecuId,
                                  const QString& path) {
-    beginBusy(tr("Relocalisation des maps (%1)…\nCela peut prendre plusieurs secondes.")
+    beginBusy(tr("Relocalisation des maps Drive (%1)…\n"
+                 "Catégories boost/smoke/air/fuel uniquement.")
                   .arg(ecuId));
     const bool ok = runWhileBusy([&]() {
         return m_validator.loadRom(rom, ecuId);
@@ -627,10 +825,13 @@ void DriveWindow::startBtScan() {
     if (!m_btCombo) return;
     ensureBtAgent();
     if (!m_btAgent) return;
+    m_btDevices.clear();
     m_btCombo->clear();
     m_scanBtBtn->setEnabled(false);
     setStatus(tr("Scan Bluetooth classique (modules ELM327 bleus)…\n"
-                 "Appaire d’abord le dongle (PIN 1234 ou 0000) si besoin."));
+                 "Filtre OBD actif : %1 — décoche pour tout voir.")
+                  .arg(m_btObdOnlyChk && m_btObdOnlyChk->isChecked()
+                           ? tr("oui") : tr("non")));
     m_btAgent->start(QBluetoothDeviceDiscoveryAgent::ClassicMethod);
 #else
     setStatus(tr("Bluetooth non disponible dans ce build."), true);
@@ -732,9 +933,13 @@ void DriveWindow::stopSession() {
     else setStatus(tr("Session arrêtée (aucune donnée)."));
 }
 
-void DriveWindow::onPid(quint8 pid, double value, const QString&, const QString&) {
+void DriveWindow::onPid(quint8 pid, double value, const QString&, const QString& unit) {
     m_live[pid] = value;
+    if (!unit.isEmpty())
+        m_liveUnit[pid] = unit;
     if (m_sessionOn) runValidation();
+    if (m_stack && m_stack->currentIndex() == 1)
+        refreshSensorsTable();
 }
 
 ecu::LivePidSnapshot DriveWindow::snapshot() const {

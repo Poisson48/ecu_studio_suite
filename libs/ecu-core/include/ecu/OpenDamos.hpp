@@ -166,6 +166,16 @@ struct RelocateOptions {
     std::optional<std::size_t> startOffset;
     std::optional<std::size_t> endOffset;
     AxisTolerance              axisTol;
+    // Si non vide : ne relocalise que les caractéristiques de ces catégories
+    // (ex. {"boost","smoke","air","fuel"} pour ECU Drive).
+    std::vector<std::string>   categories;
+    // Si true : ignore CURVE / VALUE (Drive ne valide que des MAP).
+    bool                       mapsOnly = false;
+    // Si true : tente d'abord une fenêtre autour de defaultAddress avant
+    // le scan ROM complet (gros gain quand la ROM colle à la recette).
+    bool                       preferDefaultWindow = true;
+    // Demi-largeur de la fenêtre autour de defaultAddress (octets).
+    std::size_t                defaultWindow = 0x20000;
 };
 
 // ---------------------------------------------------------------------------

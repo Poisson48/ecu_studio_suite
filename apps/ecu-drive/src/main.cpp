@@ -2,6 +2,7 @@
 
 #include <QApplication>
 #include <QFile>
+#include <QIcon>
 #include <QTimer>
 
 static const char* kDarkQss = R"(
@@ -25,6 +26,7 @@ QComboBox, QLineEdit {
 }
 QCheckBox { spacing: 8px; }
 QLabel { background: transparent; }
+QScrollArea { background: transparent; border: none; }
 QMessageBox { background: #0f1520; }
 )";
 
@@ -33,6 +35,7 @@ int main(int argc, char* argv[]) {
     QApplication::setApplicationName(QStringLiteral("ECU Drive"));
     QApplication::setOrganizationName(QStringLiteral("Poisson48"));
     QApplication::setApplicationVersion(QStringLiteral(APP_VERSION));
+    app.setWindowIcon(QIcon(QStringLiteral(":/ecu_studio_logo.png")));
     app.setStyleSheet(QString::fromUtf8(kDarkQss));
 
     QString tuneArg;

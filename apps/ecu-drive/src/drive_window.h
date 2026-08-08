@@ -8,6 +8,7 @@
 
 #if defined(ELM_HAVE_BLUETOOTH)
 #  include <QBluetoothDeviceDiscoveryAgent>
+#  include <QBluetoothDeviceInfo>
 #endif
 
 class QLabel;
@@ -18,6 +19,9 @@ class QFrame;
 class QFile;
 class QProgressBar;
 class QWidget;
+class QStackedWidget;
+class QScrollArea;
+class QTableWidget;
 
 namespace elm { class Elm327; }
 
@@ -45,9 +49,16 @@ private slots:
     void onUpdateAction();
     void onUpdateDismiss();
     void checkUpdatesManual();
+    void showDrivePage();
+    void showSensorsPage();
+#if defined(ELM_HAVE_BLUETOOTH)
+    void rebuildBtCombo();
+#endif
 
 private:
     void buildUi();
+    QWidget* buildDrivePage(QWidget* parent);
+    QWidget* buildSensorsPage(QWidget* parent);
     void setStatus(const QString& msg, bool error = false);
     /** Affiche une barre de progression (indéterminée si max<=0). */
     void beginBusy(const QString& message, int max = 0);
@@ -64,6 +75,8 @@ private:
     void stopSession();
     void runValidation();
     void updateDriveUi(const std::vector<ecu::ValidationResult>& results);
+    void refreshSensorsTable();
+    void ensureSensorsPolling();
     void showSummary(const ecu::SessionSummary& sum);
     void autoStartCsv();
     void autoStopCsv();
@@ -75,6 +88,11 @@ private:
     void ensureBtAgent();
     static bool likelyElmBtName(const QString& name);
     void selectLastBtDevice();
+    struct BtDevice {
+        QString addr;
+        QString name;
+        bool likelyObd = false;
+    };
 #endif
     std::optional<ecu::ValidationResult> primaryBoost(
         const std::vector<ecu::ValidationResult>& results) const;
@@ -88,6 +106,7 @@ private:
     ecu::EmaFilter m_emaMeas;
     ecu::EmaFilter m_emaExp;
 
+    QStackedWidget* m_stack = nullptr;
     QLabel*  m_tuneLabel = nullptr;
     QLabel*  m_statusLabel = nullptr;
     QFrame*  m_busyFrame = nullptr;
@@ -95,6 +114,7 @@ private:
     QProgressBar* m_busyBar = nullptr;
     QComboBox* m_portCombo = nullptr;
     QComboBox* m_btCombo = nullptr;
+    QCheckBox* m_btObdOnlyChk = nullptr;
     QPushButton* m_connectBtn = nullptr;
     QPushButton* m_scanBtBtn = nullptr;
     QPushButton* m_sessionBtn = nullptr;
@@ -106,6 +126,8 @@ private:
     QLabel*  m_sessionLive = nullptr;
     QLabel*  m_csvLabel = nullptr;
     QCheckBox* m_beepChk = nullptr;
+    QTableWidget* m_sensorsTable = nullptr;
+    QLabel* m_sensorsStatus = nullptr;
 
     QFrame*       m_updateBanner = nullptr;
     QLabel*       m_updateTitle = nullptr;
@@ -115,6 +137,7 @@ private:
     QPushButton*  m_updateDismissBtn = nullptr;
 
     QHash<quint8, double> m_live;
+    QHash<quint8, QString> m_liveUnit;
     bool m_connected = false;
     bool m_sessionOn = false;
     int  m_busyDepth = 0;
@@ -126,6 +149,7 @@ private:
 
 #if defined(ELM_HAVE_BLUETOOTH)
     QBluetoothDeviceDiscoveryAgent* m_btAgent = nullptr;
+    std::vector<BtDevice> m_btDevices;
 #endif
 };
 

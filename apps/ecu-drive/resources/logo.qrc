@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="/">
+    <file>ecu_studio_logo.png</file>
+  </qresource>
+</RCC>

@@ -6,6 +6,7 @@
 #include <QVariantList>
 
 class QNetworkReply;
+class QJsonArray;
 
 namespace ecu_drive {
 
@@ -42,6 +43,8 @@ public:
 
     static bool isNewer(const QString& candidate, const QString& current);
     static QString notesFromBody(const QString& body);
+    /** Choisit l'URL de téléchargement APK ecu-drive dans les assets d'une release. */
+    static QString pickApkAssetUrl(const QJsonArray& assets);
 
 public slots:
     void check();
