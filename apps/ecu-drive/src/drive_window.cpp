@@ -255,15 +255,15 @@ void DriveWindow::buildUi() {
     m_busyFrame = new QFrame(central);
     m_busyFrame->setVisible(false);
     m_busyFrame->setStyleSheet(QStringLiteral(
-        "QFrame { background:#1e293b; border:1px solid #334155; border-radius:8px; margin:8px; }"));
+        "QFrame { background:#1e3a5f; border:2px solid #3b82f6; border-radius:10px; margin:8px; }"));
     auto* busyLay = new QVBoxLayout(m_busyFrame);
-    busyLay->setContentsMargins(12, 10, 12, 10);
+    busyLay->setContentsMargins(14, 12, 14, 12);
     m_busyLabel = new QLabel(m_busyFrame);
     m_busyLabel->setWordWrap(true);
-    m_busyLabel->setStyleSheet(QStringLiteral("color:#e2e8f0; font-size:13px; font-weight:600;"));
+    m_busyLabel->setStyleSheet(QStringLiteral("color:#e2e8f0; font-size:14px; font-weight:700;"));
     m_busyBar = new QProgressBar(m_busyFrame);
     m_busyBar->setTextVisible(true);
-    m_busyBar->setMinimumHeight(18);
+    m_busyBar->setMinimumHeight(22);
     busyLay->addWidget(m_busyLabel);
     busyLay->addWidget(m_busyBar);
     outer->addWidget(m_busyFrame);
@@ -694,7 +694,10 @@ QString DriveWindow::promptEcuId(const QString& hint) {
 }
 
 bool DriveWindow::loadRomBinaryFile(const QString& path) {
-    beginBusy(tr("Lecture de la ROM…"));
+    const QFileInfo fi(path);
+    beginBusy(tr("Lecture de la ROM…\n%1 (%2 Mo)")
+                  .arg(fi.fileName())
+                  .arg(fi.size() / (1024.0 * 1024.0), 0, 'f', 1));
     QFile f(path);
     if (!f.open(QIODevice::ReadOnly)) {
         endBusy();
@@ -702,6 +705,8 @@ bool DriveWindow::loadRomBinaryFile(const QString& path) {
                              tr("Impossible d'ouvrir %1").arg(path));
         return false;
     }
+    setBusy(0, tr("Lecture en mémoire… (%1 Mo)")
+                   .arg(fi.size() / (1024.0 * 1024.0), 0, 'f', 1));
     const QByteArray rom = f.readAll();
     endBusy();
     if (rom.size() < 1024) {
@@ -717,11 +722,14 @@ bool DriveWindow::loadRomBinaryFile(const QString& path) {
             return false;
     }
 
+    setStatus(tr("Choisis le type d'ECU pour « %1 »…").arg(fi.fileName()));
     const QString ecu = promptEcuId();
     if (ecu.isEmpty()) {
         setStatus(tr("Import annulé."));
         return true; // annulé
     }
+    setStatus(tr("ECU %1 sélectionné — démarrage de l'analyse…").arg(ecu));
+    QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     applyRomBinary(rom, ecu, path);
     return true;
 }
@@ -763,19 +771,75 @@ void DriveWindow::loadTuneFile(const QString& path) {
 
 void DriveWindow::applyRomBinary(const QByteArray& rom, const QString& ecuId,
                                  const QString& path) {
-    beginBusy(tr("Relocalisation des maps Drive (%1)…\n"
-                 "Catégories boost/smoke/air/fuel uniquement.")
-                  .arg(ecuId));
+    // Feedback immédiat : l'utilisateur vient de valider le dialogue ECU.
+    beginBusy(tr("Préparation de la ROM %1…\nNe ferme pas l'app — ça peut prendre 10–60 s.")
+                  .arg(ecuId), /*max*/ 0);
+    m_tuneLabel->setText(tr("Chargement ROM %1…").arg(ecuId));
+
+    // Heartbeat : prouve que l'app vit même si une map prend longtemps.
+    const qint64 t0 = QDateTime::currentMSecsSinceEpoch();
+    QTimer heart;
+    heart.setInterval(400);
+    QObject::connect(&heart, &QTimer::timeout, this, [this, ecuId, t0]() {
+        const int sec = int((QDateTime::currentMSecsSinceEpoch() - t0) / 1000);
+        if (m_busyBar && m_busyBar->maximum() <= 0) {
+            m_busyLabel->setText(
+                tr("Analyse ROM %1… %2 s\nRecherche des maps turbo / air / fuel…")
+                    .arg(ecuId)
+                    .arg(sec));
+            setStatus(tr("Chargement en cours (%1 s) — patience.").arg(sec));
+        }
+        // Force un repaint (Android : barre indéterminée sinon figée).
+        if (m_busyBar) m_busyBar->update();
+        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    });
+    heart.start();
+
+    m_validator.setProgressCallback(
+        [this, ecuId, t0](int cur, int total, const QString& mapName) {
+            // Appelé depuis le worker : remonter à l'UI thread.
+            QMetaObject::invokeMethod(this, [this, ecuId, t0, cur, total, mapName]() {
+                if (!m_busyFrame || !m_busyBar) return;
+                const int sec = int((QDateTime::currentMSecsSinceEpoch() - t0) / 1000);
+                if (total > 0) {
+                    if (m_busyBar->maximum() != total) {
+                        m_busyBar->setRange(0, total);
+                        m_busyBar->setFormat(QStringLiteral("%v / %m"));
+                    }
+                    m_busyBar->setValue(std::min(cur, total));
+                }
+                const QString map = mapName.isEmpty()
+                    ? tr("finalisation…")
+                    : mapName;
+                const int shown = total > 0 ? std::min(cur + 1, total) : 1;
+                const int tot   = total > 0 ? total : 1;
+                const QString msg =
+                    tr("Map %1/%2 — %3\nECU %4 · %5 s — ne ferme pas l'app")
+                        .arg(shown)
+                        .arg(tot)
+                        .arg(map, ecuId)
+                        .arg(sec);
+                m_busyLabel->setText(msg);
+                setStatus(msg);
+            }, Qt::QueuedConnection);
+        });
+
     const bool ok = runWhileBusy([&]() {
         return m_validator.loadRom(rom, ecuId);
     });
+    heart.stop();
+    m_validator.clearProgressCallback();
     endBusy();
+    // Si beginBusy a été rappelé par erreur dans le callback, nettoyer.
+    while (m_busyDepth > 0) endBusy();
+
     if (!ok) {
         QMessageBox::warning(this, tr("Import ROM"),
             tr("Impossible de relocaliser les maps pour l'ECU « %1 ».\n"
                "Vérifie le type d'ECU, ou exporte un .ecutune depuis ECU Studio "
                "(qui embarque la recette OpenDAMOS).").arg(ecuId));
         setStatus(tr("Relocalisation échouée (%1).").arg(ecuId), true);
+        m_tuneLabel->setText(tr("Échec import ROM — %1").arg(ecuId));
         return;
     }
     m_tunePath = path;
@@ -797,7 +861,38 @@ void DriveWindow::applyRomBinary(const QByteArray& rom, const QString& ecuId,
 }
 
 void DriveWindow::applyTunePackage(const ecu::TunePackage& pkg, const QString& path) {
-    beginBusy(tr("Application du tune (%1)…").arg(pkg.manifest.ecuId));
+    beginBusy(tr("Application du tune (%1)…\nNe ferme pas l'app.").arg(pkg.manifest.ecuId));
+    m_tuneLabel->setText(tr("Chargement tune %1…").arg(pkg.manifest.ecuId));
+    const qint64 t0 = QDateTime::currentMSecsSinceEpoch();
+    QTimer heart;
+    heart.setInterval(400);
+    QObject::connect(&heart, &QTimer::timeout, this, [this, t0]() {
+        const int sec = int((QDateTime::currentMSecsSinceEpoch() - t0) / 1000);
+        setStatus(tr("Application du tune… %1 s").arg(sec));
+        if (m_busyBar) m_busyBar->update();
+        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    });
+    heart.start();
+    m_validator.setProgressCallback(
+        [this, t0](int cur, int total, const QString& mapName) {
+            QMetaObject::invokeMethod(this, [this, t0, cur, total, mapName]() {
+                if (!m_busyBar) return;
+                const int sec = int((QDateTime::currentMSecsSinceEpoch() - t0) / 1000);
+                if (total > 0) {
+                    if (m_busyBar->maximum() != total) {
+                        m_busyBar->setRange(0, total);
+                        m_busyBar->setFormat(QStringLiteral("%v / %m"));
+                    }
+                    m_busyBar->setValue(std::min(cur, total));
+                }
+                m_busyLabel->setText(
+                    tr("Map %1/%2 — %3 · %4 s")
+                        .arg(total > 0 ? std::min(cur + 1, total) : 1)
+                        .arg(total > 0 ? total : 1)
+                        .arg(mapName.isEmpty() ? tr("…") : mapName)
+                        .arg(sec));
+            }, Qt::QueuedConnection);
+        });
     runWhileBusy([&]() {
         if (!m_validator.loadTunePackage(pkg)) {
             // Peut échouer si fingerprints absents — on charge quand même les meta.
@@ -805,7 +900,10 @@ void DriveWindow::applyTunePackage(const ecu::TunePackage& pkg, const QString& p
         }
         return true;
     });
+    heart.stop();
+    m_validator.clearProgressCallback();
     endBusy();
+    while (m_busyDepth > 0) endBusy();
     m_tunePath = path;
     QSettings().setValue(QStringLiteral("drive/lastTune"), path);
     const int n = static_cast<int>(m_validator.rules().size());

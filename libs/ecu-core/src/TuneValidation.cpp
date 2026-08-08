@@ -207,11 +207,18 @@ void TuneValidator::setRules(std::vector<ValidationRule> rules) {
 
 namespace {
 
-RelocateOptions driveRelocateOpts(const std::vector<std::string>& categories) {
+RelocateOptions driveRelocateOpts(const std::vector<std::string>& categories,
+                                  TuneValidator::ProgressFn progress) {
     RelocateOptions opts;
     opts.categories = categories;
     opts.mapsOnly = true;
     opts.preferDefaultWindow = true;
+    if (progress) {
+        opts.onProgress = [progress = std::move(progress)](
+                              int cur, int total, const std::string& name) {
+            progress(cur, total, QString::fromStdString(name));
+        };
+    }
     return opts;
 }
 
@@ -231,7 +238,7 @@ bool TuneValidator::loadRom(const QByteArray& rom, const QString& ecuId) {
         QCryptographicHash::hash(rom, QCryptographicHash::Md5).toHex());
 
     // Drive : ne scanner que les MAP des catégories validées (×3–10 plus rapide).
-    for (auto& r : m_od.relocate(rom, driveRelocateOpts(m_categories)))
+    for (auto& r : m_od.relocate(rom, driveRelocateOpts(m_categories, m_progress)))
         m_reloc.emplace(r.name, std::move(r));
 
     buildRules();
@@ -253,7 +260,7 @@ bool TuneValidator::loadRomWithRecipe(const QByteArray& rom, const QString& ecuI
     m_romMd5 = QString::fromLatin1(
         QCryptographicHash::hash(rom, QCryptographicHash::Md5).toHex());
 
-    for (auto& r : m_od.relocate(rom, driveRelocateOpts(m_categories)))
+    for (auto& r : m_od.relocate(rom, driveRelocateOpts(m_categories, m_progress)))
         m_reloc.emplace(r.name, std::move(r));
 
     buildRules();

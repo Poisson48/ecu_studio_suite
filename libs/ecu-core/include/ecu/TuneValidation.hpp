@@ -12,6 +12,7 @@
 #include <QString>
 
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -164,6 +165,10 @@ public:
                            const QByteArray& recipeJsonUtf8);
     bool loadTunePackage(const TunePackage& pkg);
 
+    using ProgressFn = std::function<void(int current, int total, const QString& mapName)>;
+    void setProgressCallback(ProgressFn fn) { m_progress = std::move(fn); }
+    void clearProgressCallback() { m_progress = {}; }
+
     bool isReady() const { return m_ready; }
     QString ecuId() const { return m_ecuId; }
     QString romMd5() const { return m_romMd5; }
@@ -225,6 +230,7 @@ private:
     std::vector<std::string> m_categories{"boost", "smoke", "air", "fuel"};
     std::unordered_map<std::string, RelocResult> m_reloc;
     std::vector<ValidationRule> m_rules;
+    ProgressFn m_progress;
 };
 
 } // namespace ecu

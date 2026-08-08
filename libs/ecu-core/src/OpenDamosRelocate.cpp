@@ -601,14 +601,24 @@ OpenDamos::relocate(const DamosRecipe& recipe, QByteArrayView rom,
     // Phase 1.a: collect MAP/CURVE candidates per entry (full lists).
     std::vector<const DamosEntry*> mapEntries;
     std::map<std::string, std::vector<FingerprintCandidate>> entryCandidates;
+    // Pré-compte pour la barre de progression (évite total=0 pendant le scan).
     for (const auto& c : recipe.characteristics) {
         if (c.type != DamosType::Map && c.type != DamosType::Curve)
             continue;
         if (!entryWanted(c, opts))
             continue;
         mapEntries.push_back(&c);
-        entryCandidates[c.name] = findMapByFingerprint(rom, c, opts);
     }
+    const int totalMaps = static_cast<int>(mapEntries.size());
+    for (int i = 0; i < totalMaps; ++i) {
+        const DamosEntry* c = mapEntries[static_cast<std::size_t>(i)];
+        if (opts.onProgress)
+            opts.onProgress(i, totalMaps, c->name);
+        entryCandidates[c->name] = findMapByFingerprint(rom, *c, opts);
+    }
+    if (opts.onProgress && totalMaps > 0)
+        opts.onProgress(totalMaps, totalMaps, {});
+
 
     // Phase 1.b: greedy attribution. Entries are processed in recipe order
     // (significant: Hi before Lo, etc.); each takes its best candidate not yet

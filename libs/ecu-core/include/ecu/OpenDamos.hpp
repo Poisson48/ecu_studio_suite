@@ -24,6 +24,7 @@
 #include <array>
 #include <cstdint>
 #include <expected>
+#include <functional>
 #include <map>
 #include <optional>
 #include <string>
@@ -176,6 +177,8 @@ struct RelocateOptions {
     bool                       preferDefaultWindow = true;
     // Demi-largeur de la fenêtre autour de defaultAddress (octets).
     std::size_t                defaultWindow = 0x20000;
+    // Progression : appelé depuis le thread de travail (current 0-based).
+    std::function<void(int current, int total, const std::string& name)> onProgress;
 };
 
 // ---------------------------------------------------------------------------
