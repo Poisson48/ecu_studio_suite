@@ -31,7 +31,6 @@
 #include <QFileInfo>
 #include <QTimer>
 #include <QProgressBar>
-#include <QInputDialog>
 #include <QDir>
 #include <QEventLoop>
 #include <QSizePolicy>
@@ -127,8 +126,10 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
         (void)availableEcuIds();
         QSettings s;
         const QString last = s.value(QStringLiteral("drive/lastTune")).toString();
-        if (!last.isEmpty() && QFile::exists(last))
+        if (!last.isEmpty() && QFile::exists(last)) {
+            m_suppressEcuPromptOnce = true;
             loadTuneFile(last);
+        }
         refreshPorts();
 #if defined(ELM_HAVE_BLUETOOTH)
         selectLastBtDevice();
@@ -164,22 +165,89 @@ void DriveWindow::ensureBtAgent() {
         d.likelyObd = likelyElmBtName(d.name);
         m_btDevices.push_back(std::move(d));
         rebuildBtCombo();
+        refreshBtScanStatus();
+        if (m_btCombo) m_btCombo->repaint();
     });
     connect(m_btAgent, &QBluetoothDeviceDiscoveryAgent::finished, this, [this]() {
-        m_scanBtBtn->setEnabled(true);
+        setBtScanning(false);
         rebuildBtCombo();
         selectLastBtDevice();
-        int shown = m_btCombo ? m_btCombo->count() : 0;
+        const int shown = m_btCombo ? m_btCombo->count() : 0;
+        const int found = static_cast<int>(m_btDevices.size());
         setStatus(tr("Scan BT terminé — %1 affiché(s) / %2 trouvé(s).\n"
                      "Module bleu : appairé (PIN 1234/0000) ?")
                       .arg(shown)
-                      .arg(static_cast<int>(m_btDevices.size())));
+                      .arg(found));
+        platformToast(found > 0
+                          ? tr("Scan OK — %1 appareil(s)").arg(found)
+                          : tr("Scan BT : aucun appareil"));
     });
     connect(m_btAgent, &QBluetoothDeviceDiscoveryAgent::errorOccurred, this,
             [this](QBluetoothDeviceDiscoveryAgent::Error) {
-        m_scanBtBtn->setEnabled(true);
+        setBtScanning(false);
         setStatus(tr("Échec scan Bluetooth (adaptateur / permissions)."), true);
+        platformToast(tr("Échec scan Bluetooth"));
     });
+    if (!m_btScanPulse) {
+        m_btScanPulse = new QTimer(this);
+        m_btScanPulse->setInterval(400);
+        connect(m_btScanPulse, &QTimer::timeout, this, [this]() {
+            if (m_btScanning)
+                refreshBtScanStatus();
+        });
+    }
+    if (!m_btScanWatchdog) {
+        m_btScanWatchdog = new QTimer(this);
+        m_btScanWatchdog->setSingleShot(true);
+        connect(m_btScanWatchdog, &QTimer::timeout, this, [this]() {
+            if (!m_btScanning) return;
+            if (m_btAgent && m_btAgent->isActive())
+                m_btAgent->stop();
+            setBtScanning(false);
+            rebuildBtCombo();
+            const int found = static_cast<int>(m_btDevices.size());
+            setStatus(tr("Scan BT arrêté (%1 trouvé(s)) — sélectionne un appareil.")
+                          .arg(found));
+            platformToast(tr("Scan BT terminé (%1)").arg(found));
+        });
+    }
+}
+
+void DriveWindow::setBtScanning(bool on) {
+    m_btScanning = on;
+    if (m_scanBtBtn) {
+        // Reste cliquable pendant le scan = Stop (sinon bouton mort jusqu'à finished).
+        m_scanBtBtn->setEnabled(true);
+        m_scanBtBtn->setText(on ? tr("Stop") : tr("Scan BT"));
+    }
+    if (on) {
+        m_btScanStartedMs = QDateTime::currentMSecsSinceEpoch();
+        if (m_btScanPulse && !m_btScanPulse->isActive())
+            m_btScanPulse->start();
+        if (m_btScanWatchdog)
+            m_btScanWatchdog->start(20000);
+    } else {
+        if (m_btScanPulse) m_btScanPulse->stop();
+        if (m_btScanWatchdog) m_btScanWatchdog->stop();
+    }
+}
+
+void DriveWindow::refreshBtScanStatus() {
+    if (!m_btScanning) return;
+    const int sec = int((QDateTime::currentMSecsSinceEpoch() - m_btScanStartedMs) / 1000);
+    const int found = static_cast<int>(m_btDevices.size());
+    int obd = 0;
+    for (const auto& d : m_btDevices)
+        if (d.likelyObd) ++obd;
+    setStatus(tr("Scan Bluetooth… %1 s — %2 trouvé(s) dont %3 OBD/ELM.\n"
+                 "Laisse tourner, ou attends la fin automatique.")
+                  .arg(sec)
+                  .arg(found)
+                  .arg(obd));
+    if (m_statusLabel) {
+        m_statusLabel->repaint();
+        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    }
 }
 
 void DriveWindow::rebuildBtCombo() {
@@ -319,6 +387,55 @@ void DriveWindow::buildUi() {
     busyLay->addWidget(m_busyBar);
     ovLay->addWidget(m_busyFrame);
     ovLay->addStretch();
+
+    // Sélecteur ECU in-app : QInputDialog/QMessageBox modaux sont cassés sur
+    // Qt Android (fenêtre invisible jusqu'à un switch d'app, OK sans effet).
+    m_ecuPickerOverlay = new QWidget(central);
+    m_ecuPickerOverlay->setObjectName(QStringLiteral("ecuPickerOverlay"));
+    m_ecuPickerOverlay->setStyleSheet(QStringLiteral(
+        "#ecuPickerOverlay { background-color: #0f1520; }"));
+    m_ecuPickerOverlay->setVisible(false);
+    auto* pickLay = new QVBoxLayout(m_ecuPickerOverlay);
+    pickLay->setContentsMargins(24, 24, 24, 24);
+    pickLay->addStretch();
+    auto* pickFrame = new QFrame(m_ecuPickerOverlay);
+    pickFrame->setStyleSheet(QStringLiteral(
+        "QFrame { background:#1e3a5f; border:2px solid #60a5fa; border-radius:14px; }"));
+    auto* pf = new QVBoxLayout(pickFrame);
+    pf->setContentsMargins(20, 18, 20, 18);
+    pf->setSpacing(12);
+    auto* pickTitle = new QLabel(tr("Choisir l'ECU"), pickFrame);
+    pickTitle->setAlignment(Qt::AlignCenter);
+    pickTitle->setStyleSheet(QStringLiteral(
+        "color:#f8fafc; font-size:18px; font-weight:700; background:transparent; border:none;"));
+    auto* pickHelp = new QLabel(
+        tr("ROM brute (.bin) — sélectionne le type d'ECU\n"
+           "(recette OpenDAMOS pour relocaliser les maps)."),
+        pickFrame);
+    pickHelp->setWordWrap(true);
+    pickHelp->setAlignment(Qt::AlignCenter);
+    pickHelp->setStyleSheet(QStringLiteral(
+        "color:#93c5fd; font-size:13px; background:transparent; border:none;"));
+    m_ecuPickerCombo = new QComboBox(pickFrame);
+    m_ecuPickerCombo->setMinimumHeight(44);
+    m_ecuPickerCombo->setMaxVisibleItems(10);
+    auto* pickBtns = new QHBoxLayout;
+    auto* cancelBtn = new QPushButton(tr("Annuler"), pickFrame);
+    cancelBtn->setMinimumHeight(44);
+    auto* okBtn = new QPushButton(tr("OK"), pickFrame);
+    okBtn->setObjectName(QStringLiteral("accentBtn"));
+    okBtn->setMinimumHeight(44);
+    pickBtns->addWidget(cancelBtn);
+    pickBtns->addWidget(okBtn, 1);
+    pf->addWidget(pickTitle);
+    pf->addWidget(pickHelp);
+    pf->addWidget(m_ecuPickerCombo);
+    pf->addLayout(pickBtns);
+    pickLay->addWidget(pickFrame);
+    pickLay->addStretch();
+    connect(okBtn, &QPushButton::clicked, this, &DriveWindow::onEcuPickerOk);
+    connect(cancelBtn, &QPushButton::clicked, this, &DriveWindow::onEcuPickerCancel);
+
     central->installEventFilter(this);
     layoutBusyOverlay();
 
@@ -611,15 +728,29 @@ void DriveWindow::refreshSensorsTable() {
 }
 
 void DriveWindow::setStatus(const QString& msg, bool error) {
+#if defined(ELM_HAVE_BLUETOOTH)
+    // Ne pas écraser le feedback live du scan BT (ex. fin de reload ROM au boot).
+    if (m_btScanning && !msg.contains(QStringLiteral("Scan")))
+        return;
+#endif
     m_statusLabel->setStyleSheet(error ? QStringLiteral("color:#ef4444;")
                                        : QStringLiteral("color:#7c8fa6;"));
     m_statusLabel->setText(msg);
 }
 
 void DriveWindow::layoutBusyOverlay() {
-    if (!m_busyOverlay || !centralWidget()) return;
-    m_busyOverlay->setGeometry(centralWidget()->rect());
-    m_busyOverlay->raise();
+    if (!centralWidget()) return;
+    const QRect r = centralWidget()->rect();
+    if (m_busyOverlay) {
+        m_busyOverlay->setGeometry(r);
+        if (m_busyOverlay->isVisible())
+            m_busyOverlay->raise();
+    }
+    if (m_ecuPickerOverlay) {
+        m_ecuPickerOverlay->setGeometry(r);
+        if (m_ecuPickerOverlay->isVisible())
+            m_ecuPickerOverlay->raise();
+    }
 }
 
 bool DriveWindow::eventFilter(QObject* watched, QEvent* event) {
@@ -716,8 +847,14 @@ void DriveWindow::importTune() {
         QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
         tr("Tune / ROM (*.ecutune *.bin *.zip);;ROM brute (*.bin);;Package ECU Drive (*.ecutune *.zip);;Tous (*.*)"));
     if (path.isEmpty()) return;
-    // Laisser le dialogue fichier se fermer avant le busy.
-    QTimer::singleShot(0, this, [this, path]() { loadTuneFile(path); });
+    // Laisser le dialogue fichier / activity Android se fermer avant le busy.
+    // Sur Android, un délai trop court → overlay ECU invisible jusqu'à un switch d'app.
+#if defined(Q_OS_ANDROID)
+    constexpr int kAfterPickerMs = 250;
+#else
+    constexpr int kAfterPickerMs = 0;
+#endif
+    QTimer::singleShot(kAfterPickerMs, this, [this, path]() { loadTuneFile(path); });
 }
 
 QStringList DriveWindow::availableEcuIds() {
@@ -746,28 +883,110 @@ QStringList DriveWindow::availableEcuIds() {
     return m_ecuIdsCache;
 }
 
-QString DriveWindow::promptEcuId(const QString& hint) {
+void DriveWindow::showEcuPicker(const QByteArray& rom, const QString& path,
+                                const QString& hint) {
     const QStringList ids = availableEcuIds();
     if (ids.isEmpty()) {
+        platformToast(tr("Aucune recette OpenDAMOS embarquée."));
         QMessageBox::warning(this, tr("Import ROM"),
             tr("Aucune recette OpenDAMOS embarquée.\n"
                "Utilise un fichier .ecutune exporté depuis ECU Studio."));
-        return {};
+        setStatus(tr("Import annulé — pas de recettes ECU."), true);
+        return;
     }
+
+    if (!m_autoEcuId.isEmpty() && ids.contains(m_autoEcuId)) {
+        QSettings().setValue(QStringLiteral("drive/lastEcu"), m_autoEcuId);
+        QTimer::singleShot(0, this, [this, rom, path, ecu = m_autoEcuId]() {
+            applyRomBinary(rom, ecu, path);
+        });
+        return;
+    }
+
+    // Rechargement auto du dernier tune : garder le dernier ECU choisi.
+    if (m_suppressEcuPromptOnce) {
+        m_suppressEcuPromptOnce = false;
+        QString ecu = hint;
+        if (ecu.isEmpty())
+            ecu = QSettings().value(QStringLiteral("drive/lastEcu")).toString();
+        if (!ecu.isEmpty() && ids.contains(ecu)) {
+            setStatus(tr("Rechargement ROM (%1)…").arg(ecu));
+            platformToast(tr("Rechargement %1…").arg(ecu));
+            QTimer::singleShot(0, this, [this, rom, path, ecu]() {
+                applyRomBinary(rom, ecu, path);
+            });
+            return;
+        }
+    }
+
+    m_pendingRom = rom;
+    m_pendingRomPath = path;
+
     QString initial = hint;
     if (initial.isEmpty())
-        initial = QSettings().value(QStringLiteral("drive/lastEcu"), QStringLiteral("edc16c34")).toString();
+        initial = QSettings().value(QStringLiteral("drive/lastEcu"),
+                                    QStringLiteral("edc16c34")).toString();
+    if (!m_ecuPickerCombo || !m_ecuPickerOverlay) {
+        // Fallback improbable : appliquer le premier ECU.
+        QTimer::singleShot(0, this, [this, rom, path, ecu = ids.first()]() {
+            applyRomBinary(rom, ecu, path);
+        });
+        return;
+    }
+    m_ecuPickerCombo->clear();
+    m_ecuPickerCombo->addItems(ids);
     int idx = ids.indexOf(initial);
     if (idx < 0) idx = 0;
-    bool ok = false;
-    const QString ecu = QInputDialog::getItem(
-        this, tr("Choisir l'ECU"),
-        tr("ROM brute (.bin) — sélectionne le type d'ECU\n"
-           "(recette OpenDAMOS pour relocaliser les maps) :"),
-        ids, idx, false, &ok);
-    if (!ok || ecu.isEmpty()) return {};
+    m_ecuPickerCombo->setCurrentIndex(idx);
+
+    layoutBusyOverlay();
+    m_ecuPickerOverlay->setVisible(true);
+    m_ecuPickerOverlay->raise();
+    m_ecuPickerOverlay->show();
+    m_ecuPickerCombo->setFocus(Qt::OtherFocusReason);
+    setStatus(tr("Choisis le type d'ECU pour « %1 »…")
+                  .arg(QFileInfo(path).fileName()));
+    platformToast(tr("Choisis l'ECU puis OK"));
+    // Forcer le paint Android (sinon overlay invisible jusqu'à un switch d'app).
+    for (int i = 0; i < 4; ++i)
+        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    m_ecuPickerOverlay->repaint();
+    if (m_ecuPickerCombo) m_ecuPickerCombo->repaint();
+}
+
+void DriveWindow::hideEcuPicker() {
+    if (m_ecuPickerOverlay)
+        m_ecuPickerOverlay->setVisible(false);
+}
+
+void DriveWindow::onEcuPickerOk() {
+    if (!m_ecuPickerCombo) return;
+    const QString ecu = m_ecuPickerCombo->currentText().trimmed();
+    if (ecu.isEmpty()) {
+        setStatus(tr("Sélectionne un ECU."), true);
+        platformToast(tr("Sélectionne un ECU"));
+        return;
+    }
+    const QByteArray rom = m_pendingRom;
+    const QString path = m_pendingRomPath;
+    m_pendingRom.clear();
+    m_pendingRomPath.clear();
+    hideEcuPicker();
     QSettings().setValue(QStringLiteral("drive/lastEcu"), ecu);
-    return ecu;
+    setStatus(tr("ECU %1 — démarrage de l'analyse…").arg(ecu));
+    platformToast(tr("Analyse %1…").arg(ecu));
+    // Différer : laisser l'overlay se fermer et peindre avant le travail lourd.
+    QTimer::singleShot(0, this, [this, rom, path, ecu]() {
+        applyRomBinary(rom, ecu, path);
+    });
+}
+
+void DriveWindow::onEcuPickerCancel() {
+    m_pendingRom.clear();
+    m_pendingRomPath.clear();
+    hideEcuPicker();
+    setStatus(tr("Import annulé."));
+    platformToast(tr("Import annulé"));
 }
 
 bool DriveWindow::loadRomBinaryFile(const QString& path) {
@@ -813,15 +1032,16 @@ bool DriveWindow::loadRomBinaryFile(const QString& path) {
             return false;
     }
 
-    setStatus(tr("Choisis le type d'ECU pour « %1 »…").arg(fi.fileName()));
-    const QString ecu = promptEcuId();
-    if (ecu.isEmpty()) {
-        setStatus(tr("Import annulé."));
-        return true;
-    }
-    // Overlay immédiat avant le travail lourd (sinon trou sans feedback).
-    QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-    applyRomBinary(rom, ecu, path);
+    // Après runWhileBusy (QEventLoop), un QInputDialog modal ne s'affiche pas
+    // sur Android tant qu'on ne quitte pas l'app. Overlay in-app + singleShot.
+#if defined(Q_OS_ANDROID)
+    constexpr int kShowPickerMs = 100;
+#else
+    constexpr int kShowPickerMs = 0;
+#endif
+    QTimer::singleShot(kShowPickerMs, this, [this, rom = QByteArray(rom), path]() {
+        showEcuPicker(rom, path);
+    });
     return true;
 }
 
@@ -1028,13 +1248,25 @@ void DriveWindow::startBtScan() {
     if (!m_btCombo) return;
     ensureBtAgent();
     if (!m_btAgent) return;
+    if (m_btScanning) {
+        m_btAgent->stop();
+        setBtScanning(false);
+        rebuildBtCombo();
+        setStatus(tr("Scan BT interrompu (%1 trouvé(s)).")
+                      .arg(static_cast<int>(m_btDevices.size())));
+        platformToast(tr("Scan interrompu"));
+        return;
+    }
+    if (m_btAgent->isActive())
+        m_btAgent->stop();
     m_btDevices.clear();
     m_btCombo->clear();
-    m_scanBtBtn->setEnabled(false);
-    setStatus(tr("Scan Bluetooth classique (modules ELM327 bleus)…\n"
-                 "Filtre OBD actif : %1 — décoche pour tout voir.")
-                  .arg(m_btObdOnlyChk && m_btObdOnlyChk->isChecked()
-                           ? tr("oui") : tr("non")));
+    m_btCombo->setPlaceholderText(tr("Recherche ELM327…"));
+    setBtScanning(true);
+    refreshBtScanStatus();
+    platformToast(tr("Scan Bluetooth…"));
+    // Laisser peindre le statut avant le scan bloquant côté stack BT.
+    QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     m_btAgent->start(QBluetoothDeviceDiscoveryAgent::ClassicMethod);
 #else
     setStatus(tr("Bluetooth non disponible dans ce build."), true);
@@ -1051,34 +1283,49 @@ void DriveWindow::toggleConnect() {
     }
 #if defined(ELM_HAVE_BLUETOOTH)
     if (m_btCombo && m_btCombo->currentIndex() >= 0
-        && !m_btCombo->currentData().toString().isEmpty()
-        && (m_portCombo->currentData().toString().isEmpty()
-            || QMessageBox::question(this, tr("Connexion"),
-                   tr("Utiliser Bluetooth (%1) ?\nOui = BT, Non = USB.")
-                       .arg(m_btCombo->currentText()),
-                   QMessageBox::Yes | QMessageBox::No)
-                   == QMessageBox::Yes)) {
-        const QString addr = m_btCombo->currentData().toString();
-#if defined(Q_OS_ANDROID) || defined(Q_OS_LINUX)
-        QBluetoothLocalDevice local;
-        if (local.isValid()) {
-            const auto paired = local.pairingStatus(QBluetoothAddress(addr));
-            if (paired == QBluetoothLocalDevice::Unpaired) {
-                setStatus(tr("Module non appairé. Dans les réglages Bluetooth du "
-                             "téléphone, appairer le dongle bleu (PIN 1234 ou 0000), "
-                             "puis réessaie."), true);
-                return;
-            }
-        }
+        && !m_btCombo->currentData().toString().isEmpty()) {
+        const QString btLabel = m_btCombo->currentText();
+        const QString usbPort = m_portCombo ? m_portCombo->currentData().toString() : QString();
+        bool useBt = true;
+        if (!usbPort.isEmpty()) {
+#if defined(Q_OS_ANDROID)
+            // QMessageBox modal souvent invisible / OK mort sur Android.
+            useBt = true;
+            setStatus(tr("Connexion Bluetooth (USB ignoré sur Android)…"));
+#else
+            useBt = QMessageBox::question(
+                        this, tr("Connexion"),
+                        tr("Utiliser Bluetooth (%1) ?\nOui = BT, Non = USB.")
+                            .arg(btLabel),
+                        QMessageBox::Yes | QMessageBox::No)
+                    == QMessageBox::Yes;
 #endif
-        m_connectBtn->setEnabled(false);
-        setStatus(tr("Connexion Bluetooth… (%1)").arg(m_btCombo->currentText()));
-        m_elm->connectBluetooth(addr);
-        QTimer::singleShot(8000, this, [this]() {
-            if (!m_connected && m_connectBtn)
-                m_connectBtn->setEnabled(true);
-        });
-        return;
+        }
+        if (useBt) {
+            const QString addr = m_btCombo->currentData().toString();
+#if defined(Q_OS_ANDROID) || defined(Q_OS_LINUX)
+            QBluetoothLocalDevice local;
+            if (local.isValid()) {
+                const auto paired = local.pairingStatus(QBluetoothAddress(addr));
+                if (paired == QBluetoothLocalDevice::Unpaired) {
+                    setStatus(tr("Module non appairé. Dans les réglages Bluetooth du "
+                                 "téléphone, appairer le dongle bleu (PIN 1234 ou 0000), "
+                                 "puis réessaie."), true);
+                    platformToast(tr("Appaire d'abord le module BT"));
+                    return;
+                }
+            }
+#endif
+            m_connectBtn->setEnabled(false);
+            setStatus(tr("Connexion Bluetooth… (%1)").arg(btLabel));
+            platformToast(tr("Connexion BT…"));
+            m_elm->connectBluetooth(addr);
+            QTimer::singleShot(8000, this, [this]() {
+                if (!m_connected && m_connectBtn)
+                    m_connectBtn->setEnabled(true);
+            });
+            return;
+        }
     }
 #endif
     const QString port = m_portCombo->currentData().toString();

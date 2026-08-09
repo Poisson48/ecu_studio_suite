@@ -41,20 +41,33 @@ int main(int argc, char* argv[]) {
     app.setStyleSheet(QString::fromUtf8(kDarkQss));
 
     QString tuneArg;
+    QString ecuArg;
     bool smokeUi = false;
+    bool smokeBt = false;
     const QStringList args = app.arguments();
     for (int i = 1; i < args.size(); ++i) {
         if (args[i] == QLatin1String("--smoke-ui")) {
             smokeUi = true;
             continue;
         }
+        if (args[i] == QLatin1String("--smoke-bt")) {
+            smokeBt = true;
+            continue;
+        }
         if ((args[i] == QLatin1String("--tune") || args[i] == QLatin1String("-t"))
             && i + 1 < args.size()) {
             tuneArg = args[++i];
+            continue;
+        }
+        if (args[i] == QLatin1String("--ecu") && i + 1 < args.size()) {
+            ecuArg = args[++i];
+            continue;
         }
     }
 
     ecu_drive::DriveWindow w;
+    if (!ecuArg.isEmpty())
+        w.setAutoEcuId(ecuArg);
     w.show();
     if (smokeUi) {
         // Enchaîne Conduite ↔ Capteurs sans matériel (CI / repro crash Android).
@@ -68,6 +81,13 @@ int main(int argc, char* argv[]) {
             QMetaObject::invokeMethod(&w, "showSensorsPage");
         });
         QTimer::singleShot(400, &app, &QApplication::quit);
+        return app.exec();
+    }
+    if (smokeBt) {
+        QTimer::singleShot(200, &w, [&w]() {
+            QMetaObject::invokeMethod(&w, "startBtScan");
+        });
+        QTimer::singleShot(2500, &app, &QApplication::quit);
         return app.exec();
     }
     if (!tuneArg.isEmpty()) {

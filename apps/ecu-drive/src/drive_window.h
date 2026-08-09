@@ -37,6 +37,8 @@ public:
 
     /** Charge un .ecutune ou une ROM .bin/.hex (ex. --tune CLI). */
     void loadTuneFile(const QString& path);
+    /** Bypass du sélecteur ECU (tests / --ecu). */
+    void setAutoEcuId(const QString& ecuId) { m_autoEcuId = ecuId; }
 
 private slots:
     void importTune();
@@ -70,8 +72,15 @@ private:
     void applyRomBinary(const QByteArray& rom, const QString& ecuId, const QString& path);
     /** Liste les ECU ayant une recette OpenDAMOS (qrc + disque), mise en cache. */
     QStringList availableEcuIds();
-    /** Dialogue : choisir l'ECU pour une ROM brute. */
-    QString promptEcuId(const QString& hint = {});
+    /**
+     * Sélecteur ECU in-app (pas QInputDialog) — sous Android les dialogues
+     * modaux Qt ne peignent / n'acceptent OK qu'après un changement d'app.
+     */
+    void showEcuPicker(const QByteArray& rom, const QString& path,
+                       const QString& hint = {});
+    void hideEcuPicker();
+    void onEcuPickerOk();
+    void onEcuPickerCancel();
     bool loadRomBinaryFile(const QString& path);
     void startSession();
     void stopSession();
@@ -88,6 +97,8 @@ private:
     void refreshUpdateBanner();
 #if defined(ELM_HAVE_BLUETOOTH)
     void ensureBtAgent();
+    void setBtScanning(bool on);
+    void refreshBtScanStatus();
     static bool likelyElmBtName(const QString& name);
     void selectLastBtDevice();
     struct BtDevice {
@@ -118,6 +129,13 @@ private:
     QProgressBar* m_busyBar = nullptr;
     QTimer*  m_busyPulse = nullptr;
     qint64   m_busyStartedMs = 0;
+    QWidget* m_ecuPickerOverlay = nullptr;
+    QComboBox* m_ecuPickerCombo = nullptr;
+    QByteArray m_pendingRom;
+    QString m_pendingRomPath;
+    QString m_autoEcuId;
+    /** Une fois : rechargement lastTune au démarrage sans redemander l'ECU. */
+    bool m_suppressEcuPromptOnce = false;
     QComboBox* m_portCombo = nullptr;
     QComboBox* m_btCombo = nullptr;
     QCheckBox* m_btObdOnlyChk = nullptr;
@@ -156,6 +174,10 @@ private:
 #if defined(ELM_HAVE_BLUETOOTH)
     QBluetoothDeviceDiscoveryAgent* m_btAgent = nullptr;
     std::vector<BtDevice> m_btDevices;
+    QTimer* m_btScanPulse = nullptr;
+    QTimer* m_btScanWatchdog = nullptr;
+    qint64  m_btScanStartedMs = 0;
+    bool    m_btScanning = false;
 #endif
 };
 
