@@ -42,11 +42,13 @@
 #include <QResizeEvent>
 #include <QPixmap>
 #include <QSize>
+#include <QColor>
 #include <thread>
 #include <functional>
 #include <type_traits>
 #include <exception>
 #include <algorithm>
+#include <cmath>
 
 #if defined(ELM_HAVE_BLUETOOTH)
 #  include <QBluetoothDeviceDiscoveryAgent>
@@ -163,11 +165,15 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
         // Précharge la liste ECU en arrière-plan (évite le trou sans feedback
         // au premier import ROM sur Android).
         (void)availableEcuIds();
-        QSettings s;
-        const QString last = s.value(QStringLiteral("drive/lastTune")).toString();
-        if (!last.isEmpty() && QFile::exists(last)) {
-            m_suppressEcuPromptOnce = true;
-            loadTuneFile(last);
+        // Intent Android « Ouvrir avec » prioritaire sur lastTune.
+        consumeLaunchIntent();
+        if (m_tunePath.isEmpty()) {
+            QSettings s;
+            const QString last = s.value(QStringLiteral("drive/lastTune")).toString();
+            if (!last.isEmpty() && QFile::exists(last)) {
+                m_suppressEcuPromptOnce = true;
+                loadTuneFile(last);
+            }
         }
         refreshPorts();
 #if defined(ELM_HAVE_BLUETOOTH)
@@ -676,12 +682,24 @@ void DriveWindow::buildUi() {
     m_infoOkBtn = new QPushButton(tr("OK"), infoFrame);
     m_infoOkBtn->setObjectName(QStringLiteral("accentBtn"));
     m_infoOkBtn->setMinimumHeight(48);
+    m_infoSecondaryBtn = new QPushButton(infoFrame);
+    m_infoSecondaryBtn->setMinimumHeight(44);
+    m_infoSecondaryBtn->setVisible(false);
+    auto* infoBtns = new QVBoxLayout;
+    infoBtns->setSpacing(8);
+    infoBtns->addWidget(m_infoSecondaryBtn);
+    infoBtns->addWidget(m_infoOkBtn);
     il->addWidget(m_infoTitle);
     il->addWidget(m_infoBody);
-    il->addWidget(m_infoOkBtn);
+    il->addLayout(infoBtns);
     infoLay->addWidget(infoFrame);
     infoLay->addStretch();
     connect(m_infoOkBtn, &QPushButton::clicked, this, &DriveWindow::hideInfoDialog);
+    connect(m_infoSecondaryBtn, &QPushButton::clicked, this, [this]() {
+        auto fn = m_infoSecondaryAction;
+        hideInfoDialog();
+        if (fn) fn();
+    });
 
     central->installEventFilter(this);
     layoutBusyOverlay();
@@ -799,6 +817,15 @@ QWidget* DriveWindow::buildDrivePage(QWidget* parent) {
     root->addWidget(importBtn);
 
     // Connexion
+#if defined(Q_OS_ANDROID)
+    auto* usbHint = new QLabel(
+        tr("USB OTG non supporté pour l'instant — utilise Bluetooth Classic."), page);
+    usbHint->setWordWrap(true);
+    usbHint->setStyleSheet(QStringLiteral("color:#f59e0b; font-size:12px;"));
+    root->addWidget(usbHint);
+    m_portCombo = new QComboBox(page);
+    m_portCombo->setVisible(false);
+#else
     auto* connRow = new QHBoxLayout;
     m_portCombo = new QComboBox(page);
     m_portCombo->setMinimumHeight(36);
@@ -807,6 +834,7 @@ QWidget* DriveWindow::buildDrivePage(QWidget* parent) {
     connRow->addWidget(m_portCombo, 1);
     connRow->addWidget(refresh);
     root->addLayout(connRow);
+#endif
 
 #if defined(ELM_HAVE_BLUETOOTH)
     auto* btRow = new QHBoxLayout;
@@ -880,6 +908,18 @@ QWidget* DriveWindow::buildDrivePage(QWidget* parent) {
     m_boostSub->setStyleSheet(QStringLiteral("color:#9ca3af; font-size:16px;"));
     root->addWidget(m_boostSub);
 
+    auto* mapsTitle = new QLabel(tr("Écarts live (maps)"), page);
+    mapsTitle->setStyleSheet(QStringLiteral("color:#94a3b8; font-size:12px; font-weight:600;"));
+    root->addWidget(mapsTitle);
+    m_mapsList = new QListWidget(page);
+    m_mapsList->setMinimumHeight(120);
+    m_mapsList->setMaximumHeight(180);
+    m_mapsList->setStyleSheet(QStringLiteral(
+        "QListWidget { background:#111827; border:1px solid #334155; border-radius:8px; color:#e6edf3; font-size:12px; }"
+        "QListWidget::item { padding:6px 8px; }"));
+    m_mapsList->addItem(tr("Lance une session pour voir les maps…"));
+    root->addWidget(m_mapsList);
+
     m_rpmLoad = new QLabel(tr("RPM —  ·  Charge — %"), page);
     m_rpmLoad->setAlignment(Qt::AlignCenter);
     m_rpmLoad->setStyleSheet(QStringLiteral("color:#7c8fa6;"));
@@ -908,6 +948,12 @@ QWidget* DriveWindow::buildDrivePage(QWidget* parent) {
     auto* shareBtn = new QPushButton(tr("Enregistrer le log sous…"), page);
     connect(shareBtn, &QPushButton::clicked, this, &DriveWindow::shareLastLog);
     root->addWidget(shareBtn);
+
+#if defined(Q_OS_ANDROID)
+    auto* shareSysBtn = new QPushButton(tr("Partager le log…"), page);
+    connect(shareSysBtn, &QPushButton::clicked, this, &DriveWindow::shareLastLogSystem);
+    root->addWidget(shareSysBtn);
+#endif
 
     auto* updBtn = new QPushButton(tr("Vérifier les mises à jour"), page);
     connect(updBtn, &QPushButton::clicked, this, &DriveWindow::checkUpdatesManual);
@@ -1616,6 +1662,13 @@ void DriveWindow::applyTunePackage(const ecu::TunePackage& pkg, const QString& p
 }
 
 void DriveWindow::refreshPorts() {
+    if (!m_portCombo) return;
+#if defined(Q_OS_ANDROID)
+    // USB OTG non câblé — ne pollue pas la combo cachée.
+    m_portCombo->clear();
+    m_portCombo->addItem(tr("(USB non supporté)"), QString());
+    return;
+#else
     const QString keep = m_portCombo->currentData().toString();
     m_portCombo->clear();
     m_portCombo->addItem(tr("(aucun port USB)"), QString());
@@ -1627,10 +1680,38 @@ void DriveWindow::refreshPorts() {
     const int idx = m_portCombo->findData(keep);
     if (idx >= 0) m_portCombo->setCurrentIndex(idx);
     else if (m_portCombo->count() > 1) m_portCombo->setCurrentIndex(1);
+#endif
 }
 
 void DriveWindow::startBtScan() {
 #if defined(ELM_HAVE_BLUETOOTH)
+    if (!m_btCombo) return;
+    if (m_btScanning) {
+        startBtScanInternal(); // toggle stop
+        return;
+    }
+    setStatus(tr("Autorisation Bluetooth…"));
+    platformRequestBluetoothPermissions([this](bool granted) {
+        if (!granted) {
+            setStatus(tr("Permission Bluetooth refusée.\n"
+                         "Active-la dans Réglages → Applications → ECU Drive."),
+                      true);
+            platformToast(tr("Permission BT refusée"));
+            showInfoDialog(tr("Bluetooth"),
+                tr("Sans permission Bluetooth, le scan et la connexion ELM "
+                   "sont impossibles.\n\n"
+                   "Réglages → Applications → ECU Drive → Autorisations."));
+            return;
+        }
+        startBtScanInternal();
+    });
+#else
+    setStatus(tr("Bluetooth non disponible dans ce build."), true);
+#endif
+}
+
+#if defined(ELM_HAVE_BLUETOOTH)
+void DriveWindow::startBtScanInternal() {
     if (!m_btCombo) return;
     ensureBtAgent();
     if (!m_btAgent) return;
@@ -1651,13 +1732,10 @@ void DriveWindow::startBtScan() {
     setBtScanning(true);
     refreshBtScanStatus();
     platformToast(tr("Scan Bluetooth…"));
-    // Laisser peindre le statut avant le scan bloquant côté stack BT.
     QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     m_btAgent->start(QBluetoothDeviceDiscoveryAgent::ClassicMethod);
-#else
-    setStatus(tr("Bluetooth non disponible dans ce build."), true);
-#endif
 }
+#endif
 
 void DriveWindow::toggleConnect() {
     if (m_connected) {
@@ -1673,53 +1751,58 @@ void DriveWindow::toggleConnect() {
 #if defined(ELM_HAVE_BLUETOOTH)
     if (m_btCombo && m_btCombo->currentIndex() >= 0
         && !m_btCombo->currentData().toString().isEmpty()) {
-        const QString btLabel = m_btCombo->currentText();
-        const QString usbPort = m_portCombo ? m_portCombo->currentData().toString() : QString();
-        bool useBt = true;
-        if (!usbPort.isEmpty()) {
-#if defined(Q_OS_ANDROID)
-            // QMessageBox modal souvent invisible / OK mort sur Android.
-            useBt = true;
-            setStatus(tr("Connexion Bluetooth (USB ignoré sur Android)…"));
-#else
-            useBt = QMessageBox::question(
-                        this, tr("Connexion"),
-                        tr("Utiliser Bluetooth (%1) ?\nOui = BT, Non = USB.")
-                            .arg(btLabel),
-                        QMessageBox::Yes | QMessageBox::No)
-                    == QMessageBox::Yes;
-#endif
-        }
-        if (useBt) {
-            const QString addr = m_btCombo->currentData().toString();
-#if defined(Q_OS_ANDROID) || defined(Q_OS_LINUX)
-            QBluetoothLocalDevice local;
-            if (local.isValid()) {
-                const auto paired = local.pairingStatus(QBluetoothAddress(addr));
-                if (paired == QBluetoothLocalDevice::Unpaired) {
-                    setStatus(tr("Module non appairé. Dans les réglages Bluetooth du "
-                                 "téléphone, appairer le dongle bleu (PIN 1234 ou 0000), "
-                                 "puis réessaie."), true);
-                    platformToast(tr("Appaire d'abord le module BT"));
-                    return;
-                }
+        platformRequestBluetoothPermissions([this](bool granted) {
+            if (!granted) {
+                setStatus(tr("Permission Bluetooth refusée."), true);
+                platformToast(tr("Permission BT refusée"));
+                return;
             }
+            // Relance le flux connect une fois autorisé (évite duplication du corps).
+            QTimer::singleShot(0, this, [this]() { toggleConnectAfterPerms(); });
+        });
+        return;
+    }
 #endif
-            m_connectBtn->setEnabled(false);
-            setStatus(tr("Connexion Bluetooth… (%1)").arg(btLabel));
-            platformToast(tr("Connexion BT…"));
-            m_elm->connectBluetooth(addr);
-            QTimer::singleShot(8000, this, [this]() {
-                if (!m_connected && m_connectBtn)
-                    m_connectBtn->setEnabled(true);
-            });
+    connectUsbOrFail();
+}
+
+#if defined(ELM_HAVE_BLUETOOTH)
+void DriveWindow::toggleConnectAfterPerms() {
+    if (m_connected) return;
+    if (!m_btCombo || m_btCombo->currentData().toString().isEmpty()) {
+        connectUsbOrFail();
+        return;
+    }
+    const QString btLabel = m_btCombo->currentText();
+    const QString addr = m_btCombo->currentData().toString();
+#if defined(Q_OS_ANDROID) || defined(Q_OS_LINUX)
+    QBluetoothLocalDevice local;
+    if (local.isValid()) {
+        const auto paired = local.pairingStatus(QBluetoothAddress(addr));
+        if (paired == QBluetoothLocalDevice::Unpaired) {
+            setStatus(tr("Module non appairé. Dans les réglages Bluetooth du "
+                         "téléphone, appairer le dongle bleu (PIN 1234 ou 0000), "
+                         "puis réessaie."), true);
+            platformToast(tr("Appaire d'abord le module BT"));
             return;
         }
     }
 #endif
-    const QString port = m_portCombo->currentData().toString();
+    m_connectBtn->setEnabled(false);
+    setStatus(tr("Connexion Bluetooth… (%1)").arg(btLabel));
+    platformToast(tr("Connexion BT…"));
+    m_elm->connectBluetooth(addr);
+    QTimer::singleShot(8000, this, [this]() {
+        if (!m_connected && m_connectBtn)
+            m_connectBtn->setEnabled(true);
+    });
+}
+#endif
+
+void DriveWindow::connectUsbOrFail() {
+    const QString port = m_portCombo ? m_portCombo->currentData().toString() : QString();
     if (port.isEmpty()) {
-        setStatus(tr("Choisis un port USB ou un appareil Bluetooth."), true);
+        setStatus(tr("Choisis un appareil Bluetooth (Scan BT), puis Connecter."), true);
         platformToast(tr("Choisis d'abord le Bluetooth"));
         return;
     }
@@ -1805,6 +1888,7 @@ void DriveWindow::runValidation() {
     const auto results = m_validator.evaluateAll(snapshot());
     if (m_session.active()) m_session.ingest(results);
     updateDriveUi(results);
+    refreshMapsList(results);
     appendCsv(results);
     const auto& c = m_session.current();
     m_sessionLive->setText(tr("OK %1 · Warn %2 · Fail %3 (%4 %)")
@@ -1870,6 +1954,39 @@ void DriveWindow::updateDriveUi(const std::vector<ecu::ValidationResult>& result
     m_banner->setStyleSheet(bg);
     m_verdict->setText(verdict);
     m_boostBig->setStyleSheet(QStringLiteral("color:%1;").arg(col.name()));
+}
+
+void DriveWindow::refreshMapsList(const std::vector<ecu::ValidationResult>& results) {
+    if (!m_mapsList) return;
+    m_mapsList->clear();
+    std::vector<ecu::ValidationResult> sorted = results;
+    std::sort(sorted.begin(), sorted.end(),
+              [](const ecu::ValidationResult& a, const ecu::ValidationResult& b) {
+                  const double da = (a.status == ecu::ValidationStatus::NoData)
+                                        ? -1.0 : std::abs(a.delta);
+                  const double db = (b.status == ecu::ValidationStatus::NoData)
+                                        ? -1.0 : std::abs(b.delta);
+                  return da > db;
+              });
+    int shown = 0;
+    for (const auto& r : sorted) {
+        if (r.status == ecu::ValidationStatus::NoData) continue;
+        const QString line = QStringLiteral("%1  %2  Δ%3 %4")
+                                 .arg(statusLabel(r.status),
+                                      r.mapName,
+                                      QString::number(r.delta, 'f', 1),
+                                      r.unit);
+        auto* item = new QListWidgetItem(line, m_mapsList);
+        if (r.status == ecu::ValidationStatus::Fail)
+            item->setForeground(QColor(QStringLiteral("#f87171")));
+        else if (r.status == ecu::ValidationStatus::Warn)
+            item->setForeground(QColor(QStringLiteral("#fbbf24")));
+        else
+            item->setForeground(QColor(QStringLiteral("#4ade80")));
+        if (++shown >= 8) break;
+    }
+    if (shown == 0)
+        m_mapsList->addItem(tr("En attente de données map…"));
 }
 
 void DriveWindow::maybeAlert() {
@@ -2011,6 +2128,13 @@ QString DriveWindow::promptSaveLogAs(const QString& sourceCsv) {
 
 void DriveWindow::showInfoDialog(const QString& title, const QString& body,
                                  const QString& okLabel) {
+    showInfoDialog(title, body, okLabel, {}, {});
+}
+
+void DriveWindow::showInfoDialog(const QString& title, const QString& body,
+                                 const QString& okLabel,
+                                 const QString& secondaryLabel,
+                                 std::function<void()> onSecondary) {
     if (!m_infoOverlay || !m_infoTitle || !m_infoBody || !m_infoOkBtn) {
         setStatus(title + QLatin1Char('\n') + body);
         platformToast(title);
@@ -2019,6 +2143,13 @@ void DriveWindow::showInfoDialog(const QString& title, const QString& body,
     m_infoTitle->setText(title);
     m_infoBody->setText(body);
     m_infoOkBtn->setText(okLabel.isEmpty() ? tr("OK") : okLabel);
+    m_infoSecondaryAction = std::move(onSecondary);
+    if (m_infoSecondaryBtn) {
+        const bool hasSec = !secondaryLabel.isEmpty() && bool(m_infoSecondaryAction);
+        m_infoSecondaryBtn->setVisible(hasSec);
+        if (hasSec)
+            m_infoSecondaryBtn->setText(secondaryLabel);
+    }
     layoutBusyOverlay();
     m_infoOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, false);
     m_infoOverlay->setVisible(true);
@@ -2035,6 +2166,9 @@ void DriveWindow::hideInfoDialog() {
     m_infoOverlay->setVisible(false);
     m_infoOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     m_infoOverlay->lower();
+    m_infoSecondaryAction = {};
+    if (m_infoSecondaryBtn)
+        m_infoSecondaryBtn->setVisible(false);
 }
 
 void DriveWindow::showSummary(const ecu::SessionSummary& sum) {
@@ -2043,48 +2177,40 @@ void DriveWindow::showSummary(const ecu::SessionSummary& sum) {
         hot += tr("\n  (%1,%2) ×%3 |Δ|%4")
                    .arg(h.gx).arg(h.gy).arg(h.count)
                    .arg(h.meanAbsDelta(), 0, 'f', 1);
-    const QString scratch = sum.csvPath.isEmpty() ? m_lastCsv : sum.csvPath;
-
-    auto present = [this, sum, hot](const QString& csv) {
-        QString body = tr("Ticks %1\nOK %2 · Warn %3 · Fail %4\nDans tolérance : %5 %\n"
-                          "Pic |Δ| %6 sur %7\nHotspots:%8\n\n"
-                          "Export logs terminé.\nCSV :\n%9")
-                           .arg(sum.ticks).arg(sum.ok).arg(sum.warn).arg(sum.fail)
-                           .arg(sum.okRatio(), 0, 'f', 1)
-                           .arg(sum.peakAbsDelta, 0, 'f', 1)
-                           .arg(sum.peakMap.isEmpty() ? QStringLiteral("—") : sum.peakMap)
-                           .arg(hot.isEmpty() ? tr("\n  (aucun)") : hot)
-                           .arg(csv.isEmpty() ? tr("(aucun)") : csv);
-        if (!m_pendingDisconnectReason.isEmpty()) {
-            body += tr("\n\n—\nModule déconnecté pendant la session :\n%1")
-                        .arg(m_pendingDisconnectReason);
-            m_pendingDisconnectReason.clear();
-        }
-        if (!csv.isEmpty() && csv.contains(QStringLiteral("/datalog/"))) {
-            body += tr("\n\nAstuce : utilise « Enregistrer le log sous… » "
-                       "pour le copier dans Téléchargements / Documents.");
-        }
-        setStatus(tr("Export logs OK — %1")
-                      .arg(csv.isEmpty() ? QStringLiteral("—") : QFileInfo(csv).fileName()));
-        platformToast(tr("Export logs terminé"));
-        showInfoDialog(tr("Export des logs terminé"), body, tr("OK"));
-    };
-
-    if (scratch.isEmpty() || !QFile::exists(scratch)) {
-        present(scratch);
-        return;
+    const QString csv = sum.csvPath.isEmpty() ? m_lastCsv : sum.csvPath;
+    QString body = tr("Ticks %1\nOK %2 · Warn %3 · Fail %4\nDans tolérance : %5 %\n"
+                      "Pic |Δ| %6 sur %7\nHotspots:%8\n\n"
+                      "CSV prêt :\n%9")
+                       .arg(sum.ticks).arg(sum.ok).arg(sum.warn).arg(sum.fail)
+                       .arg(sum.okRatio(), 0, 'f', 1)
+                       .arg(sum.peakAbsDelta, 0, 'f', 1)
+                       .arg(sum.peakMap.isEmpty() ? QStringLiteral("—") : sum.peakMap)
+                       .arg(hot.isEmpty() ? tr("\n  (aucun)") : hot)
+                       .arg(csv.isEmpty() ? tr("(aucun)") : QFileInfo(csv).fileName());
+    if (!m_pendingDisconnectReason.isEmpty()) {
+        body += tr("\n\n—\nModule déconnecté pendant la session :\n%1")
+                    .arg(m_pendingDisconnectReason);
+        m_pendingDisconnectReason.clear();
     }
+    body += tr("\n\nEnregistre ou partage le log pour le récupérer hors de l'app.");
+    setStatus(tr("Session terminée — %1")
+                  .arg(csv.isEmpty() ? QStringLiteral("—") : QFileInfo(csv).fileName()));
+    platformToast(tr("Session terminée"));
 
-    // Sous Android, laisser l'UI se stabiliser avant le dialogue système.
-#if defined(Q_OS_ANDROID)
-    constexpr int kAfterSessionMs = 300;
-#else
-    constexpr int kAfterSessionMs = 0;
-#endif
-    QTimer::singleShot(kAfterSessionMs, this, [this, scratch, present]() {
-        const QString saved = promptSaveLogAs(scratch);
-        present(saved.isEmpty() ? scratch : saved);
-    });
+    const QString scratch = csv;
+    showInfoDialog(tr("Export des logs terminé"), body, tr("OK"),
+                   tr("Enregistrer sous…"),
+                   [this, scratch]() {
+                       if (scratch.isEmpty() || !QFile::exists(scratch)) {
+                           showInfoDialog(tr("Logs"), tr("Aucun fichier CSV à enregistrer."));
+                           return;
+                       }
+                       const QString saved = promptSaveLogAs(scratch);
+                       if (!saved.isEmpty()) {
+                           showInfoDialog(tr("Log enregistré"),
+                               tr("Fichier CSV enregistré ici :\n\n%1").arg(saved));
+                       }
+                   });
 }
 
 void DriveWindow::shareLastLog() {
@@ -2102,6 +2228,34 @@ void DriveWindow::shareLastLog() {
     }
     showInfoDialog(tr("Log enregistré"),
         tr("Fichier CSV enregistré ici :\n\n%1").arg(saved));
+}
+
+void DriveWindow::shareLastLogSystem() {
+    if (m_lastCsv.isEmpty() || !QFile::exists(m_lastCsv)) {
+        showInfoDialog(tr("Logs"),
+            tr("Aucun CSV de session récente à partager."));
+        return;
+    }
+    if (!platformShareFile(m_lastCsv, QStringLiteral("text/csv"))) {
+        // Fallback : Enregistrer sous puis l'utilisateur partage depuis Fichiers.
+        showInfoDialog(tr("Partage"),
+            tr("Partage système indisponible.\n"
+               "Utilise « Enregistrer le log sous… » puis partage depuis Fichiers."),
+            tr("OK"), tr("Enregistrer sous…"),
+            [this]() { shareLastLog(); });
+        return;
+    }
+    setStatus(tr("Partage système ouvert…"));
+    platformToast(tr("Choisis une app pour partager"));
+}
+
+void DriveWindow::consumeLaunchIntent() {
+    const QString uri = platformLaunchIntentUri(true);
+    if (uri.isEmpty())
+        return;
+    setStatus(tr("Ouverture : %1").arg(uri));
+    platformToast(tr("Import depuis Fichiers…"));
+    loadTuneFile(uri);
 }
 
 void DriveWindow::onUpdaterState() { refreshUpdateBanner(); }

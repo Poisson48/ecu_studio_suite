@@ -1,6 +1,7 @@
 #pragma once
 #include <QMainWindow>
 #include <QHash>
+#include <functional>
 #include <optional>
 #include <vector>
 
@@ -40,6 +41,8 @@ public:
     void loadTuneFile(const QString& path);
     /** Bypass du sélecteur ECU (tests / --ecu). */
     void setAutoEcuId(const QString& ecuId) { m_autoEcuId = ecuId; }
+    /** Intent Android ACTION_VIEW / CLI : charge le fichier si présent. */
+    void consumeLaunchIntent();
 
 private slots:
     void importTune();
@@ -87,12 +90,17 @@ private:
     /** Dialogue info in-app (Android-safe, remplace QMessageBox). */
     void showInfoDialog(const QString& title, const QString& body,
                         const QString& okLabel = {});
+    /** Info + bouton secondaire (ex. Enregistrer sous / Partager). */
+    void showInfoDialog(const QString& title, const QString& body,
+                        const QString& okLabel, const QString& secondaryLabel,
+                        std::function<void()> onSecondary);
     void hideInfoDialog();
     bool loadRomBinaryFile(const QString& path);
     void startSession();
     void stopSession();
     void runValidation();
     void updateDriveUi(const std::vector<ecu::ValidationResult>& results);
+    void refreshMapsList(const std::vector<ecu::ValidationResult>& results);
     void refreshSensorsTable();
     void ensureSensorsPolling();
     void showSummary(const ecu::SessionSummary& sum);
@@ -110,8 +118,10 @@ private:
     void autoStopCsv();
     void appendCsv(const std::vector<ecu::ValidationResult>& results);
     void shareLastLog();
+    void shareLastLogSystem();
     void maybeAlert();
     void refreshUpdateBanner();
+    void connectUsbOrFail();
 #if defined(ELM_HAVE_BLUETOOTH)
     void ensureBtAgent();
     void setBtScanning(bool on);
@@ -123,6 +133,8 @@ private:
     void selectBestBtDevice();
     static bool likelyElmBtName(const QString& name);
     void selectLastBtDevice();
+    void startBtScanInternal();
+    void toggleConnectAfterPerms();
     struct BtDevice {
         QString addr;
         QString name;
@@ -159,6 +171,8 @@ private:
     QLabel*  m_infoTitle = nullptr;
     QLabel*  m_infoBody = nullptr;
     QPushButton* m_infoOkBtn = nullptr;
+    QPushButton* m_infoSecondaryBtn = nullptr;
+    std::function<void()> m_infoSecondaryAction;
     QByteArray m_pendingRom;
     QString m_pendingRomPath;
     QString m_autoEcuId;
@@ -177,6 +191,7 @@ private:
     QLabel*  m_rpmLoad = nullptr;
     QLabel*  m_sessionLive = nullptr;
     QLabel*  m_csvLabel = nullptr;
+    QListWidget* m_mapsList = nullptr;
     QCheckBox* m_beepChk = nullptr;
     QLabel* m_sensorsStatus = nullptr;
     QHash<quint8, QLabel*> m_sensorValueLabels;

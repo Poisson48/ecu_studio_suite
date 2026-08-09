@@ -109,6 +109,66 @@ public class UpdateHelper {
         }
     }
 
+    /** Partage un fichier local (CSV logs) via le sheet système. */
+    public static boolean shareFile(Context ctx, String path, String mimeType) {
+        if (ctx == null || path == null)
+            return false;
+        File f = new File(path);
+        if (!f.isFile()) {
+            Log.e(TAG, "shareFile manquant: " + path);
+            return false;
+        }
+        try {
+            Uri uri = FileProvider.getUriForFile(
+                    ctx, ctx.getPackageName() + ".fileprovider", f);
+            Intent send = new Intent(Intent.ACTION_SEND);
+            send.setType(mimeType != null ? mimeType : "*/*");
+            send.putExtra(Intent.EXTRA_STREAM, uri);
+            send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    | Intent.FLAG_ACTIVITY_NEW_TASK);
+            Intent chooser = Intent.createChooser(send, "Partager le log");
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            ctx.startActivity(chooser);
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "shareFile échoué", e);
+            return false;
+        }
+    }
+
+    /**
+     * URI du fichier ouvert via ACTION_VIEW / ACTION_SEND.
+     * clear=true : consomme l'intent pour éviter un rechargement au resume.
+     */
+    public static String launchContentUri(android.app.Activity activity, boolean clear) {
+        if (activity == null)
+            return null;
+        Intent intent = activity.getIntent();
+        if (intent == null)
+            return null;
+        String action = intent.getAction();
+        Uri uri = intent.getData();
+        if (uri == null && Intent.ACTION_SEND.equals(action)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                uri = intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri.class);
+            else
+                uri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+        }
+        if (uri == null)
+            return null;
+        if (action != null
+                && !Intent.ACTION_VIEW.equals(action)
+                && !Intent.ACTION_SEND.equals(action))
+            return null;
+        String out = uri.toString();
+        if (clear) {
+            intent.setData(null);
+            intent.removeExtra(Intent.EXTRA_STREAM);
+            activity.setIntent(intent);
+        }
+        return out;
+    }
+
     public static class InstallReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context ctx, Intent intent) {

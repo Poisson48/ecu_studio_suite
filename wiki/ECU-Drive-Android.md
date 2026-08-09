@@ -8,7 +8,7 @@
 
 ## English
 
-**ECU Drive** (**Beta**) is the simplified Qt6 companion for validating a flashed tune **on the road without a PC**. It imports a portable **`.ecutune`** package **or a raw ROM `.bin`** (pick ECU / OpenDAMOS recipe), connects an **ELM327** (Bluetooth SPP or USB OTG), and compares live OBD PIDs to OpenDAMOS expected values — same `TuneValidator` as ECU Studio.
+**ECU Drive** (**Beta**) is the simplified Qt6 companion for validating a flashed tune **on the road without a PC**. It imports a portable **`.ecutune`** package **or a raw ROM `.bin`** (pick ECU / OpenDAMOS recipe), connects an **ELM327** (Bluetooth Classic SPP), and compares live OBD PIDs to OpenDAMOS expected values — same `TuneValidator` as ECU Studio.
 
 > **Maturity:** 🧪 **Beta** — shipped as a signed APK on GitHub Releases; works on device/emulator, not yet field-hardened.
 
@@ -18,9 +18,9 @@
 ### Workflow
 1. Prefer: desktop **ECU Studio** → *File → Export for ECU Drive (.ecutune)…* (embeds recipe + fingerprints).
    Or: copy the flashed ROM **`.bin`** and choose the ECU type in-app.
-2. Copy the file to the phone
-3. Open **ECU Drive** → Import → Connect ELM (BT scan or USB) → **▶ Start drive session**
-4. After the drive: session summary + CSV under app data (Share opens the folder)
+2. Copy the file to the phone (or *Open with ECU Drive*)
+3. Open **ECU Drive** → Import (or Files open) → **BT Scan** (allow Bluetooth) → Connect → **▶ Start drive session**
+4. After the drive: summary + **Save As…** / **Share log…** (accessible CSV)
 
 ### Build (desktop Linux — iterate fast)
 ```bash
@@ -41,13 +41,13 @@ cmake --build build-android --target ecu_drive
 ```
 
 ### Chinese blue ELM327 (Bluetooth Classic)
-Primary path. Pair the dongle in system Bluetooth settings first (**PIN `1234` or `0000`**). ECU Drive scans **Classic / SPP only** (not BLE), prefers names like OBDII / ELM / V-LINK, then connects via SerialPort UUID with RFCOMM channel 1→2 fallback. Contact ON so the adapter is powered.
+Primary path (USB OTG not supported yet). Pair the dongle in system Bluetooth settings first (**PIN `1234` or `0000`**). ECU Drive requests BT permissions on first scan, scans **Classic / SPP only** (not BLE), prefers names like OBDII / ELM / V-LINK, then connects via SerialPort UUID with RFCOMM channel 1→2 fallback. Contact ON so the adapter is powered.
 
 ### Auto-updates
 On launch, ECU Drive checks GitHub Releases for a newer `ecu-drive*-arm64.apk` (or any `ecu-drive*.apk`), shows notes, downloads, and installs via Android PackageInstaller. Each `v*` tag runs the **Release** workflow which builds a signed APK (`scripts/build-android-drive.sh`) and attaches it to the GitHub Release. One-time keystore setup: `bash scripts/make-android-release-key.sh` then set the three `ANDROID_*` secrets.
 
 ### USB OTG
-Secondary. Host permission + VID filter (CH340/FTDI/CP210x/QBD). `UsbSerialHelper` lists devices; full serial open depends on Android `QSerialPort` / usb-serial bridge.
+Not supported in the current beta (Java helper not wired). Use Bluetooth Classic.
 
 ### Privacy
 100% local. No telemetry. GPL-3.0.
@@ -58,7 +58,7 @@ Secondary. Host permission + VID filter (CH340/FTDI/CP210x/QBD). `UsbSerialHelpe
 
 ## Français
 
-**ECU Drive** (**Bêta**) est le compagnon Qt6 simplifié pour valider une carto **en roulant sans PC**. Il importe un package **`.ecutune`** **ou une ROM `.bin` brute** (choix de l’ECU / recette OpenDAMOS), se connecte à un **ELM327** (Bluetooth SPP ou USB OTG), et compare les PID OBD live aux valeurs OpenDAMOS attendues — même `TuneValidator` qu’ECU Studio.
+**ECU Drive** (**Bêta**) est le compagnon Qt6 simplifié pour valider une carto **en roulant sans PC**. Il importe un package **`.ecutune`** **ou une ROM `.bin` brute** (choix de l’ECU / recette OpenDAMOS), se connecte à un **ELM327** (Bluetooth Classic SPP), et compare les PID OBD live aux valeurs OpenDAMOS attendues — même `TuneValidator` qu’ECU Studio.
 
 > **Maturité :** 🧪 **Bêta** — APK signé sur les Releases GitHub ; fonctionne sur appareil/émulateur, pas encore durci sur le terrain.
 
@@ -68,18 +68,18 @@ Secondary. Host permission + VID filter (CH340/FTDI/CP210x/QBD). `UsbSerialHelpe
 ### Déroulement
 1. Idéal : **ECU Studio** → *Fichier → Exporter pour ECU Drive (.ecutune)…* (recette + fingerprints inclus).
    Ou : copie la ROM flashée **`.bin`** et choisis le type d’ECU dans l’app.
-2. Copie le fichier sur le téléphone
-3. **ECU Drive** → Importer → Connecter ELM (scan BT ou USB) → **▶ Lancer session conduite**
-4. Après : résumé + CSV (Partager ouvre le dossier)
+2. Copie le fichier sur le téléphone (ou *Ouvrir avec ECU Drive*)
+3. **ECU Drive** → Importer (ou ouverture Files) → **Scan BT** (autorise Bluetooth) → Connecter → **▶ Lancer session conduite**
+4. Après : résumé + **Enregistrer sous…** / **Partager le log…** (CSV accessible)
 
 ### Module bleu chinois (Bluetooth classique)
-Chemin principal. **Appairer d’abord** le dongle dans les réglages Bluetooth du téléphone (**PIN `1234` ou `0000`**). ECU Drive ne scanne que le **BT classique / SPP** (pas le BLE), priorise les noms OBDII / ELM / V-LINK, puis se connecte via UUID SerialPort avec repli canaux RFCOMM 1 puis 2. Contact ON pour alimenter l’adaptateur.
+Chemin principal (USB OTG non supporté pour l’instant). **Appairer d’abord** le dongle dans les réglages Bluetooth du téléphone (**PIN `1234` ou `0000`**). ECU Drive demande les permissions BT au premier scan, ne scanne que le **BT classique / SPP** (pas le BLE), priorise les noms OBDII / ELM / V-LINK, puis se connecte via UUID SerialPort avec repli canaux RFCOMM 1 puis 2. Contact ON pour alimenter l’adaptateur.
 
 ### Mises à jour automatiques
 Au démarrage, ECU Drive interroge les Releases GitHub : si un `ecu-drive*-arm64.apk` (ou `ecu-drive*.apk`) plus récent existe, bannière + notes → téléchargement → installation PackageInstaller. Chaque tag `v*` lance le workflow **Release** qui compile l’APK signé (`scripts/build-android-drive.sh`) et le joint à la Release. Clé une fois : `bash scripts/make-android-release-key.sh` puis les 3 secrets `ANDROID_*`.
 
 ### USB OTG
-Secondaire. Permission host + filtre VID (CH340/FTDI/CP210x/QBD). `UsbSerialHelper` liste les périphériques ; l’ouverture série complète dépend du support `QSerialPort` Android / pont usb-serial.
+Non supporté dans la bêta actuelle (helper Java non branché). Utiliser Bluetooth Classic.
 
 ### Vie privée
 100 % local. Aucune télémétrie. GPL-3.0.

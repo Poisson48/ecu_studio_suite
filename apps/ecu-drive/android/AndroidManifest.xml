@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <manifest package="org.poisson48.ecudrive" xmlns:android="http://schemas.android.com/apk/res/android"
-    android:versionCode="190" android:versionName="1.7.20" android:installLocation="auto">
+    android:versionCode="191" android:versionName="1.7.21" android:installLocation="auto">
 
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
@@ -15,7 +15,6 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28"/>
-    <uses-permission android:name="android.permission.READ_MEDIA_FILES"/>
     <uses-feature android:name="android.hardware.usb.host" android:required="false"/>
     <uses-feature android:name="android.hardware.bluetooth" android:required="false"/>
 
@@ -46,12 +45,25 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Ouvrir .ecutune depuis Files -->
+            <!-- Ouvrir .ecutune / .bin depuis Fichiers -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:mimeType="*/*" android:pathPattern=".*\\.ecutune"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:mimeType="*/*" android:pathPattern=".*\\.bin"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:scheme="content" android:mimeType="application/octet-stream"/>
+                <data android:scheme="content" android:mimeType="application/zip"/>
+                <data android:scheme="file" android:mimeType="*/*"/>
             </intent-filter>
             <!-- USB device attached -->
             <intent-filter>
