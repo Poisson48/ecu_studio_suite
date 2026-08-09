@@ -5,8 +5,10 @@
 #include <QString>
 #include <QVariantList>
 
+class QFile;
 class QNetworkReply;
 class QJsonArray;
+class QTimer;
 
 namespace ecu_drive {
 
@@ -40,6 +42,8 @@ public:
     qint64  bytesTotal() const { return m_bytesTotal; }
     /** Libellé UI : « 42 % » ou « 12,3 Mo… » si taille inconnue (CDN GitHub). */
     QString progressLabel() const;
+    /** Vrai tant qu'Android n'a pas encore livré d'octets (barre animée). */
+    bool    progressIndeterminate() const;
     bool    canInstall() const;
     bool    updateAvailable() const { return m_state == Available; }
     bool    downloading() const { return m_state == Downloading; }
@@ -47,8 +51,9 @@ public:
 
     static bool isNewer(const QString& candidate, const QString& current);
     static QString notesFromBody(const QString& body);
-    /** Choisit l'URL de téléchargement APK ecu-drive dans les assets d'une release. */
-    static QString pickApkAssetUrl(const QJsonArray& assets);
+    /** Choisit l'URL de téléchargement APK ecu-drive dans les assets d'une release.
+     *  Si sizeOut != nullptr, remplit la taille déclarée par GitHub (octets). */
+    static QString pickApkAssetUrl(const QJsonArray& assets, qint64* sizeOut = nullptr);
 
 public slots:
     void check();
@@ -66,9 +71,15 @@ private:
     void setState(State s);
     void rebuildDerivedNotes();
     static QString formatEntries(const QVariantList& entries);
+    void applyDownloadProgress(qint64 received, qint64 total);
+    void flushDownloadIo();
+    void stopDownloadPulse();
 
     QNetworkAccessManager   m_net;
     QPointer<QNetworkReply> m_reply;
+    QPointer<QFile>         m_dlFile;
+    QTimer*                 m_dlPulse = nullptr;
+    qint64                  m_dlStartedMs = 0;
 
     State   m_state = Idle;
     QString m_latestVersion;
@@ -82,6 +93,7 @@ private:
     qreal   m_progress = 0.0;
     qint64  m_bytesReceived = 0;
     qint64  m_bytesTotal = 0;
+    qint64  m_apkExpectedBytes = 0;
 };
 
 } // namespace ecu_drive

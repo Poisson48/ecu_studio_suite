@@ -1,6 +1,7 @@
 #include "updater.h"
 #include "platform.h"
 
+#include <QDateTime>
 #include <QDesktopServices>
 #include <QDir>
 #include <QFile>
@@ -11,6 +12,7 @@
 #include <QNetworkRequest>
 #include <QSettings>
 #include <QStandardPaths>
+#include <QTimer>
 #include <QUrl>
 #include <QFileInfo>
 #include <QDebug>
@@ -74,9 +76,10 @@ QString Updater::notesFromBody(const QString& body)
     return kept.join(QLatin1Char('\n')).trimmed();
 }
 
-QString Updater::pickApkAssetUrl(const QJsonArray& assets)
+QString Updater::pickApkAssetUrl(const QJsonArray& assets, qint64* sizeOut)
 {
     QString apkUrl;
+    qint64 apkSize = 0;
     for (const QJsonValue& a : assets) {
         const QJsonObject asset = a.toObject();
         const QString name = asset.value(QStringLiteral("name")).toString();
@@ -85,15 +88,19 @@ QString Updater::pickApkAssetUrl(const QJsonArray& assets)
         const QString url = asset.value(QStringLiteral("browser_download_url")).toString();
         if (url.isEmpty())
             continue;
+        const qint64 sz = asset.value(QStringLiteral("size")).toVariant().toLongLong();
         if (apkUrl.isEmpty()
             || name.contains(QStringLiteral("ecu-drive"), Qt::CaseInsensitive)
             || name.contains(QStringLiteral("ecu_drive"), Qt::CaseInsensitive)) {
             apkUrl = url;
+            apkSize = sz;
             if (name.contains(QStringLiteral("ecu-drive"), Qt::CaseInsensitive)
                 || name.contains(QStringLiteral("ecu_drive"), Qt::CaseInsensitive))
                 break;
         }
     }
+    if (sizeOut)
+        *sizeOut = apkSize;
     return apkUrl;
 }
 
@@ -254,9 +261,9 @@ void Updater::check()
                 if (bestNewer.isEmpty() || isNewer(ver, bestNewer)) {
                     bestNewer = ver;
                     m_releaseUrl = obj.value(QStringLiteral("html_url")).toString();
-                    m_apkUrl.clear();
-                    m_apkUrl = pickApkAssetUrl(obj.value(QStringLiteral("assets")).toArray());
-                    // (assets déjà filtrés : ecu-drive*.apk prioritaire)
+                    m_apkExpectedBytes = 0;
+                    m_apkUrl = pickApkAssetUrl(obj.value(QStringLiteral("assets")).toArray(),
+                                              &m_apkExpectedBytes);
                 }
             }
         }
@@ -282,14 +289,83 @@ QString Updater::progressLabel() const
     const auto mo = [](qint64 b) {
         return QString::number(qreal(b) / (1024.0 * 1024.0), 'f', 1);
     };
-    if (m_bytesTotal > 0) {
+    const qint64 sec = m_dlStartedMs > 0
+        ? qMax(qint64(0), (QDateTime::currentMSecsSinceEpoch() - m_dlStartedMs) / 1000)
+        : 0;
+
+    if (m_bytesTotal > 0 && m_bytesReceived > 0) {
         return QStringLiteral("%1 % (%2 / %3 Mo)")
-            .arg(int(m_progress * 100))
+            .arg(int(m_progress * 100 + 0.5))
             .arg(mo(m_bytesReceived), mo(m_bytesTotal));
     }
     if (m_bytesReceived > 0)
         return QStringLiteral("%1 Mo…").arg(mo(m_bytesReceived));
+
+    // Android / Qt : souvent 0 octet signalé jusqu'à la fin — au moins un chrono.
+    if (m_bytesTotal > 0)
+        return QStringLiteral("0 / %1 Mo — %2 s…").arg(mo(m_bytesTotal)).arg(sec);
+    if (m_state == Downloading)
+        return QStringLiteral("%1 s…").arg(sec);
     return QStringLiteral("0 %");
+}
+
+bool Updater::progressIndeterminate() const
+{
+    // Taille GitHub connue → estimation douce (barre déterminée).
+    // Sinon → barre indéterminée animée.
+    return m_state == Downloading && m_bytesReceived <= 0 && m_bytesTotal <= 0;
+}
+
+void Updater::stopDownloadPulse()
+{
+    if (m_dlPulse)
+        m_dlPulse->stop();
+}
+
+void Updater::applyDownloadProgress(qint64 received, qint64 total)
+{
+    if (received > m_bytesReceived)
+        m_bytesReceived = received;
+    if (total > 0)
+        m_bytesTotal = total;
+    else if (m_bytesTotal <= 0 && m_apkExpectedBytes > 0)
+        m_bytesTotal = m_apkExpectedBytes;
+
+    if (m_bytesTotal > 0 && m_bytesReceived > 0) {
+        m_progress = qBound(0.0, qreal(m_bytesReceived) / qreal(m_bytesTotal), 0.99);
+    } else if (m_bytesReceived > 0) {
+        constexpr qreal kExpect = 40.0 * 1024.0 * 1024.0;
+        m_progress = 0.90 * (1.0 - std::exp(-qreal(m_bytesReceived) / kExpect));
+    } else if (m_state == Downloading && m_bytesTotal > 0 && m_dlStartedMs > 0) {
+        // Estimation douce tant que le stack Android bufferise (évite 0 % figé).
+        const qreal expectMs = qMax(10000.0,
+            qreal(m_bytesTotal) / (2.0 * 1024.0 * 1024.0) * 1000.0);
+        const qreal t = qreal(QDateTime::currentMSecsSinceEpoch() - m_dlStartedMs)
+                        / expectMs;
+        m_progress = qBound(0.01, 0.85 * (1.0 - std::exp(-1.8 * t)), 0.85);
+    } else {
+        m_progress = 0.0;
+    }
+    emit progressChanged();
+}
+
+void Updater::flushDownloadIo()
+{
+    if (!m_reply || !m_dlFile || !m_dlFile->isOpen()) {
+        if (m_state == Downloading)
+            applyDownloadProgress(m_bytesReceived, m_bytesTotal);
+        return;
+    }
+    if (m_reply->bytesAvailable() > 0)
+        m_dlFile->write(m_reply->readAll());
+
+    qint64 total = m_bytesTotal;
+    if (total <= 0) {
+        const QVariant cl = m_reply->header(QNetworkRequest::ContentLengthHeader);
+        if (cl.isValid() && cl.toLongLong() > 0)
+            total = cl.toLongLong();
+    }
+    applyDownloadProgress(m_dlFile->size(), total);
 }
 
 void Updater::download()
@@ -308,6 +384,13 @@ void Updater::download()
         m_reply->abort();
         m_reply.clear();
     }
+    stopDownloadPulse();
+    if (m_dlFile) {
+        if (m_dlFile->isOpen())
+            m_dlFile->close();
+        m_dlFile->deleteLater();
+        m_dlFile.clear();
+    }
 
     m_lastError.clear();
     const QString dir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
@@ -324,10 +407,13 @@ void Updater::download()
     req.setRawHeader("User-Agent", "ECU-Drive");
     req.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                      QNetworkRequest::NoLessSafeRedirectPolicy);
+    // HTTP/2 sous Qt Android bufferise souvent tout le corps → progress 0 puis 100.
+    req.setAttribute(QNetworkRequest::Http2AllowedAttribute, false);
 
     m_progress = 0.0;
     m_bytesReceived = 0;
-    m_bytesTotal = 0;
+    m_bytesTotal = m_apkExpectedBytes > 0 ? m_apkExpectedBytes : 0;
+    m_dlStartedMs = QDateTime::currentMSecsSinceEpoch();
     emit progressChanged();
     setState(Downloading);
 
@@ -342,50 +428,43 @@ void Updater::download()
         setState(Failed);
         return;
     }
+    m_dlFile = out;
 
-    // GitHub CDN : souvent pas de Content-Length → downloadProgress total=-1.
-    // On avance la barre avec les octets réellement écrits.
-    auto updateProgress = [this](qint64 received, qint64 total) {
-        m_bytesReceived = received;
-        if (total > 0)
-            m_bytesTotal = total;
-        if (m_bytesTotal > 0) {
-            m_progress = qBound(0.0, qreal(m_bytesReceived) / qreal(m_bytesTotal), 0.99);
-        } else if (m_bytesReceived > 0) {
-            // Courbe asymptotique vers ~90 % (APK typique ~35 Mo).
-            constexpr qreal kExpect = 35.0 * 1024.0 * 1024.0;
-            m_progress = 0.90 * (1.0 - std::exp(-qreal(m_bytesReceived) / kExpect));
-        } else {
-            m_progress = 0.0;
-        }
-        emit progressChanged();
-    };
+    if (!m_dlPulse) {
+        m_dlPulse = new QTimer(this);
+        m_dlPulse->setInterval(200);
+        connect(m_dlPulse, &QTimer::timeout, this, &Updater::flushDownloadIo);
+    }
+    m_dlPulse->start();
 
-    connect(reply, &QNetworkReply::readyRead, this, [this, reply, out, updateProgress]() {
-        if (!out->isOpen()) return;
-        out->write(reply->readAll());
-        qint64 total = m_bytesTotal;
-        if (total <= 0) {
-            const QVariant cl = reply->header(QNetworkRequest::ContentLengthHeader);
-            if (cl.isValid())
-                total = cl.toLongLong();
-        }
-        updateProgress(out->size(), total);
+    connect(reply, &QNetworkReply::metaDataChanged, this, [this, reply]() {
+        const QVariant cl = reply->header(QNetworkRequest::ContentLengthHeader);
+        if (cl.isValid() && cl.toLongLong() > 0)
+            applyDownloadProgress(m_bytesReceived, cl.toLongLong());
     });
+
+    connect(reply, &QNetworkReply::readyRead, this, &Updater::flushDownloadIo);
 
     connect(reply, &QNetworkReply::downloadProgress, this,
-            [updateProgress](qint64 received, qint64 total) {
-        updateProgress(received, total);
+            [this](qint64 received, qint64 total) {
+        // Sur Android received peut rester 0 jusqu'à la fin : on croise avec le fichier.
+        const qint64 fileSz = (m_dlFile && m_dlFile->isOpen()) ? m_dlFile->size() : 0;
+        applyDownloadProgress(qMax(received, fileSz), total);
     });
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply, out]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        stopDownloadPulse();
         reply->deleteLater();
-        if (out->isOpen()) {
-            if (reply->bytesAvailable() > 0)
-                out->write(reply->readAll());
-            out->close();
+        if (m_reply == reply)
+            m_reply.clear();
+
+        flushDownloadIo();
+        if (m_dlFile) {
+            if (m_dlFile->isOpen())
+                m_dlFile->close();
+            m_dlFile->deleteLater();
+            m_dlFile.clear();
         }
-        out->deleteLater();
 
         if (reply->error() != QNetworkReply::NoError) {
             QFile::remove(m_apkPath);
@@ -436,8 +515,15 @@ void Updater::install()
 
 void Updater::dismiss()
 {
+    stopDownloadPulse();
     if (m_reply)
         m_reply->abort();
+    if (m_dlFile) {
+        if (m_dlFile->isOpen())
+            m_dlFile->close();
+        m_dlFile->deleteLater();
+        m_dlFile.clear();
+    }
     setState(Idle);
 }
 

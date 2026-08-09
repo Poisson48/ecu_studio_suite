@@ -2046,7 +2046,12 @@ void DriveWindow::refreshUpdateBanner() {
     if (!show) return;
 
     m_updateProgress->setVisible(st == S::Downloading);
-    m_updateProgress->setValue(int(m_updater->progress() * 100));
+    if (st == S::Downloading && m_updater->progressIndeterminate()) {
+        m_updateProgress->setRange(0, 0); // animée (Android bufferise souvent le téléchargement)
+    } else {
+        m_updateProgress->setRange(0, 100);
+        m_updateProgress->setValue(int(m_updater->progress() * 100.0 + 0.5));
+    }
     m_updateActionBtn->setVisible(st != S::Downloading);
     m_updateDismissBtn->setVisible(st != S::Downloading);
 
