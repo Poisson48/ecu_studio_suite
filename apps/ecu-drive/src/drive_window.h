@@ -67,6 +67,8 @@ private:
     void beginBusy(const QString& message, int max = 0);
     void setBusy(int value, const QString& message = {});
     void endBusy();
+    /** Active « Lancer session » seulement si ELM connecté + tune prêt. */
+    void refreshSessionButton();
     void layoutBusyOverlay();
     bool eventFilter(QObject* watched, QEvent* event) override;
     void applyTunePackage(const ecu::TunePackage& pkg, const QString& path);

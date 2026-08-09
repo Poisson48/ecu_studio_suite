@@ -83,7 +83,7 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
         m_connectBtn->setText(tr("Déconnecter"));
         setStatus(tr("Connecté — %1").arg(v));
         platformToast(tr("ELM connecté"));
-        if (m_sessionBtn) m_sessionBtn->setEnabled(true);
+        refreshSessionButton();
         if (m_stack && m_stack->currentIndex() == 1)
             ensureSensorsPolling();
 #if defined(ELM_HAVE_BLUETOOTH)
@@ -107,7 +107,7 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
         if (m_sessionOn) stopSession(); // affiche « Export des logs terminé » si ticks > 0
         m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Connecter"));
-        if (m_sessionBtn) m_sessionBtn->setEnabled(true);
+        refreshSessionButton();
         setStatus(tr("Déconnecté."));
         if (m_linkLossNotified) {
             // errorOccurred a déjà géré toast / export / dialogue.
@@ -137,6 +137,7 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
         if (m_sessionOn) stopSession(); // fenêtre export logs
         m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Connecter"));
+        refreshSessionButton();
         setStatus(e, true);
         platformToast(e.split(QLatin1Char('\n')).first());
         if (!hadSession)
@@ -151,15 +152,10 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
     connect(m_updater, &Updater::changelogChanged, this, [this]() {
         if (!m_updater->hasWhatsNew() || m_updater->updateAvailable())
             return;
-#if defined(Q_OS_ANDROID)
-        // QMessageBox modal plante souvent sous Qt Android — notes en status.
-        setStatus(tr("Quoi de neuf (v%1) : ouvre Vérifier les mises à jour.")
-                      .arg(m_updater->currentVersion()));
+        // Overlay in-app (QMessageBox modal souvent mort sous Qt Android).
+        showInfoDialog(tr("Quoi de neuf (v%1)").arg(m_updater->currentVersion()),
+                       m_updater->whatsNewNotes());
         m_updater->acknowledgeNotes();
-#else
-        QMessageBox::information(this, tr("Quoi de neuf"), m_updater->whatsNewNotes());
-        m_updater->acknowledgeNotes();
-#endif
     });
 
     // Différer ports / dernier tune : éviter de bloquer le premier show().
@@ -905,7 +901,7 @@ QWidget* DriveWindow::buildDrivePage(QWidget* parent) {
     QFont sf = m_sessionBtn->font();
     sf.setPointSizeF(sf.pointSizeF() + 3); sf.setBold(true);
     m_sessionBtn->setFont(sf);
-    m_sessionBtn->setEnabled(true);
+    m_sessionBtn->setEnabled(false);
     connect(m_sessionBtn, &QPushButton::clicked, this, &DriveWindow::toggleSession);
     root->addWidget(m_sessionBtn);
 
@@ -1163,11 +1159,36 @@ void DriveWindow::endBusy() {
         m_busyOverlay->setVisible(false);
         m_busyOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, true);
         m_busyOverlay->lower();
+        if (m_busyOverlay->parentWidget())
+            m_busyOverlay->parentWidget()->update();
     }
     while (QApplication::overrideCursor())
         QApplication::restoreOverrideCursor();
     // Vider les progress callbacks encore en file (évite raise() fantôme).
-    QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    for (int i = 0; i < 3; ++i)
+        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    // Re-appliquer après les events queue'd qui auraient pu re-raise le busy.
+    if (m_busyOverlay && m_busyDepth <= 0) {
+        m_busyOverlay->setVisible(false);
+        m_busyOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+        m_busyOverlay->lower();
+    }
+    // Filet Android : certains firmwares réactivent l'overlay au paint suivant.
+    QTimer::singleShot(50, this, [this]() {
+        if (m_busyDepth > 0 || !m_busyOverlay) return;
+        m_busyOverlay->setVisible(false);
+        m_busyOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+        m_busyOverlay->lower();
+    });
+}
+
+void DriveWindow::refreshSessionButton() {
+    if (!m_sessionBtn) return;
+    if (m_sessionOn) {
+        m_sessionBtn->setEnabled(true);
+        return;
+    }
+    m_sessionBtn->setEnabled(m_connected && m_validator.isReady());
 }
 
 namespace {
@@ -1241,7 +1262,7 @@ void DriveWindow::showEcuPicker(const QByteArray& rom, const QString& path,
     const QStringList ids = availableEcuIds();
     if (ids.isEmpty()) {
         platformToast(tr("Aucune recette OpenDAMOS embarquée."));
-        QMessageBox::warning(this, tr("Import ROM"),
+        showInfoDialog(tr("Import ROM"),
             tr("Aucune recette OpenDAMOS embarquée.\n"
                "Utilise un fichier .ecutune exporté depuis ECU Studio."));
         setStatus(tr("Import annulé — pas de recettes ECU."), true);
@@ -1372,12 +1393,12 @@ bool DriveWindow::loadRomBinaryFile(const QString& path) {
     endBusy();
 
     if (!read.ok) {
-        QMessageBox::warning(this, tr("Import"), read.error);
+        showInfoDialog(tr("Import"), read.error);
         return false;
     }
     const QByteArray& rom = read.data;
     if (rom.size() < 1024) {
-        QMessageBox::warning(this, tr("Import"),
+        showInfoDialog(tr("Import"),
             tr("Fichier trop petit pour une ROM ECU (%1 octet(s)).").arg(rom.size()));
         return false;
     }
@@ -1441,13 +1462,13 @@ void DriveWindow::loadTuneFile(const QString& path) {
             applyTunePackage(*pkg, path);
             return;
         }
-        QMessageBox::warning(this, tr("Import"), pkg.error());
+        showInfoDialog(tr("Import"), pkg.error());
         setStatus(tr("Import échoué."), true);
         return;
     }
     // Dernier recours : ROM brute
     if (!loadRomBinaryFile(path)) {
-        QMessageBox::warning(this, tr("Import"),
+        showInfoDialog(tr("Import"),
             tr("Format non reconnu. Utilise un .ecutune (export ECU Studio) ou une ROM .bin."));
         setStatus(tr("Import échoué."), true);
     }
@@ -1486,7 +1507,7 @@ void DriveWindow::applyRomBinary(const QByteArray& rom, const QString& ecuId,
                     m_busyDetail->setText(
                         tr("Temps écoulé : %1 s — ne ferme pas l'app").arg(sec));
                 setStatus(tr("Analyse %1/%2 (%3 s)").arg(shown).arg(tot).arg(sec));
-                m_busyOverlay->raise();
+                // update() suffit : raise() pendant/après analyse peut voler les touches.
                 m_busyOverlay->update();
             }, Qt::QueuedConnection);
         });
@@ -1501,12 +1522,13 @@ void DriveWindow::applyRomBinary(const QByteArray& rom, const QString& ecuId,
     QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
     if (!ok) {
-        QMessageBox::warning(this, tr("Import ROM"),
+        showInfoDialog(tr("Import ROM"),
             tr("Impossible de relocaliser les maps pour l'ECU « %1 ».\n"
                "Vérifie le type d'ECU, ou exporte un .ecutune depuis ECU Studio "
                "(qui embarque la recette OpenDAMOS).").arg(ecuId));
         setStatus(tr("Relocalisation échouée (%1).").arg(ecuId), true);
         m_tuneLabel->setText(tr("Échec import ROM — %1").arg(ecuId));
+        refreshSessionButton();
         return;
     }
     m_tunePath = path;
@@ -1519,7 +1541,7 @@ void DriveWindow::applyRomBinary(const QByteArray& rom, const QString& ecuId,
                  m_validator.romMd5().left(8))
             .arg(n)
             .arg(m_validator.isReady() ? tr("oui") : tr("non")));
-    m_sessionBtn->setEnabled(true);
+    refreshSessionButton();
     setStatus(m_validator.isReady()
                   ? tr("ROM chargée (%1 maps) — connecte l'ELM puis lance la session.")
                         .arg(n)
@@ -1584,7 +1606,7 @@ void DriveWindow::applyTunePackage(const ecu::TunePackage& pkg, const QString& p
                  pkg.manifest.romMd5.left(8))
             .arg(n)
             .arg(m_validator.isReady() ? tr("oui") : tr("non (relocalisation)")));
-    m_sessionBtn->setEnabled(true);
+    refreshSessionButton();
     setStatus(m_validator.isReady()
                   ? tr("Tune prêt (%1 maps) — connecte l'ELM puis lance la session.")
                         .arg(n)
@@ -1742,6 +1764,7 @@ void DriveWindow::startSession() {
     m_elm->startPolling(qp, 180);
     m_sessionOn = true;
     m_sessionBtn->setText(tr("■  Arrêter session"));
+    refreshSessionButton();
     autoStartCsv();
     m_verdict->setText(tr("Acquisition…"));
     endBusy();
@@ -1756,6 +1779,7 @@ void DriveWindow::stopSession() {
     autoStopCsv();
     const auto sum = m_session.finish();
     m_sessionBtn->setText(tr("▶  Lancer session conduite"));
+    refreshSessionButton();
     endBusy();
     if (sum.ticks > 0) showSummary(sum);
     else setStatus(tr("Session arrêtée (aucune donnée)."));
