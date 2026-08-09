@@ -78,6 +78,8 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
 
     connect(m_elm, &elm::Elm327::connected, this, [this](const QString& v) {
         m_connected = true;
+        m_linkLossNotified = false;
+        m_pendingDisconnectReason.clear();
         m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Déconnecter"));
         setStatus(tr("Connecté — %1").arg(v));
@@ -92,21 +94,55 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
                                  m_btCombo->currentData().toString());
         }
 #endif
+        showInfoDialog(tr("Module connecté"),
+            tr("ELM prêt : %1\n\nTu peux lancer une session conduite "
+               "ou ouvrir Capteurs OBD.").arg(v));
     });
     connect(m_elm, &elm::Elm327::disconnected, this, [this]() {
+        const bool intentional = m_userDisconnect;
+        m_userDisconnect = false;
         m_connected = false;
-        if (m_sessionOn) stopSession();
+        const bool hadSession = m_sessionOn;
+        if (!intentional && hadSession && m_pendingDisconnectReason.isEmpty())
+            m_pendingDisconnectReason = tr("Liaison Bluetooth perdue.");
+        if (m_sessionOn) stopSession(); // affiche « Export des logs terminé » si ticks > 0
         m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Connecter"));
         if (m_sessionBtn) m_sessionBtn->setEnabled(true);
         setStatus(tr("Déconnecté."));
+        if (m_linkLossNotified) {
+            // errorOccurred a déjà géré toast / export / dialogue.
+            m_linkLossNotified = false;
+            if (!hadSession && !m_pendingDisconnectReason.isEmpty())
+                showInfoDialog(tr("Connexion"), m_pendingDisconnectReason);
+            m_pendingDisconnectReason.clear();
+            return;
+        }
+        // Une seule fenêtre : session → export ; sinon → connect/disconnect.
+        if (hadSession)
+            return;
+        if (intentional) {
+            showInfoDialog(tr("Déconnecté"),
+                tr("Module déconnecté.\nTu peux reconnecter quand tu veux."));
+        } else {
+            showInfoDialog(tr("Module déconnecté"),
+                tr("La liaison avec le dongle a été perdue.\n\n"
+                   "Vérifie l'alimentation / la portée Bluetooth."));
+        }
     });
     connect(m_elm, &elm::Elm327::errorOccurred, this, [this](const QString& e) {
+        m_linkLossNotified = true;
+        m_pendingDisconnectReason = e;
         m_connected = false;
+        const bool hadSession = m_sessionOn;
+        if (m_sessionOn) stopSession(); // fenêtre export logs
         m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Connecter"));
         setStatus(e, true);
-        platformToast(e);
+        platformToast(e.split(QLatin1Char('\n')).first());
+        if (!hadSession)
+            showInfoDialog(tr("Connexion"), e);
+        // Si session : disconnected suivra et ne doublera pas (flag).
     });
     connect(m_elm, &elm::Elm327::status, this, [this](const QString& s) { setStatus(s); });
     connect(m_elm, &elm::Elm327::pidResult, this, &DriveWindow::onPid);
@@ -616,6 +652,42 @@ void DriveWindow::buildUi() {
     connect(btCancel, &QPushButton::clicked, this, &DriveWindow::onBtPickerCancel);
 #endif
 
+    // Dialogue info in-app (connexion module, fin d'export logs) — pas de QMessageBox.
+    m_infoOverlay = new QWidget(central);
+    m_infoOverlay->setObjectName(QStringLiteral("infoOverlay"));
+    m_infoOverlay->setStyleSheet(QStringLiteral(
+        "#infoOverlay { background-color: #0f1520; }"));
+    m_infoOverlay->setVisible(false);
+    m_infoOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+    auto* infoLay = new QVBoxLayout(m_infoOverlay);
+    infoLay->setContentsMargins(24, 24, 24, 24);
+    infoLay->addStretch();
+    auto* infoFrame = new QFrame(m_infoOverlay);
+    infoFrame->setStyleSheet(QStringLiteral(
+        "QFrame { background:#1e3a5f; border:2px solid #60a5fa; border-radius:14px; }"));
+    auto* il = new QVBoxLayout(infoFrame);
+    il->setContentsMargins(20, 18, 20, 18);
+    il->setSpacing(14);
+    m_infoTitle = new QLabel(infoFrame);
+    m_infoTitle->setAlignment(Qt::AlignCenter);
+    m_infoTitle->setWordWrap(true);
+    m_infoTitle->setStyleSheet(QStringLiteral(
+        "color:#f8fafc; font-size:18px; font-weight:700; background:transparent; border:none;"));
+    m_infoBody = new QLabel(infoFrame);
+    m_infoBody->setAlignment(Qt::AlignCenter);
+    m_infoBody->setWordWrap(true);
+    m_infoBody->setStyleSheet(QStringLiteral(
+        "color:#93c5fd; font-size:14px; background:transparent; border:none;"));
+    m_infoOkBtn = new QPushButton(tr("OK"), infoFrame);
+    m_infoOkBtn->setObjectName(QStringLiteral("accentBtn"));
+    m_infoOkBtn->setMinimumHeight(48);
+    il->addWidget(m_infoTitle);
+    il->addWidget(m_infoBody);
+    il->addWidget(m_infoOkBtn);
+    infoLay->addWidget(infoFrame);
+    infoLay->addStretch();
+    connect(m_infoOkBtn, &QPushButton::clicked, this, &DriveWindow::hideInfoDialog);
+
     central->installEventFilter(this);
     layoutBusyOverlay();
 
@@ -1011,6 +1083,11 @@ void DriveWindow::layoutBusyOverlay() {
             m_btPickerOverlay->raise();
     }
 #endif
+    if (m_infoOverlay) {
+        m_infoOverlay->setGeometry(r);
+        if (m_infoOverlay->isVisible())
+            m_infoOverlay->raise();
+    }
 }
 
 bool DriveWindow::eventFilter(QObject* watched, QEvent* event) {
@@ -1568,6 +1645,7 @@ void DriveWindow::startBtScan() {
 void DriveWindow::toggleConnect() {
     if (m_connected) {
         setStatus(tr("Déconnexion…"));
+        m_userDisconnect = true;
         m_connectBtn->setEnabled(false);
         m_elm->disconnectPort();
         m_connectBtn->setEnabled(true);
@@ -1811,6 +1889,7 @@ void DriveWindow::autoStartCsv() {
 
 void DriveWindow::autoStopCsv() {
     if (!m_csv) return;
+    m_csv->flush();
     m_csv->close();
     m_csv->deleteLater();
     m_csv = nullptr;
@@ -1884,6 +1963,34 @@ void DriveWindow::chooseLogDirectory() {
 #endif
 }
 
+void DriveWindow::showInfoDialog(const QString& title, const QString& body,
+                                 const QString& okLabel) {
+    if (!m_infoOverlay || !m_infoTitle || !m_infoBody || !m_infoOkBtn) {
+        setStatus(title + QLatin1Char('\n') + body);
+        platformToast(title);
+        return;
+    }
+    m_infoTitle->setText(title);
+    m_infoBody->setText(body);
+    m_infoOkBtn->setText(okLabel.isEmpty() ? tr("OK") : okLabel);
+    layoutBusyOverlay();
+    m_infoOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, false);
+    m_infoOverlay->setVisible(true);
+    m_infoOverlay->raise();
+    m_infoOverlay->show();
+    for (int i = 0; i < 3; ++i)
+        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    m_infoOverlay->repaint();
+    platformToast(title);
+}
+
+void DriveWindow::hideInfoDialog() {
+    if (!m_infoOverlay) return;
+    m_infoOverlay->setVisible(false);
+    m_infoOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+    m_infoOverlay->lower();
+}
+
 void DriveWindow::showSummary(const ecu::SessionSummary& sum) {
     QString hot;
     for (const auto& h : sum.hotspots)
@@ -1891,40 +1998,40 @@ void DriveWindow::showSummary(const ecu::SessionSummary& sum) {
                    .arg(h.gx).arg(h.gy).arg(h.count)
                    .arg(h.meanAbsDelta(), 0, 'f', 1);
     const QString csv = sum.csvPath.isEmpty() ? m_lastCsv : sum.csvPath;
-#if defined(Q_OS_ANDROID)
-    // QMessageBox modal souvent invisible / OK mort — résumé en status + toast.
-    setStatus(tr("Session terminée — OK %1 · Warn %2 · Fail %3 (%4 %%)\nCSV : %5")
-                  .arg(sum.ok).arg(sum.warn).arg(sum.fail)
-                  .arg(sum.okRatio(), 0, 'f', 0)
-                  .arg(csv));
-    platformToast(tr("Session finie — CSV sauvé"));
-#else
-    QMessageBox::information(this, tr("Fin de session"),
-        tr("Ticks %1\nOK %2 · Warn %3 · Fail %4\nDans tolérance : %5 %\n"
-           "Pic |Δ| %6 sur %7\nHotspots:%8\n\nCSV : %9")
-            .arg(sum.ticks).arg(sum.ok).arg(sum.warn).arg(sum.fail)
-            .arg(sum.okRatio(), 0, 'f', 1)
-            .arg(sum.peakAbsDelta, 0, 'f', 1)
-            .arg(sum.peakMap.isEmpty() ? QStringLiteral("—") : sum.peakMap)
-            .arg(hot.isEmpty() ? tr("\n  (aucun)") : hot)
-            .arg(csv));
-#endif
+    QString body = tr("Ticks %1\nOK %2 · Warn %3 · Fail %4\nDans tolérance : %5 %\n"
+                      "Pic |Δ| %6 sur %7\nHotspots:%8\n\n"
+                      "Export logs terminé.\nCSV :\n%9")
+                       .arg(sum.ticks).arg(sum.ok).arg(sum.warn).arg(sum.fail)
+                       .arg(sum.okRatio(), 0, 'f', 1)
+                       .arg(sum.peakAbsDelta, 0, 'f', 1)
+                       .arg(sum.peakMap.isEmpty() ? QStringLiteral("—") : sum.peakMap)
+                       .arg(hot.isEmpty() ? tr("\n  (aucun)") : hot)
+                       .arg(csv);
+    if (!m_pendingDisconnectReason.isEmpty()) {
+        body += tr("\n\n—\nModule déconnecté pendant la session :\n%1")
+                    .arg(m_pendingDisconnectReason);
+        m_pendingDisconnectReason.clear();
+    }
+    setStatus(tr("Export logs OK — %1").arg(QFileInfo(csv).fileName()));
+    platformToast(tr("Export logs terminé"));
+    showInfoDialog(tr("Export des logs terminé"), body, tr("OK"));
 }
 
 void DriveWindow::shareLastLog() {
     if (m_lastCsv.isEmpty() || !QFile::exists(m_lastCsv)) {
-        // Ouvrir le dossier même sans session récente.
         const QString dir = logDirectory();
         QDir().mkpath(dir);
         QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
-        setStatus(tr("Aucun CSV de session — dossier logs :\n%1").arg(dir), true);
-        platformToast(tr("Dossier logs ouvert"));
+        showInfoDialog(tr("Logs"),
+            tr("Aucun CSV de session récente.\n\nDossier ouvert :\n%1").arg(dir));
         return;
     }
     const QString dir = QFileInfo(m_lastCsv).absolutePath();
     QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
-    setStatus(tr("Log : %1\nDossier ouvert.").arg(m_lastCsv));
-    platformToast(tr("Dossier logs ouvert"));
+    showInfoDialog(tr("Export des logs terminé"),
+        tr("Fichier CSV prêt à partager :\n\n%1\n\n"
+           "Le dossier Fichiers a été ouvert.")
+            .arg(m_lastCsv));
 }
 
 void DriveWindow::onUpdaterState() { refreshUpdateBanner(); }

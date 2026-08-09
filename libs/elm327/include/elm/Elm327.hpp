@@ -85,6 +85,7 @@ private slots:
 #if defined(ELM_HAVE_BLUETOOTH)
     void onBtConnected();
     void onBtError();
+    void onBtLinkLost();
     void onBtConnectTimeout();
 #endif
 

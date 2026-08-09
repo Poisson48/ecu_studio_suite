@@ -150,6 +150,7 @@ void Elm327::startBtSocket() {
     m_bt = new QBluetoothSocket(QBluetoothServiceInfo::RfcommProtocol, this);
     connect(m_bt, &QBluetoothSocket::connected, this, &Elm327::onBtConnected);
     connect(m_bt, &QBluetoothSocket::errorOccurred, this, &Elm327::onBtError);
+    connect(m_bt, &QBluetoothSocket::disconnected, this, &Elm327::onBtLinkLost);
 
     const QBluetoothAddress addr(m_btAddress);
     if (m_btAttempt == 0) {
@@ -178,7 +179,13 @@ void Elm327::onBtConnected() {
 }
 
 void Elm327::onBtError() {
-    if (!m_bt || !m_opening) return;
+    if (!m_bt) return;
+    // Perte de lien une fois connecté (moteur coupé, dongle hors portée…).
+    if (!m_opening) {
+        if (m_ready)
+            onBtLinkLost();
+        return;
+    }
     if (m_btConnectTimeout) m_btConnectTimeout->stop();
     const QString err = m_bt->errorString();
     ++m_btAttempt;
@@ -190,6 +197,15 @@ void Elm327::onBtError() {
         return;
     }
     failConnect(tr("Bluetooth : %1").arg(err));
+}
+
+void Elm327::onBtLinkLost() {
+    if (m_opening) return;          // phase connexion : géré par onBtError
+    if (!m_btTransport) return;
+    if (!m_ready) return;           // déjà en cours de fermeture
+    emit errorOccurred(tr("Connexion Bluetooth perdue avec le module.\n"
+                          "Vérifie l'alimentation du dongle et la portée."));
+    disconnectPort();
 }
 
 void Elm327::onBtConnectTimeout() {

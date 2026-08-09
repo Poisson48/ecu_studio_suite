@@ -82,6 +82,10 @@ private:
     void hideEcuPicker();
     void onEcuPickerOk();
     void onEcuPickerCancel();
+    /** Dialogue info in-app (Android-safe, remplace QMessageBox). */
+    void showInfoDialog(const QString& title, const QString& body,
+                        const QString& okLabel = {});
+    void hideInfoDialog();
     bool loadRomBinaryFile(const QString& path);
     void startSession();
     void stopSession();
@@ -142,6 +146,10 @@ private:
     QComboBox* m_ecuPickerCombo = nullptr;
     QWidget* m_btPickerOverlay = nullptr;
     QListWidget* m_btPickerList = nullptr;
+    QWidget* m_infoOverlay = nullptr;
+    QLabel*  m_infoTitle = nullptr;
+    QLabel*  m_infoBody = nullptr;
+    QPushButton* m_infoOkBtn = nullptr;
     QByteArray m_pendingRom;
     QString m_pendingRomPath;
     QString m_autoEcuId;
@@ -175,6 +183,9 @@ private:
     QHash<quint8, QString> m_liveUnit;
     bool m_connected = false;
     bool m_sessionOn = false;
+    bool m_userDisconnect = false;
+    bool m_linkLossNotified = false;
+    QString m_pendingDisconnectReason;
     int  m_busyDepth = 0;
     QStringList m_ecuIdsCache;
     QString m_tunePath;
