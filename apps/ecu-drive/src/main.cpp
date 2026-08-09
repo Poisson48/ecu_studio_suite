@@ -29,6 +29,13 @@ QComboBox, QLineEdit {
 QCheckBox { spacing: 8px; }
 QLabel { background: transparent; }
 QScrollArea { background: transparent; border: none; }
+QScrollBar:vertical {
+  background: #0f1520; width: 10px; margin: 2px;
+}
+QScrollBar::handle:vertical {
+  background: #334155; border-radius: 4px; min-height: 32px;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
 QMessageBox { background: #0f1520; }
 )";
 

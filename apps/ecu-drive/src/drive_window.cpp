@@ -19,6 +19,8 @@
 #include <QFrame>
 #include <QStackedWidget>
 #include <QScrollArea>
+#include <QScroller>
+#include <QSizePolicy>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QFile>
@@ -633,16 +635,40 @@ void DriveWindow::buildUi() {
     });
 }
 
-QWidget* DriveWindow::buildDrivePage(QWidget* parent) {
-    auto* scroll = new QScrollArea(parent);
+namespace {
+
+/** ScrollArea tactile (Android) : contenu en hauteur naturelle, pas de stretch. */
+void setupScrollablePage(QScrollArea* scroll, QWidget* page) {
     scroll->setWidgetResizable(true);
     scroll->setFrameShape(QFrame::NoFrame);
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    scroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    // Hauteur = taille du contenu (sinon le layout remplit le viewport → pas de scroll).
+    page->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+    page->setMinimumWidth(0);
+#if defined(Q_OS_ANDROID)
+    scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    scroll->viewport()->setAttribute(Qt::WA_AcceptTouchEvents, true);
+    QScroller::grabGesture(scroll->viewport(), QScroller::TouchGesture);
+    // Fallback doigt = souris sur certains firmwares Qt Android.
+    QScroller::grabGesture(scroll->viewport(), QScroller::LeftMouseButtonGesture);
+#else
+    QScroller::grabGesture(scroll->viewport(), QScroller::LeftMouseButtonGesture);
+#endif
+    scroll->setWidget(page);
+}
+
+} // namespace
+
+QWidget* DriveWindow::buildDrivePage(QWidget* parent) {
+    auto* scroll = new QScrollArea(parent);
 
     auto* page = new QWidget;
     auto* root = new QVBoxLayout(page);
     root->setContentsMargins(12, 8, 12, 12);
     root->setSpacing(10);
+    root->setSizeConstraint(QLayout::SetMinimumSize);
 
     auto* logoRow = new QHBoxLayout;
     auto* logo = new QLabel(page);
@@ -784,22 +810,20 @@ QWidget* DriveWindow::buildDrivePage(QWidget* parent) {
     auto* updBtn = new QPushButton(tr("Vérifier les mises à jour"), page);
     connect(updBtn, &QPushButton::clicked, this, &DriveWindow::checkUpdatesManual);
     root->addWidget(updBtn);
+    // Pas de addStretch() : sinon la page remplit le viewport et le scroll est mort.
 
-    root->addStretch();
-    scroll->setWidget(page);
+    setupScrollablePage(scroll, page);
     return scroll;
 }
 
 QWidget* DriveWindow::buildSensorsPage(QWidget* parent) {
     auto* scroll = new QScrollArea(parent);
-    scroll->setWidgetResizable(true);
-    scroll->setFrameShape(QFrame::NoFrame);
-    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     auto* page = new QWidget;
     auto* root = new QVBoxLayout(page);
     root->setContentsMargins(12, 8, 12, 12);
     root->setSpacing(8);
+    root->setSizeConstraint(QLayout::SetMinimumSize);
 
     auto* title = new QLabel(tr("Tous les capteurs OBD (mode 01)"), page);
     title->setStyleSheet(QStringLiteral("color:#e6edf3; font-weight:700; font-size:16px;"));
@@ -845,9 +869,8 @@ QWidget* DriveWindow::buildSensorsPage(QWidget* parent) {
     refreshBtn->setMinimumHeight(44);
     connect(refreshBtn, &QPushButton::clicked, this, &DriveWindow::ensureSensorsPolling);
     root->addWidget(refreshBtn);
-    root->addStretch();
 
-    scroll->setWidget(page);
+    setupScrollablePage(scroll, page);
     return scroll;
 }
 
