@@ -78,7 +78,8 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
         m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Déconnecter"));
         setStatus(tr("Connecté — %1").arg(v));
-        m_sessionBtn->setEnabled(m_validator.isReady());
+        platformToast(tr("ELM connecté"));
+        if (m_sessionBtn) m_sessionBtn->setEnabled(true);
         if (m_stack && m_stack->currentIndex() == 1)
             ensureSensorsPolling();
 #if defined(ELM_HAVE_BLUETOOTH)
@@ -94,7 +95,7 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
         if (m_sessionOn) stopSession();
         m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Connecter"));
-        m_sessionBtn->setEnabled(false);
+        if (m_sessionBtn) m_sessionBtn->setEnabled(true);
         setStatus(tr("Déconnecté."));
     });
     connect(m_elm, &elm::Elm327::errorOccurred, this, [this](const QString& e) {
@@ -102,6 +103,7 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
         m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Connecter"));
         setStatus(e, true);
+        platformToast(e);
     });
     connect(m_elm, &elm::Elm327::status, this, [this](const QString& s) { setStatus(s); });
     connect(m_elm, &elm::Elm327::pidResult, this, &DriveWindow::onPid);
@@ -346,6 +348,7 @@ void DriveWindow::showBtDevicePicker() {
     const int cur = m_btCombo ? std::max(0, m_btCombo->currentIndex()) : 0;
     m_btPickerList->setCurrentRow(cur);
     layoutBusyOverlay();
+    m_btPickerOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, false);
     m_btPickerOverlay->setVisible(true);
     m_btPickerOverlay->raise();
     m_btPickerOverlay->show();
@@ -355,8 +358,10 @@ void DriveWindow::showBtDevicePicker() {
 }
 
 void DriveWindow::hideBtDevicePicker() {
-    if (m_btPickerOverlay)
-        m_btPickerOverlay->setVisible(false);
+    if (!m_btPickerOverlay) return;
+    m_btPickerOverlay->setVisible(false);
+    m_btPickerOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+    m_btPickerOverlay->lower();
 }
 
 void DriveWindow::onBtPickerOk() {
@@ -467,6 +472,7 @@ void DriveWindow::buildUi() {
     m_busyOverlay->setStyleSheet(QStringLiteral(
         "#busyOverlay { background-color: #0f1520; }"));
     m_busyOverlay->setVisible(false);
+    m_busyOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     m_busyOverlay->raise();
     auto* ovLay = new QVBoxLayout(m_busyOverlay);
     ovLay->setContentsMargins(24, 24, 24, 24);
@@ -506,6 +512,7 @@ void DriveWindow::buildUi() {
     m_ecuPickerOverlay->setStyleSheet(QStringLiteral(
         "#ecuPickerOverlay { background-color: #0f1520; }"));
     m_ecuPickerOverlay->setVisible(false);
+    m_ecuPickerOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     auto* pickLay = new QVBoxLayout(m_ecuPickerOverlay);
     pickLay->setContentsMargins(24, 24, 24, 24);
     pickLay->addStretch();
@@ -554,6 +561,7 @@ void DriveWindow::buildUi() {
     m_btPickerOverlay->setStyleSheet(QStringLiteral(
         "#btPickerOverlay { background-color: #0f1520; }"));
     m_btPickerOverlay->setVisible(false);
+    m_btPickerOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     auto* btLay = new QVBoxLayout(m_btPickerOverlay);
     btLay->setContentsMargins(24, 24, 24, 24);
     btLay->addStretch();
@@ -761,13 +769,17 @@ QWidget* DriveWindow::buildDrivePage(QWidget* parent) {
     QFont sf = m_sessionBtn->font();
     sf.setPointSizeF(sf.pointSizeF() + 3); sf.setBold(true);
     m_sessionBtn->setFont(sf);
-    m_sessionBtn->setEnabled(false);
+    m_sessionBtn->setEnabled(true);
     connect(m_sessionBtn, &QPushButton::clicked, this, &DriveWindow::toggleSession);
     root->addWidget(m_sessionBtn);
 
     auto* shareBtn = new QPushButton(tr("Partager dernier log…"), page);
     connect(shareBtn, &QPushButton::clicked, this, &DriveWindow::shareLastLog);
     root->addWidget(shareBtn);
+
+    auto* logDirBtn = new QPushButton(tr("Dossier des logs…"), page);
+    connect(logDirBtn, &QPushButton::clicked, this, &DriveWindow::chooseLogDirectory);
+    root->addWidget(logDirBtn);
 
     auto* updBtn = new QPushButton(tr("Vérifier les mises à jour"), page);
     connect(updBtn, &QPushButton::clicked, this, &DriveWindow::checkUpdatesManual);
@@ -957,6 +969,7 @@ void DriveWindow::beginBusy(const QString& message, int max) {
     ++m_busyDepth;
     if (!m_busyOverlay) return;
     layoutBusyOverlay();
+    m_busyOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, false);
     m_busyOverlay->setVisible(true);
     m_busyOverlay->raise();
     m_busyOverlay->show();
@@ -988,7 +1001,7 @@ void DriveWindow::beginBusy(const QString& message, int max) {
 }
 
 void DriveWindow::setBusy(int value, const QString& message) {
-    if (!m_busyOverlay || !m_busyOverlay->isVisible()) return;
+    if (m_busyDepth <= 0 || !m_busyOverlay || !m_busyOverlay->isVisible()) return;
     if (!message.isEmpty()) {
         if (m_busyLabel) m_busyLabel->setText(message);
         setStatus(message);
@@ -1003,10 +1016,17 @@ void DriveWindow::endBusy() {
         --m_busyDepth;
     if (m_busyDepth > 0) return;
     if (m_busyPulse) m_busyPulse->stop();
-    if (m_busyOverlay)
+    if (m_busyOverlay) {
+        // Sous Android un overlay hide() peut encore avaler les touches :
+        // transparent + lower() après chargement tune (sinon Scan/Connect morts).
         m_busyOverlay->setVisible(false);
+        m_busyOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+        m_busyOverlay->lower();
+    }
     while (QApplication::overrideCursor())
         QApplication::restoreOverrideCursor();
+    // Vider les progress callbacks encore en file (évite raise() fantôme).
+    QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 }
 
 namespace {
@@ -1132,6 +1152,7 @@ void DriveWindow::showEcuPicker(const QByteArray& rom, const QString& path,
     m_ecuPickerCombo->setCurrentIndex(idx);
 
     layoutBusyOverlay();
+    m_ecuPickerOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, false);
     m_ecuPickerOverlay->setVisible(true);
     m_ecuPickerOverlay->raise();
     m_ecuPickerOverlay->show();
@@ -1147,8 +1168,10 @@ void DriveWindow::showEcuPicker(const QByteArray& rom, const QString& path,
 }
 
 void DriveWindow::hideEcuPicker() {
-    if (m_ecuPickerOverlay)
-        m_ecuPickerOverlay->setVisible(false);
+    if (!m_ecuPickerOverlay) return;
+    m_ecuPickerOverlay->setVisible(false);
+    m_ecuPickerOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+    m_ecuPickerOverlay->lower();
 }
 
 void DriveWindow::onEcuPickerOk() {
@@ -1301,7 +1324,9 @@ void DriveWindow::applyRomBinary(const QByteArray& rom, const QString& ecuId,
     m_validator.setProgressCallback(
         [this, ecuId, t0](int cur, int total, const QString& mapName) {
             QMetaObject::invokeMethod(this, [this, ecuId, t0, cur, total, mapName]() {
-                if (!m_busyOverlay || !m_busyBar || !m_busyLabel) return;
+                if (m_busyDepth <= 0 || !m_busyOverlay || !m_busyOverlay->isVisible())
+                    return;
+                if (!m_busyBar || !m_busyLabel) return;
                 const int sec = int((QDateTime::currentMSecsSinceEpoch() - t0) / 1000);
                 if (total > 0) {
                     if (m_busyBar->maximum() != total) {
@@ -1331,6 +1356,8 @@ void DriveWindow::applyRomBinary(const QByteArray& rom, const QString& ecuId,
     m_validator.clearProgressCallback();
     endBusy();
     while (m_busyDepth > 0) endBusy();
+    // Laisser filtrer les progress encore queue'd avant de réactiver les touches.
+    QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
     if (!ok) {
         QMessageBox::warning(this, tr("Import ROM"),
@@ -1351,12 +1378,13 @@ void DriveWindow::applyRomBinary(const QByteArray& rom, const QString& ecuId,
                  m_validator.romMd5().left(8))
             .arg(n)
             .arg(m_validator.isReady() ? tr("oui") : tr("non")));
-    m_sessionBtn->setEnabled(m_connected && m_validator.isReady());
+    m_sessionBtn->setEnabled(true);
     setStatus(m_validator.isReady()
                   ? tr("ROM chargée (%1 maps) — connecte l'ELM puis lance la session.")
                         .arg(n)
                   : tr("ROM chargée mais aucune map validable."),
               !m_validator.isReady());
+    platformToast(tr("ROM OK — connecte le Bluetooth"));
 }
 
 void DriveWindow::applyTunePackage(const ecu::TunePackage& pkg, const QString& path) {
@@ -1375,7 +1403,9 @@ void DriveWindow::applyTunePackage(const ecu::TunePackage& pkg, const QString& p
     m_validator.setProgressCallback(
         [this, t0](int cur, int total, const QString& mapName) {
             QMetaObject::invokeMethod(this, [this, t0, cur, total, mapName]() {
-                if (!m_busyBar) return;
+                if (m_busyDepth <= 0 || !m_busyOverlay || !m_busyOverlay->isVisible())
+                    return;
+                if (!m_busyBar || !m_busyLabel) return;
                 const int sec = int((QDateTime::currentMSecsSinceEpoch() - t0) / 1000);
                 if (total > 0) {
                     if (m_busyBar->maximum() != total) {
@@ -1413,12 +1443,13 @@ void DriveWindow::applyTunePackage(const ecu::TunePackage& pkg, const QString& p
                  pkg.manifest.romMd5.left(8))
             .arg(n)
             .arg(m_validator.isReady() ? tr("oui") : tr("non (relocalisation)")));
-    m_sessionBtn->setEnabled(m_connected && m_validator.isReady());
+    m_sessionBtn->setEnabled(true);
     setStatus(m_validator.isReady()
                   ? tr("Tune prêt (%1 maps) — connecte l'ELM puis lance la session.")
                         .arg(n)
                   : tr("Tune chargé mais aucune map validable (ROM/recipe)."),
               !m_validator.isReady());
+    platformToast(tr("Tune OK — connecte le Bluetooth"));
 }
 
 void DriveWindow::refreshPorts() {
@@ -1473,6 +1504,8 @@ void DriveWindow::toggleConnect() {
         m_connectBtn->setEnabled(true);
         return;
     }
+    // Toujours un retour visible (sinon « rien ne se passe » après un import ROM).
+    platformToast(tr("Connexion…"));
 #if defined(ELM_HAVE_BLUETOOTH)
     if (m_btCombo && m_btCombo->currentIndex() >= 0
         && !m_btCombo->currentData().toString().isEmpty()) {
@@ -1523,6 +1556,7 @@ void DriveWindow::toggleConnect() {
     const QString port = m_portCombo->currentData().toString();
     if (port.isEmpty()) {
         setStatus(tr("Choisis un port USB ou un appareil Bluetooth."), true);
+        platformToast(tr("Choisis d'abord le Bluetooth"));
         return;
     }
     m_connectBtn->setEnabled(false);
@@ -1540,7 +1574,17 @@ void DriveWindow::toggleSession() {
 }
 
 void DriveWindow::startSession() {
-    if (!m_connected || !m_validator.isReady() || m_sessionOn) return;
+    if (m_sessionOn) return;
+    if (!m_validator.isReady()) {
+        setStatus(tr("Importe d'abord un tune / une ROM valide."), true);
+        platformToast(tr("Importe un tune d'abord"));
+        return;
+    }
+    if (!m_connected) {
+        setStatus(tr("Connecte l'ELM (Bluetooth ou USB) avant de lancer la session."), true);
+        platformToast(tr("Connecte le Bluetooth d'abord"));
+        return;
+    }
     beginBusy(tr("Démarrage de la session…"));
     m_hyst.reset();
     m_hyst.setFailThreshold(3);
@@ -1671,20 +1715,29 @@ void DriveWindow::maybeAlert() {
 
 void DriveWindow::autoStartCsv() {
     if (m_csv) return;
-    const QString dir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
-                        + QStringLiteral("/datalog");
-    QDir().mkpath(dir);
+    const QString dir = logDirectory();
+    if (!QDir().mkpath(dir)) {
+        m_csvLabel->setText(tr("CSV : dossier inaccessible"));
+        setStatus(tr("Impossible de créer le dossier logs :\n%1").arg(dir), true);
+        platformToast(tr("Dossier logs inaccessible"));
+        return;
+    }
     m_lastCsv = dir + QStringLiteral("/drive_%1.csv")
                     .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd_HHmmss")));
     m_csv = new QFile(m_lastCsv, this);
     if (!m_csv->open(QIODevice::WriteOnly | QIODevice::Text)) {
+        const QString err = m_csv->errorString();
         m_csv->deleteLater(); m_csv = nullptr;
         m_csvLabel->setText(tr("CSV : échec"));
+        setStatus(tr("Écriture CSV impossible (%1) :\n%2").arg(err, m_lastCsv), true);
+        platformToast(tr("Échec écriture CSV"));
         return;
     }
     m_session.setCsvPath(m_lastCsv);
     QTextStream(m_csv) << "time,map,measured,expected,delta,unit,status,rpm,load\n";
     m_csvLabel->setText(tr("CSV : %1").arg(QFileInfo(m_lastCsv).fileName()));
+    setStatus(tr("Log CSV : %1").arg(m_lastCsv));
+    platformToast(tr("Log → %1").arg(QFileInfo(dir).fileName()));
 }
 
 void DriveWindow::autoStopCsv() {
@@ -1707,6 +1760,59 @@ void DriveWindow::appendCsv(const std::vector<ecu::ValidationResult>& results) {
            << r.unit << ',' << statusLabel(r.status) << ','
            << r.xPhys << ',' << r.yPhys << '\n';
     }
+    m_csv->flush();
+}
+
+QString DriveWindow::logDirectory() const {
+    QSettings s;
+    const QString custom = s.value(QStringLiteral("drive/logDir")).toString();
+    if (!custom.isEmpty() && QDir(custom).exists())
+        return custom;
+
+    // Public / accessible (pas le sandbox AppData invisible).
+    const QString docs = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    if (!docs.isEmpty())
+        return docs + QStringLiteral("/ECU_Drive/logs");
+
+    const QString dl = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    if (!dl.isEmpty())
+        return dl + QStringLiteral("/ECU_Drive/logs");
+
+    return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+         + QStringLiteral("/datalog");
+}
+
+void DriveWindow::chooseLogDirectory() {
+    const QString docs = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
+                         + QStringLiteral("/ECU_Drive/logs");
+    const QString dl = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)
+                       + QStringLiteral("/ECU_Drive/logs");
+#if defined(Q_OS_ANDROID)
+    // Pas de QFileDialog / QInputDialog (souvent morts sous Qt Android) :
+    // bascule Documents ↔ Téléchargements, chemins visibles dans Fichiers.
+    QSettings s;
+    const QString cur = s.value(QStringLiteral("drive/logDir")).toString();
+    const QString next = (cur == docs) ? dl : docs;
+    if (!QDir().mkpath(next)) {
+        setStatus(tr("Impossible de créer %1").arg(next), true);
+        platformToast(tr("Dossier logs inaccessible"));
+        return;
+    }
+    s.setValue(QStringLiteral("drive/logDir"), next);
+    const QString label = (next == docs)
+                              ? tr("Documents/ECU_Drive/logs")
+                              : tr("Téléchargements/ECU_Drive/logs");
+    setStatus(tr("Logs → %1\n(%2)").arg(label, next));
+    platformToast(tr("Logs → %1").arg(label));
+#else
+    const QString current = logDirectory();
+    QDir().mkpath(current);
+    const QString dir = QFileDialog::getExistingDirectory(
+        this, tr("Dossier des logs CSV"), current);
+    if (dir.isEmpty()) return;
+    QSettings().setValue(QStringLiteral("drive/logDir"), dir);
+    setStatus(tr("Logs → %1").arg(dir));
+#endif
 }
 
 void DriveWindow::showSummary(const ecu::SessionSummary& sum) {
@@ -1715,6 +1821,15 @@ void DriveWindow::showSummary(const ecu::SessionSummary& sum) {
         hot += tr("\n  (%1,%2) ×%3 |Δ|%4")
                    .arg(h.gx).arg(h.gy).arg(h.count)
                    .arg(h.meanAbsDelta(), 0, 'f', 1);
+    const QString csv = sum.csvPath.isEmpty() ? m_lastCsv : sum.csvPath;
+#if defined(Q_OS_ANDROID)
+    // QMessageBox modal souvent invisible / OK mort — résumé en status + toast.
+    setStatus(tr("Session terminée — OK %1 · Warn %2 · Fail %3 (%4 %%)\nCSV : %5")
+                  .arg(sum.ok).arg(sum.warn).arg(sum.fail)
+                  .arg(sum.okRatio(), 0, 'f', 0)
+                  .arg(csv));
+    platformToast(tr("Session finie — CSV sauvé"));
+#else
     QMessageBox::information(this, tr("Fin de session"),
         tr("Ticks %1\nOK %2 · Warn %3 · Fail %4\nDans tolérance : %5 %\n"
            "Pic |Δ| %6 sur %7\nHotspots:%8\n\nCSV : %9")
@@ -1723,16 +1838,24 @@ void DriveWindow::showSummary(const ecu::SessionSummary& sum) {
             .arg(sum.peakAbsDelta, 0, 'f', 1)
             .arg(sum.peakMap.isEmpty() ? QStringLiteral("—") : sum.peakMap)
             .arg(hot.isEmpty() ? tr("\n  (aucun)") : hot)
-            .arg(sum.csvPath.isEmpty() ? m_lastCsv : sum.csvPath));
+            .arg(csv));
+#endif
 }
 
 void DriveWindow::shareLastLog() {
     if (m_lastCsv.isEmpty() || !QFile::exists(m_lastCsv)) {
-        setStatus(tr("Aucun log à partager."), true);
+        // Ouvrir le dossier même sans session récente.
+        const QString dir = logDirectory();
+        QDir().mkpath(dir);
+        QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
+        setStatus(tr("Aucun CSV de session — dossier logs :\n%1").arg(dir), true);
+        platformToast(tr("Dossier logs ouvert"));
         return;
     }
-    QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(m_lastCsv).absolutePath()));
-    setStatus(tr("Dossier logs ouvert — partage le CSV."));
+    const QString dir = QFileInfo(m_lastCsv).absolutePath();
+    QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
+    setStatus(tr("Log : %1\nDossier ouvert.").arg(m_lastCsv));
+    platformToast(tr("Dossier logs ouvert"));
 }
 
 void DriveWindow::onUpdaterState() { refreshUpdateBanner(); }

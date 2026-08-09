@@ -90,6 +90,9 @@ private:
     void refreshSensorsTable();
     void ensureSensorsPolling();
     void showSummary(const ecu::SessionSummary& sum);
+    /** Dossier public des CSV (Documents/ECU_Drive/logs par défaut). */
+    QString logDirectory() const;
+    void chooseLogDirectory();
     void autoStartCsv();
     void autoStopCsv();
     void appendCsv(const std::vector<ecu::ValidationResult>& results);

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <manifest package="org.poisson48.ecudrive" xmlns:android="http://schemas.android.com/apk/res/android"
-    android:versionCode="183" android:versionName="1.7.13" android:installLocation="auto">
+    android:versionCode="184" android:versionName="1.7.14" android:installLocation="auto">
 
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
@@ -13,6 +13,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"/>
     <uses-permission android:name="android.permission.READ_MEDIA_FILES"/>
     <uses-feature android:name="android.hardware.usb.host" android:required="false"/>
     <uses-feature android:name="android.hardware.bluetooth" android:required="false"/>
