@@ -14,6 +14,7 @@
 class QLabel;
 class QPushButton;
 class QComboBox;
+class QListWidget;
 class QCheckBox;
 class QFrame;
 class QFile;
@@ -99,6 +100,11 @@ private:
     void ensureBtAgent();
     void setBtScanning(bool on);
     void refreshBtScanStatus();
+    void showBtDevicePicker();
+    void hideBtDevicePicker();
+    void onBtPickerOk();
+    void onBtPickerCancel();
+    void selectBestBtDevice();
     static bool likelyElmBtName(const QString& name);
     void selectLastBtDevice();
     struct BtDevice {
@@ -131,6 +137,8 @@ private:
     qint64   m_busyStartedMs = 0;
     QWidget* m_ecuPickerOverlay = nullptr;
     QComboBox* m_ecuPickerCombo = nullptr;
+    QWidget* m_btPickerOverlay = nullptr;
+    QListWidget* m_btPickerList = nullptr;
     QByteArray m_pendingRom;
     QString m_pendingRomPath;
     QString m_autoEcuId;

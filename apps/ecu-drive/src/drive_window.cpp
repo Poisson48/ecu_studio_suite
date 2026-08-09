@@ -13,6 +13,8 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QComboBox>
+#include <QListWidget>
+#include <QListWidgetItem>
 #include <QCheckBox>
 #include <QFrame>
 #include <QStackedWidget>
@@ -37,6 +39,7 @@
 #include <QEvent>
 #include <QResizeEvent>
 #include <QPixmap>
+#include <QSize>
 #include <thread>
 #include <functional>
 #include <type_traits>
@@ -170,17 +173,27 @@ void DriveWindow::ensureBtAgent() {
     });
     connect(m_btAgent, &QBluetoothDeviceDiscoveryAgent::finished, this, [this]() {
         setBtScanning(false);
-        rebuildBtCombo();
-        selectLastBtDevice();
+        selectBestBtDevice();
         const int shown = m_btCombo ? m_btCombo->count() : 0;
         const int found = static_cast<int>(m_btDevices.size());
-        setStatus(tr("Scan BT terminé — %1 affiché(s) / %2 trouvé(s).\n"
-                     "Module bleu : appairé (PIN 1234/0000) ?")
-                      .arg(shown)
-                      .arg(found));
-        platformToast(found > 0
-                          ? tr("Scan OK — %1 appareil(s)").arg(found)
-                          : tr("Scan BT : aucun appareil"));
+        if (shown == 1) {
+            setStatus(tr("Scan BT terminé — 1 appareil sélectionné :\n%1\n"
+                         "Appuie sur Connecter (ou tape la liste pour changer).")
+                          .arg(m_btCombo->currentText()));
+            platformToast(tr("BT prêt : %1").arg(m_btCombo->currentText()));
+        } else if (shown > 1) {
+            setStatus(tr("Scan BT terminé — %1 affiché(s) / %2 trouvé(s).\n"
+                         "Tape la liste Bluetooth pour choisir.")
+                          .arg(shown).arg(found));
+            platformToast(tr("Scan OK — choisis l'appareil"));
+            // Ouvrir le sélecteur in-app (dropdown QComboBox cassé sur Android).
+            QTimer::singleShot(100, this, [this]() { showBtDevicePicker(); });
+        } else {
+            setStatus(tr("Scan BT terminé — aucun appareil affiché (%1 trouvé(s)).\n"
+                         "Décoche le filtre OBD / ELM, ou appairer le module.")
+                          .arg(found), true);
+            platformToast(tr("Scan BT : rien à sélectionner"));
+        }
     });
     connect(m_btAgent, &QBluetoothDeviceDiscoveryAgent::errorOccurred, this,
             [this](QBluetoothDeviceDiscoveryAgent::Error) {
@@ -204,11 +217,14 @@ void DriveWindow::ensureBtAgent() {
             if (m_btAgent && m_btAgent->isActive())
                 m_btAgent->stop();
             setBtScanning(false);
-            rebuildBtCombo();
+            selectBestBtDevice();
             const int found = static_cast<int>(m_btDevices.size());
-            setStatus(tr("Scan BT arrêté (%1 trouvé(s)) — sélectionne un appareil.")
-                          .arg(found));
+            const int shown = m_btCombo ? m_btCombo->count() : 0;
+            setStatus(tr("Scan BT arrêté — %1 affiché(s) / %2 trouvé(s).")
+                          .arg(shown).arg(found));
             platformToast(tr("Scan BT terminé (%1)").arg(found));
+            if (shown > 1)
+                QTimer::singleShot(100, this, [this]() { showBtDevicePicker(); });
         });
     }
 }
@@ -254,21 +270,116 @@ void DriveWindow::rebuildBtCombo() {
     if (!m_btCombo) return;
     const QString keep = m_btCombo->currentData().toString();
     m_btCombo->clear();
-    const bool onlyObd = m_btObdOnlyChk && m_btObdOnlyChk->isChecked();
-    std::vector<BtDevice> ordered = m_btDevices;
-    std::stable_partition(ordered.begin(), ordered.end(),
-                          [](const BtDevice& d) { return d.likelyObd; });
-    for (const auto& d : ordered) {
-        if (onlyObd && !d.likelyObd) continue;
-        const QString label = (d.likelyObd ? QStringLiteral("★ ") : QString())
-            + (d.name.isEmpty() ? d.addr
-                                : QStringLiteral("%1 (%2)").arg(d.name, d.addr));
-        m_btCombo->addItem(label, d.addr);
+    bool onlyObd = m_btObdOnlyChk && m_btObdOnlyChk->isChecked();
+    auto fill = [&](bool obdOnly) {
+        m_btCombo->clear();
+        std::vector<BtDevice> ordered = m_btDevices;
+        std::stable_partition(ordered.begin(), ordered.end(),
+                              [](const BtDevice& d) { return d.likelyObd; });
+        for (const auto& d : ordered) {
+            if (obdOnly && !d.likelyObd) continue;
+            const QString label = (d.likelyObd ? QStringLiteral("★ ") : QString())
+                + (d.name.isEmpty() ? d.addr
+                                    : QStringLiteral("%1 (%2)").arg(d.name, d.addr));
+            m_btCombo->addItem(label, d.addr);
+        }
+    };
+    fill(onlyObd);
+    // Filtre OBD trop strict (dongle sans nom) → afficher tout plutôt que liste vide.
+    if (m_btCombo->count() == 0 && onlyObd && !m_btDevices.empty()) {
+        if (m_btObdOnlyChk)
+            m_btObdOnlyChk->setChecked(false);
+        onlyObd = false;
+        fill(false);
+        setStatus(tr("Filtre OBD désactivé : %1 appareil(s) sans nom OBD/ELM.")
+                      .arg(static_cast<int>(m_btDevices.size())));
+        platformToast(tr("Filtre OBD off — vois tous les BT"));
     }
-    if (m_btCombo->count() == 0 && onlyObd && !m_btDevices.empty())
-        m_btCombo->setPlaceholderText(tr("Aucun OBD — décoche le filtre"));
-    const int idx = m_btCombo->findData(keep);
-    if (idx >= 0) m_btCombo->setCurrentIndex(idx);
+    if (m_btCombo->count() == 0) {
+        m_btCombo->setPlaceholderText(tr("Aucun appareil — Scan BT"));
+        return;
+    }
+    int idx = m_btCombo->findData(keep);
+    if (idx < 0)
+        idx = 0;
+    // Préférer un OBD/ELM si présent.
+    for (int i = 0; i < m_btCombo->count(); ++i) {
+        if (m_btCombo->itemText(i).startsWith(QLatin1String("★"))) {
+            idx = i;
+            break;
+        }
+    }
+    m_btCombo->setCurrentIndex(idx);
+    m_btCombo->setEnabled(true);
+}
+
+void DriveWindow::selectBestBtDevice() {
+    rebuildBtCombo();
+    selectLastBtDevice();
+    if (!m_btCombo || m_btCombo->count() == 0) return;
+    // Si lastBt n'a rien sélectionné d'utile, forcer le meilleur.
+    if (m_btCombo->currentData().toString().isEmpty())
+        m_btCombo->setCurrentIndex(0);
+    const QString addr = m_btCombo->currentData().toString();
+    if (!addr.isEmpty())
+        QSettings().setValue(QStringLiteral("drive/lastBt"), addr);
+}
+
+void DriveWindow::showBtDevicePicker() {
+    if (!m_btPickerOverlay || !m_btPickerList) return;
+    if (m_btDevices.empty()) {
+        setStatus(tr("Aucun appareil — lance un Scan BT d'abord."), true);
+        platformToast(tr("Lance Scan BT d'abord"));
+        return;
+    }
+    rebuildBtCombo();
+    m_btPickerList->clear();
+    for (int i = 0; i < (m_btCombo ? m_btCombo->count() : 0); ++i) {
+        auto* item = new QListWidgetItem(m_btCombo->itemText(i), m_btPickerList);
+        item->setData(Qt::UserRole, m_btCombo->itemData(i));
+        item->setSizeHint(QSize(0, 48));
+    }
+    if (m_btPickerList->count() == 0) {
+        setStatus(tr("Liste vide — décoche le filtre OBD."), true);
+        return;
+    }
+    const int cur = m_btCombo ? std::max(0, m_btCombo->currentIndex()) : 0;
+    m_btPickerList->setCurrentRow(cur);
+    layoutBusyOverlay();
+    m_btPickerOverlay->setVisible(true);
+    m_btPickerOverlay->raise();
+    m_btPickerOverlay->show();
+    for (int i = 0; i < 3; ++i)
+        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    m_btPickerOverlay->repaint();
+}
+
+void DriveWindow::hideBtDevicePicker() {
+    if (m_btPickerOverlay)
+        m_btPickerOverlay->setVisible(false);
+}
+
+void DriveWindow::onBtPickerOk() {
+    if (!m_btPickerList || !m_btCombo) return;
+    QListWidgetItem* item = m_btPickerList->currentItem();
+    hideBtDevicePicker();
+    if (!item) return;
+    const QString addr = item->data(Qt::UserRole).toString();
+    const QString label = item->text();
+    if (addr.isEmpty()) return;
+    int idx = m_btCombo->findData(addr);
+    if (idx < 0) {
+        m_btCombo->addItem(label, addr);
+        idx = m_btCombo->count() - 1;
+    }
+    m_btCombo->setCurrentIndex(idx);
+    QSettings().setValue(QStringLiteral("drive/lastBt"), addr);
+    setStatus(tr("BT sélectionné : %1").arg(label));
+    platformToast(tr("BT : %1").arg(label));
+}
+
+void DriveWindow::onBtPickerCancel() {
+    hideBtDevicePicker();
 }
 
 void DriveWindow::selectLastBtDevice() {
@@ -436,6 +547,64 @@ void DriveWindow::buildUi() {
     connect(okBtn, &QPushButton::clicked, this, &DriveWindow::onEcuPickerOk);
     connect(cancelBtn, &QPushButton::clicked, this, &DriveWindow::onEcuPickerCancel);
 
+#if defined(ELM_HAVE_BLUETOOTH)
+    // Sélecteur BT in-app : le popup QComboBox ne s'ouvre pas dans un ScrollArea Android.
+    m_btPickerOverlay = new QWidget(central);
+    m_btPickerOverlay->setObjectName(QStringLiteral("btPickerOverlay"));
+    m_btPickerOverlay->setStyleSheet(QStringLiteral(
+        "#btPickerOverlay { background-color: #0f1520; }"));
+    m_btPickerOverlay->setVisible(false);
+    auto* btLay = new QVBoxLayout(m_btPickerOverlay);
+    btLay->setContentsMargins(24, 24, 24, 24);
+    btLay->addStretch();
+    auto* btFrame = new QFrame(m_btPickerOverlay);
+    btFrame->setStyleSheet(QStringLiteral(
+        "QFrame { background:#1e3a5f; border:2px solid #60a5fa; border-radius:14px; }"));
+    auto* bf = new QVBoxLayout(btFrame);
+    bf->setContentsMargins(20, 18, 20, 18);
+    bf->setSpacing(12);
+    auto* btTitle = new QLabel(tr("Choisir le Bluetooth"), btFrame);
+    btTitle->setAlignment(Qt::AlignCenter);
+    btTitle->setStyleSheet(QStringLiteral(
+        "color:#f8fafc; font-size:18px; font-weight:700; background:transparent; border:none;"));
+    auto* btHelp = new QLabel(
+        tr("Sélectionne le dongle ELM327 (souvent OBDII / V-LINK),\n"
+           "puis OK. Il doit être appairé (PIN 1234 ou 0000)."),
+        btFrame);
+    btHelp->setWordWrap(true);
+    btHelp->setAlignment(Qt::AlignCenter);
+    btHelp->setStyleSheet(QStringLiteral(
+        "color:#93c5fd; font-size:13px; background:transparent; border:none;"));
+    m_btPickerList = new QListWidget(btFrame);
+    m_btPickerList->setMinimumHeight(160);
+    m_btPickerList->setStyleSheet(QStringLiteral(
+        "QListWidget { background:#111827; border:1px solid #334155; border-radius:8px; color:#e6edf3; }"
+        "QListWidget::item { padding:10px; min-height:40px; }"
+        "QListWidget::item:selected { background:#2563eb; color:#ffffff; }"));
+    connect(m_btPickerList, &QListWidget::itemClicked, this, [this](QListWidgetItem*) {
+        // Tap = sélection ; OK valide (évite double action accidentelle).
+    });
+    connect(m_btPickerList, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem*) {
+        onBtPickerOk();
+    });
+    auto* btBtns = new QHBoxLayout;
+    auto* btCancel = new QPushButton(tr("Annuler"), btFrame);
+    btCancel->setMinimumHeight(44);
+    auto* btOk = new QPushButton(tr("OK"), btFrame);
+    btOk->setObjectName(QStringLiteral("accentBtn"));
+    btOk->setMinimumHeight(44);
+    btBtns->addWidget(btCancel);
+    btBtns->addWidget(btOk, 1);
+    bf->addWidget(btTitle);
+    bf->addWidget(btHelp);
+    bf->addWidget(m_btPickerList);
+    bf->addLayout(btBtns);
+    btLay->addWidget(btFrame);
+    btLay->addStretch();
+    connect(btOk, &QPushButton::clicked, this, &DriveWindow::onBtPickerOk);
+    connect(btCancel, &QPushButton::clicked, this, &DriveWindow::onBtPickerCancel);
+#endif
+
     central->installEventFilter(this);
     layoutBusyOverlay();
 
@@ -502,11 +671,14 @@ QWidget* DriveWindow::buildDrivePage(QWidget* parent) {
 #if defined(ELM_HAVE_BLUETOOTH)
     auto* btRow = new QHBoxLayout;
     m_btCombo = new QComboBox(page);
-    m_btCombo->setMinimumHeight(36);
+    m_btCombo->setMinimumHeight(44);
     m_btCombo->setMaxVisibleItems(12);
     m_btCombo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
     m_btCombo->setMinimumContentsLength(18);
     m_btCombo->setPlaceholderText(tr("Bluetooth ELM327…"));
+    // Android : le popup natif du combo dans un ScrollArea ne s'ouvre pas.
+    // On intercepte le clic pour ouvrir l'overlay in-app.
+    m_btCombo->installEventFilter(this);
     m_scanBtBtn = new QPushButton(tr("Scan BT"), page);
     connect(m_scanBtBtn, &QPushButton::clicked, this, &DriveWindow::startBtScan);
     btRow->addWidget(m_btCombo, 1);
@@ -751,6 +923,13 @@ void DriveWindow::layoutBusyOverlay() {
         if (m_ecuPickerOverlay->isVisible())
             m_ecuPickerOverlay->raise();
     }
+#if defined(ELM_HAVE_BLUETOOTH)
+    if (m_btPickerOverlay) {
+        m_btPickerOverlay->setGeometry(r);
+        if (m_btPickerOverlay->isVisible())
+            m_btPickerOverlay->raise();
+    }
+#endif
 }
 
 bool DriveWindow::eventFilter(QObject* watched, QEvent* event) {
@@ -758,6 +937,19 @@ bool DriveWindow::eventFilter(QObject* watched, QEvent* event) {
         && (event->type() == QEvent::Resize || event->type() == QEvent::Show)) {
         layoutBusyOverlay();
     }
+#if defined(ELM_HAVE_BLUETOOTH)
+    // Remplacer le popup QComboBox (souvent mort sous Android / ScrollArea).
+    if (watched == m_btCombo
+        && (event->type() == QEvent::MouseButtonPress
+            || event->type() == QEvent::MouseButtonDblClick
+            || event->type() == QEvent::MouseButtonRelease)) {
+        if (event->type() != QEvent::MouseButtonRelease) {
+            if (!m_btScanning)
+                QTimer::singleShot(0, this, [this]() { showBtDevicePicker(); });
+        }
+        return true;
+    }
+#endif
     return QMainWindow::eventFilter(watched, event);
 }
 
