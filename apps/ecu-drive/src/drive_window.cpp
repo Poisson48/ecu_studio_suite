@@ -31,7 +31,6 @@
 #include <QDir>
 #include <QApplication>
 #include <QSettings>
-#include <QDesktopServices>
 #include <QUrl>
 #include <QFileInfo>
 #include <QTimer>
@@ -910,13 +909,9 @@ QWidget* DriveWindow::buildDrivePage(QWidget* parent) {
     connect(m_sessionBtn, &QPushButton::clicked, this, &DriveWindow::toggleSession);
     root->addWidget(m_sessionBtn);
 
-    auto* shareBtn = new QPushButton(tr("Partager dernier log…"), page);
+    auto* shareBtn = new QPushButton(tr("Enregistrer le log sous…"), page);
     connect(shareBtn, &QPushButton::clicked, this, &DriveWindow::shareLastLog);
     root->addWidget(shareBtn);
-
-    auto* logDirBtn = new QPushButton(tr("Dossier des logs…"), page);
-    connect(logDirBtn, &QPushButton::clicked, this, &DriveWindow::chooseLogDirectory);
-    root->addWidget(logDirBtn);
 
     auto* updBtn = new QPushButton(tr("Vérifier les mises à jour"), page);
     connect(updBtn, &QPushButton::clicked, this, &DriveWindow::checkUpdatesManual);
@@ -1862,7 +1857,9 @@ void DriveWindow::maybeAlert() {
 
 void DriveWindow::autoStartCsv() {
     if (m_csv) return;
-    const QString dir = logDirectory();
+    // Scratch toujours writable (sandbox). L'utilisateur choisit ensuite
+    // un emplacement accessible via « Enregistrer sous ».
+    const QString dir = sessionLogScratchDir();
     if (!QDir().mkpath(dir)) {
         m_csvLabel->setText(tr("CSV : dossier inaccessible"));
         setStatus(tr("Impossible de créer le dossier logs :\n%1").arg(dir), true);
@@ -1883,8 +1880,8 @@ void DriveWindow::autoStartCsv() {
     m_session.setCsvPath(m_lastCsv);
     QTextStream(m_csv) << "time,map,measured,expected,delta,unit,status,rpm,load\n";
     m_csvLabel->setText(tr("CSV : %1").arg(QFileInfo(m_lastCsv).fileName()));
-    setStatus(tr("Log CSV : %1").arg(m_lastCsv));
-    platformToast(tr("Log → %1").arg(QFileInfo(dir).fileName()));
+    setStatus(tr("Log CSV en cours — enregistrement sous à la fin"));
+    platformToast(tr("Log CSV démarré"));
 }
 
 void DriveWindow::autoStopCsv() {
@@ -1911,56 +1908,81 @@ void DriveWindow::appendCsv(const std::vector<ecu::ValidationResult>& results) {
     m_csv->flush();
 }
 
-QString DriveWindow::logDirectory() const {
+QString DriveWindow::sessionLogScratchDir() const {
+    const QString cache = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    if (!cache.isEmpty())
+        return cache + QStringLiteral("/datalog");
+    return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+         + QStringLiteral("/datalog");
+}
+
+QString DriveWindow::suggestedLogSaveDir() const {
     QSettings s;
     const QString custom = s.value(QStringLiteral("drive/logDir")).toString();
     if (!custom.isEmpty() && QDir(custom).exists())
         return custom;
 
-    // Public / accessible (pas le sandbox AppData invisible).
-    const QString docs = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-    if (!docs.isEmpty())
-        return docs + QStringLiteral("/ECU_Drive/logs");
-
     const QString dl = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
     if (!dl.isEmpty())
-        return dl + QStringLiteral("/ECU_Drive/logs");
+        return dl;
 
-    return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
-         + QStringLiteral("/datalog");
+    const QString docs = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    if (!docs.isEmpty())
+        return docs;
+
+    return sessionLogScratchDir();
 }
 
-void DriveWindow::chooseLogDirectory() {
-    const QString docs = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
-                         + QStringLiteral("/ECU_Drive/logs");
-    const QString dl = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)
-                       + QStringLiteral("/ECU_Drive/logs");
-#if defined(Q_OS_ANDROID)
-    // Pas de QFileDialog / QInputDialog (souvent morts sous Qt Android) :
-    // bascule Documents ↔ Téléchargements, chemins visibles dans Fichiers.
-    QSettings s;
-    const QString cur = s.value(QStringLiteral("drive/logDir")).toString();
-    const QString next = (cur == docs) ? dl : docs;
-    if (!QDir().mkpath(next)) {
-        setStatus(tr("Impossible de créer %1").arg(next), true);
-        platformToast(tr("Dossier logs inaccessible"));
-        return;
+QString DriveWindow::promptSaveLogAs(const QString& sourceCsv) {
+    if (sourceCsv.isEmpty() || !QFile::exists(sourceCsv))
+        return {};
+
+    const QString name = QFileInfo(sourceCsv).fileName();
+    const QString suggestDir = suggestedLogSaveDir();
+    QDir().mkpath(suggestDir);
+    const QString suggested = suggestDir + QLatin1Char('/') + name;
+
+    const QString dest = QFileDialog::getSaveFileName(
+        this, tr("Enregistrer le log sous"),
+        suggested, tr("CSV (*.csv)"));
+    if (dest.isEmpty())
+        return {};
+
+    const QString srcAbs = QFileInfo(sourceCsv).absoluteFilePath();
+    const QString dstAbs = QFileInfo(dest).absoluteFilePath();
+    if (!dstAbs.isEmpty() && srcAbs == dstAbs)
+        return dest;
+
+    // QFile::copy refuse d'écraser ; content:// Android : fallback read/write.
+    if (QFile::exists(dest))
+        QFile::remove(dest);
+
+    bool ok = QFile::copy(sourceCsv, dest);
+    if (!ok) {
+        QFile in(sourceCsv);
+        QFile out(dest);
+        if (in.open(QIODevice::ReadOnly) && out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+            const qint64 n = out.write(in.readAll());
+            out.flush();
+            ok = (n >= 0 && out.error() == QFile::NoError);
+        }
     }
-    s.setValue(QStringLiteral("drive/logDir"), next);
-    const QString label = (next == docs)
-                              ? tr("Documents/ECU_Drive/logs")
-                              : tr("Téléchargements/ECU_Drive/logs");
-    setStatus(tr("Logs → %1\n(%2)").arg(label, next));
-    platformToast(tr("Logs → %1").arg(label));
-#else
-    const QString current = logDirectory();
-    QDir().mkpath(current);
-    const QString dir = QFileDialog::getExistingDirectory(
-        this, tr("Dossier des logs CSV"), current);
-    if (dir.isEmpty()) return;
-    QSettings().setValue(QStringLiteral("drive/logDir"), dir);
-    setStatus(tr("Logs → %1").arg(dir));
-#endif
+    if (!ok) {
+        setStatus(tr("Échec Enregistrer sous :\n%1").arg(dest), true);
+        platformToast(tr("Échec enregistrement log"));
+        return {};
+    }
+
+    const QString parent = QFileInfo(dest).absolutePath();
+    if (!parent.isEmpty() && !parent.startsWith(QStringLiteral("content:")))
+        QSettings().setValue(QStringLiteral("drive/logDir"), parent);
+
+    m_lastCsv = dest;
+    m_session.setCsvPath(dest);
+    m_csvLabel->setText(tr("CSV : %1").arg(QFileInfo(dest).fileName()));
+    setStatus(tr("Log enregistré :\n%1").arg(dest));
+    platformToast(tr("Log enregistré"));
+    return dest;
 }
 
 void DriveWindow::showInfoDialog(const QString& title, const QString& body,
@@ -1997,41 +2019,65 @@ void DriveWindow::showSummary(const ecu::SessionSummary& sum) {
         hot += tr("\n  (%1,%2) ×%3 |Δ|%4")
                    .arg(h.gx).arg(h.gy).arg(h.count)
                    .arg(h.meanAbsDelta(), 0, 'f', 1);
-    const QString csv = sum.csvPath.isEmpty() ? m_lastCsv : sum.csvPath;
-    QString body = tr("Ticks %1\nOK %2 · Warn %3 · Fail %4\nDans tolérance : %5 %\n"
-                      "Pic |Δ| %6 sur %7\nHotspots:%8\n\n"
-                      "Export logs terminé.\nCSV :\n%9")
-                       .arg(sum.ticks).arg(sum.ok).arg(sum.warn).arg(sum.fail)
-                       .arg(sum.okRatio(), 0, 'f', 1)
-                       .arg(sum.peakAbsDelta, 0, 'f', 1)
-                       .arg(sum.peakMap.isEmpty() ? QStringLiteral("—") : sum.peakMap)
-                       .arg(hot.isEmpty() ? tr("\n  (aucun)") : hot)
-                       .arg(csv);
-    if (!m_pendingDisconnectReason.isEmpty()) {
-        body += tr("\n\n—\nModule déconnecté pendant la session :\n%1")
-                    .arg(m_pendingDisconnectReason);
-        m_pendingDisconnectReason.clear();
+    const QString scratch = sum.csvPath.isEmpty() ? m_lastCsv : sum.csvPath;
+
+    auto present = [this, sum, hot](const QString& csv) {
+        QString body = tr("Ticks %1\nOK %2 · Warn %3 · Fail %4\nDans tolérance : %5 %\n"
+                          "Pic |Δ| %6 sur %7\nHotspots:%8\n\n"
+                          "Export logs terminé.\nCSV :\n%9")
+                           .arg(sum.ticks).arg(sum.ok).arg(sum.warn).arg(sum.fail)
+                           .arg(sum.okRatio(), 0, 'f', 1)
+                           .arg(sum.peakAbsDelta, 0, 'f', 1)
+                           .arg(sum.peakMap.isEmpty() ? QStringLiteral("—") : sum.peakMap)
+                           .arg(hot.isEmpty() ? tr("\n  (aucun)") : hot)
+                           .arg(csv.isEmpty() ? tr("(aucun)") : csv);
+        if (!m_pendingDisconnectReason.isEmpty()) {
+            body += tr("\n\n—\nModule déconnecté pendant la session :\n%1")
+                        .arg(m_pendingDisconnectReason);
+            m_pendingDisconnectReason.clear();
+        }
+        if (!csv.isEmpty() && csv.contains(QStringLiteral("/datalog/"))) {
+            body += tr("\n\nAstuce : utilise « Enregistrer le log sous… » "
+                       "pour le copier dans Téléchargements / Documents.");
+        }
+        setStatus(tr("Export logs OK — %1")
+                      .arg(csv.isEmpty() ? QStringLiteral("—") : QFileInfo(csv).fileName()));
+        platformToast(tr("Export logs terminé"));
+        showInfoDialog(tr("Export des logs terminé"), body, tr("OK"));
+    };
+
+    if (scratch.isEmpty() || !QFile::exists(scratch)) {
+        present(scratch);
+        return;
     }
-    setStatus(tr("Export logs OK — %1").arg(QFileInfo(csv).fileName()));
-    platformToast(tr("Export logs terminé"));
-    showInfoDialog(tr("Export des logs terminé"), body, tr("OK"));
+
+    // Sous Android, laisser l'UI se stabiliser avant le dialogue système.
+#if defined(Q_OS_ANDROID)
+    constexpr int kAfterSessionMs = 300;
+#else
+    constexpr int kAfterSessionMs = 0;
+#endif
+    QTimer::singleShot(kAfterSessionMs, this, [this, scratch, present]() {
+        const QString saved = promptSaveLogAs(scratch);
+        present(saved.isEmpty() ? scratch : saved);
+    });
 }
 
 void DriveWindow::shareLastLog() {
     if (m_lastCsv.isEmpty() || !QFile::exists(m_lastCsv)) {
-        const QString dir = logDirectory();
-        QDir().mkpath(dir);
-        QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
         showInfoDialog(tr("Logs"),
-            tr("Aucun CSV de session récente.\n\nDossier ouvert :\n%1").arg(dir));
+            tr("Aucun CSV de session récente.\n\n"
+               "Lance une session conduite, puis utilise "
+               "« Enregistrer le log sous… »."));
         return;
     }
-    const QString dir = QFileInfo(m_lastCsv).absolutePath();
-    QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
-    showInfoDialog(tr("Export des logs terminé"),
-        tr("Fichier CSV prêt à partager :\n\n%1\n\n"
-           "Le dossier Fichiers a été ouvert.")
-            .arg(m_lastCsv));
+    const QString saved = promptSaveLogAs(m_lastCsv);
+    if (saved.isEmpty()) {
+        setStatus(tr("Enregistrement annulé."));
+        return;
+    }
+    showInfoDialog(tr("Log enregistré"),
+        tr("Fichier CSV enregistré ici :\n\n%1").arg(saved));
 }
 
 void DriveWindow::onUpdaterState() { refreshUpdateBanner(); }

@@ -94,9 +94,16 @@ private:
     void refreshSensorsTable();
     void ensureSensorsPolling();
     void showSummary(const ecu::SessionSummary& sum);
-    /** Dossier public des CSV (Documents/ECU_Drive/logs par défaut). */
-    QString logDirectory() const;
-    void chooseLogDirectory();
+    /** Dossier scratch (toujours writable) pour l'enregistrement live. */
+    QString sessionLogScratchDir() const;
+    /** Dernier dossier « Enregistrer sous » (suggestion), sinon Téléchargements. */
+    QString suggestedLogSaveDir() const;
+    /**
+     * Dialogue Enregistrer sous → copie le CSV scratch vers un chemin
+     * accessible (SAF / content:// sous Android). Retourne le chemin choisi
+     * ou QString() si annulé / échec.
+     */
+    QString promptSaveLogAs(const QString& sourceCsv);
     void autoStartCsv();
     void autoStopCsv();
     void appendCsv(const std::vector<ecu::ValidationResult>& results);
