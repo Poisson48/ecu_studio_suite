@@ -85,3 +85,27 @@ TEST(Obd2, ParseFreezeFrameRpm) {
     ASSERT_TRUE(v.has_value());
     EXPECT_DOUBLE_EQ(*v, 1726.0);
 }
+
+TEST(Obd2, DecodeSupportedPidBitmap) {
+    // Réponse classique 41 00 BE 1F A8 13
+    const std::uint8_t data[4] = { 0xBE, 0x1F, 0xA8, 0x13 };
+    bool next = false;
+    const auto pids = decodeSupportedPidBitmap(0x00, data, 4, &next);
+    EXPECT_TRUE(next); // bit PID 0x20
+    EXPECT_TRUE(pids.contains(0x01));
+    EXPECT_FALSE(pids.contains(0x02));
+    EXPECT_TRUE(pids.contains(0x0C));
+    EXPECT_TRUE(pids.contains(0x0D));
+    EXPECT_TRUE(pids.contains(0x10));
+    EXPECT_TRUE(pids.contains(0x11));
+    EXPECT_FALSE(pids.contains(0x20)); // indicateur next, pas un capteur
+}
+
+TEST(Obd2, LivePidsAllHaveInterpret) {
+    for (const auto& p : livePids()) {
+        // Au moins 1 octet (certains PID en demandent 2 — on fournit 2).
+        const std::uint8_t data[2] = { 0x40, 0x00 };
+        EXPECT_TRUE(interpret(p.pid, data, 2).has_value())
+            << "PID 0x" << std::hex << int(p.pid) << " sans formule interpret()";
+    }
+}

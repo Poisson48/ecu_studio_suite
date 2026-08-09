@@ -148,6 +148,28 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
     });
     connect(m_elm, &elm::Elm327::status, this, [this](const QString& s) { setStatus(s); });
     connect(m_elm, &elm::Elm327::pidResult, this, &DriveWindow::onPid);
+    connect(m_elm, &elm::Elm327::supportedPidsReady, this, [this](const QList<quint8>& pids) {
+        m_ecuSupportedPids = QSet<quint8>(pids.begin(), pids.end());
+        if (!m_stack || m_stack->currentIndex() != 1 || m_sessionOn || !m_connected)
+            return;
+        QList<std::uint8_t> qp;
+        for (const auto& p : ecu::obd2::livePids()) {
+            if (m_ecuSupportedPids.isEmpty() || m_ecuSupportedPids.contains(p.pid))
+                qp.append(p.pid);
+        }
+        if (qp.isEmpty()) {
+            for (const auto& p : ecu::obd2::livePids())
+                qp.append(p.pid);
+        }
+        m_elm->startPolling(qp, 150);
+        if (m_sensorsStatus) {
+            m_sensorsStatus->setText(
+                tr("Polling %1 PID(s) supportés (catalogue %2). N/S = non supporté.")
+                    .arg(qp.size())
+                    .arg(ecu::obd2::livePids().size()));
+        }
+        refreshSensorsTable();
+    });
 
     connect(m_updater, &Updater::stateChanged, this, &DriveWindow::onUpdaterState);
     connect(m_updater, &Updater::progressChanged, this, &DriveWindow::onUpdaterState);
@@ -973,11 +995,12 @@ QWidget* DriveWindow::buildSensorsPage(QWidget* parent) {
     root->setSpacing(8);
     root->setSizeConstraint(QLayout::SetMinimumSize);
 
-    auto* title = new QLabel(tr("Tous les capteurs OBD (mode 01)"), page);
+    auto* title = new QLabel(tr("Capteurs OBD mode 01"), page);
     title->setStyleSheet(QStringLiteral("color:#e6edf3; font-weight:700; font-size:16px;"));
     root->addWidget(title);
 
-    m_sensorsStatus = new QLabel(tr("Connecte un ELM327 pour lire les PID."), page);
+    m_sensorsStatus = new QLabel(
+        tr("Connecte un ELM327 : découverte des PID supportés puis polling."), page);
     m_sensorsStatus->setWordWrap(true);
     m_sensorsStatus->setStyleSheet(QStringLiteral("color:#93c5fd; font-size:12px;"));
     root->addWidget(m_sensorsStatus);
@@ -1057,12 +1080,11 @@ void DriveWindow::ensureSensorsPolling() {
             m_sensorsStatus->setText(tr("Session conduite active — PID de validation."));
         return;
     }
-    QList<std::uint8_t> qp;
-    for (const auto& p : ecu::obd2::livePids())
-        qp.append(p.pid);
-    m_elm->startPolling(qp, 200);
+    m_ecuSupportedPids.clear();
     if (m_sensorsStatus)
-        m_sensorsStatus->setText(tr("Polling %1 PID(s)…").arg(qp.size()));
+        m_sensorsStatus->setText(tr("Découverte des PID supportés par l'ECU…"));
+    platformToast(tr("Scan PID OBD…"));
+    m_elm->probeSupportedPids();
 }
 
 void DriveWindow::refreshSensorsTable() {
@@ -1071,13 +1093,21 @@ void DriveWindow::refreshSensorsTable() {
         if (!valItem) continue;
         const quint8 pid = it.key();
         if (!m_live.contains(pid)) {
-            valItem->setText(QStringLiteral("—"));
+            if (!m_ecuSupportedPids.isEmpty() && !m_ecuSupportedPids.contains(pid)) {
+                valItem->setText(tr("N/S"));
+                valItem->setStyleSheet(QStringLiteral(
+                    "color:#64748b; font-weight:600; font-size:14px; border:none; background:transparent;"));
+            } else {
+                valItem->setText(QStringLiteral("—"));
+                valItem->setStyleSheet(QStringLiteral(
+                    "color:#60a5fa; font-weight:700; font-size:16px; border:none; background:transparent;"));
+            }
             continue;
         }
         const double v = m_live.value(pid);
         const QString unit = m_liveUnit.value(pid);
         QString text;
-        if (pid == 0x0C || pid == 0x0D || pid == 0x1F)
+        if (pid == 0x0C || pid == 0x0D || pid == 0x1F || pid == 0x21 || pid == 0x31)
             text = QString::number(v, 'f', 0);
         else if (pid == 0x24 || pid == 0x42)
             text = QString::number(v, 'f', 3);
@@ -1085,6 +1115,8 @@ void DriveWindow::refreshSensorsTable() {
             text = QString::number(v, 'f', 1);
         if (!unit.isEmpty())
             valItem->setToolTip(unit);
+        valItem->setStyleSheet(QStringLiteral(
+            "color:#60a5fa; font-weight:700; font-size:16px; border:none; background:transparent;"));
         valItem->setText(text);
     }
 }

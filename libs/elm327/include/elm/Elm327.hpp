@@ -58,6 +58,8 @@ public:
     void queryPid(std::uint8_t pid);
     void startPolling(const QList<std::uint8_t>& pids, int intervalMs = 250);
     void stopPolling();
+    /** Interroge 01 00 / 20 / 40 / 60 puis émet supportedPidsReady. */
+    void probeSupportedPids();
     void readDtcs(bool pending = false);
     void clearDtcs();
     void readVin();
@@ -72,6 +74,8 @@ signals:
     void status(const QString& message);
     void pidResult(quint8 pid, double value, const QString& name, const QString& unit);
     void pidUnsupported(quint8 pid);
+    /** Bitmap mode 01 : tous les PID déclarés supportés par l'ECU (après probe). */
+    void supportedPidsReady(const QList<quint8>& pids);
     void freezeFrameResult(quint8 pid, double value, const QString& name, const QString& unit);
     void dtcsReady(const QStringList& codes, bool pending);
     void vinReady(const QString& vin);
@@ -90,7 +94,7 @@ private slots:
 #endif
 
 private:
-    enum class Kind { Init, Pid, Dtc, ClearDtc, Vin, FreezeFrame, CanStart, Raw };
+    enum class Kind { Init, Pid, PidSupport, Dtc, ClearDtc, Vin, FreezeFrame, CanStart, Raw };
     struct Cmd { QString text; Kind kind; std::uint8_t pid = 0; };
 
     void enqueue(const QString& text, Kind kind, std::uint8_t pid = 0);
@@ -144,6 +148,8 @@ private:
 
     QList<std::uint8_t> m_pollPids;
     int                 m_pollIdx = 0;
+    QList<std::uint8_t> m_supportedAccum;
+    int                 m_supportRemaining = 0;
 };
 
 } // namespace elm

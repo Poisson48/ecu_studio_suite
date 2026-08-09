@@ -413,6 +413,25 @@ void Elm327::handleResponse(const Cmd& cmd, const QString& resp) {
             }
             break;
         }
+        case Kind::PidSupport: {
+            auto r = ecu::obd2::parseResponse(resp, 0x01, cmd.pid);
+            if (r.ok) {
+                const auto chunk = ecu::obd2::decodeSupportedPidBitmap(
+                    cmd.pid, r.data.data(), r.len, nullptr);
+                for (std::uint8_t p : chunk) {
+                    if (!m_supportedAccum.contains(p))
+                        m_supportedAccum.append(p);
+                }
+            }
+            if (m_supportRemaining > 0)
+                --m_supportRemaining;
+            if (m_supportRemaining <= 0) {
+                std::sort(m_supportedAccum.begin(), m_supportedAccum.end());
+                emit supportedPidsReady(m_supportedAccum);
+                emit status(tr("PID supportés : %1").arg(m_supportedAccum.size()));
+            }
+            break;
+        }
         case Kind::Dtc: {
             const bool pending = (cmd.pid == 0x07);
             emit dtcsReady(ecu::obd2::decodeDtcs(resp, cmd.pid), pending);
@@ -506,6 +525,21 @@ void Elm327::startPolling(const QList<std::uint8_t>& pids, int intervalMs) {
 }
 
 void Elm327::stopPolling() { m_poll->stop(); m_pollPids.clear(); }
+
+void Elm327::probeSupportedPids() {
+    if (!m_ready) return;
+    stopPolling();
+    m_supportedAccum.clear();
+    m_supportRemaining = 0;
+    // Blocs SAE J1979 : 0x00→01..20, 0x20→21..40, 0x40→41..60, 0x60→61..80.
+    for (std::uint8_t base : { std::uint8_t{0x00}, std::uint8_t{0x20},
+                               std::uint8_t{0x40}, std::uint8_t{0x60} }) {
+        enqueue(ecu::obd2::pidRequest(base), Kind::PidSupport, base);
+        ++m_supportRemaining;
+    }
+    emit status(tr("Découverte des PID supportés…"));
+    sendNext();
+}
 
 void Elm327::onPollTick() {
     if (!m_ready || m_canMode || m_pollPids.isEmpty()) return;

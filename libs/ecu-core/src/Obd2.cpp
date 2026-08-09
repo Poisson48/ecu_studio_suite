@@ -33,23 +33,57 @@ char dtcLetter(std::uint8_t hi) {
 } // namespace
 
 const QList<LivePid>& livePids() {
+    // Catalogue UI / polling — uniquement des PID avec formule dans interpret().
     static const QList<LivePid> kPids = {
-        { 0x0C, "Régime",            "rpm"  },
-        { 0x0D, "Vitesse",           "km/h" },
-        { 0x04, "Charge moteur",     "%"    },
-        { 0x0B, "Pression admission","kPa"  },  // MAP / boost
-        { 0x10, "Débit d'air (MAF)", "g/s"  },
-        { 0x05, "Temp. liquide",     "°C"   },
-        { 0x0F, "Temp. admission",   "°C"   },
-        { 0x11, "Papillon",          "%"    },
-        { 0x0E, "Avance allumage",   "°"    },
-        { 0x24, "Lambda (commandé)", "λ"    },
-        { 0x06, "Trim court (B1)",   "%"    },
-        { 0x07, "Trim long (B1)",    "%"    },
-        { 0x42, "Tension module",    "V"    },
-        { 0x33, "Pression baro.",    "kPa"  },
+        { 0x0C, "Régime",              "rpm"  },
+        { 0x0D, "Vitesse",             "km/h" },
+        { 0x04, "Charge moteur",       "%"    },
+        { 0x0B, "Pression admission",  "kPa"  },  // MAP / boost
+        { 0x0A, "Pression carburant",  "kPa"  },
+        { 0x10, "Débit d'air (MAF)",   "g/s"  },
+        { 0x05, "Temp. liquide",       "°C"   },
+        { 0x0F, "Temp. admission",     "°C"   },
+        { 0x46, "Temp. ambiante",      "°C"   },
+        { 0x5C, "Temp. huile",         "°C"   },
+        { 0x11, "Papillon",            "%"    },
+        { 0x0E, "Avance allumage",     "°"    },
+        { 0x24, "Lambda (commandé)",   "λ"    },
+        { 0x06, "Trim court (B1)",     "%"    },
+        { 0x07, "Trim long (B1)",      "%"    },
+        { 0x2F, "Niveau carburant",    "%"    },
+        { 0x42, "Tension module",      "V"    },
+        { 0x33, "Pression baro.",      "kPa"  },
+        { 0x1F, "Temps moteur",        "s"    },
+        { 0x21, "Distance MIL",        "km"   },
+        { 0x31, "Distance effacement", "km"   },
     };
     return kPids;
+}
+
+QList<std::uint8_t> decodeSupportedPidBitmap(std::uint8_t basePid,
+                                             const std::uint8_t* data,
+                                             std::uint8_t len,
+                                             bool* nextBitmap) {
+    QList<std::uint8_t> out;
+    if (nextBitmap) *nextBitmap = false;
+    if (!data || len < 4) return out;
+    // 4 octets = 32 bits pour PID (base+1) .. (base+0x20).
+    // Bit 7 de data[0] = base+1, bit 0 de data[3] = base+0x20.
+    for (int byte = 0; byte < 4; ++byte) {
+        const std::uint8_t b = data[byte];
+        for (int bit = 7; bit >= 0; --bit) {
+            if (b & (1u << bit)) {
+                const std::uint8_t pid =
+                    static_cast<std::uint8_t>(basePid + 1 + byte * 8 + (7 - bit));
+                if (pid == static_cast<std::uint8_t>(basePid + 0x20)) {
+                    if (nextBitmap) *nextBitmap = true;
+                } else {
+                    out.push_back(pid);
+                }
+            }
+        }
+    }
+    return out;
 }
 
 QString pidRequest(std::uint8_t pid, std::uint8_t mode) {
@@ -128,26 +162,13 @@ std::optional<double> interpret(std::uint8_t pid, const std::uint8_t* data, std:
 QString pidName(std::uint8_t pid) {
     for (const auto& p : livePids())
         if (p.pid == pid) return QString::fromUtf8(p.name);
-    switch (pid) {
-        case 0x0A: return QStringLiteral("Pression carburant");
-        case 0x1F: return QStringLiteral("Temps moteur");
-        case 0x2F: return QStringLiteral("Niveau carburant");
-        case 0x46: return QStringLiteral("Temp. ambiante");
-        case 0x5C: return QStringLiteral("Temp. huile");
-        default:   return QStringLiteral("PID 0x%1").arg(pid, 2, 16, QLatin1Char('0')).toUpper();
-    }
+    return QStringLiteral("PID 0x%1").arg(pid, 2, 16, QLatin1Char('0')).toUpper();
 }
 
 QString pidUnit(std::uint8_t pid) {
     for (const auto& p : livePids())
         if (p.pid == pid) return QString::fromUtf8(p.unit);
-    switch (pid) {
-        case 0x0A: return QStringLiteral("kPa");
-        case 0x1F: return QStringLiteral("s");
-        case 0x2F: return QStringLiteral("%");
-        case 0x46: case 0x5C: return QStringLiteral("°C");
-        default:   return QString();
-    }
+    return QString();
 }
 
 QStringList decodeDtcs(const QString& elmText, std::uint8_t mode) {

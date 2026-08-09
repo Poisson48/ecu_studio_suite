@@ -1,6 +1,7 @@
 #pragma once
 #include <QMainWindow>
 #include <QHash>
+#include <QSet>
 #include <functional>
 #include <optional>
 #include <vector>
@@ -205,6 +206,8 @@ private:
 
     QHash<quint8, double> m_live;
     QHash<quint8, QString> m_liveUnit;
+    /** PID mode 01 déclarés supportés par l'ECU (vide = pas encore sondé). */
+    QSet<quint8> m_ecuSupportedPids;
     bool m_connected = false;
     bool m_sessionOn = false;
     bool m_userDisconnect = false;

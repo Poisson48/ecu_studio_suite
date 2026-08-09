@@ -25,9 +25,18 @@ struct LivePid {
     const char*  unit;
 };
 
-// Ensemble de PID live couramment utiles au tuning (RPM, charge, MAP/boost, MAF,
-// températures, papillon, avance, lambda, tension…).
+// Ensemble de PID live utiles au tuning. Inclut tous les PID pour lesquels
+// interpret() a une formule — le filtrage ECU se fait via
+// decodeSupportedPidBitmap / probeSupportedPids.
 const QList<LivePid>& livePids();
+
+// Décode le bitmap « PID supportés » (réponse à 01 00 / 01 20 / 01 40 / 01 60).
+// basePid = 0x00 → bits pour 0x01..0x20 ; 0x20 → 0x21..0x40 ; etc.
+// Si le bit « next bitmap » (PID base+0x20) est set, nextBitmap=true.
+QList<std::uint8_t> decodeSupportedPidBitmap(std::uint8_t basePid,
+                                             const std::uint8_t* data,
+                                             std::uint8_t len,
+                                             bool* nextBitmap = nullptr);
 
 // Requête ELM327 d'un PID mode 01 : pid 0x0C -> "010C".
 QString pidRequest(std::uint8_t pid, std::uint8_t mode = 0x01);
