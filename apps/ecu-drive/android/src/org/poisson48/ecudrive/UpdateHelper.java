@@ -169,6 +169,35 @@ public class UpdateHelper {
         return out;
     }
 
+    /** API 31+ : SCAN+CONNECT. Avant : localisation (requis pour le discovery Classic). */
+    public static boolean hasBluetoothPermissions(Context ctx) {
+        if (ctx == null)
+            return false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            return ctx.checkSelfPermission(android.Manifest.permission.BLUETOOTH_SCAN)
+                    == PackageManager.PERMISSION_GRANTED
+                && ctx.checkSelfPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
+                    == PackageManager.PERMISSION_GRANTED;
+        }
+        return ctx.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED
+            || ctx.checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    public static void openAppDetailsSettings(Context ctx) {
+        if (ctx == null)
+            return;
+        try {
+            Intent settings = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:" + ctx.getPackageName()));
+            settings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            ctx.startActivity(settings);
+        } catch (Exception e) {
+            Log.e(TAG, "openAppDetailsSettings", e);
+        }
+    }
+
     public static class InstallReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context ctx, Intent intent) {

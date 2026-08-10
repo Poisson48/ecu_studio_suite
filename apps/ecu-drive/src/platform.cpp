@@ -31,6 +31,17 @@ QJniObject androidActivity()
         "()Landroid/app/Activity;");
 }
 
+bool androidHasBluetoothPermissions()
+{
+    const QJniObject ctx = androidContext();
+    if (!ctx.isValid())
+        return false;
+    return QJniObject::callStaticMethod<jboolean>(
+        kUpdateHelper, "hasBluetoothPermissions",
+        "(Landroid/content/Context;)Z",
+        ctx.object());
+}
+
 } // namespace
 
 bool platformInstallApk(const QString& apkPath)
@@ -62,26 +73,57 @@ void platformToast(const QString& message)
         toast.callMethod<void>("show", "()V");
 }
 
+void platformOpenAppSettings()
+{
+    const QJniObject ctx = androidContext();
+    if (!ctx.isValid())
+        return;
+    QJniObject::callStaticMethod<void>(
+        kUpdateHelper, "openAppDetailsSettings",
+        "(Landroid/content/Context;)V",
+        ctx.object());
+}
+
 void platformRequestBluetoothPermissions(std::function<void(bool granted)> done)
 {
     if (!done)
         return;
-#if QT_CONFIG(permissions)
-    QBluetoothPermission bt;
-    const auto status = qApp->checkPermission(bt);
-    if (status == Qt::PermissionStatus::Granted) {
+
+    // Source de vérité = PackageManager Android (pas seulement l'état Qt).
+    // Qt renvoyait parfois Denied alors que « Appareils à proximité » était déjà ON,
+    // et l'ancien code abandonnait sans rappeler requestPermission.
+    if (androidHasBluetoothPermissions()) {
         done(true);
         return;
     }
-    if (status == Qt::PermissionStatus::Denied) {
-        done(false);
-        return;
-    }
-    qApp->requestPermission(bt, qApp, [done](const QPermission& p) {
-        done(p.status() == Qt::PermissionStatus::Granted);
+
+#if QT_CONFIG(permissions)
+    auto finish = [done](bool /*ignored*/) {
+        done(androidHasBluetoothPermissions());
+    };
+
+    QBluetoothPermission bt;
+    bt.setCommunicationModes(QBluetoothPermission::Access);
+    // Toujours redemander si pas accordé côté Android — y compris après Denied
+    // (l'utilisateur a pu activer dans Réglages, ou le dialogue n'a jamais été montré).
+    qApp->requestPermission(bt, qApp, [finish](const QPermission&) {
+        if (androidHasBluetoothPermissions()) {
+            finish(true);
+            return;
+        }
+        // API < 31 : le discovery Classic exige souvent la localisation.
+        QLocationPermission loc;
+        loc.setAccuracy(QLocationPermission::Precise);
+        if (qApp->checkPermission(loc) == Qt::PermissionStatus::Granted) {
+            finish(false);
+            return;
+        }
+        qApp->requestPermission(loc, qApp, [finish](const QPermission&) {
+            finish(androidHasBluetoothPermissions());
+        });
     });
 #else
-    done(true);
+    done(false);
 #endif
 }
 
@@ -119,6 +161,7 @@ bool platformShareFile(const QString& path, const QString& mimeType)
 
 bool platformInstallApk(const QString&) { return false; }
 void platformToast(const QString&) {}
+void platformOpenAppSettings() {}
 void platformRequestBluetoothPermissions(std::function<void(bool granted)> done)
 {
     if (done) done(true);

@@ -12,10 +12,15 @@ void platformToast(const QString& message);
 
 /**
  * Demande les permissions Bluetooth (et localisation si besoin API < 31).
- * Appelle done(granted) de façon synchrone si déjà décidé, sinon après le dialogue système.
+ * Vérifie d'abord les permissions Android natives (source de vérité), puis
+ * redemande via Qt si besoin — ne traite plus Denied comme un refus définitif
+ * avant d'avoir rappelé requestPermission.
  * Hors Android / sans Qt Permissions : done(true).
  */
 void platformRequestBluetoothPermissions(std::function<void(bool granted)> done);
+
+/** Ouvre la fiche app (Réglages → Autorisations). No-op hors Android. */
+void platformOpenAppSettings();
 
 /**
  * URI du fichier passé à l'Activity (ACTION_VIEW), ou vide.

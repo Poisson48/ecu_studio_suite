@@ -2026,13 +2026,22 @@ void DriveWindow::startBtScan() {
     platformRequestBluetoothPermissions([this](bool granted) {
         if (!granted) {
             setStatus(tr("Permission Bluetooth refusée.\n"
-                         "Active-la dans Réglages → Applications → ECU Drive."),
+                         "Android 12+ : Autorisations → Appareils à proximité = Autorisé.\n"
+                         "Android plus ancien : Position (pour le scan BT)."),
                       true);
             platformToast(tr("Permission BT refusée"));
-            showInfoDialog(tr("Bluetooth"),
+            showInfoDialog(
+                tr("Bluetooth"),
                 tr("Sans permission Bluetooth, le scan et la connexion ELM "
                    "sont impossibles.\n\n"
-                   "Réglages → Applications → ECU Drive → Autorisations."));
+                   "Android 12 et plus :\n"
+                   "Réglages → Applications → ECU Drive → Autorisations "
+                   "→ Appareils à proximité → Autoriser.\n\n"
+                   "Android 11 et moins : autorise aussi la Position "
+                   "(requise pour découvrir le dongle)."),
+                tr("OK"),
+                tr("Ouvrir les réglages"),
+                []() { platformOpenAppSettings(); });
             return;
         }
         startBtScanInternal();
@@ -2085,8 +2094,17 @@ void DriveWindow::toggleConnect() {
         && !m_btCombo->currentData().toString().isEmpty()) {
         platformRequestBluetoothPermissions([this](bool granted) {
             if (!granted) {
-                setStatus(tr("Permission Bluetooth refusée."), true);
+                setStatus(tr("Permission Bluetooth refusée.\n"
+                             "Android 12+ : Autorisations → Appareils à proximité."),
+                          true);
                 platformToast(tr("Permission BT refusée"));
+                showInfoDialog(
+                    tr("Bluetooth"),
+                    tr("Active « Appareils à proximité » (ou Position sur Android 11−) "
+                       "pour ECU Drive."),
+                    tr("OK"),
+                    tr("Ouvrir les réglages"),
+                    []() { platformOpenAppSettings(); });
                 return;
             }
             // Relance le flux connect une fois autorisé (évite duplication du corps).
