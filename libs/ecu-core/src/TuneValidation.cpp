@@ -308,8 +308,7 @@ std::vector<std::uint8_t> TuneValidator::requiredPids() const {
         add(r.xPid);
         add(r.yPid);
         if (r.measure == MeasureKind::MapAbsMbar) {
-            add(0x0B);
-            add(0x33); // baro
+            add(0x0B); // MAP absolue (kPa) — pas de +baro
         } else {
             add(r.measurePid);
         }
@@ -351,11 +350,12 @@ std::optional<double> TuneValidator::measuredValue(const ValidationRule& rule,
                                                    const LivePidSnapshot& live) const {
     switch (rule.measure) {
         case MeasureKind::MapAbsMbar: {
+            // SAE J1979 PID 0x0B = Intake Manifold Absolute Pressure (kPa).
+            // Déjà absolu : ajouter la baro (0x33) doublait ~101 kPa ≈ +1 bar
+            // (faux surboost permanent, y compris au ralenti).
             const auto mapIt = live.find(0x0B);
             if (mapIt == live.end()) return std::nullopt;
-            const auto baroIt = live.find(0x33);
-            const double baro = baroIt != live.end() ? baroIt->second : 101.3;
-            return (mapIt->second + baro) * 10.0;
+            return mapAbsKpaToMbar(mapIt->second);
         }
         case MeasureKind::DirectPid: {
             const auto it = live.find(rule.measurePid);

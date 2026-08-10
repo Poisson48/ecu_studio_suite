@@ -1225,7 +1225,7 @@ void ObdPanel::refreshRulesTable() {
         m_rulesTable->setItem(i, 1, new QTableWidgetItem(QString::fromStdString(r.mapName)));
         m_rulesTable->setItem(i, 2, new QTableWidgetItem(QString::fromStdString(r.category)));
         const QString pid = r.measure == ecu::MeasureKind::MapAbsMbar
-            ? QStringLiteral("MAP+baro")
+            ? QStringLiteral("MAP abs")
             : QStringLiteral("0x%1").arg(r.measurePid, 2, 16, QLatin1Char('0'));
         m_rulesTable->setItem(i, 3, new QTableWidgetItem(pid));
         m_rulesTable->item(i, 1)->setFlags(m_rulesTable->item(i, 1)->flags() & ~Qt::ItemIsEditable);

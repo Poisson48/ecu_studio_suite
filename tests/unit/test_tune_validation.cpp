@@ -24,6 +24,12 @@ TEST(TuneValidation, DefaultMeasureForCategory) {
     EXPECT_EQ(TuneValidator::defaultMeasurePid("smoke"), 0x24);
 }
 
+TEST(TuneValidation, MapAbsKpaToMbarNoDoubleBaro) {
+    // Ralenti typique : MAP ≈ 100 kPa abs → 1000 mbar (pas 2010 avec +baro).
+    EXPECT_DOUBLE_EQ(TuneValidator::mapAbsKpaToMbar(100.0), 1000.0);
+    EXPECT_DOUBLE_EQ(TuneValidator::mapAbsKpaToMbar(250.0), 2500.0);
+}
+
 TEST(StatusHysteresis, FailThenRecover) {
     StatusHysteresis h;
     h.setFailThreshold(3);

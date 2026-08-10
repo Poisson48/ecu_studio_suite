@@ -29,7 +29,7 @@ enum class YAxisMode {
 
 // Comment dériver la grandeur mesurée pour une règle de validation.
 enum class MeasureKind {
-    MapAbsMbar,      // (MAP kPa + baro kPa) × 10 → mbar abs
+    MapAbsMbar,      // MAP OBD 0x0B (kPa abs) × 10 → mbar abs (PAS + baro)
     DirectPid,       // valeur brute du PID listé
 };
 
@@ -188,8 +188,11 @@ public:
 
     const std::vector<ValidationRule>& rules() const { return m_rules; }
 
-    // PIDs à poller pour toutes les règles actives (+ baro si MapAbsMbar).
+    // PIDs à poller pour toutes les règles actives.
     std::vector<std::uint8_t> requiredPids() const;
+
+    /** MAP OBD (kPa absolus, PID 0x0B) → mbar absolus. */
+    static double mapAbsKpaToMbar(double mapKpa) { return mapKpa * 10.0; }
 
     std::optional<ValidationResult> evaluateRule(const ValidationRule& rule,
                                                  const LivePidSnapshot& live) const;

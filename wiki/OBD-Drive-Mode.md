@@ -35,7 +35,7 @@ While driving, the UI stays minimal so you can glance at the banner without digg
 ### What is compared
 | Live OBD | Expected source | Notes |
 |----------|-----------------|-------|
-| MAP / boost-related PIDs | OpenDAMOS boost / pressure maps | Expected boost ≈ (MAP + baro) × 10 mbar style sampling via `MapSampler` / `TuneValidation` |
+| MAP / boost-related PIDs | OpenDAMOS boost / pressure maps | Expected boost ≈ MAP (kPa abs) × 10 → mbar via `MapSampler` / `TuneValidation` (PID 0x0B is already absolute — do not add baro) |
 | Related limiters (e.g. smoke) | Matching OpenDAMOS characteristics | Relocated by axis fingerprint, then bilinear-sampled at the live operating point |
 
 Exact PIDs and map names depend on the ECU recipe; the service relocates OpenDAMOS maps into the loaded ROM, then samples them at the current RPM / load from OBD.
