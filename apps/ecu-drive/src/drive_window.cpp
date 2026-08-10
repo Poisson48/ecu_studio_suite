@@ -30,6 +30,7 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QApplication>
+#include <QClipboard>
 #include <QSettings>
 #include <QUrl>
 #include <QFileInfo>
@@ -61,6 +62,9 @@
 namespace ecu_drive {
 
 namespace {
+constexpr int kDtcStored  = 1;
+constexpr int kDtcPending = 2;
+
 QString statusLabel(ecu::ValidationStatus s) {
     switch (s) {
         case ecu::ValidationStatus::Ok: return QStringLiteral("OK");
@@ -87,6 +91,7 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
         setStatus(tr("Connecté — %1").arg(v));
         platformToast(tr("ELM connecté — prêt"));
         refreshSessionButton();
+        refreshDiagButtons();
         if (m_stack && m_stack->currentIndex() == 1)
             ensureSensorsPolling();
 #if defined(ELM_HAVE_BLUETOOTH)
@@ -108,7 +113,10 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
         if (m_sessionOn) stopSession(); // affiche « Export des logs terminé » si ticks > 0
         m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Connecter"));
+        m_dtcAwaiting = 0;
+        m_dtcClearPending = false;
         refreshSessionButton();
+        refreshDiagButtons();
         setStatus(tr("Déconnecté."));
         if (m_linkLossNotified) {
             // errorOccurred a déjà géré toast / export / dialogue.
@@ -138,15 +146,53 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
         if (m_sessionOn) stopSession(); // fenêtre export logs
         m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Connecter"));
+        m_dtcAwaiting = 0;
+        m_dtcClearPending = false;
         refreshSessionButton();
+        refreshDiagButtons();
         setStatus(e, true);
         platformToast(e.split(QLatin1Char('\n')).first());
         if (!hadSession)
             showInfoDialog(tr("Connexion"), e);
         // Si session : disconnected suivra et ne doublera pas (flag).
     });
-    connect(m_elm, &elm::Elm327::status, this, [this](const QString& s) { setStatus(s); });
+    connect(m_elm, &elm::Elm327::status, this, [this](const QString& s) {
+        setStatus(s);
+        if (!m_dtcClearPending) return;
+        m_dtcClearPending = false;
+        const bool ok = s.contains(QLatin1String("effacé"), Qt::CaseInsensitive);
+        if (ok) {
+            m_dtcFlags.clear();
+            refreshDtcList();
+        }
+        if (m_dtcStatus) {
+            m_dtcStatus->setText(ok ? tr("Codes effacés — relis pour confirmer.")
+                                    : s);
+        }
+        refreshDiagButtons();
+        resumePollingAfterDtc();
+    });
     connect(m_elm, &elm::Elm327::pidResult, this, &DriveWindow::onPid);
+    connect(m_elm, &elm::Elm327::dtcsReady, this,
+            [this](const QStringList& codes, bool pending) {
+        mergeDtcCodes(codes, pending);
+        if (m_dtcAwaiting > 0) --m_dtcAwaiting;
+        if (m_dtcAwaiting == 0) {
+            refreshDtcList();
+            const int n = m_dtcFlags.size();
+            if (m_dtcStatus) {
+                m_dtcStatus->setText(n == 0
+                                         ? tr("Aucun code défaut (modes 03 + 07).")
+                                         : tr("%1 code(s) défaut (modes 03 + 07).").arg(n));
+            }
+            setStatus(n == 0 ? tr("Aucun DTC")
+                             : tr("%1 DTC").arg(n));
+            platformToast(n == 0 ? tr("Aucun DTC")
+                                 : tr("%1 DTC").arg(n));
+            refreshDiagButtons();
+            resumePollingAfterDtc();
+        }
+    });
     connect(m_elm, &elm::Elm327::supportedPidsReady, this, [this](const QList<quint8>& pids) {
         m_ecuSupportedPids = QSet<quint8>(pids.begin(), pids.end());
         if (!m_stack || m_stack->currentIndex() != 1 || m_sessionOn || !m_connected)
@@ -505,29 +551,33 @@ void DriveWindow::buildUi() {
     ub->addLayout(ubRow);
     outer->addWidget(m_updateBanner);
 
-    // Nav Drive / Capteurs — un seul onglet « accent » à la fois.
+    // Nav Drive / Capteurs / Diagnostic — un seul onglet « accent » à la fois.
     auto* nav = new QHBoxLayout;
     nav->setContentsMargins(12, 8, 12, 4);
-    nav->setSpacing(8);
+    nav->setSpacing(6);
     m_driveNavBtn = new QPushButton(tr("Conduite"), central);
-    m_sensNavBtn = new QPushButton(tr("Capteurs OBD"), central);
-    m_driveNavBtn->setMinimumHeight(44);
-    m_sensNavBtn->setMinimumHeight(44);
-    m_driveNavBtn->setCheckable(true);
-    m_sensNavBtn->setCheckable(true);
-    m_driveNavBtn->setAutoExclusive(true);
-    m_sensNavBtn->setAutoExclusive(true);
+    m_sensNavBtn = new QPushButton(tr("Capteurs"), central);
+    m_diagNavBtn = new QPushButton(tr("Diagnostic"), central);
+    for (QPushButton* b : {m_driveNavBtn, m_sensNavBtn, m_diagNavBtn}) {
+        b->setMinimumHeight(44);
+        b->setCheckable(true);
+        b->setAutoExclusive(true);
+    }
     connect(m_driveNavBtn, &QPushButton::clicked, this, &DriveWindow::showDrivePage);
     connect(m_sensNavBtn, &QPushButton::clicked, this, &DriveWindow::showSensorsPage);
+    connect(m_diagNavBtn, &QPushButton::clicked, this, &DriveWindow::showDiagPage);
     nav->addWidget(m_driveNavBtn, 1);
     nav->addWidget(m_sensNavBtn, 1);
+    nav->addWidget(m_diagNavBtn, 1);
     outer->addLayout(nav);
 
     m_stack = new QStackedWidget(central);
     m_stack->addWidget(buildDrivePage(m_stack));
     m_stack->addWidget(buildSensorsPage(m_stack));
+    m_stack->addWidget(buildDiagPage(m_stack));
     outer->addWidget(m_stack, 1);
     setNavPage(0);
+    refreshDiagButtons();
 
     m_statusLabel = new QLabel(tr("100 % local — aucune télémétrie.  v%1")
                                    .arg(QStringLiteral(APP_VERSION)), central);
@@ -1054,23 +1104,87 @@ QWidget* DriveWindow::buildSensorsPage(QWidget* parent) {
     return scroll;
 }
 
+QWidget* DriveWindow::buildDiagPage(QWidget* parent) {
+    auto* scroll = new QScrollArea(parent);
+
+    auto* page = new QWidget;
+    auto* root = new QVBoxLayout(page);
+    root->setContentsMargins(12, 8, 12, 12);
+    root->setSpacing(10);
+    root->setSizeConstraint(QLayout::SetMinimumSize);
+
+    auto* title = new QLabel(tr("Codes défaut OBD"), page);
+    title->setStyleSheet(QStringLiteral("color:#e6edf3; font-weight:700; font-size:16px;"));
+    root->addWidget(title);
+
+    m_dtcStatus = new QLabel(
+        tr("Connecte un ELM327 puis appuie sur Lire DTC (modes 03 + 07)."), page);
+    m_dtcStatus->setWordWrap(true);
+    m_dtcStatus->setStyleSheet(QStringLiteral("color:#93c5fd; font-size:12px;"));
+    root->addWidget(m_dtcStatus);
+
+    auto* btnRow = new QHBoxLayout;
+    m_dtcReadBtn = new QPushButton(tr("Lire DTC"), page);
+    m_dtcClearBtn = new QPushButton(tr("Effacer DTC"), page);
+    m_dtcReadBtn->setMinimumHeight(44);
+    m_dtcClearBtn->setMinimumHeight(44);
+    m_dtcReadBtn->setObjectName(QStringLiteral("accentBtn"));
+    connect(m_dtcReadBtn, &QPushButton::clicked, this, &DriveWindow::readDtcs);
+    connect(m_dtcClearBtn, &QPushButton::clicked, this, &DriveWindow::clearDtcs);
+    btnRow->addWidget(m_dtcReadBtn, 1);
+    btnRow->addWidget(m_dtcClearBtn, 1);
+    root->addLayout(btnRow);
+
+    auto* hdr = new QWidget(page);
+    auto* hdrLay = new QHBoxLayout(hdr);
+    hdrLay->setContentsMargins(8, 4, 8, 4);
+    auto* hCode = new QLabel(tr("Code"), hdr);
+    auto* hFam = new QLabel(tr("Famille"), hdr);
+    auto* hSt = new QLabel(tr("Statut"), hdr);
+    for (QLabel* l : {hCode, hFam, hSt})
+        l->setStyleSheet(QStringLiteral("color:#94a3b8; font-size:11px; font-weight:600;"));
+    hdrLay->addWidget(hCode, 2);
+    hdrLay->addWidget(hFam, 2);
+    hdrLay->addWidget(hSt, 3);
+    root->addWidget(hdr);
+
+    // Liste de lignes (pas de QTableWidget : plantage fréquent sur Android).
+    m_dtcListHost = new QWidget(page);
+    m_dtcListLay = new QVBoxLayout(m_dtcListHost);
+    m_dtcListLay->setContentsMargins(0, 0, 0, 0);
+    m_dtcListLay->setSpacing(6);
+    root->addWidget(m_dtcListHost);
+
+    m_dtcCopyBtn = new QPushButton(tr("Copier la liste"), page);
+    m_dtcCopyBtn->setMinimumHeight(44);
+    m_dtcCopyBtn->setEnabled(false);
+    connect(m_dtcCopyBtn, &QPushButton::clicked, this, &DriveWindow::copyDtcs);
+    root->addWidget(m_dtcCopyBtn);
+
+    auto* hint = new QLabel(
+        tr("Effacer remet le voyant moteur à zéro : corrige la cause avant, "
+           "sinon le code revient."),
+        page);
+    hint->setWordWrap(true);
+    hint->setStyleSheet(QStringLiteral("color:#f59e0b; font-size:12px;"));
+    root->addWidget(hint);
+
+    setupScrollablePage(scroll, page);
+    return scroll;
+}
+
 void DriveWindow::setNavPage(int index) {
-    if (m_driveNavBtn) {
-        const bool on = (index == 0);
-        m_driveNavBtn->setChecked(on);
-        m_driveNavBtn->setObjectName(on ? QStringLiteral("accentBtn") : QString());
-        m_driveNavBtn->style()->unpolish(m_driveNavBtn);
-        m_driveNavBtn->style()->polish(m_driveNavBtn);
-        m_driveNavBtn->update();
-    }
-    if (m_sensNavBtn) {
-        const bool on = (index == 1);
-        m_sensNavBtn->setChecked(on);
-        m_sensNavBtn->setObjectName(on ? QStringLiteral("accentBtn") : QString());
-        m_sensNavBtn->style()->unpolish(m_sensNavBtn);
-        m_sensNavBtn->style()->polish(m_sensNavBtn);
-        m_sensNavBtn->update();
-    }
+    auto applyNav = [](QPushButton* btn, bool on) {
+        if (!btn) return;
+        btn->setChecked(on);
+        btn->setObjectName(on ? QStringLiteral("accentBtn") : QString());
+        btn->style()->unpolish(btn);
+        btn->style()->polish(btn);
+        btn->update();
+    };
+    applyNav(m_driveNavBtn, index == 0);
+    applyNav(m_sensNavBtn, index == 1);
+    applyNav(m_diagNavBtn, index == 2);
 }
 
 void DriveWindow::showDrivePage() {
@@ -1079,7 +1193,7 @@ void DriveWindow::showDrivePage() {
     if (m_sessionOn) return;
     if (m_connected && m_elm)
         m_elm->stopPolling();
-    // Second tour après paint : corrige les résidus de la page Capteurs.
+    // Second tour après paint : corrige les résidus des autres pages.
     QTimer::singleShot(50, this, [this]() {
         if (m_stack && m_stack->currentIndex() == 0)
             forceStackPageRefresh(m_stack, 0);
@@ -1097,6 +1211,162 @@ void DriveWindow::showSensorsPage() {
         ensureSensorsPolling();
         refreshSensorsTable();
     });
+}
+
+void DriveWindow::showDiagPage() {
+    if (!m_stack) return;
+    setNavPage(2);
+    forceStackPageRefresh(m_stack, 2);
+    if (!m_sessionOn && m_connected && m_elm)
+        m_elm->stopPolling();
+    refreshDiagButtons();
+    QTimer::singleShot(50, this, [this]() {
+        if (m_stack && m_stack->currentIndex() == 2)
+            forceStackPageRefresh(m_stack, 2);
+    });
+}
+
+QString DriveWindow::dtcFamily(const QString& code) const {
+    if (code.isEmpty()) return QString();
+    switch (code[0].toLatin1()) {
+        case 'P': return tr("Powertrain");
+        case 'C': return tr("Chassis");
+        case 'B': return tr("Body");
+        case 'U': return tr("Network");
+        default:  return QStringLiteral("?");
+    }
+}
+
+QString DriveWindow::dtcStatusText(int flags) const {
+    if ((flags & kDtcStored) && (flags & kDtcPending))
+        return tr("mémorisé + en attente");
+    if (flags & kDtcPending) return tr("en attente");
+    if (flags & kDtcStored)  return tr("mémorisé");
+    return QStringLiteral("—");
+}
+
+void DriveWindow::mergeDtcCodes(const QStringList& codes, bool pending) {
+    const int bit = pending ? kDtcPending : kDtcStored;
+    for (const QString& c : codes)
+        m_dtcFlags[c] = m_dtcFlags.value(c, 0) | bit;
+}
+
+void DriveWindow::refreshDtcList() {
+    if (!m_dtcListLay) return;
+    while (QLayoutItem* it = m_dtcListLay->takeAt(0)) {
+        if (QWidget* w = it->widget())
+            w->deleteLater();
+        delete it;
+    }
+    QStringList keys = m_dtcFlags.keys();
+    keys.sort();
+    for (const QString& code : keys) {
+        auto* row = new QWidget(m_dtcListHost);
+        auto* hl = new QHBoxLayout(row);
+        hl->setContentsMargins(8, 8, 8, 8);
+        row->setStyleSheet(QStringLiteral(
+            "QWidget { background:#111827; border:1px solid #334155; border-radius:8px; }"));
+
+        auto* c = new QLabel(code, row);
+        c->setStyleSheet(QStringLiteral(
+            "color:#f8fafc; font-weight:700; font-size:15px; border:none; background:transparent;"));
+        auto* f = new QLabel(dtcFamily(code), row);
+        f->setStyleSheet(QStringLiteral(
+            "color:#93c5fd; border:none; background:transparent;"));
+        auto* s = new QLabel(dtcStatusText(m_dtcFlags.value(code)), row);
+        s->setWordWrap(true);
+        s->setStyleSheet(QStringLiteral(
+            "color:#e2e8f0; border:none; background:transparent;"));
+
+        hl->addWidget(c, 2);
+        hl->addWidget(f, 2);
+        hl->addWidget(s, 3);
+        m_dtcListLay->addWidget(row);
+    }
+    if (m_dtcCopyBtn)
+        m_dtcCopyBtn->setEnabled(!keys.isEmpty());
+}
+
+void DriveWindow::refreshDiagButtons() {
+    const bool on = m_connected && m_elm;
+    if (m_dtcReadBtn) m_dtcReadBtn->setEnabled(on && m_dtcAwaiting == 0 && !m_dtcClearPending);
+    if (m_dtcClearBtn) m_dtcClearBtn->setEnabled(on && m_dtcAwaiting == 0 && !m_dtcClearPending);
+    if (m_dtcCopyBtn) m_dtcCopyBtn->setEnabled(!m_dtcFlags.isEmpty());
+    if (m_dtcStatus && !on && m_dtcAwaiting == 0 && !m_dtcClearPending) {
+        m_dtcStatus->setText(
+            tr("Hors ligne — connecte un ELM327 pour lire / effacer les DTC."));
+    }
+}
+
+void DriveWindow::resumePollingAfterDtc() {
+    if (!m_connected || !m_elm) return;
+    if (m_sessionOn) {
+        const auto pids = m_validator.requiredPids();
+        QList<std::uint8_t> qp;
+        for (auto p : pids) qp.append(p);
+        if (qp.isEmpty()) qp = { 0x0C, 0x04, 0x0B, 0x33 };
+        m_elm->startPolling(qp, 180);
+        return;
+    }
+    if (m_stack && m_stack->currentIndex() == 1)
+        ensureSensorsPolling();
+}
+
+void DriveWindow::readDtcs() {
+    if (!m_connected || !m_elm) {
+        platformToast(tr("Connecte l'ELM d'abord"));
+        return;
+    }
+    if (m_dtcAwaiting > 0 || m_dtcClearPending) return;
+    m_elm->stopPolling();
+    m_dtcFlags.clear();
+    refreshDtcList();
+    m_dtcAwaiting = 2;
+    refreshDiagButtons();
+    if (m_dtcStatus)
+        m_dtcStatus->setText(tr("Lecture DTC modes 03 + 07…"));
+    setStatus(tr("Lecture DTC modes 03 + 07…"));
+    platformToast(tr("Lecture DTC…"));
+    m_elm->readDtcs(false);
+    m_elm->readDtcs(true);
+}
+
+void DriveWindow::clearDtcs() {
+    if (!m_connected || !m_elm) {
+        platformToast(tr("Connecte l'ELM d'abord"));
+        return;
+    }
+    if (m_dtcAwaiting > 0 || m_dtcClearPending) return;
+    showInfoDialog(
+        tr("Effacer les codes défaut ?"),
+        tr("Mode OBD 04 : efface les DTC mémorisés et peut éteindre le voyant moteur.\n\n"
+           "Corrige d'abord la cause, sinon les codes reviennent.\n"
+           "Contact / contact coupé peut être demandé par certains ECU."),
+        tr("Annuler"),
+        tr("Effacer"),
+        [this]() {
+            if (!m_connected || !m_elm) return;
+            m_elm->stopPolling();
+            m_dtcClearPending = true;
+            refreshDiagButtons();
+            if (m_dtcStatus)
+                m_dtcStatus->setText(tr("Effacement DTC (mode 04)…"));
+            setStatus(tr("Effacement DTC…"));
+            platformToast(tr("Effacement DTC…"));
+            m_elm->clearDtcs();
+        });
+}
+
+void DriveWindow::copyDtcs() {
+    QStringList lines;
+    QStringList keys = m_dtcFlags.keys();
+    keys.sort();
+    for (const QString& code : keys)
+        lines << QStringLiteral("%1\t%2\t%3")
+                     .arg(code, dtcFamily(code), dtcStatusText(m_dtcFlags.value(code)));
+    QApplication::clipboard()->setText(lines.join(QLatin1Char('\n')));
+    setStatus(tr("%1 code(s) copié(s)").arg(lines.size()));
+    platformToast(tr("%1 DTC copié(s)").arg(lines.size()));
 }
 
 void DriveWindow::ensureSensorsPolling() {

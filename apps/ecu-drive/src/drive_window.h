@@ -25,6 +25,7 @@ class QWidget;
 class QStackedWidget;
 class QScrollArea;
 class QTimer;
+class QVBoxLayout;
 
 
 namespace elm { class Elm327; }
@@ -59,6 +60,10 @@ private slots:
     void checkUpdatesManual();
     void showDrivePage();
     void showSensorsPage();
+    void showDiagPage();
+    void readDtcs();
+    void clearDtcs();
+    void copyDtcs();
 #if defined(ELM_HAVE_BLUETOOTH)
     void rebuildBtCombo();
 #endif
@@ -68,6 +73,13 @@ private:
     void buildUi();
     QWidget* buildDrivePage(QWidget* parent);
     QWidget* buildSensorsPage(QWidget* parent);
+    QWidget* buildDiagPage(QWidget* parent);
+    void mergeDtcCodes(const QStringList& codes, bool pending);
+    void refreshDtcList();
+    void refreshDiagButtons();
+    void resumePollingAfterDtc();
+    QString dtcFamily(const QString& code) const;
+    QString dtcStatusText(int flags) const;
     void setStatus(const QString& msg, bool error = false);
     /** Affiche une barre de progression (indéterminée si max<=0). */
     void beginBusy(const QString& message, int max = 0);
@@ -158,6 +170,7 @@ private:
 
     QPushButton* m_driveNavBtn = nullptr;
     QPushButton* m_sensNavBtn = nullptr;
+    QPushButton* m_diagNavBtn = nullptr;
     QStackedWidget* m_stack = nullptr;
     QLabel*  m_tuneLabel = nullptr;
     QLabel*  m_statusLabel = nullptr;
@@ -200,6 +213,16 @@ private:
     QCheckBox* m_beepChk = nullptr;
     QLabel* m_sensorsStatus = nullptr;
     QHash<quint8, QLabel*> m_sensorValueLabels;
+
+    QLabel*      m_dtcStatus = nullptr;
+    QWidget*     m_dtcListHost = nullptr;
+    QVBoxLayout* m_dtcListLay = nullptr;
+    QPushButton* m_dtcReadBtn = nullptr;
+    QPushButton* m_dtcClearBtn = nullptr;
+    QPushButton* m_dtcCopyBtn = nullptr;
+    QHash<QString, int> m_dtcFlags;
+    int  m_dtcAwaiting = 0;
+    bool m_dtcClearPending = false;
 
     QFrame*       m_updateBanner = nullptr;
     QLabel*       m_updateTitle = nullptr;
