@@ -63,6 +63,7 @@ private slots:
 #endif
 
 private:
+    void setNavPage(int index);
     void buildUi();
     QWidget* buildDrivePage(QWidget* parent);
     QWidget* buildSensorsPage(QWidget* parent);
@@ -154,6 +155,8 @@ private:
     ecu::EmaFilter m_emaMeas;
     ecu::EmaFilter m_emaExp;
 
+    QPushButton* m_driveNavBtn = nullptr;
+    QPushButton* m_sensNavBtn = nullptr;
     QStackedWidget* m_stack = nullptr;
     QLabel*  m_tuneLabel = nullptr;
     QLabel*  m_statusLabel = nullptr;

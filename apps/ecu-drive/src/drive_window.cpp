@@ -40,6 +40,7 @@
 #include <QSizePolicy>
 #include <QEvent>
 #include <QResizeEvent>
+#include <QStyle>
 #include <QPixmap>
 #include <QSize>
 #include <QColor>
@@ -84,7 +85,7 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
         m_connectBtn->setEnabled(true);
         m_connectBtn->setText(tr("Déconnecter"));
         setStatus(tr("Connecté — %1").arg(v));
-        platformToast(tr("ELM connecté"));
+        platformToast(tr("ELM connecté — prêt"));
         refreshSessionButton();
         if (m_stack && m_stack->currentIndex() == 1)
             ensureSensorsPolling();
@@ -95,9 +96,7 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
                                  m_btCombo->currentData().toString());
         }
 #endif
-        showInfoDialog(tr("Module connecté"),
-            tr("ELM prêt : %1\n\nTu peux lancer une session conduite "
-               "ou ouvrir Capteurs OBD.").arg(v));
+        // Pas d'overlay bloquant : le toast + statut suffisent pour enchaîner.
     });
     connect(m_elm, &elm::Elm327::disconnected, this, [this]() {
         const bool intentional = m_userDisconnect;
@@ -504,22 +503,29 @@ void DriveWindow::buildUi() {
     ub->addLayout(ubRow);
     outer->addWidget(m_updateBanner);
 
-    // Nav Drive / Capteurs
+    // Nav Drive / Capteurs — un seul onglet « accent » à la fois.
     auto* nav = new QHBoxLayout;
-    nav->setContentsMargins(12, 4, 12, 4);
-    auto* driveNav = new QPushButton(tr("Conduite"), central);
-    auto* sensNav = new QPushButton(tr("Capteurs OBD"), central);
-    driveNav->setObjectName("accentBtn");
-    connect(driveNav, &QPushButton::clicked, this, &DriveWindow::showDrivePage);
-    connect(sensNav, &QPushButton::clicked, this, &DriveWindow::showSensorsPage);
-    nav->addWidget(driveNav, 1);
-    nav->addWidget(sensNav, 1);
+    nav->setContentsMargins(12, 8, 12, 4);
+    nav->setSpacing(8);
+    m_driveNavBtn = new QPushButton(tr("Conduite"), central);
+    m_sensNavBtn = new QPushButton(tr("Capteurs OBD"), central);
+    m_driveNavBtn->setMinimumHeight(44);
+    m_sensNavBtn->setMinimumHeight(44);
+    m_driveNavBtn->setCheckable(true);
+    m_sensNavBtn->setCheckable(true);
+    m_driveNavBtn->setAutoExclusive(true);
+    m_sensNavBtn->setAutoExclusive(true);
+    connect(m_driveNavBtn, &QPushButton::clicked, this, &DriveWindow::showDrivePage);
+    connect(m_sensNavBtn, &QPushButton::clicked, this, &DriveWindow::showSensorsPage);
+    nav->addWidget(m_driveNavBtn, 1);
+    nav->addWidget(m_sensNavBtn, 1);
     outer->addLayout(nav);
 
     m_stack = new QStackedWidget(central);
     m_stack->addWidget(buildDrivePage(m_stack));
     m_stack->addWidget(buildSensorsPage(m_stack));
     outer->addWidget(m_stack, 1);
+    setNavPage(0);
 
     m_statusLabel = new QLabel(tr("100 % local — aucune télémétrie.  v%1")
                                    .arg(QStringLiteral(APP_VERSION)), central);
@@ -898,6 +904,17 @@ QWidget* DriveWindow::buildDrivePage(QWidget* parent) {
     connect(m_connectBtn, &QPushButton::clicked, this, &DriveWindow::toggleConnect);
     root->addWidget(m_connectBtn);
 
+    // CTA principal juste sous Connecter (pas sous le fold).
+    m_sessionBtn = new QPushButton(tr("▶  Lancer session conduite"), page);
+    m_sessionBtn->setObjectName("accentBtn");
+    m_sessionBtn->setMinimumHeight(56);
+    QFont sf = m_sessionBtn->font();
+    sf.setPointSizeF(sf.pointSizeF() + 3); sf.setBold(true);
+    m_sessionBtn->setFont(sf);
+    m_sessionBtn->setEnabled(false);
+    connect(m_sessionBtn, &QPushButton::clicked, this, &DriveWindow::toggleSession);
+    root->addWidget(m_sessionBtn);
+
     m_beepChk = new QCheckBox(tr("Bip d'alerte underboost"), page);
     m_beepChk->setChecked(true);
     root->addWidget(m_beepChk);
@@ -956,16 +973,6 @@ QWidget* DriveWindow::buildDrivePage(QWidget* parent) {
     m_csvLabel->setAlignment(Qt::AlignCenter);
     m_csvLabel->setStyleSheet(QStringLiteral("color:#64748b; font-size:11px;"));
     root->addWidget(m_csvLabel);
-
-    m_sessionBtn = new QPushButton(tr("▶  Lancer session conduite"), page);
-    m_sessionBtn->setObjectName("accentBtn");
-    m_sessionBtn->setMinimumHeight(56);
-    QFont sf = m_sessionBtn->font();
-    sf.setPointSizeF(sf.pointSizeF() + 3); sf.setBold(true);
-    m_sessionBtn->setFont(sf);
-    m_sessionBtn->setEnabled(false);
-    connect(m_sessionBtn, &QPushButton::clicked, this, &DriveWindow::toggleSession);
-    root->addWidget(m_sessionBtn);
 
     auto* shareBtn = new QPushButton(tr("Enregistrer le log sous…"), page);
     connect(shareBtn, &QPushButton::clicked, this, &DriveWindow::shareLastLog);
@@ -1045,7 +1052,27 @@ QWidget* DriveWindow::buildSensorsPage(QWidget* parent) {
     return scroll;
 }
 
+void DriveWindow::setNavPage(int index) {
+    if (m_driveNavBtn) {
+        const bool on = (index == 0);
+        m_driveNavBtn->setChecked(on);
+        m_driveNavBtn->setObjectName(on ? QStringLiteral("accentBtn") : QString());
+        m_driveNavBtn->style()->unpolish(m_driveNavBtn);
+        m_driveNavBtn->style()->polish(m_driveNavBtn);
+        m_driveNavBtn->update();
+    }
+    if (m_sensNavBtn) {
+        const bool on = (index == 1);
+        m_sensNavBtn->setChecked(on);
+        m_sensNavBtn->setObjectName(on ? QStringLiteral("accentBtn") : QString());
+        m_sensNavBtn->style()->unpolish(m_sensNavBtn);
+        m_sensNavBtn->style()->polish(m_sensNavBtn);
+        m_sensNavBtn->update();
+    }
+}
+
 void DriveWindow::showDrivePage() {
+    setNavPage(0);
     forceStackPageRefresh(m_stack, 0);
     if (m_sessionOn) return;
     if (m_connected && m_elm)
@@ -1059,6 +1086,7 @@ void DriveWindow::showDrivePage() {
 
 void DriveWindow::showSensorsPage() {
     if (!m_stack) return;
+    setNavPage(1);
     forceStackPageRefresh(m_stack, 1);
     // Différer le polling : laisser le stack peindre d'abord (évite crash Android).
     QTimer::singleShot(50, this, [this]() {

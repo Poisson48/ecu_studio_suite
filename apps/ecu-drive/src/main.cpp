@@ -18,8 +18,12 @@ QPushButton#accentBtn {
   background: #2563eb; border: none; font-weight: 700;
 }
 QPushButton#accentBtn:hover { background: #3b82f6; }
+QPushButton#accentBtn:checked { background: #2563eb; border: none; font-weight: 700; color: #e6edf3; }
 QPushButton#accentBtn:disabled {
   color: #64748b; background: #1e293b; border: 1px solid #334155;
+}
+QPushButton:checked {
+  background: #2563eb; border: none; font-weight: 700; color: #e6edf3;
 }
 QPushButton:disabled { color: #64748b; background: #111827; }
 QComboBox, QLineEdit {
