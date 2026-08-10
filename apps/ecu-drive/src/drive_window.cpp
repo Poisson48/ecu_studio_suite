@@ -171,7 +171,9 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
     });
 
     connect(m_updater, &Updater::stateChanged, this, &DriveWindow::onUpdaterState);
-    connect(m_updater, &Updater::progressChanged, this, &DriveWindow::onUpdaterState);
+    // Queued : laisse le paint Android tourner entre les ticks de progression.
+    connect(m_updater, &Updater::progressChanged, this, &DriveWindow::onUpdaterState,
+            Qt::QueuedConnection);
     connect(m_updater, &Updater::changelogChanged, this, [this]() {
         if (!m_updater->hasWhatsNew() || m_updater->updateAvailable())
             return;
@@ -2326,12 +2328,33 @@ void DriveWindow::refreshUpdateBanner() {
     const S st = m_updater->state();
     const bool show = (st == S::Available || st == S::Downloading
                        || st == S::Ready || st == S::Failed);
+
+    // Pulse UI pendant le DL : sous Qt Android, les setValue() ne se voient
+    // souvent qu'après un clic (d'où « bouge seulement si Vérifier MAJ »).
+    if (st == S::Downloading) {
+        if (!m_updateUiPulse) {
+            m_updateUiPulse = new QTimer(this);
+            m_updateUiPulse->setInterval(250);
+            connect(m_updateUiPulse, &QTimer::timeout, this, [this]() {
+                if (m_updater && m_updater->state() == Updater::Downloading)
+                    refreshUpdateBanner();
+                else if (m_updateUiPulse)
+                    m_updateUiPulse->stop();
+            });
+        }
+        if (!m_updateUiPulse->isActive())
+            m_updateUiPulse->start();
+    } else if (m_updateUiPulse) {
+        m_updateUiPulse->stop();
+    }
+
     m_updateBanner->setVisible(show);
     if (!show) return;
 
     m_updateProgress->setVisible(st == S::Downloading);
     if (st == S::Downloading && m_updater->progressIndeterminate()) {
-        m_updateProgress->setRange(0, 0); // animée (Android bufferise souvent le téléchargement)
+        m_updateProgress->setRange(0, 0);
+        m_updateProgress->setValue(0);
     } else {
         m_updateProgress->setRange(0, 100);
         m_updateProgress->setValue(int(m_updater->progress() * 100.0 + 0.5));
@@ -2340,9 +2363,14 @@ void DriveWindow::refreshUpdateBanner() {
     m_updateDismissBtn->setVisible(st != S::Downloading);
 
     if (st == S::Downloading) {
+        const QString label = m_updater->progressLabel();
         m_updateTitle->setText(tr("Téléchargement %1…").arg(m_updater->latestVersion()));
-        m_updateSub->setText(tr("%1 — ne ferme pas l'app")
-                                 .arg(m_updater->progressLabel()));
+        m_updateSub->setText(tr("%1 — ne ferme pas l'app").arg(label));
+        setStatus(tr("Téléchargement %1 — %2")
+                      .arg(m_updater->latestVersion(), label));
+        m_updateSub->repaint();
+        m_updateProgress->repaint();
+        m_updateBanner->repaint();
     } else if (st == S::Ready) {
         m_updateTitle->setText(tr("Version %1 prête").arg(m_updater->latestVersion()));
         m_updateSub->setText(tr("Appuie sur Installer pour lancer l'écran Android."));

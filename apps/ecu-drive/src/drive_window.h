@@ -24,6 +24,7 @@ class QProgressBar;
 class QWidget;
 class QStackedWidget;
 class QScrollArea;
+class QTimer;
 
 
 namespace elm { class Elm327; }
@@ -206,6 +207,8 @@ private:
     QProgressBar* m_updateProgress = nullptr;
     QPushButton*  m_updateActionBtn = nullptr;
     QPushButton*  m_updateDismissBtn = nullptr;
+    /** Force le paint de la barre de DL (Android ne repeint souvent qu'après un clic). */
+    QTimer*       m_updateUiPulse = nullptr;
 
     QHash<quint8, double> m_live;
     QHash<quint8, QString> m_liveUnit;

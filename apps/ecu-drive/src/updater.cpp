@@ -351,21 +351,23 @@ void Updater::applyDownloadProgress(qint64 received, qint64 total)
 
 void Updater::flushDownloadIo()
 {
-    if (!m_reply || !m_dlFile || !m_dlFile->isOpen()) {
-        if (m_state == Downloading)
-            applyDownloadProgress(m_bytesReceived, m_bytesTotal);
+    if (m_state != Downloading)
+        return;
+    if (m_reply && m_dlFile && m_dlFile->isOpen()) {
+        if (m_reply->bytesAvailable() > 0)
+            m_dlFile->write(m_reply->readAll());
+
+        qint64 total = m_bytesTotal;
+        if (total <= 0) {
+            const QVariant cl = m_reply->header(QNetworkRequest::ContentLengthHeader);
+            if (cl.isValid() && cl.toLongLong() > 0)
+                total = cl.toLongLong();
+        }
+        applyDownloadProgress(m_dlFile->size(), total);
         return;
     }
-    if (m_reply->bytesAvailable() > 0)
-        m_dlFile->write(m_reply->readAll());
-
-    qint64 total = m_bytesTotal;
-    if (total <= 0) {
-        const QVariant cl = m_reply->header(QNetworkRequest::ContentLengthHeader);
-        if (cl.isValid() && cl.toLongLong() > 0)
-            total = cl.toLongLong();
-    }
-    applyDownloadProgress(m_dlFile->size(), total);
+    // Même sans I/O : avancer l'estimation temps (évite barre figée à 0 %).
+    applyDownloadProgress(m_bytesReceived, m_bytesTotal);
 }
 
 void Updater::download()
