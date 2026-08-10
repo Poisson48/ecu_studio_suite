@@ -229,25 +229,37 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
         m_updater->acknowledgeNotes();
     });
 
-    // Différer ports / dernier tune : éviter de bloquer le premier show().
-    QTimer::singleShot(0, this, [this]() {
-        // Précharge la liste ECU en arrière-plan (évite le trou sans feedback
-        // au premier import ROM sur Android).
-        (void)availableEcuIds();
-        // Intent Android « Ouvrir avec » prioritaire sur lastTune.
-        consumeLaunchIntent();
-        if (m_tunePath.isEmpty()) {
-            QSettings s;
-            const QString last = s.value(QStringLiteral("drive/lastTune")).toString();
-            if (!last.isEmpty() && QFile::exists(last)) {
-                m_suppressEcuPromptOnce = true;
-                loadTuneFile(last);
+    // Différer ports / dernier tune : d'abord les autorisations runtime Android.
+    QTimer::singleShot(250, this, [this]() {
+        platformRequestStartupPermissions([this](bool allOk) {
+            if (!allOk) {
+                showInfoDialog(
+                    tr("Autorisations nécessaires"),
+                    tr("ECU Drive a besoin de :\n\n"
+                       "• Appareils à proximité — scan / connexion ELM Bluetooth\n"
+                       "• Fichiers / stockage — enregistrer les logs CSV "
+                       "(Android 10 et moins)\n"
+                       "• Position — scan Bluetooth sur Android 11 et moins\n\n"
+                       "Sans elles, le Bluetooth ou l'enregistrement peuvent échouer."),
+                    tr("Continuer"),
+                    tr("Ouvrir les réglages"),
+                    []() { platformOpenAppSettings(); });
             }
-        }
-        refreshPorts();
+            (void)availableEcuIds();
+            consumeLaunchIntent();
+            if (m_tunePath.isEmpty()) {
+                QSettings s;
+                const QString last = s.value(QStringLiteral("drive/lastTune")).toString();
+                if (!last.isEmpty() && QFile::exists(last)) {
+                    m_suppressEcuPromptOnce = true;
+                    loadTuneFile(last);
+                }
+            }
+            refreshPorts();
 #if defined(ELM_HAVE_BLUETOOTH)
-        selectLastBtDevice();
+            selectLastBtDevice();
 #endif
+        });
     });
     QTimer::singleShot(1500, m_updater, &Updater::check);
 }
@@ -2517,6 +2529,20 @@ QString DriveWindow::promptSaveLogAs(const QString& sourceCsv) {
         return {};
 
     const QString name = QFileInfo(sourceCsv).fileName();
+
+#if defined(Q_OS_ANDROID)
+    // MediaStore → Téléchargements : pas besoin de WRITE sur Android 10+.
+    const QString media = platformSaveToDownloads(sourceCsv, name);
+    if (!media.isEmpty()) {
+        m_lastCsv = media;
+        m_session.setCsvPath(media);
+        m_csvLabel->setText(tr("CSV : %1").arg(name));
+        setStatus(tr("Log enregistré dans Téléchargements :\n%1").arg(name));
+        platformToast(tr("Log dans Téléchargements"));
+        return media;
+    }
+#endif
+
     const QString suggestDir = suggestedLogSaveDir();
     QDir().mkpath(suggestDir);
     const QString suggested = suggestDir + QLatin1Char('/') + name;

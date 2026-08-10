@@ -2,6 +2,7 @@
 
 #include <QCoreApplication>
 #include <QFileInfo>
+#include <QTimer>
 
 #ifdef Q_OS_ANDROID
 #  include <QJniObject>
@@ -40,6 +41,50 @@ bool androidHasBluetoothPermissions()
         kUpdateHelper, "hasBluetoothPermissions",
         "(Landroid/content/Context;)Z",
         ctx.object());
+}
+
+bool androidHasAllRuntimePermissions()
+{
+    const QJniObject ctx = androidContext();
+    if (!ctx.isValid())
+        return false;
+    return QJniObject::callStaticMethod<jboolean>(
+        kUpdateHelper, "hasAllRuntimePermissions",
+        "(Landroid/content/Context;)Z",
+        ctx.object());
+}
+
+bool androidRequestMissingRuntimePermissions()
+{
+    const QJniObject activity = androidActivity();
+    if (!activity.isValid())
+        return false;
+    return QJniObject::callStaticMethod<jboolean>(
+        kUpdateHelper, "requestMissingRuntimePermissions",
+        "(Landroid/app/Activity;)Z",
+        activity.object<jobject>());
+}
+
+void pollUntilPermissionsSettled(std::function<void(bool)> done)
+{
+    auto* timer = new QTimer(qApp);
+    timer->setInterval(350);
+    QObject::connect(timer, &QTimer::timeout, qApp, [timer, done, ticks = 0]() mutable {
+        ++ticks;
+        if (androidHasAllRuntimePermissions()) {
+            timer->stop();
+            timer->deleteLater();
+            done(true);
+            return;
+        }
+        // ~20 s : dialogue traité ou ignoré
+        if (ticks >= 57) {
+            timer->stop();
+            timer->deleteLater();
+            done(androidHasAllRuntimePermissions());
+        }
+    });
+    timer->start();
 }
 
 } // namespace
@@ -84,14 +129,30 @@ void platformOpenAppSettings()
         ctx.object());
 }
 
+QString platformSaveToDownloads(const QString& localPath, const QString& displayName)
+{
+    if (localPath.isEmpty() || !QFileInfo::exists(localPath))
+        return {};
+    const QJniObject ctx = androidContext();
+    if (!ctx.isValid())
+        return {};
+    const QJniObject jPath = QJniObject::fromString(localPath);
+    const QJniObject jName = QJniObject::fromString(
+        displayName.isEmpty() ? QFileInfo(localPath).fileName() : displayName);
+    const QJniObject jOut = QJniObject::callStaticObjectMethod(
+        kUpdateHelper, "copyFileToDownloads",
+        "(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        ctx.object(), jPath.object<jstring>(), jName.object<jstring>());
+    if (!jOut.isValid())
+        return {};
+    return jOut.toString();
+}
+
 void platformRequestBluetoothPermissions(std::function<void(bool granted)> done)
 {
     if (!done)
         return;
 
-    // Source de vérité = PackageManager Android (pas seulement l'état Qt).
-    // Qt renvoyait parfois Denied alors que « Appareils à proximité » était déjà ON,
-    // et l'ancien code abandonnait sans rappeler requestPermission.
     if (androidHasBluetoothPermissions()) {
         done(true);
         return;
@@ -104,14 +165,11 @@ void platformRequestBluetoothPermissions(std::function<void(bool granted)> done)
 
     QBluetoothPermission bt;
     bt.setCommunicationModes(QBluetoothPermission::Access);
-    // Toujours redemander si pas accordé côté Android — y compris après Denied
-    // (l'utilisateur a pu activer dans Réglages, ou le dialogue n'a jamais été montré).
     qApp->requestPermission(bt, qApp, [finish](const QPermission&) {
         if (androidHasBluetoothPermissions()) {
             finish(true);
             return;
         }
-        // API < 31 : le discovery Classic exige souvent la localisation.
         QLocationPermission loc;
         loc.setAccuracy(QLocationPermission::Precise);
         if (qApp->checkPermission(loc) == Qt::PermissionStatus::Granted) {
@@ -123,8 +181,33 @@ void platformRequestBluetoothPermissions(std::function<void(bool granted)> done)
         });
     });
 #else
-    done(false);
+    // Fallback : dialogue système natif (toutes perms runtime).
+    if (!androidRequestMissingRuntimePermissions()) {
+        done(androidHasBluetoothPermissions());
+        return;
+    }
+    pollUntilPermissionsSettled([done](bool) {
+        done(androidHasBluetoothPermissions());
+    });
 #endif
+}
+
+void platformRequestStartupPermissions(std::function<void(bool allGranted)> done)
+{
+    if (!done)
+        return;
+
+    if (androidHasAllRuntimePermissions()) {
+        done(true);
+        return;
+    }
+
+    // Un seul dialogue système pour BT + stockage (+ localisation si besoin).
+    if (!androidRequestMissingRuntimePermissions()) {
+        done(androidHasAllRuntimePermissions());
+        return;
+    }
+    pollUntilPermissionsSettled(std::move(done));
 }
 
 QString platformLaunchIntentUri(bool clear)
@@ -162,7 +245,12 @@ bool platformShareFile(const QString& path, const QString& mimeType)
 bool platformInstallApk(const QString&) { return false; }
 void platformToast(const QString&) {}
 void platformOpenAppSettings() {}
+QString platformSaveToDownloads(const QString&, const QString&) { return {}; }
 void platformRequestBluetoothPermissions(std::function<void(bool granted)> done)
+{
+    if (done) done(true);
+}
+void platformRequestStartupPermissions(std::function<void(bool allGranted)> done)
 {
     if (done) done(true);
 }

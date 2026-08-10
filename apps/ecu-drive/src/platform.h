@@ -19,8 +19,20 @@ void platformToast(const QString& message);
  */
 void platformRequestBluetoothPermissions(std::function<void(bool granted)> done);
 
+/**
+ * Au démarrage : demande en une fois BT + stockage (+ localisation legacy)
+ * si elles ne sont pas déjà accordées. done(true) si tout OK.
+ */
+void platformRequestStartupPermissions(std::function<void(bool allGranted)> done);
+
 /** Ouvre la fiche app (Réglages → Autorisations). No-op hors Android. */
 void platformOpenAppSettings();
+
+/**
+ * Copie un fichier vers Téléchargements (MediaStore / public Downloads).
+ * Retourne le chemin ou content:// , ou QString() si échec. No-op hors Android.
+ */
+QString platformSaveToDownloads(const QString& localPath, const QString& displayName);
 
 /**
  * URI du fichier passé à l'Activity (ACTION_VIEW), ou vide.
