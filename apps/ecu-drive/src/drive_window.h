@@ -132,6 +132,7 @@ private:
     void autoStartCsv();
     void autoStopCsv();
     void appendCsv(const std::vector<ecu::ValidationResult>& results);
+    static QString csvSanitizeMapName(const QString& mapName);
     void shareLastLog();
     void shareLastLogSystem();
     void maybeAlert();
@@ -247,6 +248,8 @@ private:
     QString m_tunePath;
     QString m_lastCsv;
     QFile* m_csv = nullptr;
+    QStringList m_csvMaps;       // ordre des colonnes map du CSV v2
+    qint64 m_lastCsvWriteMs = 0;
     int m_lastAlertAt = 0;
 
 #if defined(ELM_HAVE_BLUETOOTH)

@@ -211,6 +211,12 @@ public:
                                           const std::string& unit);
     static MeasureKind defaultMeasureForCategory(const std::string& cat);
     static std::uint8_t defaultMeasurePid(const std::string& cat);
+    /**
+     * Grandeur OBD d'après l'unité de la map (prioritaire sur la catégorie).
+     * nullopt = pas de proxy OBD fiable (ex. facteur sans unité « - »).
+     */
+    static std::optional<std::pair<MeasureKind, std::uint8_t>>
+    inferMeasure(const std::string& unit, const std::string& category);
 
 private:
     void buildRules();

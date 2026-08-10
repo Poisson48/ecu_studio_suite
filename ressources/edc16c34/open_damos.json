@@ -2080,7 +2080,7 @@
     },
     {
       "name": "AirCtl_mDesBas_MAP",
-      "category": "boost",
+      "category": "air",
       "description": "Base desired air mass vs RPM (X axis) and pedal load (Y axis). Defines the target of the air controller (combined VGT/EGR). Increase = more requested air = the turbo pushes more. Fundamental reference for any boost calibration.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",

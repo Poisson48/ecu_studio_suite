@@ -2369,7 +2369,31 @@ void DriveWindow::autoStartCsv() {
         return;
     }
     m_session.setCsvPath(m_lastCsv);
-    QTextStream(m_csv) << "time,map,measured,expected,delta,unit,status,rpm,load\n";
+    m_csvMaps.clear();
+    m_lastCsvWriteMs = 0;
+
+    QTextStream ts(m_csv);
+    ts << QStringLiteral("# ecu-drive-session v2\n");
+    ts << QStringLiteral("# app=") << QStringLiteral(APP_VERSION)
+       << QStringLiteral(" ecu=") << m_validator.ecuId()
+       << QStringLiteral(" rom_md5=") << m_validator.romMd5()
+       << QStringLiteral(" started=")
+       << QDateTime::currentDateTime().toString(Qt::ISODate) << '\n';
+    ts << QStringLiteral("# format=wide — 1 ligne = 1 échantillon live (rpm/load/map + maps)\n");
+    ts << QStringLiteral("# status: OK | Attention | Ecart | (vide=pas de donnee)\n");
+
+    QString header = QStringLiteral("time,rpm,load_pct,speed_kmh,map_mbar,maf_gs");
+    for (const auto& rule : m_validator.rules()) {
+        if (!rule.enabled) continue;
+        const QString name = QString::fromStdString(rule.mapName);
+        m_csvMaps.append(name);
+        const QString col = csvSanitizeMapName(name);
+        header += QStringLiteral(",%1_meas,%1_exp,%1_delta,%1_status,%1_unit")
+                      .arg(col);
+    }
+    ts << header << '\n';
+    m_csv->flush();
+
     m_csvLabel->setText(tr("CSV : %1").arg(QFileInfo(m_lastCsv).fileName()));
     setStatus(tr("Log CSV en cours — enregistrement sous à la fin"));
     platformToast(tr("Log CSV démarré"));
@@ -2377,25 +2401,89 @@ void DriveWindow::autoStartCsv() {
 
 void DriveWindow::autoStopCsv() {
     if (!m_csv) return;
+    {
+        QTextStream ts(m_csv);
+        const auto& c = m_session.current();
+        ts << QStringLiteral("# summary ticks=") << c.ticks
+           << QStringLiteral(" ok=") << c.ok
+           << QStringLiteral(" warn=") << c.warn
+           << QStringLiteral(" fail=") << c.fail
+           << QStringLiteral(" nodata=") << c.noData
+           << QStringLiteral(" ok_pct=") << QString::number(c.okRatio(), 'f', 1)
+           << QStringLiteral(" peak_abs_delta=") << QString::number(c.peakAbsDelta, 'f', 1)
+           << QStringLiteral(" peak_map=") << c.peakMap << '\n';
+    }
     m_csv->flush();
     m_csv->close();
     m_csv->deleteLater();
     m_csv = nullptr;
+    m_csvMaps.clear();
     m_csvLabel->setText(tr("CSV : %1 (terminé)").arg(QFileInfo(m_lastCsv).fileName()));
+}
+
+QString DriveWindow::csvSanitizeMapName(const QString& mapName) {
+    QString s = mapName;
+    for (QChar& ch : s) {
+        if (!ch.isLetterOrNumber() && ch != QLatin1Char('_'))
+            ch = QLatin1Char('_');
+    }
+    return s;
 }
 
 void DriveWindow::appendCsv(const std::vector<ecu::ValidationResult>& results) {
     if (!m_csv) return;
+
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    // Rate-limit : une ligne toutes les 250 ms max (évite 1 ligne / PID).
+    if (m_lastCsvWriteMs > 0 && (now - m_lastCsvWriteMs) < 250)
+        return;
+
+    const double rpm = m_live.value(0x0C, 0.0);
+    const double load = m_live.value(0x04, 0.0);
+    const double speed = m_live.value(0x0D, 0.0);
+    const double mapKpa = m_live.value(0x0B, 0.0);
+    const double maf = m_live.value(0x10, 0.0);
+
+    bool anyMap = false;
+    QHash<QString, const ecu::ValidationResult*> byName;
+    byName.reserve(static_cast<int>(results.size()));
+    for (const auto& r : results) {
+        byName.insert(r.mapName, &r);
+        if (r.status != ecu::ValidationStatus::NoData)
+            anyMap = true;
+    }
+
+    // Ignore les ticks sans RPM ni mesure utile (démarrage / perte liaison).
+    if (rpm < 200.0 && !anyMap)
+        return;
+
+    m_lastCsvWriteMs = now;
     QTextStream ts(m_csv);
     const QString t = QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd HH:mm:ss.zzz"));
-    for (const auto& r : results) {
-        ts << t << ',' << r.mapName << ','
-           << (r.status == ecu::ValidationStatus::NoData ? QString() : QString::number(r.measured, 'f', 2)) << ','
-           << (r.status == ecu::ValidationStatus::NoData ? QString() : QString::number(r.expected, 'f', 2)) << ','
-           << (r.status == ecu::ValidationStatus::NoData ? QString() : QString::number(r.delta, 'f', 2)) << ','
-           << r.unit << ',' << statusLabel(r.status) << ','
-           << r.xPhys << ',' << r.yPhys << '\n';
+    auto numOrEmpty = [](double v, bool ok, int prec) -> QString {
+        return ok ? QString::number(v, 'f', prec) : QString();
+    };
+
+    ts << t << ','
+       << numOrEmpty(rpm, rpm > 0.0, 0) << ','
+       << numOrEmpty(load, load > 0.0 || rpm > 0.0, 1) << ','
+       << numOrEmpty(speed, m_live.contains(0x0D), 0) << ','
+       << numOrEmpty(ecu::TuneValidator::mapAbsKpaToMbar(mapKpa), m_live.contains(0x0B), 0) << ','
+       << numOrEmpty(maf, m_live.contains(0x10), 2);
+
+    for (const QString& mapName : m_csvMaps) {
+        const ecu::ValidationResult* r = byName.value(mapName, nullptr);
+        if (!r || r->status == ecu::ValidationStatus::NoData) {
+            ts << QStringLiteral(",,,,,");
+            continue;
+        }
+        ts << ',' << QString::number(r->measured, 'f', 2)
+           << ',' << QString::number(r->expected, 'f', 2)
+           << ',' << QString::number(r->delta, 'f', 2)
+           << ',' << statusLabel(r->status)
+           << ',' << r->unit;
     }
+    ts << '\n';
     m_csv->flush();
 }
 

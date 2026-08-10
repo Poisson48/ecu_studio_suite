@@ -53,12 +53,41 @@ std::uint8_t TuneValidator::defaultMeasurePid(const std::string& cat) {
     return 0x0B;
 }
 
+std::optional<std::pair<MeasureKind, std::uint8_t>>
+TuneValidator::inferMeasure(const std::string& unitRaw, const std::string& category) {
+    QString u = QString::fromStdString(unitRaw).trimmed().toLower();
+    // Normalise quelques variantes courantes.
+    u.replace(QStringLiteral("³"), QStringLiteral("3"));
+    u.replace(QStringLiteral(" "), QString());
+
+    if (u.contains(QLatin1String("mbar")) || u == QLatin1String("bar")
+        || u == QLatin1String("kpa")) {
+        return std::make_pair(MeasureKind::MapAbsMbar, static_cast<std::uint8_t>(0x0B));
+    }
+    if (u.contains(QLatin1String("kg/h")) || u.contains(QLatin1String("kg/hr"))
+        || u.contains(QLatin1String("g/s")) || u.contains(QLatin1String("mg/stroke"))
+        || u.contains(QLatin1String("mg/hub"))) {
+        return std::make_pair(MeasureKind::DirectPid, static_cast<std::uint8_t>(0x10));
+    }
+    if (u.contains(QLatin1String("lambda")) || u.contains(QStringLiteral("λ"))
+        || u.contains(QLatin1String("afr"))) {
+        return std::make_pair(MeasureKind::DirectPid, static_cast<std::uint8_t>(0x24));
+    }
+    // Facteur sans unité (« - ») : pas de proxy OBD fiable → ne pas valider.
+    if (u.isEmpty() || u == QLatin1String("-") || u == QLatin1String("_"))
+        return std::nullopt;
+
+    return std::make_pair(defaultMeasureForCategory(category),
+                          defaultMeasurePid(category));
+}
+
 ValidationStatus TuneValidator::classifyDelta(double delta, double tolerance,
                                               const std::string& unit) {
     double tol = tolerance;
     if (unit == "λ" || unit == "lambda") tol = 0.05;
-    else if (unit == "g/s" || unit == "g/s " || unit == "mg/stroke")
-        tol = std::max(tol * 0.02, 0.5); // air/smoke : échelle différente
+    else if (unit == "g/s" || unit == "g/s " || unit == "mg/stroke"
+             || unit == "kg/h" || unit == "Kg/h" || unit == "kg/hr")
+        tol = std::max(tol * 0.02, 5.0); // air mass : échelle différente du mbar
     else if (unit == "kPa" || unit == "bar")
         tol = std::max(tol / 10.0, 5.0);
     const double a = std::abs(delta);
@@ -281,14 +310,17 @@ void TuneValidator::buildRules() {
         if (!categoryEnabled(e.category)) continue;
         if (m_reloc.find(e.name) == m_reloc.end()) continue;
 
+        const auto measure = inferMeasure(e.data.unit, e.category);
+        if (!measure) continue; // pas de grandeur OBD comparable (ex. facteur « - »)
+
         ValidationRule rule;
         rule.mapName    = e.name;
         rule.category   = e.category;
         rule.xPid       = 0x0C;
         rule.yPid       = 0x04;
         rule.yMode      = m_yMode;
-        rule.measure    = defaultMeasureForCategory(e.category);
-        rule.measurePid = defaultMeasurePid(e.category);
+        rule.measure    = measure->first;
+        rule.measurePid = measure->second;
         rule.enabled    = true;
         m_rules.push_back(std::move(rule));
     }

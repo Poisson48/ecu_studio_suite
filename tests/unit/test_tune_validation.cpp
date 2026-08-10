@@ -16,12 +16,27 @@ TEST(TuneValidation, ClassifyDeltaMbar) {
     EXPECT_EQ(TuneValidator::classifyDelta(120.0, 50.0, "mbar"), ValidationStatus::Fail);
 }
 
-TEST(TuneValidation, DefaultMeasureForCategory) {
-    EXPECT_EQ(TuneValidator::defaultMeasureForCategory("boost"),
-              ecu::MeasureKind::MapAbsMbar);
-    EXPECT_EQ(TuneValidator::defaultMeasurePid("air"), 0x10);
-    EXPECT_EQ(TuneValidator::defaultMeasurePid("fuel"), 0x23);
-    EXPECT_EQ(TuneValidator::defaultMeasurePid("smoke"), 0x24);
+TEST(TuneValidation, InferMeasureFromUnit) {
+    auto boost = TuneValidator::inferMeasure("mbar", "boost");
+    ASSERT_TRUE(boost.has_value());
+    EXPECT_EQ(boost->first, ecu::MeasureKind::MapAbsMbar);
+    EXPECT_EQ(boost->second, 0x0B);
+
+    // AirCtl était mal tagué « boost » mais l'unité kg/h impose le MAF.
+    auto airMass = TuneValidator::inferMeasure("kg/h", "boost");
+    ASSERT_TRUE(airMass.has_value());
+    EXPECT_EQ(airMass->first, ecu::MeasureKind::DirectPid);
+    EXPECT_EQ(airMass->second, 0x10);
+
+    auto factor = TuneValidator::inferMeasure("-", "air");
+    EXPECT_FALSE(factor.has_value());
+}
+
+TEST(TuneValidation, ClassifyDeltaKgH) {
+    // tol = max(50*0.02, 5) = 5 → 4 OK, 8 Warn, 12 Fail
+    EXPECT_EQ(TuneValidator::classifyDelta(4.0, 50.0, "kg/h"), ValidationStatus::Ok);
+    EXPECT_EQ(TuneValidator::classifyDelta(8.0, 50.0, "kg/h"), ValidationStatus::Warn);
+    EXPECT_EQ(TuneValidator::classifyDelta(12.0, 50.0, "kg/h"), ValidationStatus::Fail);
 }
 
 TEST(TuneValidation, MapAbsKpaToMbarNoDoubleBaro) {
