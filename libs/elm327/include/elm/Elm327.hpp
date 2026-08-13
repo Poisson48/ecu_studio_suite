@@ -67,6 +67,13 @@ public:
     void startCanMonitor();
     void stopCanMonitor();
 
+    /**
+     * Envoie une commande ELM/OBD/KWP brute (ex. "010C", "ATDP", "3E").
+     * La réponse complète (jusqu'au prompt) arrive via rawResponse.
+     * rawLine continue d'émettre chaque ligne.
+     */
+    void sendRawCommand(const QString& command);
+
 signals:
     void connected(const QString& version);
     void disconnected();
@@ -81,6 +88,8 @@ signals:
     void vinReady(const QString& vin);
     void canFrame(quint32 id, QByteArray data);
     void rawLine(const QString& line);
+    /** Réponse complète d'une sendRawCommand (texte entre envoi et '>'). */
+    void rawResponse(const QString& command, const QString& response);
 
 private slots:
     void onReadyRead();

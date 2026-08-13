@@ -46,6 +46,8 @@
 #include <QPixmap>
 #include <QSize>
 #include <QColor>
+#include <QLineEdit>
+#include <QPlainTextEdit>
 #include <thread>
 #include <functional>
 #include <type_traits>
@@ -103,6 +105,8 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
         refreshDiagButtons();
         if (m_stack && m_stack->currentIndex() == 1)
             ensureSensorsPolling();
+        else if (m_stack && m_stack->currentIndex() == 2)
+            ensureTurboPolling();
 #if defined(ELM_HAVE_BLUETOOTH)
         if (m_btCombo && !m_btCombo->currentData().toString().isEmpty()
             && m_elm->isBluetoothTransport()) {
@@ -182,6 +186,7 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
         resumePollingAfterDtc();
     });
     connect(m_elm, &elm::Elm327::pidResult, this, &DriveWindow::onPid);
+    connect(m_elm, &elm::Elm327::rawResponse, this, &DriveWindow::onRawResponse);
     connect(m_elm, &elm::Elm327::dtcsReady, this,
             [this](const QStringList& codes, bool pending) {
         mergeDtcCodes(codes, pending);
@@ -1149,6 +1154,97 @@ QWidget* DriveWindow::buildDiagPage(QWidget* parent) {
     root->setSpacing(10);
     root->setSizeConstraint(QLayout::SetMinimumSize);
 
+    // ── Turbo / wastegate (live + protocole) ────────────────────────────
+    auto* turboTitle = new QLabel(tr("Turbo / wastegate"), page);
+    turboTitle->setStyleSheet(QStringLiteral("color:#e6edf3; font-weight:700; font-size:16px;"));
+    root->addWidget(turboTitle);
+
+    m_turboStatus = new QLabel(
+        tr("Connecte un ELM327 : MAP, baro, Δboost, MAF et régime en live."), page);
+    m_turboStatus->setWordWrap(true);
+    m_turboStatus->setStyleSheet(QStringLiteral("color:#93c5fd; font-size:12px;"));
+    root->addWidget(m_turboStatus);
+
+    auto addTurboRow = [&](const QString& name, QLabel*& valueOut) {
+        auto* row = new QWidget(page);
+        auto* hl = new QHBoxLayout(row);
+        hl->setContentsMargins(8, 6, 8, 6);
+        row->setStyleSheet(QStringLiteral(
+            "QWidget { background:#111827; border:1px solid #334155; border-radius:8px; }"));
+        auto* n = new QLabel(name, row);
+        n->setStyleSheet(QStringLiteral("color:#e6edf3; border:none; background:transparent;"));
+        n->setWordWrap(true);
+        valueOut = new QLabel(QStringLiteral("—"), row);
+        valueOut->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        valueOut->setStyleSheet(QStringLiteral(
+            "color:#60a5fa; font-weight:700; font-size:16px; border:none; background:transparent;"));
+        valueOut->setMinimumWidth(100);
+        hl->addWidget(n, 1);
+        hl->addWidget(valueOut);
+        root->addWidget(row);
+    };
+    addTurboRow(tr("MAP (collecteur)"), m_turboMap);
+    addTurboRow(tr("Baro"), m_turboBaro);
+    addTurboRow(tr("Δ boost (MAP − baro)"), m_turboDelta);
+    addTurboRow(tr("MAF"), m_turboMaf);
+    addTurboRow(tr("Régime"), m_turboRpm);
+
+    auto* protoTitle = new QLabel(tr("Protocole de test guidé"), page);
+    protoTitle->setStyleSheet(QStringLiteral("color:#e6edf3; font-weight:700; font-size:14px;"));
+    root->addWidget(protoTitle);
+
+    auto* proto = new QLabel(
+        tr("1. Ralenti chaud, frein à main : MAP ≈ baro (Δ ~0), MAF faible.\n"
+           "2. Écoute l’électrovanne wastegate (clic / sifflement) au freinage "
+           "moteur puis en légère accélération.\n"
+           "3. Reprise en 3e ~2000–3000 tr/min, pleine charge : MAP doit monter "
+           "(cible Stage 2A ~1500–1800 mbar abs). Si MAP reste ~1000 mbar et "
+           "MAF « atmos », le turbo ne pousse pas.\n"
+           "4. Note Δboost max et les DTC (P0299 / EGR).\n\n"
+           "Actionneur Diagbox : pas de bouton « ouvrir wastegate » ici — les "
+           "routines KWP PSA (local ID) ne sont pas connues. Utilise Diagbox "
+           "ou la console brute ci-dessous si tu as la trame."),
+        page);
+    proto->setWordWrap(true);
+    proto->setStyleSheet(QStringLiteral("color:#cbd5e1; font-size:12px;"));
+    root->addWidget(proto);
+
+    auto* rawTitle = new QLabel(tr("Console OBD / KWP brute"), page);
+    rawTitle->setStyleSheet(QStringLiteral("color:#e6edf3; font-weight:700; font-size:14px;"));
+    root->addWidget(rawTitle);
+
+    auto* rawHint = new QLabel(
+        tr("Ex. 010C, ATDP, 3E — réponse jusqu’au prompt ELM. "
+           "Commandes constructeur à tes risques."),
+        page);
+    rawHint->setWordWrap(true);
+    rawHint->setStyleSheet(QStringLiteral("color:#94a3b8; font-size:11px;"));
+    root->addWidget(rawHint);
+
+    auto* rawRow = new QHBoxLayout;
+    m_rawCmdEdit = new QLineEdit(page);
+    m_rawCmdEdit->setPlaceholderText(tr("Commande ELM…"));
+    m_rawCmdEdit->setMinimumHeight(40);
+    m_rawSendBtn = new QPushButton(tr("Envoyer"), page);
+    m_rawSendBtn->setMinimumHeight(40);
+    m_rawSendBtn->setObjectName(QStringLiteral("accentBtn"));
+    connect(m_rawSendBtn, &QPushButton::clicked, this, &DriveWindow::sendRawDiagCommand);
+    connect(m_rawCmdEdit, &QLineEdit::returnPressed, this, &DriveWindow::sendRawDiagCommand);
+    rawRow->addWidget(m_rawCmdEdit, 1);
+    rawRow->addWidget(m_rawSendBtn);
+    root->addLayout(rawRow);
+
+    m_rawLog = new QPlainTextEdit(page);
+    m_rawLog->setReadOnly(true);
+    m_rawLog->setMaximumBlockCount(200);
+    m_rawLog->setMinimumHeight(120);
+    m_rawLog->setPlaceholderText(tr("Réponses…"));
+    m_rawLog->setStyleSheet(QStringLiteral(
+        "QPlainTextEdit { background:#0b1220; color:#a7f3d0; font-family:monospace; font-size:12px; "
+        "border:1px solid #334155; border-radius:8px; }"));
+    root->addWidget(m_rawLog);
+
+    // ── Codes défaut ────────────────────────────────────────────────────
     auto* title = new QLabel(tr("Codes défaut OBD"), page);
     title->setStyleSheet(QStringLiteral("color:#e6edf3; font-weight:700; font-size:16px;"));
     root->addWidget(title);
@@ -1253,12 +1349,12 @@ void DriveWindow::showDiagPage() {
     if (!m_stack) return;
     setNavPage(2);
     forceStackPageRefresh(m_stack, 2);
-    if (!m_sessionOn && m_connected && m_elm)
-        m_elm->stopPolling();
     refreshDiagButtons();
     QTimer::singleShot(50, this, [this]() {
-        if (m_stack && m_stack->currentIndex() == 2)
-            forceStackPageRefresh(m_stack, 2);
+        if (!m_stack || m_stack->currentIndex() != 2) return;
+        forceStackPageRefresh(m_stack, 2);
+        ensureTurboPolling();
+        refreshTurboLive();
     });
 }
 
@@ -1328,9 +1424,15 @@ void DriveWindow::refreshDiagButtons() {
     if (m_dtcReadBtn) m_dtcReadBtn->setEnabled(on && m_dtcAwaiting == 0 && !m_dtcClearPending);
     if (m_dtcClearBtn) m_dtcClearBtn->setEnabled(on && m_dtcAwaiting == 0 && !m_dtcClearPending);
     if (m_dtcCopyBtn) m_dtcCopyBtn->setEnabled(!m_dtcFlags.isEmpty());
+    if (m_rawSendBtn) m_rawSendBtn->setEnabled(on);
+    if (m_rawCmdEdit) m_rawCmdEdit->setEnabled(on);
     if (m_dtcStatus && !on && m_dtcAwaiting == 0 && !m_dtcClearPending) {
         m_dtcStatus->setText(
             tr("Hors ligne — connecte un ELM327 pour lire / effacer les DTC."));
+    }
+    if (m_turboStatus && !on) {
+        m_turboStatus->setText(
+            tr("Hors ligne — connecte un ELM327 pour le live turbo."));
     }
 }
 
@@ -1346,6 +1448,8 @@ void DriveWindow::resumePollingAfterDtc() {
     }
     if (m_stack && m_stack->currentIndex() == 1)
         ensureSensorsPolling();
+    else if (m_stack && m_stack->currentIndex() == 2)
+        ensureTurboPolling();
 }
 
 void DriveWindow::readDtcs() {
@@ -1403,6 +1507,86 @@ void DriveWindow::copyDtcs() {
     QApplication::clipboard()->setText(lines.join(QLatin1Char('\n')));
     setStatus(tr("%1 code(s) copié(s)").arg(lines.size()));
     platformToast(tr("%1 DTC copié(s)").arg(lines.size()));
+}
+
+void DriveWindow::ensureTurboPolling() {
+    if (!m_connected || !m_elm) {
+        if (m_turboStatus)
+            m_turboStatus->setText(tr("Hors ligne — connecte un ELM327 d'abord."));
+        return;
+    }
+    if (m_sessionOn) {
+        if (m_turboStatus)
+            m_turboStatus->setText(tr("Session conduite active — PID de validation (même bus)."));
+        refreshTurboLive();
+        return;
+    }
+    if (m_dtcAwaiting > 0 || m_dtcClearPending) return;
+    // MAP, baro, MAF, RPM, charge — suffisant pour juger wastegate / underboost.
+    m_elm->startPolling({ 0x0B, 0x33, 0x10, 0x0C, 0x04 }, 180);
+    if (m_turboStatus)
+        m_turboStatus->setText(tr("Live turbo — MAP / baro / MAF / régime."));
+    refreshTurboLive();
+}
+
+void DriveWindow::refreshTurboLive() {
+    auto fmt = [](bool ok, const QString& text) {
+        return ok ? text : QStringLiteral("—");
+    };
+    const bool hasMap = m_live.contains(0x0B);
+    const bool hasBaro = m_live.contains(0x33);
+    const bool hasMaf = m_live.contains(0x10);
+    const bool hasRpm = m_live.contains(0x0C);
+
+    const double mapMbar = hasMap
+        ? ecu::TuneValidator::mapAbsKpaToMbar(m_live.value(0x0B)) : 0.0;
+    const double baroMbar = hasBaro
+        ? ecu::TuneValidator::mapAbsKpaToMbar(m_live.value(0x33)) : 0.0;
+
+    if (m_turboMap)
+        m_turboMap->setText(fmt(hasMap, tr("%1 mbar").arg(mapMbar, 0, 'f', 0)));
+    if (m_turboBaro)
+        m_turboBaro->setText(fmt(hasBaro, tr("%1 mbar").arg(baroMbar, 0, 'f', 0)));
+    if (m_turboDelta) {
+        if (hasMap && hasBaro) {
+            const double d = mapMbar - baroMbar;
+            m_turboDelta->setText(tr("%1 mbar").arg(d, 0, 'f', 0));
+            m_turboDelta->setStyleSheet(QStringLiteral(
+                "color:%1; font-weight:700; font-size:16px; border:none; background:transparent;")
+                .arg(d >= 150.0 ? QStringLiteral("#34d399")
+                     : d >= 50.0 ? QStringLiteral("#fbbf24")
+                                 : QStringLiteral("#f87171")));
+        } else {
+            m_turboDelta->setText(QStringLiteral("—"));
+            m_turboDelta->setStyleSheet(QStringLiteral(
+                "color:#60a5fa; font-weight:700; font-size:16px; border:none; background:transparent;"));
+        }
+    }
+    if (m_turboMaf)
+        m_turboMaf->setText(fmt(hasMaf, tr("%1 g/s").arg(m_live.value(0x10), 0, 'f', 1)));
+    if (m_turboRpm)
+        m_turboRpm->setText(fmt(hasRpm, tr("%1 tr/min").arg(m_live.value(0x0C), 0, 'f', 0)));
+}
+
+void DriveWindow::sendRawDiagCommand() {
+    if (!m_connected || !m_elm) {
+        platformToast(tr("Connecte l'ELM d'abord"));
+        return;
+    }
+    if (!m_rawCmdEdit) return;
+    const QString cmd = m_rawCmdEdit->text().trimmed();
+    if (cmd.isEmpty()) return;
+    if (m_rawLog)
+        m_rawLog->appendPlainText(QStringLiteral("> %1").arg(cmd));
+    m_elm->sendRawCommand(cmd);
+    setStatus(tr("Commande brute : %1").arg(cmd));
+}
+
+void DriveWindow::onRawResponse(const QString& command, const QString& response) {
+    if (!m_rawLog) return;
+    QString body = response.trimmed();
+    if (body.isEmpty()) body = QStringLiteral("(vide)");
+    m_rawLog->appendPlainText(QStringLiteral("[%1]\n%2").arg(command, body));
 }
 
 void DriveWindow::ensureSensorsPolling() {
@@ -2256,6 +2440,10 @@ void DriveWindow::stopSession() {
     endBusy();
     if (sum.ticks > 0) showSummary(sum);
     else setStatus(tr("Session arrêtée (aucune donnée)."));
+    if (m_stack && m_stack->currentIndex() == 1)
+        ensureSensorsPolling();
+    else if (m_stack && m_stack->currentIndex() == 2)
+        ensureTurboPolling();
 }
 
 void DriveWindow::onPid(quint8 pid, double value, const QString&, const QString& unit) {
@@ -2265,6 +2453,8 @@ void DriveWindow::onPid(quint8 pid, double value, const QString&, const QString&
     if (m_sessionOn) runValidation();
     if (!m_uiSuspended && m_stack && m_stack->currentIndex() == 1)
         refreshSensorsTable();
+    if (!m_uiSuspended && m_stack && m_stack->currentIndex() == 2)
+        refreshTurboLive();
 }
 
 ecu::LivePidSnapshot DriveWindow::snapshot() const {

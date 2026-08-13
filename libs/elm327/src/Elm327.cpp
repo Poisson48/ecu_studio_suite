@@ -455,7 +455,11 @@ void Elm327::handleResponse(const Cmd& cmd, const QString& resp) {
                             ? tr("Codes défaut effacés.")
                             : tr("Effacement DTC : réponse inattendue."));
             break;
-        case Kind::CanStart: case Kind::Raw: break;
+        case Kind::CanStart:
+            break;
+        case Kind::Raw:
+            emit rawResponse(cmd.text, resp.trimmed());
+            break;
     }
 }
 
@@ -509,6 +513,8 @@ void Elm327::onTimeout() {
         return;
     }
     if (m_current.kind == Kind::Pid) emit pidUnsupported(m_current.pid);
+    if (m_current.kind == Kind::Raw)
+        emit rawResponse(m_current.text, tr("(timeout — pas de réponse)"));
     sendNext();
 }
 
@@ -584,6 +590,16 @@ void Elm327::stopCanMonitor() {
     m_buf.clear();
     enqueue("ATH0", Kind::Raw);
     m_busy = false;
+    sendNext();
+}
+
+void Elm327::sendRawCommand(const QString& command) {
+    if (!m_ready) return;
+    QString cmd = command.trimmed();
+    cmd.remove(QLatin1Char('\r'));
+    cmd.remove(QLatin1Char('\n'));
+    if (cmd.isEmpty()) return;
+    enqueue(cmd, Kind::Raw);
     sendNext();
 }
 

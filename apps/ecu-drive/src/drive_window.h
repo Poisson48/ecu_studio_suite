@@ -26,6 +26,8 @@ class QStackedWidget;
 class QScrollArea;
 class QTimer;
 class QVBoxLayout;
+class QLineEdit;
+class QPlainTextEdit;
 
 
 namespace elm { class Elm327; }
@@ -64,6 +66,8 @@ private slots:
     void readDtcs();
     void clearDtcs();
     void copyDtcs();
+    void sendRawDiagCommand();
+    void onRawResponse(const QString& command, const QString& response);
 #if defined(ELM_HAVE_BLUETOOTH)
     void rebuildBtCombo();
 #endif
@@ -78,6 +82,8 @@ private:
     void refreshDtcList();
     void refreshDiagButtons();
     void resumePollingAfterDtc();
+    void ensureTurboPolling();
+    void refreshTurboLive();
     QString dtcFamily(const QString& code) const;
     QString dtcStatusText(int flags) const;
     void setStatus(const QString& msg, bool error = false);
@@ -215,6 +221,16 @@ private:
     QCheckBox* m_beepChk = nullptr;
     QLabel* m_sensorsStatus = nullptr;
     QHash<quint8, QLabel*> m_sensorValueLabels;
+
+    QLabel*      m_turboStatus = nullptr;
+    QLabel*      m_turboMap = nullptr;
+    QLabel*      m_turboBaro = nullptr;
+    QLabel*      m_turboDelta = nullptr;
+    QLabel*      m_turboMaf = nullptr;
+    QLabel*      m_turboRpm = nullptr;
+    QLineEdit*   m_rawCmdEdit = nullptr;
+    QPushButton* m_rawSendBtn = nullptr;
+    QPlainTextEdit* m_rawLog = nullptr;
 
     QLabel*      m_dtcStatus = nullptr;
     QWidget*     m_dtcListHost = nullptr;
