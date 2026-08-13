@@ -58,8 +58,9 @@ qsizetype findPattern(const QByteArray& rom, std::span<const uint8_t> needle) {
 // autre firmware de la même famille (ex. SW 1037383736), le scalaire visé est à
 // un offset différent : écrire à l'adresse figée corrompt des octets voisins.
 // On relocalise donc via open_damos en reliant l'auto-mod à la caractéristique
-// VALUE qui partage la même defaultAddress (ex. egr_off @0x1C41B8 ==
-// AirCtl_nMin_C). Retourne l'adresse relocalisée si — et seulement si — la
+// VALUE ancré (nearby-anchor / value-range). Historiquement egr_off @0x1C41B8
+// == AirCtl_nMin_C sur ori.BIN 110 ch — FAUX sur 9HW (voir EGR_OFF_9HW.md).
+// Retourne l'adresse relocalisée si — et seulement si — la
 // relocalisation est fiable (ancre/empreinte, score > 0).
 std::optional<std::pair<std::size_t, QString>>
 relocatedAddressFor(const QString& ecuId, const QByteArray& rom,

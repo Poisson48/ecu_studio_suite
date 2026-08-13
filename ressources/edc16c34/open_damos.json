@@ -2,7 +2,7 @@
   "$schema": "./open_damos.schema.json",
   "ecu": "edc16c34",
   "name": "open_damos — EDC16C34 Bosch PSA",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "license": "CC0-1.0",
   "homepage": "https://github.com/Poisson48/open_car_reprog/wiki/Open-DAMOS",
   "description": "Free and open DAMOS for Bosch EDC16C34 PSA (DV6TED4, 1.6 HDi 75/90/110 hp: Berlingo, Partner, 206, 207, 307, 308, 407, C3, C4, Fiesta TDCi, Mazda 2/3 MZ-CD). Each entry includes an axis fingerprint enabling automatic relocation onto any firmware in the family, without needing the proprietary Bosch DAMOS. Exportable to standard ASAP2 A2L (usable in WinOLS, TunerPro, EcuFlash, open-car-reprog).",
@@ -1183,7 +1183,7 @@
     {
       "name": "AirCtl_nMin_C",
       "category": "egr",
-      "description": "EGR cut-off engine speed threshold. Raising it to 6000-8000 rpm (raw value 0x1770 or 0x1F40) disables EGR across the entire normal operating range.",
+      "description": "EGR cut-off engine speed threshold. Raising it to 6000-8000 rpm can disable EGR on some firmwares. WARNING: defaultAddress 0x1C41B8 is from 110 hp ori.BIN and points into map DATA on Berlingo 75 hp (SW 1037383736) — do NOT patch that address on 9HW. Prefer zeroing AirCtl_rEGR_MAP + EGRVlv preCtl maps (auto-mod egr_off_*_9hw).",
       "type": "VALUE",
       "recordLayout": "Kw_Ws16",
       "defaultAddress": "0x1C41B8",
@@ -1197,7 +1197,7 @@
       },
       "egrOff": {
         "recommendedRawValue": 8000,
-        "note": "8000 rpm = EGR never active (ecuedit forum method)"
+        "note": "8000 rpm method unsafe on 9HW until scalar is correctly relocated; use map zeroing instead."
       },
       "relocation": {
         "method": "nearby-anchor",
@@ -1210,7 +1210,7 @@
       "description": "Nominal requested EGR rate vs RPM (X axis) and air load (Y axis, normalized desired mass flow). Lowering all cells to 0 = map-based EGR OFF. Recommended method over modifying the AirCtl_nMin_C threshold alone.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
-      "defaultAddress": "0x1C3C8C",
+      "defaultAddress": "0x1C4598",
       "dims": {
         "nx": 8,
         "ny": 16
@@ -1240,10 +1240,11 @@
           "offset": 0,
           "dataType": "SWORD_BE",
           "fingerprint": [
-            -2048,
-            410,
+            0,
             819,
+            1024,
             1229,
+            1434,
             1638,
             2048,
             2458,
@@ -1252,7 +1253,6 @@
             3686,
             4096,
             4915,
-            5734,
             6554,
             7373,
             8192
@@ -1266,8 +1266,8 @@
         "unit": "%",
         "note": "EGR rate 0–100%. factor=1/256. 0=EGR closed, 8192=32%=~100% open."
       },
-      "relocability": "ori-BIN-only",
-      "relocabilityNote": "EGR axes completely different between 75 hp and 110 hp — ori.BIN fingerprint not applicable to the 75 hp Berlingo."
+      "relocability": "verified-9hw",
+      "relocabilityNote": "Empreinte Y et adresse validées sur firmware 1037383736 (Berlingo 75 ch / C353) à 0x1C4598. L'ancienne empreinte ori.BIN 110 ch (-2048, 410, …) et defaultAddress 0x1C3C8C ne matchent pas ce firmware."
     },
     {
       "name": "EGRVlv_rPreCtlDyn_MAP",
@@ -1275,7 +1275,7 @@
       "description": "Pre-commanded physical position of the EGR valve under dynamic conditions (RPM x coolant temperature). Drives the actuator directly. Set to 0 to cancel the EGR pre-command.",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
-      "defaultAddress": "0x1C808E",
+      "defaultAddress": "0x1CA8B6",
       "dims": {
         "nx": 8,
         "ny": 6
@@ -1319,7 +1319,8 @@
         "factor": 0.00390625,
         "offset": 0,
         "unit": "%"
-      }
+      },
+      "relocabilityNote": "Adresse vérifiée sur 1037383736 : données déjà à 0 d'usine sur ce dump."
     },
     {
       "name": "EGRVlv_rPreCtlStat_MAP",
@@ -1327,7 +1328,7 @@
       "description": "Pre-commanded physical position of the EGR valve in steady state (RPM x normalized load).",
       "type": "MAP",
       "recordLayout": "Kf_Xs16_Ys16_Ws16",
-      "defaultAddress": "0x1C81C8",
+      "defaultAddress": "0x1CA9F0",
       "dims": {
         "nx": 8,
         "ny": 6
@@ -1371,7 +1372,8 @@
         "factor": 0.00390625,
         "offset": 0,
         "unit": "%"
-      }
+      },
+      "relocabilityNote": "Adresse vérifiée sur 1037383736. À mettre à 0 pour annuler la précommande EGR."
     },
     {
       "name": "AirSys_pAirBasRgn1_MAP",
@@ -2252,9 +2254,40 @@
       "search": "03 D4 03 D4 04 B0 05 5E 04 0D 03 D0 03 CE 03 AC 03 B6 03 C0 03 DE 04 02 04 22 04 4C 05 20 05 B4 04 15 03 EE 03 FC 03 C4 03 D3 03 E2 03 FC 04 27 04 45 04 95 05 6D 06 04 04 1A 04 07 04 1B 03 E2 03 F3 03 FC 04 13 04 59 04 9C 05 14 05 B1 06 2C 04 29 04 47 04 49 04 6C 04 8A 04 9E 04 D2 05 0A 05 4A 05 83 05 FA 06 54 04 56 04 9C 04 C4 05 2D 05 48 05 6D 05 9F 05 C7 05 F4 06 22 06 72 06 B8",
       "replace": "04 29 04 7E 05 5A 06 08 04 0D 03 D0 03 CE 03 AC 03 B6 03 C0 03 DE 04 02 04 9F 05 46 06 1A 06 AE 04 15 03 EE 03 FC 03 C4 03 D3 03 E2 03 FC 04 27 04 DB 05 C1 06 99 07 30 04 1A 04 07 04 1B 03 E2 03 F3 03 FC 04 13 04 59 05 28 06 2C 06 C9 07 44 04 29 04 47 04 49 04 6C 04 8A 04 9E 04 D2 05 0A 05 C7 06 7D 06 F4 07 4E 04 56 04 9C 04 C4 05 2D 05 48 05 6D 05 9F 05 C7 06 12 06 5E 06 AE 06 F4",
       "restore": "03 D4 03 D4 04 B0 05 5E 04 0D 03 D0 03 CE 03 AC 03 B6 03 C0 03 DE 04 02 04 22 04 4C 05 20 05 B4 04 15 03 EE 03 FC 03 C4 03 D3 03 E2 03 FC 04 27 04 45 04 95 05 6D 06 04 04 1A 04 07 04 1B 03 E2 03 F3 03 FC 04 13 04 59 04 9C 05 14 05 B1 06 2C 04 29 04 47 04 49 04 6C 04 8A 04 9E 04 D2 05 0A 05 4A 05 83 05 FA 06 54 04 56 04 9C 04 C4 05 2D 05 48 05 6D 05 9F 05 C7 05 F4 06 22 06 72 06 B8"
+    },
+    {
+      "id": "egr_off_rEGR_9hw",
+      "type": "pattern",
+      "description": "EGR OFF 9HW 1/2 — AirCtl_rEGR_MAP (taux demandé) : toutes cellules à 0. À appliquer avec egr_off_preCtl_9hw.",
+      "note": "UNSTABLE jusqu'à validation route. Uniquement calibration C353 / SW 1037383736 (ROM origine md5 f733c7bc5d4b1fc0092976874c21d08e). Compatible Stage 2 A/B (zone EGR hors smoke/boost). Plaque EGR mécanique recommandée. Ne masque PAS les DTC capteur position (P0405/P0409). Le MPPS doit recalculer le checksum à l'écriture. Cf. EGR_OFF_9HW.md.",
+      "search": "03 33 03 33 05 E8 0B 5A 11 5C 13 BC 15 0E 16 60 17 0C 17 D7 18 77 19 23 1A 2B 1B F2 1C CD 1C CD 03 33 03 33 05 E8 0B A8 11 5C 13 BC 15 0E 16 60 17 0C 17 D7 18 77 19 23 1A 2B 1B F2 1C CD 1C CD 03 33 03 33 05 AE 0B F6 11 5C 13 BC 15 0E 16 60 17 0C 17 D7 18 77 19 23 1A 2B 1B F2 1C CD 1C CD 03 33 03 33 05 7A 0C 96 11 BD 13 C3 15 33 16 59 17 2C 17 D7 18 AB 19 2C 1A 22 1C 22 1C CD 1C CD 03 33 03 33 05 87 0B A6 11 55 13 85 14 C6 16 14 16 C6 17 A7 18 60 19 26 19 EC 1B C9 1C CD 1C CD 03 33 03 33 05 26 0B 44 0E 75 10 00 11 C3 13 41 14 37 15 18 15 EC 16 DA 18 74 1B 26 1C CD 1C CD 03 33 03 33 05 26 0A E7 0E 62 10 0E 11 C9 13 1F 14 29 14 FD 15 D7 16 CD 18 66 1B 2C 1C CD 1C CD 03 33 03 33 05 4C 0A 66 0E 50 10 0E 11 D7 13 41 14 44 15 1F 15 F9 16 FD 18 96 1B 41 1C CD 1C CD",
+      "replace": "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+      "restore": "03 33 03 33 05 E8 0B 5A 11 5C 13 BC 15 0E 16 60 17 0C 17 D7 18 77 19 23 1A 2B 1B F2 1C CD 1C CD 03 33 03 33 05 E8 0B A8 11 5C 13 BC 15 0E 16 60 17 0C 17 D7 18 77 19 23 1A 2B 1B F2 1C CD 1C CD 03 33 03 33 05 AE 0B F6 11 5C 13 BC 15 0E 16 60 17 0C 17 D7 18 77 19 23 1A 2B 1B F2 1C CD 1C CD 03 33 03 33 05 7A 0C 96 11 BD 13 C3 15 33 16 59 17 2C 17 D7 18 AB 19 2C 1A 22 1C 22 1C CD 1C CD 03 33 03 33 05 87 0B A6 11 55 13 85 14 C6 16 14 16 C6 17 A7 18 60 19 26 19 EC 1B C9 1C CD 1C CD 03 33 03 33 05 26 0B 44 0E 75 10 00 11 C3 13 41 14 37 15 18 15 EC 16 DA 18 74 1B 26 1C CD 1C CD 03 33 03 33 05 26 0A E7 0E 62 10 0E 11 C9 13 1F 14 29 14 FD 15 D7 16 CD 18 66 1B 2C 1C CD 1C CD 03 33 03 33 05 4C 0A 66 0E 50 10 0E 11 D7 13 41 14 44 15 1F 15 F9 16 FD 18 96 1B 41 1C CD 1C CD"
+    },
+    {
+      "id": "egr_off_preCtl_9hw",
+      "type": "pattern",
+      "description": "EGR OFF 9HW 2/2 — EGRVlv_rPreCtlStat_MAP (précommande position) : toutes cellules à 0. EGRVlv_rPreCtlDyn déjà à 0 d'usine sur ce dump.",
+      "note": "UNSTABLE jusqu'à validation route. Uniquement calibration C353 / SW 1037383736 (ROM origine md5 f733c7bc5d4b1fc0092976874c21d08e). Compatible Stage 2 A/B (zone EGR hors smoke/boost). Plaque EGR mécanique recommandée. Ne masque PAS les DTC capteur position (P0405/P0409). Le MPPS doit recalculer le checksum à l'écriture. Cf. EGR_OFF_9HW.md.",
+      "search": "03 20 03 E8 04 B0 05 78 06 40 07 08 03 E8 04 B0 05 78 06 40 07 08 07 D0 04 4C 05 14 05 DC 06 A4 07 6C 08 34 04 B0 05 78 06 40 07 08 07 D0 08 98 05 14 05 DC 06 A4 07 6C 08 34 08 FC 05 78 06 40 07 08 07 D0 08 98 09 60 05 DC 06 A4 07 6C 08 34 08 FC 09 C4 05 DC 06 A4 07 6C 08 34 08 FC 09 C4",
+      "replace": "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+      "restore": "03 20 03 E8 04 B0 05 78 06 40 07 08 03 E8 04 B0 05 78 06 40 07 08 07 D0 04 4C 05 14 05 DC 06 A4 07 6C 08 34 04 B0 05 78 06 40 07 08 07 D0 08 98 05 14 05 DC 06 A4 07 6C 08 34 08 FC 05 78 06 40 07 08 07 D0 08 98 09 60 05 DC 06 A4 07 6C 08 34 08 FC 09 C4 05 DC 06 A4 07 6C 08 34 08 FC 09 C4"
     }
   ],
   "changelog": [
+    {
+      "version": "1.6.0",
+      "date": "2026-08-13",
+      "fixed": [
+        "AirCtl_rEGR_MAP : adresse 0x1C3C8C + empreinte Y 110 ch remplacées par 0x1C4598 / empreinte 75 ch (SW 1037383736).",
+        "EGRVlv_rPreCtlDyn_MAP / EGRVlv_rPreCtlStat_MAP : defaultAddress alignées sur 9HW (0x1CA8B6 / 0x1CA9F0).",
+        "AirCtl_nMin_C : avertissement — 0x1C41B8 corrompt une carto sur 9HW ; ne plus utiliser comme EGR off."
+      ],
+      "added": [
+        "autoMods egr_off_rEGR_9hw + egr_off_preCtl_9hw — EGR off maps-based pour C353/9HW, patterns uniques sur ori et stage2. md5 stage2+egr : 53a296670b74db43ae21faec83c1abd0."
+      ],
+      "note": "EGR off complet 9HW = les deux patterns. Pas de masquage DTC dans ce dump MPPS cal-only."
+    },
     {
       "version": "1.5.0",
       "date": "2026-07-27",
@@ -2317,7 +2350,8 @@
         "EngPrt_qLim_CUR (limiteur de débit absolu) vaut 100 mg/coup constant puis chute à 0 entre 5100 et 5200 tr/min (coupure de surrégime). Non contraignant : la pleine charge réelle est autour de 40 mg/coup.",
         "Rail_pSetPointBase_MAP atteint déjà 1600 bar, le maximum de la pompe HP. Aucune marge.",
         "Le limiteur de fumée est la contrainte active à pleine charge. Son plancher de lambda descend à 1,03 vers 1600 tr/min (AFR 14,9:1) et remonte à 1,37 vers 3500 tr/min (AFR 19,9:1). C'est lui qui borne le couple, pas le souhait conducteur, qui demande déjà 288 Nm à 2000 tr/min.",
-        "Checksum : la région calibration 0x1C0000-0x1FDFFF porte un CK 32 bits stocké à 0x1C0028 (0xBE536AA7 sur ce dump), et un sous-bloc 0x1C122C-0x1C1557 a son propre CK. L'algorithme n'est pas recouvré (cf. docs/mpps-checksums.md §8) : le MPPS doit recalculer à l'écriture."
+        "Checksum : la région calibration 0x1C0000-0x1FDFFF porte un CK 32 bits stocké à 0x1C0028 (0xBE536AA7 sur ce dump), et un sous-bloc 0x1C122C-0x1C1557 a son propre CK. L'algorithme n'est pas recouvré (cf. docs/mpps-checksums.md §8) : le MPPS doit recalculer à l'écriture.",
+        "EGR OFF : l'ancien catalogue egr_off @ 0x1C41B8 n'est PAS AirCtl_nMin_C sur ce firmware (cellule de carto). Utiliser egr_off_rEGR_9hw + egr_off_preCtl_9hw."
       ],
       "note": "OBD MPPS dump — calibration only. DTC table DSM_ClaDfp absent (BDM needed). Test réalisé avec ressources/edc16c34/9663944680.bin. Cartos relues et validées physiquement en juillet 2026 lors de la construction d'une calibration Stage 2 : axes, unités et plages de valeurs cohérents avec la physique du moteur. La chaîne suralimentation → masse d'air → limiteur de fumée → FMTC → couple reproduit 74 ch pour la calibration d'origine, contre 75 ch annoncés par PSA (écart 1 %).",
       "calibrationId": "C353",
@@ -2335,7 +2369,10 @@
         "Eng_trqSpd_CUR": "0x1CABE2",
         "EngPrt_trqAPSLim_MAP": "0x1CB482",
         "InjCrv_qMI1MaxRgn1_MAP": "0x1D6E94",
-        "AirCtl_mDesBas_MAP": "0x1C36D2"
+        "AirCtl_mDesBas_MAP": "0x1C36D2",
+        "AirCtl_rEGR_MAP": "0x1C4598",
+        "EGRVlv_rPreCtlDyn_MAP": "0x1CA8B6",
+        "EGRVlv_rPreCtlStat_MAP": "0x1CA9F0"
       }
     }
   ]

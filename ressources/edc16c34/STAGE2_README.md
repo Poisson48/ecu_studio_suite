@@ -46,6 +46,17 @@ via `damos_apply_automod`). Les motifs sont uniques dans la ROM, mais restent
 liés à cette calibration : sur toute autre ROM, le pattern ne matchera
 simplement pas.
 
+## EGR OFF (9HW)
+
+Sur ce firmware, **ne pas** utiliser l’ancien auto-mod catalogue `egr_off`
+(adresse `0x1C41B8` fausse). Appliquer plutôt :
+
+- `egr_off_rEGR_9hw`
+- `egr_off_preCtl_9hw`
+
+Détail : [`EGR_OFF_9HW.md`](EGR_OFF_9HW.md). Compatible avec Stage 2 A/B
+(md5 stage2+egr : `53a296670b74db43ae21faec83c1abd0`).
+
 ## Ce qui est modifié
 
 Deux cartos, rien d'autre. Vérifié octet par octet : zone programme,

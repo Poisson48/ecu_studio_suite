@@ -134,15 +134,17 @@ const std::vector<VehicleTemplate> VEHICLE_TEMPLATES = {
     {
         .id          = "psa_16hdi_depollution_off",
         .name        = "PSA 1.6 HDi — Dépollution OFF (EGR + FAP + DTC)",
-        .description = "FAP, DTC FAP, EGR désactivés. "
-                       "⚠ À faire après dépose physique (FAP vidé, EGR bouchée). "
+        .description = "FAP, DTC FAP, EGR maps à 0 (9HW). "
+                       "⚠ Après dépose physique (FAP vidé, EGR plaquée). "
+                       "EGR off = egr_off_rEGR_9hw + egr_off_preCtl_9hw (C353 seulement). "
+                       "L'ancien egr_off @ 0x1C41B8 a été retiré (corrupteur sur 75 ch). "
                        "Repasser stock avant CT.",
-        .vehicles    = "Toutes variantes DV6 75ch / 90ch / 110ch (EDC16C34)",
+        .vehicles    = "Berlingo/Partner 75 ch (9HW / C353) prioritaire ; FAP patterns famille EDC16C34",
         .appliesTo   = {"edc16c34"},
         .appliesToVariant = std::nullopt,
         .stage1      = std::nullopt,
         .popbang     = std::nullopt,
-        .autoMods    = {"dpf_off", "dpf_dtc_off", "egr_off"},
+        .autoMods    = {"dpf_off", "dpf_dtc_off", "egr_off_rEGR_9hw", "egr_off_preCtl_9hw"},
     },
 };
 

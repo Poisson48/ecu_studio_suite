@@ -94,15 +94,19 @@ const std::vector<Recipe>& allRecipes() {
         },
         {
             .id          = "full_depollution",
-            .name        = "D\303\251pollution compl\303\250te \342\200\224 EGR OFF + seuils relev\303\251s",
+            .name        = "D\303\251pollution compl\303\250te \342\200\224 EGR OFF maps + seuils",
             .category    = "D\303\251pollution",
-            .description = "Coupe EGR d\303\251finitivement (seuil 8000 rpm via AirCtl_nMin_C) + "
-                           "rel\303\250ve AccPed_trqNMRMax_C pour \303\251viter les clamp au Stage 1. "
-                           "ATTENTION : combiner avec un d\303\251fap m\303\251canique.",
-            .risk = Low,
+            .description = "Coupe EGR par maps (AirCtl_rEGR_MAP + EGRVlv pr\303\251commandes \303\240 0) "
+                           "+ rel\303\250ve AccPed_trqNMRMax_C pour \303\251viter les clamp au Stage 1. "
+                           "Ne patch plus AirCtl_nMin_C (adresse catalogue fausse sur 9HW). "
+                           "ATTENTION : plaque EGR m\303\251canique + d\303\251fap si besoin. "
+                           "Ne masque pas les DTC capteur position.",
+            .risk = Medium,
             .ops  = {
-                { "AirCtl_nMin_C",      OpSetPhys{8000} },
-                { "AccPed_trqNMRMax_C", OpSetPhys{250}  },
+                { "AirCtl_rEGR_MAP",        OpSetMapAll{0} },
+                { "EGRVlv_rPreCtlDyn_MAP",  OpSetMapAll{0} },
+                { "EGRVlv_rPreCtlStat_MAP", OpSetMapAll{0} },
+                { "AccPed_trqNMRMax_C",     OpSetPhys{250} },
             },
         },
     };

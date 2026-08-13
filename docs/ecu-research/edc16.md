@@ -64,9 +64,11 @@ code table. This corroborates the kind of region our existing catalog edits.
   `dpf_dtc_off` @ `0x1E9DD4` being a *separate* DTC-status byte, not the code table).
 - SOURCE: https://github.com/JeanLucPons/DTCController
 
-> Note: our existing catalog `egr_off @ 0x1C41B8` and `dpf_dtc_off @ 0x1E9DD4` for
-> EDC16C34 are NOT corroborated by any public source found here — keep them as-is /
-> UNVERIFIED until re-checked against a real dump.
+> Note: the old catalog `egr_off @ 0x1C41B8` (AirCtl_nMin_C → 8000) is **wrong on
+> Berlingo 75 hp SW 1037383736** — that address is map data, not nMin. Use
+> maps-based `egr_off_rEGR_9hw` + `egr_off_preCtl_9hw` (see
+> `ressources/edc16c34/EGR_OFF_9HW.md`). `dpf_dtc_off @ 0x1E9DD4` for EDC16C34
+> remains UNVERIFIED against public sources.
 
 ## 4. EGR-off — EDC16 (method only; addresses NOT family-stable)
 
