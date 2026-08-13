@@ -43,4 +43,10 @@ QString platformLaunchIntentUri(bool clear = true);
 /** Partage un fichier local via le sheet Android (ACTION_SEND). false hors Android / échec. */
 bool platformShareFile(const QString& path, const QString& mimeType = QStringLiteral("text/csv"));
 
+/**
+ * Empêche la mise en veille / extinction d'écran tant que l'Activity est visible
+ * (FLAG_KEEP_SCREEN_ON). No-op hors Android. Pas de permission WAKE_LOCK.
+ */
+void platformKeepScreenOn(bool on = true);
+
 } // namespace ecu_drive

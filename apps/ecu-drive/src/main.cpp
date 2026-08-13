@@ -1,4 +1,5 @@
 #include "drive_window.h"
+#include "platform.h"
 
 #include <QApplication>
 #include <QFile>
@@ -80,6 +81,8 @@ int main(int argc, char* argv[]) {
     if (!ecuArg.isEmpty())
         w.setAutoEcuId(ecuArg);
     w.show();
+    // Tableau de bord : pas d'extinction d'écran tant que l'app est au premier plan.
+    ecu_drive::platformKeepScreenOn(true);
     if (smokeUi) {
         // Enchaîne Conduite ↔ Capteurs sans matériel (CI / repro crash Android).
         QTimer::singleShot(50, &w, [&w]() {

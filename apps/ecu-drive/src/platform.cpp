@@ -240,6 +240,38 @@ bool platformShareFile(const QString& path, const QString& mimeType)
         ctx.object(), jPath.object<jstring>(), jMime.object<jstring>());
 }
 
+void platformKeepScreenOn(bool on)
+{
+    auto apply = [on]() {
+        const QJniObject activity = androidActivity();
+        if (!activity.isValid())
+            return false;
+        const QJniObject window = activity.callObjectMethod(
+            "getWindow", "()Landroid/view/Window;");
+        if (!window.isValid())
+            return false;
+        // android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+        constexpr jint kFlagKeepScreenOn = 0x00000080;
+        if (on)
+            window.callMethod<void>("addFlags", "(I)V", kFlagKeepScreenOn);
+        else
+            window.callMethod<void>("clearFlags", "(I)V", kFlagKeepScreenOn);
+        return true;
+    };
+
+    // Window flags must be touched on the Android UI thread.
+    QNativeInterface::QAndroidApplication::runOnAndroidMainThread([apply]() {
+        if (apply())
+            return;
+        // Activity pas encore prête au tout premier frame — un seul retry.
+        QTimer::singleShot(200, qApp, [apply]() {
+            QNativeInterface::QAndroidApplication::runOnAndroidMainThread([apply]() {
+                apply();
+            });
+        });
+    });
+}
+
 #else
 
 bool platformInstallApk(const QString&) { return false; }
@@ -256,6 +288,7 @@ void platformRequestStartupPermissions(std::function<void(bool allGranted)> done
 }
 QString platformLaunchIntentUri(bool) { return {}; }
 bool platformShareFile(const QString&, const QString&) { return false; }
+void platformKeepScreenOn(bool) {}
 
 #endif
 
