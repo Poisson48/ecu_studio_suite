@@ -30,6 +30,7 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QApplication>
+#include <QGuiApplication>
 #include <QClipboard>
 #include <QSettings>
 #include <QUrl>
@@ -81,6 +82,14 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
     setWindowTitle(tr("ECU Drive %1").arg(QStringLiteral(APP_VERSION)));
     resize(420, 720);
     buildUi();
+
+    connect(qApp, &QGuiApplication::applicationStateChanged, this,
+            [this](Qt::ApplicationState st) {
+        m_uiSuspended = (st == Qt::ApplicationInactive
+                         || st == Qt::ApplicationSuspended
+                         || st == Qt::ApplicationHidden);
+        // Ne jamais couper la session ici — le FGS garde le process vivant.
+    });
 
     connect(m_elm, &elm::Elm327::connected, this, [this](const QString& v) {
         m_connected = true;
@@ -985,56 +994,71 @@ QWidget* DriveWindow::buildDrivePage(QWidget* parent) {
 
     // Drive panel
     m_banner = new QFrame(page);
-    m_banner->setMinimumHeight(80);
+    m_banner->setMinimumHeight(96);
+    m_banner->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
     m_banner->setStyleSheet(QStringLiteral(
         "QFrame { background:#1e293b; border-radius:10px; }"));
     auto* bl = new QVBoxLayout(m_banner);
+    bl->setContentsMargins(10, 12, 10, 12);
     m_verdict = new QLabel(tr("Prêt"), m_banner);
     QFont vf = m_verdict->font();
-    vf.setPointSizeF(22); vf.setBold(true);
+    vf.setPointSizeF(20); vf.setBold(true);
     m_verdict->setFont(vf);
     m_verdict->setAlignment(Qt::AlignCenter);
-    m_verdict->setStyleSheet(QStringLiteral("color:#e6edf3;"));
+    m_verdict->setWordWrap(true);
+    m_verdict->setMinimumHeight(36);
+    m_verdict->setStyleSheet(QStringLiteral("color:#e6edf3; background:transparent;"));
     bl->addWidget(m_verdict);
     root->addWidget(m_banner);
 
     m_boostBig = new QLabel(tr("— / — mbar"), page);
     QFont bf = m_boostBig->font();
-    bf.setPointSizeF(26); bf.setBold(true);
+    bf.setPointSizeF(24); bf.setBold(true);
     m_boostBig->setFont(bf);
     m_boostBig->setAlignment(Qt::AlignCenter);
+    m_boostBig->setWordWrap(true);
+    m_boostBig->setMinimumHeight(40);
     m_boostBig->setStyleSheet(QStringLiteral("color:#60a5fa;"));
     root->addWidget(m_boostBig);
 
     m_boostSub = new QLabel(tr("Δ —"), page);
     m_boostSub->setAlignment(Qt::AlignCenter);
+    m_boostSub->setWordWrap(true);
     m_boostSub->setStyleSheet(QStringLiteral("color:#9ca3af; font-size:16px;"));
     root->addWidget(m_boostSub);
 
     auto* mapsTitle = new QLabel(tr("Écarts live (maps)"), page);
     mapsTitle->setStyleSheet(QStringLiteral("color:#94a3b8; font-size:12px; font-weight:600;"));
     root->addWidget(mapsTitle);
-    m_mapsList = new QListWidget(page);
-    m_mapsList->setMinimumHeight(120);
-    m_mapsList->setMaximumHeight(180);
-    m_mapsList->setStyleSheet(QStringLiteral(
-        "QListWidget { background:#111827; border:1px solid #334155; border-radius:8px; color:#e6edf3; font-size:12px; }"
-        "QListWidget::item { padding:6px 8px; }"));
-    m_mapsList->addItem(tr("Lance une session pour voir les maps…"));
-    root->addWidget(m_mapsList);
+
+    // Pas de QListWidget dans le ScrollArea (gestes + crop Android).
+    m_mapsListHost = new QWidget(page);
+    m_mapsListLay = new QVBoxLayout(m_mapsListHost);
+    m_mapsListLay->setContentsMargins(0, 0, 0, 0);
+    m_mapsListLay->setSpacing(4);
+    auto* mapsPlaceholder = new QLabel(tr("Lance une session pour voir les maps…"), m_mapsListHost);
+    mapsPlaceholder->setWordWrap(true);
+    mapsPlaceholder->setStyleSheet(QStringLiteral(
+        "QLabel { background:#111827; border:1px solid #334155; border-radius:8px; "
+        "color:#94a3b8; font-size:12px; padding:8px; }"));
+    m_mapsListLay->addWidget(mapsPlaceholder);
+    root->addWidget(m_mapsListHost);
 
     m_rpmLoad = new QLabel(tr("RPM —  ·  Charge — %"), page);
     m_rpmLoad->setAlignment(Qt::AlignCenter);
+    m_rpmLoad->setWordWrap(true);
     m_rpmLoad->setStyleSheet(QStringLiteral("color:#7c8fa6;"));
     root->addWidget(m_rpmLoad);
 
     m_sessionLive = new QLabel(tr("Session : —"), page);
     m_sessionLive->setAlignment(Qt::AlignCenter);
+    m_sessionLive->setWordWrap(true);
     m_sessionLive->setStyleSheet(QStringLiteral("color:#64748b; font-size:12px;"));
     root->addWidget(m_sessionLive);
 
     m_csvLabel = new QLabel(tr("CSV : inactif"), page);
     m_csvLabel->setAlignment(Qt::AlignCenter);
+    m_csvLabel->setWordWrap(true);
     m_csvLabel->setStyleSheet(QStringLiteral("color:#64748b; font-size:11px;"));
     root->addWidget(m_csvLabel);
 
@@ -2211,6 +2235,9 @@ void DriveWindow::startSession() {
     m_sessionBtn->setText(tr("■  Arrêter session"));
     refreshSessionButton();
     autoStartCsv();
+    platformStartLoggingService(
+        tr("ECU Drive"),
+        tr("Session conduite — logging OBD actif"));
     m_verdict->setText(tr("Acquisition…"));
     endBusy();
     setStatus(tr("Session conduite active — %1 PID(s).").arg(qp.size()));
@@ -2221,6 +2248,7 @@ void DriveWindow::stopSession() {
     beginBusy(tr("Arrêt de la session…"));
     m_elm->stopPolling();
     m_sessionOn = false;
+    platformStopLoggingService();
     autoStopCsv();
     const auto sum = m_session.finish();
     m_sessionBtn->setText(tr("▶  Lancer session conduite"));
@@ -2235,7 +2263,7 @@ void DriveWindow::onPid(quint8 pid, double value, const QString&, const QString&
     if (!unit.isEmpty())
         m_liveUnit[pid] = unit;
     if (m_sessionOn) runValidation();
-    if (m_stack && m_stack->currentIndex() == 1)
+    if (!m_uiSuspended && m_stack && m_stack->currentIndex() == 1)
         refreshSensorsTable();
 }
 
@@ -2249,9 +2277,19 @@ ecu::LivePidSnapshot DriveWindow::snapshot() const {
 void DriveWindow::runValidation() {
     const auto results = m_validator.evaluateAll(snapshot());
     if (m_session.active()) m_session.ingest(results);
+    appendCsv(results);
+
+    if (m_uiSuspended) {
+        // Pas de paint : avancer l'hystérésis + bip underboost seulement.
+        if (const auto boost = primaryBoost(results)) {
+            const auto shown = m_hyst.update(boost->status);
+            if (shown == ecu::ValidationStatus::Fail)
+                maybeAlert();
+        }
+        return;
+    }
     updateDriveUi(results);
     refreshMapsList(results);
-    appendCsv(results);
     const auto& c = m_session.current();
     m_sessionLive->setText(tr("OK %1 · Warn %2 · Fail %3 (%4 %)")
                                .arg(c.ok).arg(c.warn).arg(c.fail)
@@ -2319,8 +2357,12 @@ void DriveWindow::updateDriveUi(const std::vector<ecu::ValidationResult>& result
 }
 
 void DriveWindow::refreshMapsList(const std::vector<ecu::ValidationResult>& results) {
-    if (!m_mapsList) return;
-    m_mapsList->clear();
+    if (!m_mapsListLay) return;
+    while (QLayoutItem* it = m_mapsListLay->takeAt(0)) {
+        if (QWidget* w = it->widget())
+            w->deleteLater();
+        delete it;
+    }
     std::vector<ecu::ValidationResult> sorted = results;
     std::sort(sorted.begin(), sorted.end(),
               [](const ecu::ValidationResult& a, const ecu::ValidationResult& b) {
@@ -2338,24 +2380,35 @@ void DriveWindow::refreshMapsList(const std::vector<ecu::ValidationResult>& resu
                                       r.mapName,
                                       QString::number(r.delta, 'f', 1),
                                       r.unit);
-        auto* item = new QListWidgetItem(line, m_mapsList);
+        auto* row = new QLabel(line, m_mapsListHost);
+        row->setWordWrap(true);
+        QString color = QStringLiteral("#4ade80");
         if (r.status == ecu::ValidationStatus::Fail)
-            item->setForeground(QColor(QStringLiteral("#f87171")));
+            color = QStringLiteral("#f87171");
         else if (r.status == ecu::ValidationStatus::Warn)
-            item->setForeground(QColor(QStringLiteral("#fbbf24")));
-        else
-            item->setForeground(QColor(QStringLiteral("#4ade80")));
+            color = QStringLiteral("#fbbf24");
+        row->setStyleSheet(QStringLiteral(
+            "QLabel { background:#111827; border:1px solid #334155; border-radius:8px; "
+            "color:%1; font-size:12px; padding:8px; }").arg(color));
+        m_mapsListLay->addWidget(row);
         if (++shown >= 8) break;
     }
-    if (shown == 0)
-        m_mapsList->addItem(tr("En attente de données map…"));
+    if (shown == 0) {
+        auto* empty = new QLabel(tr("En attente de données map…"), m_mapsListHost);
+        empty->setWordWrap(true);
+        empty->setStyleSheet(QStringLiteral(
+            "QLabel { background:#111827; border:1px solid #334155; border-radius:8px; "
+            "color:#94a3b8; font-size:12px; padding:8px; }"));
+        m_mapsListLay->addWidget(empty);
+    }
 }
 
 void DriveWindow::maybeAlert() {
     const int streak = m_hyst.failStreak();
     if (streak < 3 || streak == m_lastAlertAt || streak % 3 != 0) return;
     m_lastAlertAt = streak;
-    if (m_beepChk->isChecked()) QApplication::beep();
+    if (m_beepChk && m_beepChk->isChecked())
+        platformAlertBeep();
 }
 
 void DriveWindow::autoStartCsv() {

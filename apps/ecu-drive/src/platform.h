@@ -49,4 +49,15 @@ bool platformShareFile(const QString& path, const QString& mimeType = QStringLit
  */
 void platformKeepScreenOn(bool on = true);
 
+/**
+ * Foreground Service Android pour garder le polling/CSV vivant en arrière-plan.
+ * No-op hors Android. Demande POST_NOTIFICATIONS si besoin (API 33+).
+ */
+void platformStartLoggingService(const QString& title = QString(),
+                                 const QString& text = QString());
+void platformStopLoggingService();
+
+/** Alerte underboost : ToneGenerator + vibration (Android). Desktop = QApplication::beep. */
+void platformAlertBeep();
+
 } // namespace ecu_drive

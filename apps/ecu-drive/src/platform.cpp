@@ -1,5 +1,6 @@
 #include "platform.h"
 
+#include <QApplication>
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QTimer>
@@ -272,6 +273,58 @@ void platformKeepScreenOn(bool on)
     });
 }
 
+constexpr const char* kLoggingService = "org/poisson48/ecudrive/LoggingService";
+
+void platformStartLoggingService(const QString& title, const QString& text)
+{
+    QNativeInterface::QAndroidApplication::runOnAndroidMainThread([title, text]() {
+        const QJniObject activity = androidActivity();
+        const QJniObject ctx = androidContext();
+        if (!ctx.isValid())
+            return;
+        if (activity.isValid()) {
+            QJniObject::callStaticMethod<jboolean>(
+                kLoggingService, "requestNotificationPermission",
+                "(Landroid/app/Activity;)Z",
+                activity.object<jobject>());
+        }
+        const QJniObject jTitle = QJniObject::fromString(
+            title.isEmpty() ? QStringLiteral("ECU Drive") : title);
+        const QJniObject jText = QJniObject::fromString(
+            text.isEmpty() ? QStringLiteral("Logging OBD en cours") : text);
+        QJniObject::callStaticMethod<void>(
+            kLoggingService, "start",
+            "(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;)V",
+            ctx.object(), jTitle.object<jstring>(), jText.object<jstring>());
+    });
+}
+
+void platformStopLoggingService()
+{
+    QNativeInterface::QAndroidApplication::runOnAndroidMainThread([]() {
+        const QJniObject ctx = androidContext();
+        if (!ctx.isValid())
+            return;
+        QJniObject::callStaticMethod<void>(
+            kLoggingService, "stop",
+            "(Landroid/content/Context;)V",
+            ctx.object());
+    });
+}
+
+void platformAlertBeep()
+{
+    QNativeInterface::QAndroidApplication::runOnAndroidMainThread([]() {
+        const QJniObject ctx = androidContext();
+        if (!ctx.isValid())
+            return;
+        QJniObject::callStaticMethod<void>(
+            kLoggingService, "alertBeep",
+            "(Landroid/content/Context;)V",
+            ctx.object());
+    });
+}
+
 #else
 
 bool platformInstallApk(const QString&) { return false; }
@@ -289,6 +342,12 @@ void platformRequestStartupPermissions(std::function<void(bool allGranted)> done
 QString platformLaunchIntentUri(bool) { return {}; }
 bool platformShareFile(const QString&, const QString&) { return false; }
 void platformKeepScreenOn(bool) {}
+void platformStartLoggingService(const QString&, const QString&) {}
+void platformStopLoggingService() {}
+void platformAlertBeep()
+{
+    QApplication::beep();
+}
 
 #endif
 

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <manifest package="org.poisson48.ecudrive" xmlns:android="http://schemas.android.com/apk/res/android"
-    android:versionCode="200" android:versionName="1.7.30" android:installLocation="auto">
+    android:versionCode="201" android:versionName="1.7.31" android:installLocation="auto">
 
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
@@ -16,6 +16,10 @@
         android:maxSdkVersion="32"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-feature android:name="android.hardware.usb.host" android:required="false"/>
     <uses-feature android:name="android.hardware.bluetooth" android:required="false"/>
 
@@ -78,6 +82,11 @@
             <meta-data android:name="android.app.arguments" android:value="-- %%INSERT_APP_ARGUMENTS%% --"/>
             <meta-data android:name="android.app.extract_android_style" android:value="minimal"/>
         </activity>
+
+        <service
+            android:name="org.poisson48.ecudrive.LoggingService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice"/>
 
         <receiver android:name="org.poisson48.ecudrive.UpdateHelper$InstallReceiver"
             android:exported="false">

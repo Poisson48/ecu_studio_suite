@@ -210,7 +210,8 @@ private:
     QLabel*  m_rpmLoad = nullptr;
     QLabel*  m_sessionLive = nullptr;
     QLabel*  m_csvLabel = nullptr;
-    QListWidget* m_mapsList = nullptr;
+    QWidget* m_mapsListHost = nullptr;
+    QVBoxLayout* m_mapsListLay = nullptr;
     QCheckBox* m_beepChk = nullptr;
     QLabel* m_sensorsStatus = nullptr;
     QHash<quint8, QLabel*> m_sensorValueLabels;
@@ -240,6 +241,7 @@ private:
     QSet<quint8> m_ecuSupportedPids;
     bool m_connected = false;
     bool m_sessionOn = false;
+    bool m_uiSuspended = false; // app Inactive/Suspended — skip UI lourde, garder CSV
     bool m_userDisconnect = false;
     bool m_linkLossNotified = false;
     QString m_pendingDisconnectReason;

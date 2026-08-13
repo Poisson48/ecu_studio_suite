@@ -15,6 +15,7 @@ if(ANDROID)
     list(APPEND ECU_DRIVE_SOURCES
         android/src/org/poisson48/ecudrive/UsbSerialHelper.java
         android/src/org/poisson48/ecudrive/UpdateHelper.java
+        android/src/org/poisson48/ecudrive/LoggingService.java
     )
 endif()
 
