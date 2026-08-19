@@ -8,6 +8,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QRegularExpression>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QSettings>
@@ -133,13 +134,32 @@ bool Updater::isNewer(const QString& candidate, const QString& current)
     return false;
 }
 
+static QString stripMarkdown(const QString& md)
+{
+    QString s = md;
+    // titres
+    s.replace(QRegularExpression(QStringLiteral("^#{1,6}\\s*"), QRegularExpression::MultilineOption), QString());
+    // gras/italique
+    s.replace(QRegularExpression(QStringLiteral("\\*{1,3}([^*]+)\\*{1,3}")), QStringLiteral("\\1"));
+    s.replace(QRegularExpression(QStringLiteral("_{1,3}([^_]+)_{1,3}")), QStringLiteral("\\1"));
+    // code inline
+    s.replace(QRegularExpression(QStringLiteral("`([^`]*)`")), QStringLiteral("\\1"));
+    // liens [text](url)
+    s.replace(QRegularExpression(QStringLiteral("\\[([^\\]]+)\\]\\([^)]*\\)")), QStringLiteral("\\1"));
+    // tirets de liste → bullet
+    s.replace(QRegularExpression(QStringLiteral("^[-*+]\\s+"), QRegularExpression::MultilineOption), QStringLiteral("• "));
+    // lignes horizontales
+    s.replace(QRegularExpression(QStringLiteral("^[-*_]{3,}\\s*$"), QRegularExpression::MultilineOption), QStringLiteral("————"));
+    return s.trimmed();
+}
+
 QString Updater::formatEntries(const QVariantList& entries)
 {
     QStringList blocks;
     for (const QVariant& v : entries) {
         const QVariantMap m = v.toMap();
         const QString ver = m.value(QStringLiteral("version")).toString();
-        const QString notes = m.value(QStringLiteral("notes")).toString().trimmed();
+        const QString notes = stripMarkdown(m.value(QStringLiteral("notes")).toString().trimmed());
         if (ver.isEmpty())
             continue;
         if (notes.isEmpty())

@@ -852,6 +852,9 @@ void setupScrollablePage(QScrollArea* scroll, QWidget* page) {
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     scroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    // Fond opaque : empêche le backing store Android de composer par-dessus les autres pages.
+    scroll->setAttribute(Qt::WA_OpaquePaintEvent, true);
+    scroll->viewport()->setAttribute(Qt::WA_OpaquePaintEvent, true);
     // Hauteur = taille du contenu (sinon le layout remplit le viewport → pas de scroll).
     page->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
     page->setMinimumWidth(0);
@@ -867,27 +870,10 @@ void setupScrollablePage(QScrollArea* scroll, QWidget* page) {
     scroll->setWidget(page);
 }
 
-/** Force un redraw propre de la page active (sans takeWidget qui corrompt le rendu). */
+/** Bascule proprement vers la page d'index donné. */
 void forceStackPageRefresh(QStackedWidget* stack, int index) {
     if (!stack || index < 0 || index >= stack->count()) return;
-    QWidget* page = stack->widget(index);
-    if (!page) return;
     stack->setCurrentIndex(index);
-
-    if (auto* scroll = qobject_cast<QScrollArea*>(page)) {
-        if (QWidget* inner = scroll->widget()) {
-            if (inner->layout())
-                inner->layout()->activate();
-            inner->updateGeometry();
-        }
-        scroll->viewport()->update();
-        scroll->updateGeometry();
-        scroll->update();
-    }
-
-    page->updateGeometry();
-    page->update();
-    stack->update();
 }
 
 } // namespace
