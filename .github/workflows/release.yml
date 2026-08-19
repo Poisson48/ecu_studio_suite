@@ -191,17 +191,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           fail_on_unmatched_files: false
-          body: |
-            ## Installation
-
-            **PC / Linux (x86-64)** — `ECU_Studio-x86_64.AppImage`
-
-            **Android (arm64)** — `ecu-drive-*-arm64.apk` (ECU Drive) :
-            ouvrez-le sur le téléphone (autorisez l'installation depuis cette source),
-            ou `adb install -r ecu-drive-*-arm64.apk`.
-
-            Signé avec la clé de publication du projet : les versions suivantes
-            s'installent **par-dessus**. ECU Drive propose la mise à jour au démarrage.
+          generate_release_notes: true
           files: |
             ECU_Studio-x86_64.AppImage
             ecu-drive-${{ github.ref_name }}-arm64.apk
