@@ -38,6 +38,7 @@ class DriveController : public QObject {
     Q_PROPERTY(bool    sessionOn    READ sessionOn    NOTIFY sessionChanged)
     Q_PROPERTY(bool    btScanning   READ btScanning   NOTIFY btScanningChanged)
     Q_PROPERTY(QStringList ports    READ ports        NOTIFY portsChanged)
+    Q_PROPERTY(QString selectedPort READ selectedPort WRITE setSelectedPort NOTIFY selectedPortChanged)
     Q_PROPERTY(QVariantList btDevices READ btDevices  NOTIFY btDevicesChanged)
     Q_PROPERTY(QString selectedBt   READ selectedBt   WRITE setSelectedBt   NOTIFY selectedBtChanged)
     Q_PROPERTY(bool    btObdOnly    READ btObdOnly    WRITE setBtObdOnly    NOTIFY btObdOnlyChanged)
@@ -94,6 +95,7 @@ public:
     bool       sessionOn()    const { return m_sessionOn; }
     bool       btScanning()   const { return m_btScanning; }
     QStringList ports()       const { return m_ports; }
+    QString    selectedPort() const { return m_selectedPort; }
     QVariantList btDevices()  const;
     QString    selectedBt()   const { return m_selectedBt; }
     bool       btObdOnly()    const { return m_btObdOnly; }
@@ -133,6 +135,7 @@ public:
     bool       beepAlert()    const { return m_beepAlert; }
 
     void setSelectedBt(const QString& addr);
+    void setSelectedPort(const QString& port);
     void setBtObdOnly(bool on);
     void setBeepAlert(bool on);
 
@@ -146,6 +149,7 @@ signals:
     void btScanningChanged();
     void portsChanged();
     void btDevicesChanged();
+    void selectedPortChanged();
     void selectedBtChanged();
     void btObdOnlyChanged();
     void tuneLabelChanged();
@@ -259,6 +263,7 @@ private:
 
     // BT
     QString     m_selectedBt;
+    QString     m_selectedPort;
     bool        m_btObdOnly = true;
     bool        m_btScanning = false;
     QStringList m_ports;

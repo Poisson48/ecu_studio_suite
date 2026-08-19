@@ -14,12 +14,12 @@ Item {
         contentWidth: availableWidth
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
-        Column {
+        ColumnLayout {
             id: mainCol
             width: page.width
             spacing: 12
 
-                Item { height: 12 }
+                Item { Layout.preferredHeight: 12 }
 
                 // ── Session ECU rapide ─────────────────────────────────────
                 DiagSectionLabel { text: "SESSION ECU — BOUTONS RAPIDES" }
@@ -298,7 +298,7 @@ Item {
                     }
                 }
 
-            Item { height: 16 }
+            Item { Layout.preferredHeight: 16 }
         }
     }
 

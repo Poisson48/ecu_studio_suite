@@ -52,6 +52,7 @@ DriveController::DriveController(elm::Elm327* elm, Updater* updater, QObject* pa
     m_btObdOnly = QSettings().value(QStringLiteral("drive/btObdOnly"), true).toBool();
     m_beepAlert = QSettings().value(QStringLiteral("drive/beepAlert"), true).toBool();
     m_selectedBt = QSettings().value(QStringLiteral("drive/lastBt")).toString();
+    m_selectedPort = QSettings().value(QStringLiteral("drive/lastUsbPort")).toString();
 
     connect(m_elm, &elm::Elm327::connected, this, [this](const QString& v) {
         m_connected = true;
@@ -191,6 +192,13 @@ void DriveController::setBtObdOnly(bool on) {
     emit btDevicesChanged();
 }
 
+void DriveController::setSelectedPort(const QString& port) {
+    if (m_selectedPort == port) return;
+    m_selectedPort = port;
+    QSettings().setValue(QStringLiteral("drive/lastUsbPort"), port);
+    emit selectedPortChanged();
+}
+
 void DriveController::setBeepAlert(bool on) {
     if (m_beepAlert == on) return;
     m_beepAlert = on;
@@ -232,6 +240,7 @@ void DriveController::endBusy() {
 // ── Connexion ─────────────────────────────────────────────────────────────────
 
 void DriveController::refreshPorts() {
+    const QString keep = m_selectedPort;
     m_ports.clear();
 #if !defined(Q_OS_ANDROID)
     for (const auto& p : elm::Elm327::listPorts()) {
@@ -240,6 +249,16 @@ void DriveController::refreshPorts() {
         m_ports.append(label + QLatin1Char('|') + p.port);
     }
 #endif
+    QString chosen;
+    if (!keep.isEmpty()) {
+        for (const QString& item : m_ports) {
+            const QString port = item.section(QLatin1Char('|'), 1, 1);
+            if (port == keep) { chosen = port; break; }
+        }
+    }
+    if (chosen.isEmpty() && !m_ports.isEmpty())
+        chosen = m_ports.first().section(QLatin1Char('|'), 1, 1);
+    setSelectedPort(chosen);
     emit portsChanged();
 }
 
@@ -301,11 +320,18 @@ void DriveController::toggleConnect() {
 #endif
     // USB
     if (m_ports.isEmpty()) {
-        setStatus(tr("Choisis un appareil Bluetooth (Scan BT), puis Connecter."), true);
-        emit toast(tr("Choisis d'abord le Bluetooth"));
+#if defined(Q_OS_ANDROID)
+        setStatus(tr("Aucun périphérique BT sélectionné. USB Android non disponible dans ce build."), true);
+        emit toast(tr("Sélectionne un module Bluetooth"));
+#else
+        setStatus(tr("Aucun port USB détecté. Branche le dongle puis Rafraîchir."), true);
+        emit toast(tr("Aucun port USB"));
+#endif
         return;
     }
-    const QString port = m_ports.first().split(QLatin1Char('|')).last();
+    QString port = m_selectedPort;
+    if (port.isEmpty())
+        port = m_ports.first().section(QLatin1Char('|'), 1, 1);
     setStatus(tr("Connexion USB… (%1)").arg(port));
     m_elm->connectPort(port, 0);
 }
