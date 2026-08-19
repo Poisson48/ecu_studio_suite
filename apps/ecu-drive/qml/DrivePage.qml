@@ -33,6 +33,8 @@ Item {
 
         ColumnLayout {
             width: page.width
+            // Occupe au minimum toute la hauteur visible
+            height: Math.max(implicitHeight, page.height)
             spacing: 0
 
             // ── Connexion ─────────────────────────────────────────────────
@@ -158,7 +160,8 @@ Item {
             // ── Bannière boost ────────────────────────────────────────────
             Rectangle {
                 Layout.fillWidth: true
-                height: boostContent.height + 24
+                Layout.fillHeight: true
+                implicitHeight: boostContent.height + 24
                 color: boostBannerColor()
                 Behavior on color { ColorAnimation { duration: 300 } }
                 radius: 0
