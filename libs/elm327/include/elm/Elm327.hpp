@@ -74,6 +74,38 @@ public:
      */
     void sendRawCommand(const QString& command);
 
+    /**
+     * Security Access automatisé (UDS 0x27 ou KWP 0x27).
+     * Envoie la requête seed, calcule la key via l'algorithme choisi,
+     * puis envoie la key — tout en séquence.
+     *
+     * @param algo       Algorithme : "PSA", "VAG_SA2", "Daimler", "BoschGeneric", "GenericXOR"
+     * @param level      Niveau d'accès : 1 = download/flash, 2 = config/zones
+     * @param ecuKey     Clé ECU 2 octets (requis pour PSA, ignoré sinon)
+     * @param isKwp      true = KWP2000 (27 81/82), false = UDS (27 01/02)
+     *
+     * Émet securityAccessResult(success, keyHex) à la fin.
+     */
+    void sendSecurityAccessRequest(const QString& algo,
+                                   int level = 1,
+                                   quint16 ecuKey = 0,
+                                   bool isKwp = false);
+
+    /**
+     * Lit une zone ECU via KWP2000 service 21 (PSA / VAG).
+     * Émet rawResponse avec la réponse brute.
+     * @param zoneId  Numéro de zone (1 octet, ex. 0x21 = identification)
+     */
+    void readEcuZone(quint8 zoneId);
+
+    /**
+     * Écrit une zone ECU via KWP2000 service 3B (PSA).
+     * L'ECU doit être déverrouillé (sendSecurityAccessRequest niveau 2) avant.
+     * @param zoneId  Numéro de zone
+     * @param data    Données à écrire
+     */
+    void writeEcuZone(quint8 zoneId, const QByteArray& data);
+
 signals:
     void connected(const QString& version);
     void disconnected();
@@ -90,6 +122,8 @@ signals:
     void rawLine(const QString& line);
     /** Réponse complète d'une sendRawCommand (texte entre envoi et '>'). */
     void rawResponse(const QString& command, const QString& response);
+    /** Résultat d'un sendSecurityAccessRequest. keyHex = key calculée et envoyée. */
+    void securityAccessResult(bool success, const QString& keyHex, const QString& detail);
 
 private slots:
     void onReadyRead();

@@ -45,6 +45,8 @@ endif()
 
 set(ECU_CORE_SOURCES
     src/EcuCatalog.cpp
+    src/SecurityAccess.cpp
+    src/ActuatorControl.cpp
     src/VehicleTemplates.cpp
     src/RomPatcher.cpp
     src/MapFinder.cpp

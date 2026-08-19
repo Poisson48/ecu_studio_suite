@@ -232,6 +232,10 @@ private:
     QPushButton* m_rawSendBtn = nullptr;
     QPlainTextEdit* m_rawLog = nullptr;
 
+    QLineEdit*   m_saSeedEdit = nullptr;
+    QLineEdit*   m_saEcuKeyEdit = nullptr;
+    QLabel*      m_saResultLabel = nullptr;
+
     QLabel*      m_dtcStatus = nullptr;
     QWidget*     m_dtcListHost = nullptr;
     QVBoxLayout* m_dtcListLay = nullptr;

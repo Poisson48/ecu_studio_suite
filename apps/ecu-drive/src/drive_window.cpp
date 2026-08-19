@@ -4,6 +4,7 @@
 #include "ecu/TunePackage.hpp"
 #include "ecu/OpenDamos.hpp"
 #include "ecu/Obd2.hpp"
+#include "ecu/SecurityAccess.hpp"
 #include "updater.h"
 #include "platform.h"
 
@@ -187,6 +188,21 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
     });
     connect(m_elm, &elm::Elm327::pidResult, this, &DriveWindow::onPid);
     connect(m_elm, &elm::Elm327::rawResponse, this, &DriveWindow::onRawResponse);
+    connect(m_elm, &elm::Elm327::securityAccessResult, this,
+            [this](bool success, const QString& keyHex, const QString& detail) {
+        if (m_rawLog) {
+            if (success)
+                m_rawLog->appendPlainText(tr("[SA] Déverrouillé — key : %1").arg(keyHex));
+            else
+                m_rawLog->appendPlainText(tr("[SA] Échec — %1").arg(detail));
+        }
+        if (m_saResultLabel) {
+            m_saResultLabel->setStyleSheet(success
+                ? QStringLiteral("color:#34d399; font-weight:700; font-family:monospace; font-size:18px;")
+                : QStringLiteral("color:#f87171; font-weight:700; font-family:monospace; font-size:15px;"));
+            m_saResultLabel->setText(success ? keyHex : tr("Échec : %1").arg(detail));
+        }
+    });
     connect(m_elm, &elm::Elm327::dtcsReady, this,
             [this](const QStringList& codes, bool pending) {
         mergeDtcCodes(codes, pending);
@@ -1189,21 +1205,22 @@ QWidget* DriveWindow::buildDiagPage(QWidget* parent) {
     addTurboRow(tr("MAF"), m_turboMaf);
     addTurboRow(tr("Régime"), m_turboRpm);
 
-    auto* protoTitle = new QLabel(tr("Protocole de test guidé"), page);
+    auto* protoTitle = new QLabel(tr("Test turbo — procédure générale"), page);
     protoTitle->setStyleSheet(QStringLiteral("color:#e6edf3; font-weight:700; font-size:14px;"));
     root->addWidget(protoTitle);
 
     auto* proto = new QLabel(
-        tr("1. Ralenti chaud, frein à main : MAP ≈ baro (Δ ~0), MAF faible.\n"
-           "2. Écoute l’électrovanne wastegate (clic / sifflement) au freinage "
-           "moteur puis en légère accélération.\n"
-           "3. Reprise en 3e ~2000–3000 tr/min, pleine charge : MAP doit monter "
-           "(cible Stage 2A ~1500–1800 mbar abs). Si MAP reste ~1000 mbar et "
-           "MAF « atmos », le turbo ne pousse pas.\n"
-           "4. Note Δboost max et les DTC (P0299 / EGR).\n\n"
-           "Actionneur Diagbox : pas de bouton « ouvrir wastegate » ici — les "
-           "routines KWP PSA (local ID) ne sont pas connues. Utilise Diagbox "
-           "ou la console brute ci-dessous si tu as la trame."),
+        tr("1. Moteur chaud, véhicule à l’arrêt : MAP ≈ baro (Δ ≈ 0), MAF bas.\n"
+           "2. Accélération franche (3e ou 4e, 2000–4000 tr/min) : MAP doit monter "
+           "nettement au-dessus de la pression baro — la valeur cible dépend de l’ECU "
+           "et du tune actif.\n"
+           "3. Si MAP reste proche de baro quelle que soit la charge, le turbo ne pousse "
+           "pas : vérifier vanne wastegate, géométrie variable, ou durites.\n"
+           "4. Relever Δboost max et les DTC actifs (mode 03/07) pour orienter le "
+           "diagnostic.\n\n"
+           "Actionneur constructeur : les routines de pilotage actif (wastegate, VGT) "
+           "nécessitent une session étendue déverrouillée — voir section "
+           "« Accès constructeur » ci-dessous ou utilise la console brute."),
         page);
     proto->setWordWrap(true);
     proto->setStyleSheet(QStringLiteral("color:#cbd5e1; font-size:12px;"));
@@ -1300,6 +1317,348 @@ QWidget* DriveWindow::buildDiagPage(QWidget* parent) {
     hint->setWordWrap(true);
     hint->setStyleSheet(QStringLiteral("color:#f59e0b; font-size:12px;"));
     root->addWidget(hint);
+
+    // ── Accès constructeur (Security Access / Seed-Key) ────────────────
+    auto* saTitle = new QLabel(tr("Accès constructeur — Security Access"), page);
+    saTitle->setStyleSheet(QStringLiteral("color:#e6edf3; font-weight:700; font-size:16px;"));
+    root->addWidget(saTitle);
+
+    auto* saInfo = new QLabel(
+        tr("Certaines routines (actionneurs, codage, flash) nécessitent de déverrouiller "
+           "l'ECU via le service 0x27 (UDS) ou 0x27/0x2781 (KWP2000). "
+           "L'ECU envoie un seed aléatoire ; l'outil doit répondre avec la clé calculée "
+           "dans les 5 secondes.\n\n"
+           "PSA/Stellantis (Peugeot, Citroën, DS, Opel) : algorithme public (ludwig-v). "
+           "Colle le seed hex ci-dessous avec la clé ECU (2 octets — extractible depuis "
+           "les fichiers .cal ou bruteforce 65 536 combinaisons)."),
+        page);
+    saInfo->setWordWrap(true);
+    saInfo->setStyleSheet(QStringLiteral("color:#94a3b8; font-size:12px;"));
+    root->addWidget(saInfo);
+
+    auto* saProtocol = new QComboBox(page);
+    saProtocol->addItem(QStringLiteral("PSA / Stellantis (Peugeot, Citroën, DS, Opel)"), QStringLiteral("psa"));
+    saProtocol->addItem(QStringLiteral("VAG (Volkswagen, Audi, Skoda, Seat) — SA2"), QStringLiteral("vag_sa2"));
+    saProtocol->addItem(QStringLiteral("Générique XOR (OBD-II basique)"), QStringLiteral("xor"));
+    saProtocol->setMinimumHeight(44);
+    saProtocol->setStyleSheet(QStringLiteral(
+        "QComboBox { background:#111827; color:#e6edf3; border:1px solid #334155; "
+        "border-radius:8px; padding:6px 10px; font-size:13px; }"));
+    root->addWidget(saProtocol);
+
+    auto* saRow1 = new QHBoxLayout;
+    m_saSeedEdit = new QLineEdit(page);
+    m_saSeedEdit->setPlaceholderText(tr("Seed hex (ex: 5ADF35FE)"));
+    m_saSeedEdit->setMinimumHeight(44);
+    m_saSeedEdit->setStyleSheet(QStringLiteral(
+        "QLineEdit { background:#111827; color:#e6edf3; border:1px solid #334155; "
+        "border-radius:8px; padding:6px 10px; font-family:monospace; font-size:14px; }"));
+    auto* saKeyLabel = new QLabel(tr("Clé ECU"), page);
+    saKeyLabel->setStyleSheet(QStringLiteral("color:#94a3b8; font-size:12px;"));
+    m_saEcuKeyEdit = new QLineEdit(page);
+    m_saEcuKeyEdit->setPlaceholderText(tr("Clé ECU hex (ex: 50A6)"));
+    m_saEcuKeyEdit->setMinimumHeight(44);
+    m_saEcuKeyEdit->setStyleSheet(m_saSeedEdit->styleSheet());
+    saRow1->addWidget(m_saSeedEdit, 2);
+    saRow1->addWidget(saKeyLabel);
+    saRow1->addWidget(m_saEcuKeyEdit, 1);
+    root->addLayout(saRow1);
+
+    auto* saCalcRow = new QHBoxLayout;
+    auto* saCalcBtn = new QPushButton(tr("Calculer Key"), page);
+    saCalcBtn->setMinimumHeight(44);
+    saCalcBtn->setObjectName(QStringLiteral("accentBtn"));
+    m_saResultLabel = new QLabel(QStringLiteral("—"), page);
+    m_saResultLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_saResultLabel->setStyleSheet(QStringLiteral(
+        "color:#34d399; font-weight:700; font-family:monospace; font-size:18px;"));
+    m_saResultLabel->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
+    saCalcRow->addWidget(saCalcBtn, 1);
+    saCalcRow->addWidget(m_saResultLabel, 1);
+    root->addLayout(saCalcRow);
+
+    auto* saUnlockRow = new QHBoxLayout;
+    auto* saUnlockBtn = new QPushButton(tr("Déverrouiller ECU (auto)"), page);
+    saUnlockBtn->setMinimumHeight(44);
+    saUnlockBtn->setToolTip(tr("Envoie la requête seed, calcule et envoie la key automatiquement via l'ELM connecté."));
+    auto* saUnlockLevel = new QComboBox(page);
+    saUnlockLevel->addItem(tr("Niveau 1 (download/flash)"), 1);
+    saUnlockLevel->addItem(tr("Niveau 2 (config/zones)"), 2);
+    saUnlockLevel->setMinimumHeight(44);
+    saUnlockLevel->setStyleSheet(saProtocol->styleSheet());
+    auto* saKwpChk = new QCheckBox(tr("KWP"), page);
+    saKwpChk->setStyleSheet(QStringLiteral("color:#94a3b8; font-size:12px;"));
+    saUnlockRow->addWidget(saUnlockBtn, 2);
+    saUnlockRow->addWidget(saUnlockLevel, 1);
+    saUnlockRow->addWidget(saKwpChk);
+    root->addLayout(saUnlockRow);
+
+    connect(saUnlockBtn, &QPushButton::clicked, this, [this, saProtocol, saUnlockLevel, saKwpChk]() {
+        if (!m_elm || !m_connected) {
+            if (m_rawLog) m_rawLog->appendPlainText(tr("[SA] ELM non connecté"));
+            return;
+        }
+        const QString proto = saProtocol->currentData().toString();
+        const QString ecuKeyHex = m_saEcuKeyEdit ? m_saEcuKeyEdit->text().trimmed().remove(QStringLiteral("0x")) : QString();
+        bool keyOk = false;
+        const quint16 ecuKey = ecuKeyHex.isEmpty() ? 0 : ecuKeyHex.toUShort(&keyOk, 16);
+        const int level = saUnlockLevel->currentData().toInt();
+        if (m_rawLog)
+            m_rawLog->appendPlainText(tr("[SA] Requête seed %1 niveau %2...").arg(proto).arg(level));
+        m_elm->sendSecurityAccessRequest(proto, level, ecuKey, saKwpChk->isChecked());
+    });
+
+    auto* saHint2 = new QLabel(
+        tr("Commande KWP PSA : 2781 → seed ; 2782<KEY> → déverrouille download. "
+           "2783/2784 pour config. Niveau UDS : 27 01 → seed ; 27 02 <KEY> → key.\n"
+           "Lecture zone PSA : 21 XX (service 21). Écriture : 3B XX <data> (service 3B, ECU déverrouillé requis)."),
+        page);
+    saHint2->setWordWrap(true);
+    saHint2->setStyleSheet(QStringLiteral("color:#64748b; font-size:11px;"));
+    root->addWidget(saHint2);
+
+    // ── Boutons rapides session KWP/UDS ────────────────────────────────
+    auto* sessionTitle = new QLabel(tr("Session ECU — boutons rapides"), page);
+    sessionTitle->setStyleSheet(QStringLiteral("color:#e6edf3; font-weight:700; font-size:14px; margin-top:8px;"));
+    root->addWidget(sessionTitle);
+
+    auto* sessionHint = new QLabel(
+        tr("Séquence standard : Ouvrir session → Déverrouiller ECU (auto) → envoyer commandes → Keep-alive toutes les 2s → Fermer."),
+        page);
+    sessionHint->setWordWrap(true);
+    sessionHint->setStyleSheet(QStringLiteral("color:#94a3b8; font-size:11px;"));
+    root->addWidget(sessionHint);
+
+    // Ligne 1 : session PSA KWP / UDS
+    auto* sessRow1 = new QHBoxLayout;
+    struct QuickBtn { const char* label; const char* cmd; const char* color; };
+    const QuickBtn sessionBtns[] = {
+        { "Ouvrir session KWP (10C0)",   "10C0",     "#3b82f6" },
+        { "Ouvrir session UDS diag",     "1003",     "#3b82f6" },
+        { "Keep-alive (3E00)",           "3E00",     "#22c55e" },
+        { "Reboot ECU (31A800)",         "31A800",   "#f59e0b" },
+        { "Fermer session (1001)",       "1001",     "#6b7280" },
+        { "Lire DTC (190209)",           "190209",   "#a78bfa" },
+        { "Effacer DTC (14FFFFFF)",      "14FFFFFF", "#f87171" },
+        { "VIN (22F190)",                "22F190",   "#34d399" },
+    };
+    // 2 lignes de 4
+    for (int i = 0; i < 8; ++i) {
+        if (i == 4) {
+            root->addLayout(sessRow1);
+            sessRow1 = new QHBoxLayout;
+        }
+        const QuickBtn& b = sessionBtns[i];
+        auto* btn = new QPushButton(QString::fromUtf8(b.label), page);
+        btn->setMinimumHeight(38);
+        btn->setStyleSheet(QStringLiteral(
+            "QPushButton { background:%1; color:#fff; border-radius:6px; font-size:11px; padding:4px 6px; }"
+            "QPushButton:pressed { background:#1e293b; }").arg(QString::fromUtf8(b.color)));
+        const QString cmd = QString::fromUtf8(b.cmd);
+        connect(btn, &QPushButton::clicked, this, [this, cmd]() {
+            if (!m_elm || !m_connected) {
+                if (m_rawLog) m_rawLog->appendPlainText(tr("[Diag] ELM non connecté"));
+                return;
+            }
+            if (m_rawLog) m_rawLog->appendPlainText(QStringLiteral("> %1").arg(cmd));
+            m_elm->sendRawCommand(cmd);
+        });
+        sessRow1->addWidget(btn, 1);
+    }
+    root->addLayout(sessRow1);
+
+    // ── Zones PSA préremplies ────────────────────────────────────────
+    auto* zonesTitle = new QLabel(tr("Zones ECU — lecture rapide (service 21)"), page);
+    zonesTitle->setStyleSheet(QStringLiteral("color:#e6edf3; font-weight:700; font-size:14px; margin-top:8px;"));
+    root->addWidget(zonesTitle);
+
+    struct ZoneBtn { const char* label; const char* zone; };
+    const ZoneBtn zoneBtns[] = {
+        { "Ident. ECU (21 80)",     "8001" },  // KWP: 21 80 — ReadDataByLocalIdentifier zone 0x80
+        { "Calibration (21 86)",    "8601" },
+        { "Soft ECU (21 87)",       "8701" },
+        { "Hard ECU (21 88)",       "8801" },
+        { "VIN (22 F1 90)",         "22F190" },// UDS ReadDID
+        { "Coding BSI (21 A0)",     "A001" },
+    };
+    auto* zonesRow = new QHBoxLayout;
+    for (const ZoneBtn& z : zoneBtns) {
+        auto* btn = new QPushButton(QString::fromUtf8(z.label), page);
+        btn->setMinimumHeight(36);
+        btn->setStyleSheet(QStringLiteral(
+            "QPushButton { background:#1e3a5f; color:#93c5fd; border:1px solid #2563eb; border-radius:6px; font-size:11px; padding:4px; }"
+            "QPushButton:pressed { background:#1e293b; }"));
+        const QString cmd = QString::fromUtf8(z.zone);
+        connect(btn, &QPushButton::clicked, this, [this, cmd]() {
+            if (!m_elm || !m_connected) {
+                if (m_rawLog) m_rawLog->appendPlainText(tr("[Zone] ELM non connecté"));
+                return;
+            }
+            if (m_rawLog) m_rawLog->appendPlainText(QStringLiteral("> %1").arg(cmd));
+            m_elm->sendRawCommand(cmd);
+        });
+        zonesRow->addWidget(btn, 1);
+    }
+    root->addLayout(zonesRow);
+
+    // ── Actionneurs — boutons directs (EDC16 service 0x30) ────────────
+    auto* actTitle2 = new QLabel(tr("Actionneurs EDC16 — IO Control (service 30)"), page);
+    actTitle2->setStyleSheet(QStringLiteral("color:#e6edf3; font-weight:700; font-size:14px; margin-top:8px;"));
+    root->addWidget(actTitle2);
+
+    auto* actHint2 = new QLabel(
+        tr("Séquence requise : Ouvrir session KWP → Déverrouiller ECU (niv. 2) → activer → Keep-alive → désactiver.\n"
+           "Trame ON = 30 <LID> 07 FF  |  Trame OFF = 30 <LID> 00"),
+        page);
+    actHint2->setWordWrap(true);
+    actHint2->setStyleSheet(QStringLiteral("color:#fbbf24; font-size:11px;"));
+    root->addWidget(actHint2);
+
+    struct ActQuickBtn { const char* label; const char* cmdOn; const char* cmdOff; };
+    const ActQuickBtn actBtns[] = {
+        { "EGR ON/OFF\n(LID 0x21)",       "302107FF", "302100" },
+        { "Injecteur 1 stop\n(LID 0x10)",  "301007FF", "301000" },
+        { "Injecteur 2 stop\n(LID 0x11)",  "301107FF", "301100" },
+        { "Injecteur 3 stop\n(LID 0x12)",  "301207FF", "301200" },
+        { "Injecteur 4 stop\n(LID 0x13)",  "301307FF", "301300" },
+        { "Regen FAP rapide\n(LID 0x24)",   "302407FF", "302400" },
+        { "Regen FAP full\n(LID 0x25)",     "302507FF", "302500" },
+        { "Volet admission\n(LID 0x2B)",    "302B07FF", "302B00" },
+    };
+
+    auto makeActRow = [&](const ActQuickBtn* btns, int n) {
+        auto* row = new QHBoxLayout;
+        for (int i = 0; i < n; ++i) {
+            auto* col = new QVBoxLayout;
+            auto* lbl = new QLabel(QString::fromUtf8(btns[i].label), page);
+            lbl->setAlignment(Qt::AlignCenter);
+            lbl->setWordWrap(true);
+            lbl->setStyleSheet(QStringLiteral("color:#e2e8f0; font-size:10px;"));
+            const QString cmdOn  = QString::fromUtf8(btns[i].cmdOn);
+            const QString cmdOff = QString::fromUtf8(btns[i].cmdOff);
+            auto* btnOn = new QPushButton(tr("ON"), page);
+            btnOn->setMinimumHeight(36);
+            btnOn->setStyleSheet(QStringLiteral(
+                "QPushButton { background:#166534; color:#fff; border-radius:6px; font-weight:700; }"
+                "QPushButton:pressed { background:#14532d; }"));
+            auto* btnOff = new QPushButton(tr("OFF"), page);
+            btnOff->setMinimumHeight(36);
+            btnOff->setStyleSheet(QStringLiteral(
+                "QPushButton { background:#7f1d1d; color:#fff; border-radius:6px; font-weight:700; }"
+                "QPushButton:pressed { background:#450a0a; }"));
+            connect(btnOn, &QPushButton::clicked, this, [this, cmdOn]() {
+                if (!m_elm || !m_connected) { if (m_rawLog) m_rawLog->appendPlainText(tr("[Act] Non connecté")); return; }
+                if (m_rawLog) m_rawLog->appendPlainText(QStringLiteral("> %1").arg(cmdOn));
+                m_elm->sendRawCommand(cmdOn);
+            });
+            connect(btnOff, &QPushButton::clicked, this, [this, cmdOff]() {
+                if (!m_elm || !m_connected) { if (m_rawLog) m_rawLog->appendPlainText(tr("[Act] Non connecté")); return; }
+                if (m_rawLog) m_rawLog->appendPlainText(QStringLiteral("> %1").arg(cmdOff));
+                m_elm->sendRawCommand(cmdOff);
+            });
+            col->addWidget(lbl);
+            col->addWidget(btnOn);
+            col->addWidget(btnOff);
+            row->addLayout(col, 1);
+        }
+        root->addLayout(row);
+    };
+    makeActRow(actBtns, 4);
+    makeActRow(actBtns + 4, 4);
+
+    // Bouton routine PSA confirmées (service 0x31)
+    auto* actTitle3 = new QLabel(tr("Routines PSA confirmées (service 31)"), page);
+    actTitle3->setStyleSheet(QStringLiteral("color:#e6edf3; font-weight:700; font-size:14px; margin-top:8px;"));
+    root->addWidget(actTitle3);
+
+    struct RoutineBtn { const char* label; const char* cmdStart; const char* cmdStop; };
+    const RoutineBtn routineBtns[] = {
+        { "Reboot ECU\n(31 A8 00)", "31A800", nullptr },
+        { "Reboot ECU 2\n(31 A8 01)", "31A801", nullptr },
+        { "Flash autocontrol\n(37)", "37", nullptr },
+    };
+    auto* routRow = new QHBoxLayout;
+    for (const RoutineBtn& r2 : routineBtns) {
+        auto* col = new QVBoxLayout;
+        auto* lbl = new QLabel(QString::fromUtf8(r2.label), page);
+        lbl->setAlignment(Qt::AlignCenter);
+        lbl->setWordWrap(true);
+        lbl->setStyleSheet(QStringLiteral("color:#e2e8f0; font-size:10px;"));
+        auto* btn = new QPushButton(tr("Envoyer"), page);
+        btn->setMinimumHeight(36);
+        btn->setStyleSheet(QStringLiteral(
+            "QPushButton { background:#92400e; color:#fff; border-radius:6px; font-weight:700; }"
+            "QPushButton:pressed { background:#78350f; }"));
+        const QString cmd = QString::fromUtf8(r2.cmdStart);
+        connect(btn, &QPushButton::clicked, this, [this, cmd]() {
+            if (!m_elm || !m_connected) { if (m_rawLog) m_rawLog->appendPlainText(tr("[Routine] Non connecté")); return; }
+            if (m_rawLog) m_rawLog->appendPlainText(QStringLiteral("> %1").arg(cmd));
+            m_elm->sendRawCommand(cmd);
+        });
+        col->addWidget(lbl);
+        col->addWidget(btn);
+        routRow->addLayout(col, 1);
+    }
+    routRow->addStretch(2);
+    root->addLayout(routRow);
+
+    connect(saCalcBtn, &QPushButton::clicked, this, [this, saProtocol]() {
+        const QString proto = saProtocol->currentData().toString();
+        const QString seedHex = m_saSeedEdit->text().trimmed().remove(QStringLiteral("0x"));
+        const QString ecuKeyHex = m_saEcuKeyEdit->text().trimmed().remove(QStringLiteral("0x"));
+
+        bool seedOk = false, keyOk = false;
+        const quint32 seed = seedHex.toUInt(&seedOk, 16);
+        const quint16 ecuKey = ecuKeyHex.isEmpty() ? 0 : ecuKeyHex.toUShort(&keyOk, 16);
+
+        if (!seedOk || seedHex.isEmpty()) {
+            m_saResultLabel->setText(tr("Seed invalide"));
+            m_saResultLabel->setStyleSheet(QStringLiteral("color:#f87171; font-weight:700; font-family:monospace; font-size:15px;"));
+            return;
+        }
+
+        const auto algoOpt = ecu::SecurityAccess::fromName(proto.toStdString());
+        if (!algoOpt) {
+            m_saResultLabel->setText(tr("Algorithme inconnu"));
+            m_saResultLabel->setStyleSheet(QStringLiteral("color:#f87171; font-weight:700; font-family:monospace; font-size:15px;"));
+            return;
+        }
+
+        if (*algoOpt == ecu::SecurityAccess::Algo::PSA && ecuKeyHex.isEmpty()) {
+            m_saResultLabel->setText(tr("Clé ECU requise pour PSA"));
+            m_saResultLabel->setStyleSheet(QStringLiteral("color:#f87171; font-weight:700; font-family:monospace; font-size:15px;"));
+            return;
+        }
+
+        const auto resultOpt = ecu::SecurityAccess::compute(*algoOpt, seed, ecuKey);
+        if (!resultOpt) {
+            m_saResultLabel->setText(tr("Calcul échoué"));
+            m_saResultLabel->setStyleSheet(QStringLiteral("color:#f87171; font-weight:700; font-family:monospace; font-size:15px;"));
+            return;
+        }
+
+        const QString keyHex = QString::number(*resultOpt, 16).toUpper()
+                                   .rightJustified(8, QLatin1Char('0'));
+
+        const auto& algos = ecu::SecurityAccess::algorithms();
+        const auto it = std::find_if(algos.begin(), algos.end(),
+            [&](const ecu::SecurityAccess::AlgoInfo& a){ return a.algo == *algoOpt; });
+        const QString label = (it != algos.end())
+            ? QString::fromStdString(std::string(it->name))
+            : proto;
+
+        m_saResultLabel->setStyleSheet(QStringLiteral("color:#34d399; font-weight:700; font-family:monospace; font-size:18px;"));
+        m_saResultLabel->setText(QStringLiteral("%1").arg(keyHex));
+
+        if (m_elm && m_connected) {
+            const QString kwpFrame = QString::fromStdString(
+                ecu::SecurityAccess::buildKwpKeyFrame(
+                    ecu::SecurityAccess::KWP_KEY_CONFIG, *resultOpt));
+            m_rawLog->appendPlainText(
+                tr("[%1] Key calculée : %2  |  Trame KWP config : %3")
+                    .arg(label, keyHex, kwpFrame));
+        }
+    });
 
     setupScrollablePage(scroll, page);
     return scroll;

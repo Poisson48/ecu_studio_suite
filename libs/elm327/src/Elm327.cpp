@@ -1,5 +1,6 @@
 #include "elm/Elm327.hpp"
 #include "ecu/Obd2.hpp"
+#include "ecu/SecurityAccess.hpp"
 
 #include <QSerialPort>
 #include <QSerialPortInfo>
@@ -601,6 +602,116 @@ void Elm327::sendRawCommand(const QString& command) {
     if (cmd.isEmpty()) return;
     enqueue(cmd, Kind::Raw);
     sendNext();
+}
+
+void Elm327::sendSecurityAccessRequest(const QString& algoName,
+                                       int level,
+                                       quint16 ecuKey,
+                                       bool isKwp)
+{
+    if (!m_ready) {
+        emit securityAccessResult(false, {}, tr("ELM327 non connect\u00e9"));
+        return;
+    }
+
+    const auto algoOpt = ecu::SecurityAccess::fromName(algoName.toStdString());
+    if (!algoOpt) {
+        emit securityAccessResult(false, {}, tr("Algorithme inconnu : %1").arg(algoName));
+        return;
+    }
+    const ecu::SecurityAccess::Algo algo = *algoOpt;
+
+    QString seedRequest;
+    if (isKwp) {
+        const uint8_t subSeed = (level == 1)
+            ? ecu::SecurityAccess::KWP_SEED_DOWNLOAD
+            : ecu::SecurityAccess::KWP_SEED_CONFIG;
+        seedRequest = QStringLiteral("27%1").arg(subSeed, 2, 16, QLatin1Char('0')).toUpper();
+    } else {
+        const uint8_t subSeed = (uint8_t)((level - 1) * 2 + 1);
+        seedRequest = QStringLiteral("27%1").arg(subSeed, 2, 16, QLatin1Char('0')).toUpper();
+    }
+
+    auto* conn = new QMetaObject::Connection;
+    *conn = connect(this, &Elm327::rawResponse, this,
+        [this, conn, algo, ecuKey, level, isKwp](
+            const QString& cmd, const QString& resp)
+        {
+            if (!cmd.startsWith(QLatin1String("27"), Qt::CaseInsensitive))
+                return;
+
+            disconnect(*conn);
+            delete conn;
+
+            const QString flat = QString(resp).remove(QLatin1Char(' ')).remove(QLatin1Char('\n'))
+                                              .remove(QLatin1Char('\r')).toUpper();
+            const int idx = flat.indexOf(QLatin1String("67"));
+            if (idx < 0 || flat.size() < idx + 12) {
+                emit securityAccessResult(false, {}, tr("R\u00e9ponse seed invalide : %1").arg(resp.trimmed()));
+                return;
+            }
+
+            const QString seedHex = flat.mid(idx + 4, 8);
+            bool ok = false;
+            const quint32 seed = seedHex.toUInt(&ok, 16);
+            if (!ok) {
+                emit securityAccessResult(false, {}, tr("Seed non parseable : %1").arg(seedHex));
+                return;
+            }
+
+            const auto keyOpt = ecu::SecurityAccess::compute(algo, seed, ecuKey);
+            if (!keyOpt) {
+                emit securityAccessResult(false, {}, tr("Calcul key \u00e9chou\u00e9"));
+                return;
+            }
+
+            const QString keyHex = QString::number(*keyOpt, 16).toUpper()
+                                       .rightJustified(8, QLatin1Char('0'));
+
+            QString keyFrame;
+            if (isKwp) {
+                const uint8_t subKey = (level == 1)
+                    ? ecu::SecurityAccess::KWP_KEY_DOWNLOAD
+                    : ecu::SecurityAccess::KWP_KEY_CONFIG;
+                keyFrame = QStringLiteral("27%1%2")
+                    .arg(subKey, 2, 16, QLatin1Char('0')).arg(keyHex).toUpper();
+            } else {
+                const uint8_t subKey = (uint8_t)((level - 1) * 2 + 2);
+                keyFrame = QStringLiteral("27%1%2")
+                    .arg(subKey, 2, 16, QLatin1Char('0')).arg(keyHex).toUpper();
+            }
+
+            auto* conn2 = new QMetaObject::Connection;
+            *conn2 = connect(this, &Elm327::rawResponse, this,
+                [this, conn2, keyHex](const QString&, const QString& r2) {
+                    disconnect(*conn2);
+                    delete conn2;
+                    const bool success = r2.contains(QLatin1String("67"), Qt::CaseInsensitive)
+                                      && !r2.contains(QLatin1String("7F"), Qt::CaseInsensitive);
+                    emit securityAccessResult(success, keyHex,
+                        success ? tr("D\u00e9verrouill\u00e9")
+                                : tr("Rejet\u00e9 par ECU : %1").arg(r2.trimmed()));
+                });
+
+            sendRawCommand(keyFrame);
+        });
+
+    sendRawCommand(seedRequest);
+}
+
+void Elm327::readEcuZone(quint8 zoneId)
+{
+    if (!m_ready) return;
+    sendRawCommand(QStringLiteral("21%1").arg(zoneId, 2, 16, QLatin1Char('0')).toUpper());
+}
+
+void Elm327::writeEcuZone(quint8 zoneId, const QByteArray& data)
+{
+    if (!m_ready) return;
+    QString cmd = QStringLiteral("3B%1").arg(zoneId, 2, 16, QLatin1Char('0')).toUpper();
+    for (const uchar b : data)
+        cmd += QStringLiteral("%1").arg(b, 2, 16, QLatin1Char('0')).toUpper();
+    sendRawCommand(cmd);
 }
 
 } // namespace elm

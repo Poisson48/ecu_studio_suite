@@ -116,6 +116,58 @@ static constexpr AutoModAddress kEdc16c34_Addresses[] = {
 
 // ── Catalog ──────────────────────────────────────────────────────────────────
 
+// ── Profils diag constructeur (inline constexpr) ─────────────────────────────
+// PSA AEE2010 : CAN-DIAG sur broches 3/8 (pas 6/14), KWP HAB 125 kbps.
+// PSA post-2018 : broches 6/14, UDS CAN 500 kbps, IDs 0x764/0x664.
+// VAG : UDS CAN 500 kbps, IDs OBD standard 0x7E0/0x7E8.
+// Renault pre-gateway : KWP IS 500 kbps.
+// BMW E/F : UDS CAN 500 kbps.
+
+static constexpr EcuDiagInfo kDiag_PSA_AEE2010 = {
+    "PSA", "KWP_HAB",
+    0x212, 0x652,   // BSI TX/RX
+    125,
+    true,           // adaptateur 3/8→6/14 requis
+    0x50A6,         // clé ECU EDC16C34 (example — à vérifier sur votre calibration)
+    "10C0"          // open diagnostic session
+};
+
+static constexpr EcuDiagInfo kDiag_PSA_NEA = {
+    "PSA", "UDS_CAN",
+    0x764, 0x664,
+    500,
+    false,
+    0x0000,         // clé ECU à renseigner selon le module
+    "1003"          // UDS ExtendedDiagnosticSession
+};
+
+static constexpr EcuDiagInfo kDiag_VAG = {
+    "VAG", "UDS_CAN",
+    0x7E0, 0x7E8,
+    500,
+    false,
+    0x0000,
+    "1003"
+};
+
+static constexpr EcuDiagInfo kDiag_Renault = {
+    "Renault", "KWP_IS",
+    0x7C0, 0x7C8,
+    500,
+    false,
+    0x0000,
+    "1092"
+};
+
+static constexpr EcuDiagInfo kDiag_BMW = {
+    "BMW", "UDS_CAN",
+    0x6F1, 0x600,
+    500,
+    false,
+    0x0000,
+    "1003"
+};
+
 static constexpr EcuEntry kCatalog[] = {
     // EDC16 ──────────────────────────────────────────────────────────────────
     {
@@ -126,69 +178,82 @@ static constexpr EcuEntry kCatalog[] = {
         kEdc16c34_Popbang,
         std::span<const AutoModPattern>{ kEdc16c34_Patterns,  std::size(kEdc16c34_Patterns)  },
         std::span<const AutoModAddress>{ kEdc16c34_Addresses, std::size(kEdc16c34_Addresses) },
+        kDiag_PSA_AEE2010,
     },
     {
         "edc16c39", "EDC16C39", "EDC16", "diesel",
         "PSA 2.0 HDi 136cv (DW10BTED4) — 407 / 607 / C5 / C6",
         std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+        kDiag_PSA_AEE2010,
     },
     {
         "edc16c3", "EDC16C3", "EDC16", "diesel",
         "VW / Audi / Seat / Skoda 1.9 TDI 105cv PD (BKC / BXE / BJB)",
         std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+        kDiag_VAG,
     },
     {
         "edc16u31", "EDC16U31", "EDC16", "diesel",
         "VW / Audi / Seat / Skoda 1.9 TDI 105cv CR (BLS)",
         std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+        kDiag_VAG,
     },
     {
         "edc16cp31", "EDC16CP31", "EDC16", "diesel",
         "BMW 318d / 320d / 520d (M47TU2)",
         std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+        kDiag_BMW,
     },
     {
         "edc16c2", "EDC16C2", "EDC16", "diesel",
         "Renault / Nissan 1.9 dCi 120cv (F9Q)",
         std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+        kDiag_Renault,
     },
     // EDC17 ──────────────────────────────────────────────────────────────────
     {
         "edc17c10", "EDC17C10", "EDC17", "diesel",
         "PSA 1.6 HDi 112cv BlueHDi (DV6C)",
         std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+        kDiag_PSA_NEA,
     },
     {
         "edc17c46", "EDC17C46", "EDC17", "diesel",
         "Renault 1.5 dCi 110cv (K9K) — Mégane / Clio / Kangoo",
         std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+        kDiag_Renault,
     },
     {
         "edc17c60", "EDC17C60", "EDC17", "diesel",
         "VW / Audi 2.0 TDI CR (EA288) — Golf 7 / A3 8V",
         std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+        kDiag_VAG,
     },
     // ME7 ────────────────────────────────────────────────────────────────────
     {
         "me7.4.4", "ME7.4.4", "ME7", "essence",
         "VW / Audi 1.8T 20v (AUM / ARZ / APX) — Golf 4 / A3 8L / TT",
         std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+        kDiag_VAG,
     },
     {
         "me7.5", "ME7.5", "ME7", "essence",
         "VW / Audi 1.8T / 2.0T (APY / AWU / BAM) — S3 / TT 225",
         std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+        kDiag_VAG,
     },
     // MED17 ──────────────────────────────────────────────────────────────────
     {
         "med17.5.25", "MED17.5.25", "MED17", "essence",
         "VW / Audi / Seat / Skoda 1.4 / 1.8 / 2.0 TFSI/TSI (EA111 / EA888)",
         std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+        kDiag_VAG,
     },
     {
         "med17.1", "MED17.1", "MED17", "essence",
         "BMW 2.0i / 3.0i (N43 / N53) — 1er / 3er / 5er",
         std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+        kDiag_BMW,
     },
 };
 
@@ -218,6 +283,7 @@ std::vector<EcuSummary> listEcus() {
             .hasA2l      = e.a2l.has_value(),
             .hasStage1   = e.stage1Maps.has_value(),
             .hasPopbang  = e.popbangParams.has_value(),
+            .hasDiagInfo = e.diagInfo.has_value(),
         });
     }
     return out;
