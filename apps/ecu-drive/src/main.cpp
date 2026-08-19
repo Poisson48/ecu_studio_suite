@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
     engine.rootContext()->setContextProperty(QStringLiteral("Updater"), updater);
     engine.addImportPath(QStringLiteral("qrc:/"));
 
-    engine.load(QUrl(QStringLiteral("qrc:/qt/qml/EcuDrive/Main.qml")));
+    engine.load(QUrl(QStringLiteral("qrc:/EcuDrive/qml/Main.qml")));
     if (engine.rootObjects().isEmpty()) return -1;
 
     if (smokeUi) {

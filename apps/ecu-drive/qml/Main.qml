@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Controls.Material
 import QtQuick.Layouts
-import Qt.labs.platform as Platform
 
 ApplicationWindow {
     id: window
@@ -66,6 +65,26 @@ ApplicationWindow {
             DrivePage  {}
             SensorsPage {}
             DiagPage   {}
+        }
+
+        // Bandeau statut
+        Rectangle {
+            Layout.fillWidth: true
+            height: statusLabel.text.length > 0 ? 26 : 0
+            clip: true
+            color: "#0f172a"
+            Behavior on height { NumberAnimation { duration: 120 } }
+
+            Label {
+                id: statusLabel
+                anchors.fill: parent
+                anchors.leftMargin: 12; anchors.rightMargin: 12
+                text: Drive.statusText
+                color: Drive.statusError ? "#ef4444" : "#64748b"
+                font.pixelSize: 11
+                elide: Text.ElideRight
+                verticalAlignment: Text.AlignVCenter
+            }
         }
 
         TabBar {
@@ -160,26 +179,6 @@ ApplicationWindow {
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: "#334155" }
     }
 
-    // Bandeau statut en bas
-    Rectangle {
-        anchors { left: parent.left; right: parent.right; bottom: tabBar.top }
-        height: statusLabel.text.length > 0 ? 28 : 0
-        clip: true
-        color: "#0f172a"
-        z: 5
-        Behavior on height { NumberAnimation { duration: 120 } }
-
-        Label {
-            id: statusLabel
-            anchors.fill: parent
-            anchors.leftMargin: 12; anchors.rightMargin: 12
-            text: Drive.statusText
-            color: Drive.statusError ? "#ef4444" : "#64748b"
-            font.pixelSize: 11
-            elide: Text.ElideRight
-            verticalAlignment: Text.AlignVCenter
-        }
-    }
 
     // Dialog info
     Popup {
@@ -309,19 +308,12 @@ ApplicationWindow {
             snackbar.show(message)
         }
         function onRequestFilePicker() {
-            filePicker.open()
+            // Desktop uniquement — sur Android géré nativement en C++
         }
     }
 
-    Platform.FileDialog {
-        id: filePicker
-        title: "Importer tune / ROM"
-        nameFilters: ["Tune / ROM (*.ecutune *.bin *.zip)", "Tous les fichiers (*.*)"]
-        onAccepted: {
-            const path = file.toString().replace("file://", "")
-            Qt.callLater(function() { Drive.loadTuneFile(path) })
-        }
-    }
+
+
 
     Popup {
         id: snackbar

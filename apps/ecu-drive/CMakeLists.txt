@@ -1,4 +1,4 @@
-find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2 SerialPort Network)
+find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2 Widgets SerialPort Network)
 find_package(Qt6 QUIET COMPONENTS Bluetooth)
 
 set(CMAKE_AUTOMOC ON)
@@ -52,6 +52,7 @@ target_link_libraries(ecu_drive PRIVATE
     Qt6::Quick
     Qt6::QuickControls2
     Qt6::QuickDialogs2
+    Qt6::Widgets
     Qt6::SerialPort
     Qt6::Network
     ecu_core

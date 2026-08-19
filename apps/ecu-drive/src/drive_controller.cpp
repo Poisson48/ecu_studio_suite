@@ -13,6 +13,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
+#include <QFileDialog>
 #include <QFileInfo>
 #include <QSettings>
 #include <QStandardPaths>
@@ -731,9 +732,18 @@ void DriveController::sendActuatorOff(const QString& cmd) {
 // ── Tune / ROM ────────────────────────────────────────────────────────────────
 
 void DriveController::importTune() {
-    // La sélection de fichier est déclenchée côté QML via onRequestFilePicker,
-    // puis QML appelle loadTuneFile(path) en retour.
+#if defined(Q_OS_ANDROID)
+    // Android : file picker natif via intent
     emit requestFilePicker();
+#else
+    // Desktop : QFileDialog standard
+    const QString path = QFileDialog::getOpenFileName(
+        nullptr, tr("Importer tune / ROM"),
+        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
+        tr("Tune / ROM (*.ecutune *.bin *.zip);;Tous les fichiers (*.*)"));
+    if (!path.isEmpty())
+        QTimer::singleShot(0, this, [this, path]() { loadTuneFile(path); });
+#endif
 }
 
 void DriveController::loadTuneFile(const QString& path) {
