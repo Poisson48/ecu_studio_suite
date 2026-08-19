@@ -1,11 +1,11 @@
-find_package(Qt6 REQUIRED COMPONENTS Widgets SerialPort Network)
+find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2 SerialPort Network)
 find_package(Qt6 QUIET COMPONENTS Bluetooth)
 
 set(CMAKE_AUTOMOC ON)
 
 set(ECU_DRIVE_SOURCES
     src/main.cpp
-    src/drive_window.cpp
+    src/drive_controller.cpp
     src/updater.cpp
     src/platform.cpp
 )
@@ -19,12 +19,23 @@ if(ANDROID)
     )
 endif()
 
-# Recettes OpenDAMOS embarquées (:/ressources/<ecu>/open_damos.json) — import .bin.
+# Recettes OpenDAMOS embarquées (:/ressources/<ecu>/open_damos.json)
 qt_add_resources(ECU_DRIVE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/opendamos_recipes.qrc")
-# Logo partagé avec ECU Studio (icône fenêtre / splash).
+# Logo partagé avec ECU Studio
 qt_add_resources(ECU_DRIVE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/resources/logo.qrc")
 
 qt_add_executable(ecu_drive ${ECU_DRIVE_SOURCES})
+
+# Fichiers QML — embarqués dans qrc:/qt/qml/EcuDrive/
+qt_add_qml_module(ecu_drive
+    URI EcuDrive
+    VERSION 1.0
+    QML_FILES
+        qml/Main.qml
+        qml/DrivePage.qml
+        qml/SensorsPage.qml
+        qml/DiagPage.qml
+)
 
 target_include_directories(ecu_drive PRIVATE
     src
@@ -38,7 +49,9 @@ target_compile_definitions(ecu_drive PRIVATE
 )
 
 target_link_libraries(ecu_drive PRIVATE
-    Qt6::Widgets
+    Qt6::Quick
+    Qt6::QuickControls2
+    Qt6::QuickDialogs2
     Qt6::SerialPort
     Qt6::Network
     ecu_core
@@ -55,8 +68,6 @@ if(ANDROID)
     set_target_properties(ecu_drive PROPERTIES
         QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android"
     )
-    # Qt Network HTTPS : le plugin qopensslbackend est dans l'APK, mais sans
-    # libssl/libcrypto le check GitHub Releases échoue (TLS init failed).
     include(FetchContent)
     FetchContent_Declare(android_openssl
         URL https://github.com/KDAB/android_openssl/archive/b71f1470962019bd89534a2919f5925f93bc5779.zip
@@ -67,8 +78,6 @@ if(ANDROID)
     add_android_openssl_libraries(ecu_drive)
 endif()
 
-# Sur Android, qt_add_executable produit un MODULE (pas un RUNTIME) — pas
-# d'install système ; l'APK est produit par la cible `apk` / androiddeployqt.
 if(NOT ANDROID)
     install(TARGETS ecu_drive RUNTIME DESTINATION bin)
 endif()

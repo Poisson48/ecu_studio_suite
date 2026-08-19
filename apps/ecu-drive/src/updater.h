@@ -16,6 +16,18 @@ namespace ecu_drive {
 // check → notes → download APK → install PackageInstaller (Android).
 class Updater : public QObject {
     Q_OBJECT
+    Q_PROPERTY(State   state           READ state           NOTIFY stateChanged)
+    Q_PROPERTY(QString currentVersion  READ currentVersion  CONSTANT)
+    Q_PROPERTY(QString latestVersion   READ latestVersion   NOTIFY stateChanged)
+    Q_PROPERTY(QString releaseNotes    READ releaseNotes    NOTIFY changelogChanged)
+    Q_PROPERTY(QString whatsNewNotes   READ whatsNewNotes   NOTIFY changelogChanged)
+    Q_PROPERTY(bool    hasWhatsNew     READ hasWhatsNew     NOTIFY changelogChanged)
+    Q_PROPERTY(bool    updateAvailable READ updateAvailable NOTIFY stateChanged)
+    Q_PROPERTY(bool    downloading     READ downloading     NOTIFY stateChanged)
+    Q_PROPERTY(bool    readyToInstall  READ readyToInstall  NOTIFY stateChanged)
+    Q_PROPERTY(qreal   progress        READ progress        NOTIFY progressChanged)
+    Q_PROPERTY(QString progressLabel   READ progressLabel   NOTIFY progressChanged)
+    Q_PROPERTY(QString lastError       READ lastError       NOTIFY stateChanged)
 public:
     enum State {
         Idle,
