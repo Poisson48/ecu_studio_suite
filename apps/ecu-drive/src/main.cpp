@@ -4,7 +4,7 @@
 
 #include "elm/Elm327.hpp"
 
-#include <QGuiApplication>
+#include <QApplication>
 #include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -12,10 +12,10 @@
 #include <QTimer>
 
 int main(int argc, char* argv[]) {
-    QGuiApplication app(argc, argv);
-    QGuiApplication::setApplicationName(QStringLiteral("ECU Drive"));
-    QGuiApplication::setOrganizationName(QStringLiteral("Poisson48"));
-    QGuiApplication::setApplicationVersion(QStringLiteral(APP_VERSION));
+    QApplication app(argc, argv);
+    QApplication::setApplicationName(QStringLiteral("ECU Drive"));
+    QApplication::setOrganizationName(QStringLiteral("Poisson48"));
+    QApplication::setApplicationVersion(QStringLiteral(APP_VERSION));
     app.setWindowIcon(QIcon(QStringLiteral(":/ecu_studio_logo.png")));
 
     QQuickStyle::setStyle(QStringLiteral("Material"));
@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
     if (engine.rootObjects().isEmpty()) return -1;
 
     if (smokeUi) {
-        QTimer::singleShot(400, &app, &QGuiApplication::quit);
+        QTimer::singleShot(400, &app, &QApplication::quit);
         return app.exec();
     }
 

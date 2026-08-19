@@ -732,18 +732,13 @@ void DriveController::sendActuatorOff(const QString& cmd) {
 // ── Tune / ROM ────────────────────────────────────────────────────────────────
 
 void DriveController::importTune() {
-#if defined(Q_OS_ANDROID)
-    // Android : file picker natif via intent
-    emit requestFilePicker();
-#else
-    // Desktop : QFileDialog standard
+    // File picker géré côté C++ pour éviter les dépendances QML runtime.
     const QString path = QFileDialog::getOpenFileName(
         nullptr, tr("Importer tune / ROM"),
         QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
         tr("Tune / ROM (*.ecutune *.bin *.zip);;Tous les fichiers (*.*)"));
     if (!path.isEmpty())
         QTimer::singleShot(0, this, [this, path]() { loadTuneFile(path); });
-#endif
 }
 
 void DriveController::loadTuneFile(const QString& path) {

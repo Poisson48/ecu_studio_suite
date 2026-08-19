@@ -6,6 +6,7 @@ import QtQuick.Layouts
 // Page Capteurs : live OBD PID + turbo MAP/baro/delta/MAF/RPM
 Item {
     id: page
+    readonly property int touchMin: 44
 
     ScrollView {
         anchors.fill: parent
@@ -20,7 +21,7 @@ Item {
             // ── Turbo live ────────────────────────────────────────────────
             Label {
                 text: "TURBO / PRESSION"
-                color: "#94a3b8"; font.pixelSize: 11; font.weight: Font.DemiBold; font.letterSpacing: 1.2
+                color: "#94a3b8"; font.pixelSize: 12; font.weight: Font.DemiBold; font.letterSpacing: 1.2
                 Layout.leftMargin: 4
             }
             Rectangle {
@@ -56,8 +57,8 @@ Item {
                 Layout.fillWidth: true; Layout.leftMargin: 4
                 Label { Layout.fillWidth: true; text: "CAPTEURS OBD LIVE"; color: "#94a3b8"; font.pixelSize: 11; font.weight: Font.DemiBold; font.letterSpacing: 1.2 }
                 Button {
-                    text: "Rafraîchir"; flat: true; implicitHeight: 28
-                    contentItem: Label { text: parent.text; color: "#3b82f6"; font.pixelSize: 12; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
+                    text: "Rafraîchir"; flat: true; implicitHeight: touchMin
+                    contentItem: Label { text: parent.text; color: "#3b82f6"; font.pixelSize: 13; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
                     onClicked: Drive.ensureSensorsPolling()
                 }
             }
@@ -70,10 +71,10 @@ Item {
                 ListView {
                     id: sensorList
                     width: parent.width
-                    height: Math.min(contentHeight, 800)
+                    height: Math.min(contentHeight, page.height * 0.70)
                     model: Drive.sensorValues
                     clip: true
-                    interactive: false
+                    interactive: contentHeight > height
 
                     delegate: Rectangle {
                         width: sensorList.width; height: 40

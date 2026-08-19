@@ -6,22 +6,18 @@ import QtQuick.Layouts
 // Page Diagnostic : Security Access, Actionneurs EDC16, DTC, Console OBD brute
 Item {
     id: page
+    readonly property int touchMin: 44
+    readonly property bool compactLayout: page.width < 360
 
     ScrollView {
         anchors.fill: parent
         contentWidth: availableWidth
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
-        Flickable {
-            id: flickable
+        Column {
+            id: mainCol
             width: page.width
-            contentHeight: mainCol.height + 24
-            bottomMargin: 16
-
-            ColumnLayout {
-                id: mainCol
-                width: page.width
-                spacing: 12
+            spacing: 12
 
                 Item { height: 12 }
 
@@ -34,7 +30,7 @@ Item {
                     GridLayout {
                         id: grid1
                         anchors { left: parent.left; right: parent.right; top: parent.top; margins: 10 }
-                        columns: 2; columnSpacing: 8; rowSpacing: 6
+                        columns: compactLayout ? 1 : 2; columnSpacing: 8; rowSpacing: 6
                         DiagBtn { text: "Ouvrir session"; tip: "10 C0"; cmd: "10 C0"; layout: parent }
                         DiagBtn { text: "Keep-alive";     tip: "3E 00"; cmd: "3E 00"; layout: parent }
                         DiagBtn { text: "Reboot ECU";     tip: "31 A8 00"; cmd: "31 A8 00"; layout: parent }
@@ -53,7 +49,7 @@ Item {
                     GridLayout {
                         id: grid2
                         anchors { left: parent.left; right: parent.right; top: parent.top; margins: 10 }
-                        columns: 2; columnSpacing: 8; rowSpacing: 6
+                        columns: compactLayout ? 1 : 2; columnSpacing: 8; rowSpacing: 6
                         DiagBtn { text: "ID ECU (21 80)";    cmd: "21 80";    layout: parent }
                         DiagBtn { text: "VIN (22 F1 90)";    cmd: "22 F1 90"; layout: parent }
                         DiagBtn { text: "Calib. (21 01)";    cmd: "21 01";    layout: parent }
@@ -84,7 +80,7 @@ Item {
                             }
                             Label { text: "Seed (hex)"; color: "#64748b"; font.pixelSize: 12 }
                             TextField {
-                                id: saSeedEdit; Layout.preferredWidth: 80
+                                id: saSeedEdit; Layout.preferredWidth: compactLayout ? 120 : 140
                                 placeholderText: "DEADBEEF"; font.pixelSize: 12
                                 color: "#e2e8f0"; background: Rectangle { color: "#0f172a"; border.color: "#334155"; radius: 6 }
                             }
@@ -93,7 +89,7 @@ Item {
                             Layout.fillWidth: true; spacing: 8
                             Label { text: "Clé ECU (hex)"; color: "#64748b"; font.pixelSize: 12 }
                             TextField {
-                                id: saKeyEdit; Layout.preferredWidth: 80
+                                id: saKeyEdit; Layout.preferredWidth: compactLayout ? 120 : 140
                                 placeholderText: "optionnel"; font.pixelSize: 12
                                 color: "#e2e8f0"; background: Rectangle { color: "#0f172a"; border.color: "#334155"; radius: 6 }
                             }
@@ -176,7 +172,7 @@ Item {
                     GridLayout {
                         id: grid3
                         anchors { left: parent.left; right: parent.right; top: parent.top; margins: 10 }
-                        columns: 2; columnSpacing: 8; rowSpacing: 6
+                        columns: compactLayout ? 1 : 2; columnSpacing: 8; rowSpacing: 6
                         DiagBtn { text: "Reboot ECU";        cmd: "31 A8 00"; layout: parent }
                         DiagBtn { text: "Flash autocontrol"; cmd: "31 02 01"; layout: parent }
                         DiagBtn { text: "Raz adapt.";        cmd: "31 DE 00"; layout: parent }
@@ -302,8 +298,7 @@ Item {
                     }
                 }
 
-                Item { height: 16 }
-            }
+            Item { height: 16 }
         }
     }
 
@@ -321,7 +316,7 @@ Item {
         property Item layout: null
         Layout.fillWidth: true
         Material.background: "#0f172a"; Material.foreground: "#93c5fd"
-        font.pixelSize: 12; implicitHeight: 36
+        font.pixelSize: 12; implicitHeight: touchMin
         ToolTip.visible: tip.length > 0 && hovered; ToolTip.text: tip
         onClicked: if (cmd.length > 0) Drive.sendRawCommand(cmd)
     }
@@ -334,13 +329,13 @@ Item {
         Button {
             Layout.fillWidth: true; text: parent.lbl + " ▲ ON"
             Material.background: "#14532d"; Material.foreground: "#4ade80"
-            font.pixelSize: 11; implicitHeight: 34
+            font.pixelSize: 11; implicitHeight: touchMin
             onClicked: Drive.sendActuatorOn(parent.on_cmd)
         }
         Button {
             Layout.fillWidth: true; text: parent.lbl + " ▼ OFF"
             Material.background: "#7f1d1d"; Material.foreground: "#fca5a5"
-            font.pixelSize: 11; implicitHeight: 34
+            font.pixelSize: 11; implicitHeight: touchMin
             onClicked: Drive.sendActuatorOff(parent.off_cmd)
         }
     }

@@ -5,6 +5,7 @@ import QtQuick.Layouts
 // Page Conduite : connexion + session + affichage boost temps réel
 Item {
     id: page
+    readonly property int touchMin: 44
 
     // ── Helpers couleur boost ─────────────────────────────────────────────
     function boostBannerColor() {
@@ -52,7 +53,7 @@ Item {
 
                     Label {
                         text: "Connexion ELM327"
-                        color: "#94a3b8"; font.pixelSize: 11; font.weight: Font.DemiBold
+                        color: "#94a3b8"; font.pixelSize: 12; font.weight: Font.DemiBold
                         font.letterSpacing: 1.2
                     }
 
@@ -74,7 +75,8 @@ Item {
                             Button {
                                 text: "Importer"
                                 Material.background: "#1e3a5f"; Material.foreground: "#93c5fd"
-                                font.pixelSize: 12; implicitHeight: 36
+                                font.pixelSize: 13; implicitHeight: touchMin
+                                enabled: !Drive.busy
                                 onClicked: Drive.importTune()
                             }
                         }
@@ -98,10 +100,11 @@ Item {
                             }
                         }
                         Button {
-                            text: Drive.btScanning ? "■" : "Scan BT"
+                            text: Drive.btScanning ? "Stop scan" : "Scan BT"
                             Material.background: Drive.btScanning ? "#4c1d95" : "#1e293b"
                             Material.foreground: "#c4b5fd"
-                            font.pixelSize: 12; implicitHeight: 36; implicitWidth: 80
+                            font.pixelSize: 13; implicitHeight: touchMin
+                            Layout.preferredWidth: Math.max(96, page.width * 0.28)
                             onClicked: Drive.startBtScan()
                         }
                     }
@@ -123,17 +126,17 @@ Item {
                             text: Drive.connected ? "Déconnecter" : "Connecter"
                             Material.background: Drive.connected ? "#991b1b" : "#1d4ed8"
                             Material.foreground: "#ffffff"
-                            font.pixelSize: 13; font.weight: Font.DemiBold; implicitHeight: 44
+                            font.pixelSize: 13; font.weight: Font.DemiBold; implicitHeight: touchMin
                             onClicked: Drive.toggleConnect()
                         }
 
                         Button {
                             Layout.fillWidth: true
-                            text: Drive.sessionOn ? "■ Arrêter" : "▶ Session"
+                            text: Drive.sessionOn ? "Arrêter session" : "Démarrer session"
                             enabled: Drive.connected && Drive.tuneReady
                             Material.background: Drive.sessionOn ? "#166534" : "#1e3a5f"
                             Material.foreground: Drive.sessionOn ? "#4ade80" : (Drive.connected && Drive.tuneReady ? "#93c5fd" : "#475569")
-                            font.pixelSize: 13; font.weight: Font.DemiBold; implicitHeight: 44
+                            font.pixelSize: 13; font.weight: Font.DemiBold; implicitHeight: touchMin
                             onClicked: Drive.toggleSession()
                         }
                     }

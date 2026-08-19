@@ -14,6 +14,7 @@ ApplicationWindow {
     Material.background: "#0f172a"
     Material.foreground: "#e2e8f0"
     Material.accent: "#3b82f6"
+    readonly property int touchMin: 44
 
     // Bouton retour Android
     onClosing: function(close) {
@@ -41,10 +42,13 @@ ApplicationWindow {
                 font.pixelSize: 20
                 font.weight: Font.DemiBold
             }
-            ToolButton {
-                contentItem: Label { text: "⟳"; color: "#94a3b8"; font.pixelSize: 18 }
+            Button {
+                text: "MAJ"
                 onClicked: Drive.checkUpdates()
-                implicitHeight: 48; implicitWidth: 48
+                implicitHeight: touchMin
+                implicitWidth: 64
+                flat: true
+                Material.foreground: "#93c5fd"
             }
         }
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: "#334155" }
@@ -90,31 +94,41 @@ ApplicationWindow {
         TabBar {
             id: tabBar
             Layout.fillWidth: true
+            implicitHeight: 56
             currentIndex: swipeView.currentIndex
             background: Rectangle { color: "#1e293b" }
 
             TabButton {
                 text: "Conduite"
-                contentItem: ColumnLayout {
-                    spacing: 2
-                    Label { Layout.alignment: Qt.AlignHCenter; text: "🚗"; font.pixelSize: 18 }
-                    Label { Layout.alignment: Qt.AlignHCenter; text: "Conduite"; font.pixelSize: 10; color: tabBar.currentIndex === 0 ? "#3b82f6" : "#94a3b8" }
+                contentItem: Label {
+                    text: parent.text
+                    color: tabBar.currentIndex === 0 ? "#3b82f6" : "#94a3b8"
+                    font.pixelSize: 12
+                    font.weight: tabBar.currentIndex === 0 ? Font.DemiBold : Font.Normal
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
                 }
             }
             TabButton {
                 text: "Capteurs"
-                contentItem: ColumnLayout {
-                    spacing: 2
-                    Label { Layout.alignment: Qt.AlignHCenter; text: "📊"; font.pixelSize: 18 }
-                    Label { Layout.alignment: Qt.AlignHCenter; text: "Capteurs"; font.pixelSize: 10; color: tabBar.currentIndex === 1 ? "#3b82f6" : "#94a3b8" }
+                contentItem: Label {
+                    text: parent.text
+                    color: tabBar.currentIndex === 1 ? "#3b82f6" : "#94a3b8"
+                    font.pixelSize: 12
+                    font.weight: tabBar.currentIndex === 1 ? Font.DemiBold : Font.Normal
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
                 }
             }
             TabButton {
                 text: "Diag"
-                contentItem: ColumnLayout {
-                    spacing: 2
-                    Label { Layout.alignment: Qt.AlignHCenter; text: "🔧"; font.pixelSize: 18 }
-                    Label { Layout.alignment: Qt.AlignHCenter; text: "Diag"; font.pixelSize: 10; color: tabBar.currentIndex === 2 ? "#3b82f6" : "#94a3b8" }
+                contentItem: Label {
+                    text: parent.text
+                    color: tabBar.currentIndex === 2 ? "#3b82f6" : "#94a3b8"
+                    font.pixelSize: 12
+                    font.weight: tabBar.currentIndex === 2 ? Font.DemiBold : Font.Normal
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
                 }
             }
         }
@@ -171,7 +185,7 @@ ApplicationWindow {
                 onClicked: Updater.readyToInstall ? Updater.install() : Updater.download()
             }
             ToolButton {
-                visible: !Updater.downloading; implicitWidth: 36; implicitHeight: 48
+                visible: !Updater.downloading; implicitWidth: touchMin; implicitHeight: touchMin
                 contentItem: Label { text: "✕"; color: "#64748b"; horizontalAlignment: Text.AlignHCenter }
                 onClicked: Updater.dismiss()
             }
@@ -308,7 +322,7 @@ ApplicationWindow {
             snackbar.show(message)
         }
         function onRequestFilePicker() {
-            // Desktop uniquement — sur Android géré nativement en C++
+            // Non utilisé : l'ouverture de fichier est gérée en C++.
         }
     }
 
@@ -325,5 +339,41 @@ ApplicationWindow {
         Timer { id: hideTimer; interval: 2800; onTriggered: snackbar.close() }
         background: Rectangle { color: "#1e293b"; radius: 12; border.color: "#334155"; border.width: 1 }
         contentItem: Label { text: snackbar.message; color: "#e2e8f0"; font.pixelSize: 14; wrapMode: Text.WordWrap }
+    }
+
+    Popup {
+        id: busyPopup
+        anchors.centerIn: parent
+        width: Math.min(parent.width - 48, 340)
+        modal: true
+        focus: true
+        closePolicy: Popup.NoAutoClose
+        visible: Drive.busy
+
+        background: Rectangle {
+            color: "#1e293b"
+            radius: 12
+            border.color: "#334155"
+            border.width: 1
+        }
+
+        contentItem: ColumnLayout {
+            spacing: 10
+            Label {
+                Layout.fillWidth: true
+                Layout.leftMargin: 14
+                Layout.rightMargin: 14
+                Layout.topMargin: 14
+                text: Drive.busyLabel.length > 0 ? Drive.busyLabel : "Traitement..."
+                color: "#e2e8f0"
+                font.pixelSize: 14
+                wrapMode: Text.WordWrap
+            }
+            BusyIndicator {
+                running: Drive.busy
+                Layout.alignment: Qt.AlignHCenter
+                Layout.bottomMargin: 14
+            }
+        }
     }
 }
