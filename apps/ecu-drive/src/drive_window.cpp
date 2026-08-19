@@ -1414,77 +1414,83 @@ QWidget* DriveWindow::buildDiagPage(QWidget* parent) {
     sessionHint->setStyleSheet(QStringLiteral("color:#94a3b8; font-size:11px;"));
     root->addWidget(sessionHint);
 
-    // Ligne 1 : session PSA KWP / UDS
-    auto* sessRow1 = new QHBoxLayout;
-    struct QuickBtn { const char* label; const char* cmd; const char* color; };
+    // Grille 2 colonnes de boutons session
+    struct QuickBtn { const char* label; const char* cmd; const char* color; const char* tip; };
     const QuickBtn sessionBtns[] = {
-        { "Ouvrir session KWP (10C0)",   "10C0",     "#3b82f6" },
-        { "Ouvrir session UDS diag",     "1003",     "#3b82f6" },
-        { "Keep-alive (3E00)",           "3E00",     "#22c55e" },
-        { "Reboot ECU (31A800)",         "31A800",   "#f59e0b" },
-        { "Fermer session (1001)",       "1001",     "#6b7280" },
-        { "Lire DTC (190209)",           "190209",   "#a78bfa" },
-        { "Effacer DTC (14FFFFFF)",      "14FFFFFF", "#f87171" },
-        { "VIN (22F190)",                "22F190",   "#34d399" },
+        { "Session KWP",    "10C0",     "#3b82f6", "Ouvrir session étendue KWP (10 C0)" },
+        { "Session UDS",    "1003",     "#3b82f6", "Ouvrir session diagnostic UDS (10 03)" },
+        { "Keep-alive",     "3E00",     "#22c55e", "Tester présence (3E 00) — à envoyer ttes les 2s" },
+        { "Reboot ECU",     "31A800",   "#f59e0b", "Redémarrer l'ECU via routine 31 A8 00" },
+        { "Fermer session", "1001",     "#6b7280", "Fermer session / retour mode défaut (10 01)" },
+        { "Lire DTC",       "190209",   "#a78bfa", "Lire DTC actifs UDS (19 02 09)" },
+        { "Effacer DTC",    "14FFFFFF", "#f87171", "Effacer tous les DTC (14 FF FF FF)" },
+        { "VIN",            "22F190",   "#34d399", "Lire VIN via UDS ReadDID (22 F1 90)" },
     };
-    // 2 lignes de 4
-    for (int i = 0; i < 8; ++i) {
-        if (i == 4) {
-            root->addLayout(sessRow1);
-            sessRow1 = new QHBoxLayout;
+    {
+        auto* grid = new QGridLayout;
+        grid->setSpacing(6);
+        for (int i = 0; i < 8; ++i) {
+            const QuickBtn& b = sessionBtns[i];
+            auto* btn = new QPushButton(QString::fromUtf8(b.label), page);
+            btn->setMinimumHeight(40);
+            btn->setToolTip(QString::fromUtf8(b.tip));
+            btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+            btn->setStyleSheet(QStringLiteral(
+                "QPushButton { background:%1; color:#fff; border-radius:6px; font-size:12px; font-weight:600; padding:4px 8px; }"
+                "QPushButton:pressed { background:#1e293b; }").arg(QString::fromUtf8(b.color)));
+            const QString cmd = QString::fromUtf8(b.cmd);
+            connect(btn, &QPushButton::clicked, this, [this, cmd]() {
+                if (!m_elm || !m_connected) {
+                    if (m_rawLog) m_rawLog->appendPlainText(tr("[Diag] ELM non connecté"));
+                    return;
+                }
+                if (m_rawLog) m_rawLog->appendPlainText(QStringLiteral("> %1").arg(cmd));
+                m_elm->sendRawCommand(cmd);
+            });
+            grid->addWidget(btn, i / 2, i % 2);
         }
-        const QuickBtn& b = sessionBtns[i];
-        auto* btn = new QPushButton(QString::fromUtf8(b.label), page);
-        btn->setMinimumHeight(38);
-        btn->setStyleSheet(QStringLiteral(
-            "QPushButton { background:%1; color:#fff; border-radius:6px; font-size:11px; padding:4px 6px; }"
-            "QPushButton:pressed { background:#1e293b; }").arg(QString::fromUtf8(b.color)));
-        const QString cmd = QString::fromUtf8(b.cmd);
-        connect(btn, &QPushButton::clicked, this, [this, cmd]() {
-            if (!m_elm || !m_connected) {
-                if (m_rawLog) m_rawLog->appendPlainText(tr("[Diag] ELM non connecté"));
-                return;
-            }
-            if (m_rawLog) m_rawLog->appendPlainText(QStringLiteral("> %1").arg(cmd));
-            m_elm->sendRawCommand(cmd);
-        });
-        sessRow1->addWidget(btn, 1);
+        root->addLayout(grid);
     }
-    root->addLayout(sessRow1);
 
     // ── Zones PSA préremplies ────────────────────────────────────────
     auto* zonesTitle = new QLabel(tr("Zones ECU — lecture rapide (service 21)"), page);
     zonesTitle->setStyleSheet(QStringLiteral("color:#e6edf3; font-weight:700; font-size:14px; margin-top:8px;"));
     root->addWidget(zonesTitle);
 
-    struct ZoneBtn { const char* label; const char* zone; };
+    struct ZoneBtn { const char* label; const char* zone; const char* tip; };
     const ZoneBtn zoneBtns[] = {
-        { "Ident. ECU (21 80)",     "8001" },  // KWP: 21 80 — ReadDataByLocalIdentifier zone 0x80
-        { "Calibration (21 86)",    "8601" },
-        { "Soft ECU (21 87)",       "8701" },
-        { "Hard ECU (21 88)",       "8801" },
-        { "VIN (22 F1 90)",         "22F190" },// UDS ReadDID
-        { "Coding BSI (21 A0)",     "A001" },
+        { "Ident. ECU",   "8001",   "21 80 — ReadDataByLocalIdentifier zone 0x80" },
+        { "Calibration",  "8601",   "21 86 — version calibration ECU" },
+        { "Soft ECU",     "8701",   "21 87 — version logiciel ECU" },
+        { "Hard ECU",     "8801",   "21 88 — version hardware ECU" },
+        { "VIN",          "22F190", "22 F1 90 — UDS ReadDID numéro de série véhicule" },
+        { "Coding BSI",   "A001",   "21 A0 — codage BSI" },
     };
-    auto* zonesRow = new QHBoxLayout;
-    for (const ZoneBtn& z : zoneBtns) {
-        auto* btn = new QPushButton(QString::fromUtf8(z.label), page);
-        btn->setMinimumHeight(36);
-        btn->setStyleSheet(QStringLiteral(
-            "QPushButton { background:#1e3a5f; color:#93c5fd; border:1px solid #2563eb; border-radius:6px; font-size:11px; padding:4px; }"
-            "QPushButton:pressed { background:#1e293b; }"));
-        const QString cmd = QString::fromUtf8(z.zone);
-        connect(btn, &QPushButton::clicked, this, [this, cmd]() {
-            if (!m_elm || !m_connected) {
-                if (m_rawLog) m_rawLog->appendPlainText(tr("[Zone] ELM non connecté"));
-                return;
-            }
-            if (m_rawLog) m_rawLog->appendPlainText(QStringLiteral("> %1").arg(cmd));
-            m_elm->sendRawCommand(cmd);
-        });
-        zonesRow->addWidget(btn, 1);
+    {
+        auto* grid = new QGridLayout;
+        grid->setSpacing(6);
+        for (int i = 0; i < 6; ++i) {
+            const ZoneBtn& z = zoneBtns[i];
+            auto* btn = new QPushButton(QString::fromUtf8(z.label), page);
+            btn->setMinimumHeight(38);
+            btn->setToolTip(QString::fromUtf8(z.tip));
+            btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+            btn->setStyleSheet(QStringLiteral(
+                "QPushButton { background:#1e3a5f; color:#93c5fd; border:1px solid #2563eb; border-radius:6px; font-size:12px; font-weight:600; padding:4px 8px; }"
+                "QPushButton:pressed { background:#1e293b; }"));
+            const QString cmd = QString::fromUtf8(z.zone);
+            connect(btn, &QPushButton::clicked, this, [this, cmd]() {
+                if (!m_elm || !m_connected) {
+                    if (m_rawLog) m_rawLog->appendPlainText(tr("[Zone] ELM non connecté"));
+                    return;
+                }
+                if (m_rawLog) m_rawLog->appendPlainText(QStringLiteral("> %1").arg(cmd));
+                m_elm->sendRawCommand(cmd);
+            });
+            grid->addWidget(btn, i / 2, i % 2);
+        }
+        root->addLayout(grid);
     }
-    root->addLayout(zonesRow);
 
     // ── Actionneurs — boutons directs (EDC16 service 0x30) ────────────
     auto* actTitle2 = new QLabel(tr("Actionneurs EDC16 — IO Control (service 30)"), page);
@@ -1511,25 +1517,37 @@ QWidget* DriveWindow::buildDiagPage(QWidget* parent) {
         { "Volet admission\n(LID 0x2B)",    "302B07FF", "302B00" },
     };
 
-    auto makeActRow = [&](const ActQuickBtn* btns, int n) {
-        auto* row = new QHBoxLayout;
-        for (int i = 0; i < n; ++i) {
-            auto* col = new QVBoxLayout;
-            auto* lbl = new QLabel(QString::fromUtf8(btns[i].label), page);
+    // Grille 2 colonnes : chaque cellule = label + [ON] [OFF] sur une ligne
+    {
+        auto* grid = new QGridLayout;
+        grid->setSpacing(6);
+        for (int i = 0; i < 8; ++i) {
+            const ActQuickBtn& b = actBtns[i];
+            auto* cell = new QWidget(page);
+            auto* cellLay = new QVBoxLayout(cell);
+            cellLay->setContentsMargins(4, 4, 4, 4);
+            cellLay->setSpacing(3);
+            cell->setStyleSheet(QStringLiteral(
+                "QWidget { background:#111827; border:1px solid #334155; border-radius:8px; }"));
+
+            auto* lbl = new QLabel(QString::fromUtf8(b.label), cell);
             lbl->setAlignment(Qt::AlignCenter);
             lbl->setWordWrap(true);
-            lbl->setStyleSheet(QStringLiteral("color:#e2e8f0; font-size:10px;"));
-            const QString cmdOn  = QString::fromUtf8(btns[i].cmdOn);
-            const QString cmdOff = QString::fromUtf8(btns[i].cmdOff);
-            auto* btnOn = new QPushButton(tr("ON"), page);
+            lbl->setStyleSheet(QStringLiteral("color:#e2e8f0; font-size:11px; border:none; background:transparent;"));
+
+            auto* btnRow2 = new QHBoxLayout;
+            btnRow2->setSpacing(4);
+            const QString cmdOn  = QString::fromUtf8(b.cmdOn);
+            const QString cmdOff = QString::fromUtf8(b.cmdOff);
+            auto* btnOn = new QPushButton(tr("ON"), cell);
             btnOn->setMinimumHeight(36);
             btnOn->setStyleSheet(QStringLiteral(
-                "QPushButton { background:#166534; color:#fff; border-radius:6px; font-weight:700; }"
+                "QPushButton { background:#166534; color:#fff; border-radius:6px; font-weight:700; border:none; }"
                 "QPushButton:pressed { background:#14532d; }"));
-            auto* btnOff = new QPushButton(tr("OFF"), page);
+            auto* btnOff = new QPushButton(tr("OFF"), cell);
             btnOff->setMinimumHeight(36);
             btnOff->setStyleSheet(QStringLiteral(
-                "QPushButton { background:#7f1d1d; color:#fff; border-radius:6px; font-weight:700; }"
+                "QPushButton { background:#7f1d1d; color:#fff; border-radius:6px; font-weight:700; border:none; }"
                 "QPushButton:pressed { background:#450a0a; }"));
             connect(btnOn, &QPushButton::clicked, this, [this, cmdOn]() {
                 if (!m_elm || !m_connected) { if (m_rawLog) m_rawLog->appendPlainText(tr("[Act] Non connecté")); return; }
@@ -1541,15 +1559,14 @@ QWidget* DriveWindow::buildDiagPage(QWidget* parent) {
                 if (m_rawLog) m_rawLog->appendPlainText(QStringLiteral("> %1").arg(cmdOff));
                 m_elm->sendRawCommand(cmdOff);
             });
-            col->addWidget(lbl);
-            col->addWidget(btnOn);
-            col->addWidget(btnOff);
-            row->addLayout(col, 1);
+            btnRow2->addWidget(btnOn, 1);
+            btnRow2->addWidget(btnOff, 1);
+            cellLay->addWidget(lbl);
+            cellLay->addLayout(btnRow2);
+            grid->addWidget(cell, i / 2, i % 2);
         }
-        root->addLayout(row);
-    };
-    makeActRow(actBtns, 4);
-    makeActRow(actBtns + 4, 4);
+        root->addLayout(grid);
+    }
 
     // Bouton routine PSA confirmées (service 0x31)
     auto* actTitle3 = new QLabel(tr("Routines PSA confirmées (service 31)"), page);
@@ -1562,30 +1579,28 @@ QWidget* DriveWindow::buildDiagPage(QWidget* parent) {
         { "Reboot ECU 2\n(31 A8 01)", "31A801", nullptr },
         { "Flash autocontrol\n(37)", "37", nullptr },
     };
-    auto* routRow = new QHBoxLayout;
-    for (const RoutineBtn& r2 : routineBtns) {
-        auto* col = new QVBoxLayout;
-        auto* lbl = new QLabel(QString::fromUtf8(r2.label), page);
-        lbl->setAlignment(Qt::AlignCenter);
-        lbl->setWordWrap(true);
-        lbl->setStyleSheet(QStringLiteral("color:#e2e8f0; font-size:10px;"));
-        auto* btn = new QPushButton(tr("Envoyer"), page);
-        btn->setMinimumHeight(36);
-        btn->setStyleSheet(QStringLiteral(
-            "QPushButton { background:#92400e; color:#fff; border-radius:6px; font-weight:700; }"
-            "QPushButton:pressed { background:#78350f; }"));
-        const QString cmd = QString::fromUtf8(r2.cmdStart);
-        connect(btn, &QPushButton::clicked, this, [this, cmd]() {
-            if (!m_elm || !m_connected) { if (m_rawLog) m_rawLog->appendPlainText(tr("[Routine] Non connecté")); return; }
-            if (m_rawLog) m_rawLog->appendPlainText(QStringLiteral("> %1").arg(cmd));
-            m_elm->sendRawCommand(cmd);
-        });
-        col->addWidget(lbl);
-        col->addWidget(btn);
-        routRow->addLayout(col, 1);
+    {
+        auto* grid = new QGridLayout;
+        grid->setSpacing(6);
+        int ri = 0;
+        for (const RoutineBtn& r2 : routineBtns) {
+            auto* btn = new QPushButton(QString::fromUtf8(r2.label), page);
+            btn->setMinimumHeight(44);
+            btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+            btn->setStyleSheet(QStringLiteral(
+                "QPushButton { background:#92400e; color:#fff; border-radius:6px; font-size:12px; font-weight:600; padding:4px 8px; }"
+                "QPushButton:pressed { background:#78350f; }"));
+            const QString cmd = QString::fromUtf8(r2.cmdStart);
+            connect(btn, &QPushButton::clicked, this, [this, cmd]() {
+                if (!m_elm || !m_connected) { if (m_rawLog) m_rawLog->appendPlainText(tr("[Routine] Non connecté")); return; }
+                if (m_rawLog) m_rawLog->appendPlainText(QStringLiteral("> %1").arg(cmd));
+                m_elm->sendRawCommand(cmd);
+            });
+            grid->addWidget(btn, ri / 2, ri % 2);
+            ++ri;
+        }
+        root->addLayout(grid);
     }
-    routRow->addStretch(2);
-    root->addLayout(routRow);
 
     connect(saCalcBtn, &QPushButton::clicked, this, [this, saProtocol]() {
         const QString proto = saProtocol->currentData().toString();
