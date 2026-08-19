@@ -867,42 +867,27 @@ void setupScrollablePage(QScrollArea* scroll, QWidget* page) {
     scroll->setWidget(page);
 }
 
-/** Force un rebuild d'affichage (bug Qt Android : pages Stack qui se chevauchent). */
+/** Force un redraw propre de la page active (sans takeWidget qui corrompt le rendu). */
 void forceStackPageRefresh(QStackedWidget* stack, int index) {
     if (!stack || index < 0 || index >= stack->count()) return;
     QWidget* page = stack->widget(index);
     if (!page) return;
     stack->setCurrentIndex(index);
 
-    // takeWidget/setWidget : seul moyen fiable de recharger le backing store Android.
     if (auto* scroll = qobject_cast<QScrollArea*>(page)) {
-        if (QWidget* inner = scroll->takeWidget()) {
-            scroll->setWidget(inner);
-            inner->show();
+        if (QWidget* inner = scroll->widget()) {
             if (inner->layout())
                 inner->layout()->activate();
             inner->updateGeometry();
-            inner->adjustSize();
         }
-        // Re-grab après takeWidget (sinon le scroll tactile meurt).
-#if defined(Q_OS_ANDROID)
-        scroll->viewport()->setAttribute(Qt::WA_AcceptTouchEvents, true);
-        QScroller::grabGesture(scroll->viewport(), QScroller::TouchGesture);
-        QScroller::grabGesture(scroll->viewport(), QScroller::LeftMouseButtonGesture);
-#else
-        QScroller::grabGesture(scroll->viewport(), QScroller::LeftMouseButtonGesture);
-#endif
         scroll->viewport()->update();
         scroll->updateGeometry();
         scroll->update();
     }
 
-    page->setVisible(false);
-    page->setVisible(true);
     page->updateGeometry();
-    page->repaint();
+    page->update();
     stack->update();
-    QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 }
 
 } // namespace
@@ -1684,21 +1669,14 @@ void DriveWindow::showDrivePage() {
     if (m_sessionOn) return;
     if (m_connected && m_elm)
         m_elm->stopPolling();
-    // Second tour après paint : corrige les résidus des autres pages.
-    QTimer::singleShot(50, this, [this]() {
-        if (m_stack && m_stack->currentIndex() == 0)
-            forceStackPageRefresh(m_stack, 0);
-    });
 }
 
 void DriveWindow::showSensorsPage() {
     if (!m_stack) return;
     setNavPage(1);
     forceStackPageRefresh(m_stack, 1);
-    // Différer le polling : laisser le stack peindre d'abord (évite crash Android).
     QTimer::singleShot(50, this, [this]() {
         if (!m_stack || m_stack->currentIndex() != 1) return;
-        forceStackPageRefresh(m_stack, 1);
         ensureSensorsPolling();
         refreshSensorsTable();
     });
@@ -1711,7 +1689,6 @@ void DriveWindow::showDiagPage() {
     refreshDiagButtons();
     QTimer::singleShot(50, this, [this]() {
         if (!m_stack || m_stack->currentIndex() != 2) return;
-        forceStackPageRefresh(m_stack, 2);
         ensureTurboPolling();
         refreshTurboLive();
     });
