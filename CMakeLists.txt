@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(ecu-studio-suite VERSION 1.8.3 LANGUAGES CXX C)
+project(ecu-studio-suite VERSION 1.8.4 LANGUAGES CXX C)
 
 # ── Version ───────────────────────────────────────────────────────────────────
 # APP_VERSION (compilé dans le binaire via PROJECT_VERSION) DOIT correspondre au
@@ -103,7 +103,9 @@ endif()
 # ── Compile flags ────────────────────────────────────────────────────────────
 # Flags GCC/Clang uniquement : MSVC ne les comprend pas (-Wpedantic ferait un mur
 # d'avertissements D9002). Sous MSVC on reste sur les warnings par défaut.
-if(NOT MSVC)
+if(MSVC)
+    add_compile_options(/utf-8)
+else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
