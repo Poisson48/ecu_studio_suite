@@ -1,20 +1,22 @@
 ---
 name: release-ecu-suite
-description: Release proprement ecu_studio_suite : bump de version, commit, tag annoté, push — la CI GitHub Actions builde et publie automatiquement l'APK Android et le binaire Linux. Utiliser quand l'utilisateur demande de releaser, tagger, publier une mise à jour ou préparer une release.
+description: Release proprement ecu_studio_suite : bump de version, commit, tag annoté, push. La CI GitHub Actions existante builde automatiquement l'AppImage Linux, l'APK Android signé et crée la GitHub Release. Utiliser quand l'utilisateur demande de releaser, tagger, publier une mise à jour ou préparer une release.
 ---
 
 # Release ECU Studio Suite
 
-## Fonctionnement
+## Pipeline CI existant
 
-Un push de tag `v*` déclenche `.github/workflows/release.yml` qui :
-1. Builde `ecu_studio` (Linux)
-2. Builde et signe l'APK `ecu_drive` (Android arm64)
-3. Crée la GitHub Release avec les deux binaires en assets
+Push d'un tag `v*` → `.github/workflows/release.yml` :
+- **`apk`** (via `android.yml`) — APK arm64 signé avec `ANDROID_KEYSTORE_B64`
+- **`appimage`** — AppImage Linux x86-64, signée avec `UPDATE_SIGNING_KEY`
+- **`publish`** — GitHub Release avec les deux assets + `release-manifest.json.sig`
 
-L'app Android (`Updater`) vérifie les releases GitHub et propose le téléchargement/installation de l'APK dès qu'une nouvelle version est disponible.
+L'app Android (`Updater`) vérifie les releases GitHub et propose l'installation en 1 tap.
 
-## Étapes à faire localement
+Repo : `Poisson48/ecu_studio_suite` — CI : https://github.com/Poisson48/ecu_studio_suite/actions
+
+## Étapes locales
 
 ### 1. Vérifier l'état
 
@@ -25,7 +27,7 @@ git log --oneline $(git describe --tags --abbrev=0)..HEAD
 git tag --sort=-version:refname | head -3
 ```
 
-### 2. Build local de vérification (optionnel mais recommandé)
+### 2. Build local de vérification (optionnel)
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DECU_MPPS_SIMULATION=ON -DECU_BUILD_TESTS=OFF -G Ninja
@@ -34,20 +36,20 @@ cmake --build build --target ecu_studio ecu_drive -j$(nproc)
 
 Stopper si erreurs de compilation.
 
-### 3. Déterminer la nouvelle version
+### 3. Bump de version
 
 Basé sur les commits depuis le dernier tag :
-- `feat:` ou nouvelle fonctionnalité → bump MINOR
-- `fix:` ou polish → bump PATCH
-- Breaking change → bump MAJOR
+- `feat:` → MINOR  |  `fix:` → PATCH  |  breaking → MAJOR
 
-### 4. Commiter les fichiers sources
+Mettre à jour la ligne `project(... VERSION X.Y.Z ...)` dans `CMakeLists.txt`.
+
+### 4. Commiter
 
 Ne jamais stager : `build/`, `run_test.sh`, `src_test.cpp`, `test_ols_real.cpp`
 
 ```bash
-git add apps/ libs/ CMakeLists.txt .github/ .cursor/  # ajuster selon les fichiers modifiés
-git commit -m "feat|fix: <résumé court> (vX.Y.Z)
+git add apps/ libs/ CMakeLists.txt .cursor/
+git commit -m "feat|fix: <résumé> (vX.Y.Z)
 
 - changement 1
 - changement 2"
@@ -64,33 +66,24 @@ git tag -a vX.Y.Z -m "Release vX.Y.Z — <titre>
 git push origin main --tags
 ```
 
-Le push du tag déclenche automatiquement le workflow CI. La GitHub Release est créée avec l'APK Android et le binaire Linux en quelques minutes.
+### 6. Surveiller la CI
 
-### 6. Vérification
+https://github.com/Poisson48/ecu_studio_suite/actions
 
-```bash
-git log --oneline -3
-git tag --sort=-version:refname | head -3
-```
+La release GitHub est créée automatiquement en ~15 min avec l'APK et l'AppImage.
 
-Surveiller la CI sur : https://github.com/Poisson48/ecu_studio_suite/actions
+## Secrets requis (déjà configurés)
 
-## Secrets GitHub requis pour signer l'APK
-
-À configurer dans Settings → Secrets → Actions du repo :
-
-| Secret | Contenu |
-|--------|---------|
-| `ANDROID_SIGNING_KEY` | Keystore base64 (`base64 -w0 release.keystore`) |
-| `ANDROID_KEY_ALIAS` | Alias de la clé dans le keystore |
-| `ANDROID_KEYSTORE_PASSWORD` | Mot de passe du keystore |
-| `ANDROID_KEY_PASSWORD` | Mot de passe de la clé |
-
-Sans ces secrets, l'APK ne sera pas signé et le job Android échouera (le Linux est indépendant).
+| Secret | Usage |
+|--------|-------|
+| `ANDROID_KEYSTORE_B64` | Keystore base64 pour signer l'APK |
+| `ANDROID_KEY_ALIAS` | Alias de la clé |
+| `ANDROID_KEYSTORE_PASS` | Mot de passe keystore |
+| `UPDATE_SIGNING_KEY` | Clé privée PEM pour signer le manifeste de mise à jour |
 
 ## Règles
 
 - Ne jamais forcer un push sur `main`
 - Toujours tag annoté (`-a`), jamais un tag léger
-- La version dans le commit et le tag doivent être identiques
-- Mettre à jour `CMakeLists.txt` ligne `project(... VERSION X.Y.Z ...)` avec la nouvelle version
+- Version dans `CMakeLists.txt`, commit et tag doivent être identiques
+- Ne pas modifier `.github/workflows/` sans tester la CI
