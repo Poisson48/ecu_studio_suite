@@ -19,7 +19,6 @@
 #include <QListWidgetItem>
 #include <QCheckBox>
 #include <QFrame>
-#include <QStackedWidget>
 #include <QScrollArea>
 #include <QScroller>
 #include <QSizePolicy>
@@ -104,9 +103,9 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
         platformToast(tr("ELM connecté — prêt"));
         refreshSessionButton();
         refreshDiagButtons();
-        if (m_stack && m_stack->currentIndex() == 1)
+        if (m_currentPage == 1)
             ensureSensorsPolling();
-        else if (m_stack && m_stack->currentIndex() == 2)
+        else if (m_currentPage == 2)
             ensureTurboPolling();
 #if defined(ELM_HAVE_BLUETOOTH)
         if (m_btCombo && !m_btCombo->currentData().toString().isEmpty()
@@ -225,7 +224,7 @@ DriveWindow::DriveWindow(QWidget* parent) : QMainWindow(parent) {
     });
     connect(m_elm, &elm::Elm327::supportedPidsReady, this, [this](const QList<quint8>& pids) {
         m_ecuSupportedPids = QSet<quint8>(pids.begin(), pids.end());
-        if (!m_stack || m_stack->currentIndex() != 1 || m_sessionOn || !m_connected)
+        if (m_currentPage != 1 || m_sessionOn || !m_connected)
             return;
         QList<std::uint8_t> qp;
         for (const auto& p : ecu::obd2::livePids()) {
@@ -613,11 +612,19 @@ void DriveWindow::buildUi() {
     nav->addWidget(m_diagNavBtn, 1);
     outer->addLayout(nav);
 
-    m_stack = new QStackedWidget(central);
-    m_stack->addWidget(buildDrivePage(m_stack));
-    m_stack->addWidget(buildSensorsPage(m_stack));
-    m_stack->addWidget(buildDiagPage(m_stack));
-    outer->addWidget(m_stack, 1);
+    m_pageContainer = new QWidget(central);
+    auto* pageLayout = new QVBoxLayout(m_pageContainer);
+    pageLayout->setContentsMargins(0,0,0,0);
+    pageLayout->setSpacing(0);
+    m_pageDrive   = buildDrivePage(m_pageContainer);
+    m_pageSensors = buildSensorsPage(m_pageContainer);
+    m_pageDiag    = buildDiagPage(m_pageContainer);
+    pageLayout->addWidget(m_pageDrive);
+    pageLayout->addWidget(m_pageSensors);
+    pageLayout->addWidget(m_pageDiag);
+    m_pageSensors->hide();
+    m_pageDiag->hide();
+    outer->addWidget(m_pageContainer, 1);
     setNavPage(0);
     refreshDiagButtons();
 
@@ -868,12 +875,6 @@ void setupScrollablePage(QScrollArea* scroll, QWidget* page) {
     QScroller::grabGesture(scroll->viewport(), QScroller::LeftMouseButtonGesture);
 #endif
     scroll->setWidget(page);
-}
-
-/** Bascule proprement vers la page d'index donné. */
-void forceStackPageRefresh(QStackedWidget* stack, int index) {
-    if (!stack || index < 0 || index >= stack->count()) return;
-    stack->setCurrentIndex(index);
 }
 
 } // namespace
@@ -1666,30 +1667,39 @@ void DriveWindow::setNavPage(int index) {
 
 void DriveWindow::showDrivePage() {
     setNavPage(0);
-    forceStackPageRefresh(m_stack, 0);
+    m_currentPage = 0;
+    if (m_pageDrive)   m_pageDrive->show();
+    if (m_pageSensors) m_pageSensors->hide();
+    if (m_pageDiag)    m_pageDiag->hide();
     if (m_sessionOn) return;
     if (m_connected && m_elm)
         m_elm->stopPolling();
 }
 
 void DriveWindow::showSensorsPage() {
-    if (!m_stack) return;
+    if (!m_pageContainer) return;
     setNavPage(1);
-    forceStackPageRefresh(m_stack, 1);
+    m_currentPage = 1;
+    if (m_pageDrive)   m_pageDrive->hide();
+    if (m_pageSensors) m_pageSensors->show();
+    if (m_pageDiag)    m_pageDiag->hide();
     QTimer::singleShot(50, this, [this]() {
-        if (!m_stack || m_stack->currentIndex() != 1) return;
+        if (m_currentPage != 1) return;
         ensureSensorsPolling();
         refreshSensorsTable();
     });
 }
 
 void DriveWindow::showDiagPage() {
-    if (!m_stack) return;
+    if (!m_pageContainer) return;
     setNavPage(2);
-    forceStackPageRefresh(m_stack, 2);
+    m_currentPage = 2;
+    if (m_pageDrive)   m_pageDrive->hide();
+    if (m_pageSensors) m_pageSensors->hide();
+    if (m_pageDiag)    m_pageDiag->show();
     refreshDiagButtons();
     QTimer::singleShot(50, this, [this]() {
-        if (!m_stack || m_stack->currentIndex() != 2) return;
+        if (m_currentPage != 2) return;
         ensureTurboPolling();
         refreshTurboLive();
     });
@@ -1783,9 +1793,9 @@ void DriveWindow::resumePollingAfterDtc() {
         m_elm->startPolling(qp, 180);
         return;
     }
-    if (m_stack && m_stack->currentIndex() == 1)
+    if (m_currentPage == 1)
         ensureSensorsPolling();
-    else if (m_stack && m_stack->currentIndex() == 2)
+    else if (m_currentPage == 2)
         ensureTurboPolling();
 }
 
@@ -2777,9 +2787,9 @@ void DriveWindow::stopSession() {
     endBusy();
     if (sum.ticks > 0) showSummary(sum);
     else setStatus(tr("Session arrêtée (aucune donnée)."));
-    if (m_stack && m_stack->currentIndex() == 1)
+    if (m_currentPage == 1)
         ensureSensorsPolling();
-    else if (m_stack && m_stack->currentIndex() == 2)
+    else if (m_currentPage == 2)
         ensureTurboPolling();
 }
 
@@ -2788,9 +2798,9 @@ void DriveWindow::onPid(quint8 pid, double value, const QString&, const QString&
     if (!unit.isEmpty())
         m_liveUnit[pid] = unit;
     if (m_sessionOn) runValidation();
-    if (!m_uiSuspended && m_stack && m_stack->currentIndex() == 1)
+    if (!m_uiSuspended && m_currentPage == 1)
         refreshSensorsTable();
-    if (!m_uiSuspended && m_stack && m_stack->currentIndex() == 2)
+    if (!m_uiSuspended && m_currentPage == 2)
         refreshTurboLive();
 }
 
