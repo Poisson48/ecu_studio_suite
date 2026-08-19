@@ -584,17 +584,11 @@ void DriveController::readDtcs() {
 void DriveController::clearDtcs() {
     if (!m_connected || !m_elm) { emit toast(tr("Connecte l'ELM d'abord")); return; }
     if (m_dtcAwaiting > 0 || m_dtcClearPending) return;
-    emit showDialog(
-        tr("Effacer les codes défaut ?"),
-        tr("Mode OBD 04 : efface les DTC mémorisés et peut éteindre le voyant moteur.\n\n"
-           "Corrige d'abord la cause, sinon les codes reviennent."),
-        tr("Effacer"));
-    // La confirmation est gérée par le QML via clearDtcsConfirmed()
-}
-
-Q_INVOKABLE void DriveController_clearDtcsConfirmed(DriveController* c) {
-    // Appelé depuis QML après confirmation
-    if (!c) return;
+    m_elm->stopPolling();
+    m_dtcClearPending = true;
+    setStatus(tr("Effacement DTC (mode 04)…"));
+    emit toast(tr("Effacement DTC…"));
+    m_elm->clearDtcs();
 }
 
 QString DriveController::copyDtcs() const {
@@ -752,7 +746,7 @@ void DriveController::loadTuneFile(const QString& path) {
     f.close();
 
     const QString ext = QFileInfo(path).suffix().toLower();
-    if (ext == QStringLiteral("ecutune")) {
+    if (ext == QStringLiteral("ecutune") || ext == QStringLiteral("zip")) {
         auto result = ecu::TunePackageIo::readZip(data);
         if (!result) {
             setStatus(tr("Fichier .ecutune invalide : %1").arg(result.error()), true);

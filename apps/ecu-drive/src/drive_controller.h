@@ -195,6 +195,8 @@ public slots:
 
     // MAJ
     void checkUpdates();
+    // Capteurs
+    Q_INVOKABLE void ensureSensorsPolling();
 
 private:
     void onPid(quint8 pid, double value, const QString& name, const QString& unit);
@@ -208,7 +210,6 @@ private:
     void refreshDtcList();
     void ensureTurboPolling();
     void refreshTurboLive();
-    void ensureSensorsPolling();
     void refreshSensorsTable();
     void startSession();
     void stopSession();
