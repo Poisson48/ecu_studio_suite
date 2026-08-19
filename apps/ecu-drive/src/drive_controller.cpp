@@ -7,6 +7,7 @@
 #include "ecu/SecurityAccess.hpp"
 #include "ecu/ActuatorControl.hpp"
 #include "ecu/TunePackage.hpp"
+#include "ecu/OpenDamos.hpp"
 
 #include <QApplication>
 #include <QClipboard>
@@ -16,6 +17,7 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QSettings>
+#include <QSet>
 #include <QStandardPaths>
 #include <QTextStream>
 #include <QTimer>
@@ -338,9 +340,19 @@ void DriveController::toggleConnect() {
 
 void DriveController::ecuPickerAccepted(const QString& ecuId) {
     if (m_pendingRom.isEmpty()) return;
-    applyRomBinary(m_pendingRom, ecuId, m_pendingRomPath);
-    m_pendingRom.clear();
-    m_pendingRomPath.clear();
+    if (ecuId.isEmpty()) {
+        emit toast(tr("Sélectionne un ECU"));
+        emit showEcuPicker(availableEcuIds(), QFileInfo(m_pendingRomPath).fileName());
+        return;
+    }
+    const QByteArray rom = m_pendingRom;
+    const QString path = m_pendingRomPath;
+    if (applyRomBinary(rom, ecuId, path)) {
+        m_pendingRom.clear();
+        m_pendingRomPath.clear();
+    } else {
+        emit showEcuPicker(availableEcuIds(), QFileInfo(path).fileName());
+    }
 }
 
 void DriveController::ecuPickerCancelled() {
@@ -786,15 +798,41 @@ void DriveController::loadTuneFile(const QString& path) {
         m_pendingRomPath = path;
         const QStringList ids = availableEcuIds();
         if (!m_autoEcuId.isEmpty()) {
-            applyRomBinary(data, m_autoEcuId, path);
+            const QString ecu = m_autoEcuId;
             m_autoEcuId.clear();
+            m_pendingRom = data;
+            m_pendingRomPath = path;
+            if (!applyRomBinary(data, ecu, path)) {
+                m_pendingRom = data;
+                m_pendingRomPath = path;
+                emit showEcuPicker(ids, QFileInfo(path).fileName());
+            } else {
+                m_pendingRom.clear();
+                m_pendingRomPath.clear();
+            }
         } else if (m_suppressEcuPromptOnce && !ids.isEmpty()) {
             m_suppressEcuPromptOnce = false;
             const QString lastEcu = QSettings().value(QStringLiteral("drive/lastEcu")).toString();
             const QString ecu = ids.contains(lastEcu) ? lastEcu : ids.first();
-            applyRomBinary(data, ecu, path);
+            m_pendingRom = data;
+            m_pendingRomPath = path;
+            if (!applyRomBinary(data, ecu, path)) {
+                m_pendingRom = data;
+                m_pendingRomPath = path;
+                emit showEcuPicker(ids, QFileInfo(path).fileName());
+            } else {
+                m_pendingRom.clear();
+                m_pendingRomPath.clear();
+            }
         } else {
             m_suppressEcuPromptOnce = false;
+            if (ids.isEmpty()) {
+                setStatus(tr("Aucune recette ECU embarquée — importe un fichier .ecutune."), true);
+                emit toast(tr("Aucun ECU disponible"));
+                return;
+            }
+            m_pendingRom = data;
+            m_pendingRomPath = path;
             emit showEcuPicker(ids, QFileInfo(path).fileName());
         }
     }
@@ -825,14 +863,14 @@ void DriveController::applyTunePackage(const ecu::TunePackage& pkg, const QStrin
     emit toast(tr("Tune prêt"));
 }
 
-void DriveController::applyRomBinary(const QByteArray& rom, const QString& ecuId, const QString& path) {
+bool DriveController::applyRomBinary(const QByteArray& rom, const QString& ecuId, const QString& path) {
     beginBusy(tr("Analyse ROM…"), 0);
     const bool ok = m_validator.loadRom(rom, ecuId);
     endBusy();
     if (!ok) {
-        setStatus(tr("ROM invalide pour ECU %1").arg(ecuId), true);
-        emit toast(tr("ROM invalide"));
-        return;
+        setStatus(tr("ROM incompatible avec ECU %1 — choisis une autre recette.").arg(ecuId), true);
+        emit toast(tr("ROM incompatible"));
+        return false;
     }
     m_tunePath  = path;
     m_tuneReady = true;
@@ -848,15 +886,33 @@ void DriveController::applyRomBinary(const QByteArray& rom, const QString& ecuId
     emit tuneLabelChanged();
     setStatus(tr("ROM chargée (%1 maps) — connecte l'ELM puis lance la session.").arg(mapCount));
     emit toast(tr("ROM prête"));
+    return true;
 }
 
 QStringList DriveController::availableEcuIds() {
     if (!m_ecuIdsCache.isEmpty()) return m_ecuIdsCache;
-    // Cherche les recettes embarquées (qrc:/ressources/<id>/open_damos.json)
-    QDir qrcDir(QStringLiteral(":/ressources"));
-    for (const QString& sub : qrcDir.entryList(QDir::Dirs))
-        if (QFile::exists(QStringLiteral(":/ressources/%1/open_damos.json").arg(sub)))
-            m_ecuIdsCache.append(sub);
+
+    QSet<QString> ids;
+
+    auto addIfRecipe = [&](const QString& ecuId) {
+        if (ecuId.isEmpty() || ids.contains(ecuId)) return;
+        if (QFile::exists(QStringLiteral(":/ressources/%1/open_damos.json").arg(ecuId))
+            || QFile::exists(QDir(ecu::OpenDamos::userRecipeDir()).filePath(ecuId + QStringLiteral("/open_damos.json"))))
+            ids.insert(ecuId);
+    };
+
+    // QRC : certains builds (Android) n'exposent pas les dossiers via QDir::Dirs.
+    const QDir qrcDir(QStringLiteral(":/ressources"));
+    for (const QString& sub : qrcDir.entryList(QDir::AllEntries | QDir::NoDotAndDotDot))
+        addIfRecipe(sub);
+
+    const QDir userDir(ecu::OpenDamos::userRecipeDir());
+    if (userDir.exists()) {
+        for (const QString& sub : userDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot))
+            addIfRecipe(sub);
+    }
+
+    m_ecuIdsCache = ids.values();
     m_ecuIdsCache.sort();
     return m_ecuIdsCache;
 }

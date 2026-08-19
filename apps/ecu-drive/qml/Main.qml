@@ -255,6 +255,15 @@ ApplicationWindow {
         property var ecuIds: []
         property string hint: ""
 
+        function refreshList() {
+            const raw = Drive.availableEcuIds()
+            const next = []
+            for (let i = 0; i < raw.length; ++i)
+                next.push(String(raw[i]))
+            ecuIds = next
+            ecuList.currentIndex = next.length > 0 ? 0 : -1
+        }
+
         background: Rectangle { color: "#1e293b"; radius: 14; border.color: "#334155"; border.width: 1 }
         contentItem: ColumnLayout {
             spacing: 0
@@ -267,14 +276,22 @@ ApplicationWindow {
                 text: ecuPicker.hint; color: "#64748b"; font.pixelSize: 12; wrapMode: Text.WordWrap
                 visible: ecuPicker.hint.length > 0
             }
+            Label {
+                Layout.fillWidth: true; padding: 16; topPadding: 0
+                text: "Aucune recette ECU disponible dans l'application."
+                color: "#f87171"; font.pixelSize: 12; wrapMode: Text.WordWrap
+                visible: ecuPicker.ecuIds.length === 0
+            }
             ListView {
                 id: ecuList
                 Layout.fillWidth: true
-                height: Math.min(contentHeight, 240)
+                Layout.preferredHeight: Math.max(Math.min(contentHeight, 280), ecuPicker.ecuIds.length > 0 ? 44 : 0)
+                visible: ecuPicker.ecuIds.length > 0
                 model: ecuPicker.ecuIds
                 clip: true
                 delegate: ItemDelegate {
                     width: ecuList.width
+                    implicitHeight: 44
                     contentItem: Label {
                         text: modelData; color: "#e2e8f0"; font.pixelSize: 14
                         verticalAlignment: Text.AlignVCenter
@@ -297,11 +314,17 @@ ApplicationWindow {
                 Rectangle { width: 1; height: 48; color: "#334155" }
                 Button {
                     Layout.fillWidth: true; flat: true; implicitHeight: 48
-                    contentItem: Label { text: "OK"; color: "#3b82f6"; font.pixelSize: 14; font.weight: Font.DemiBold; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    enabled: ecuPicker.ecuIds.length > 0 && ecuList.currentIndex >= 0
+                    contentItem: Label {
+                        text: "OK"; color: parent.enabled ? "#3b82f6" : "#475569"
+                        font.pixelSize: 14; font.weight: Font.DemiBold
+                        horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+                    }
                     onClicked: {
                         const idx = ecuList.currentIndex
+                        if (idx < 0 || idx >= ecuPicker.ecuIds.length) return
                         ecuPicker.close()
-                        Drive.ecuPickerAccepted(ecuPicker.ecuIds[idx >= 0 ? idx : 0])
+                        Drive.ecuPickerAccepted(ecuPicker.ecuIds[idx])
                     }
                 }
             }
@@ -314,8 +337,8 @@ ApplicationWindow {
             infoDialog.showMsg(title, body, okLabel, null)
         }
         function onShowEcuPicker(ecuIds, hint) {
-            ecuPicker.ecuIds = ecuIds
             ecuPicker.hint = hint
+            ecuPicker.refreshList()
             ecuPicker.open()
         }
         function onToast(message) {

@@ -141,6 +141,7 @@ public:
 
     /** Charge un .ecutune ou une ROM .bin (appelé depuis main.cpp --tune). */
     Q_INVOKABLE void loadTuneFile(const QString& path);
+    Q_INVOKABLE QStringList availableEcuIds();
     Q_INVOKABLE void setAutoEcuId(const QString& id) { m_autoEcuId = id; }
 
 signals:
@@ -225,8 +226,7 @@ private:
     void autoStopCsv();
     void appendCsv(const std::vector<ecu::ValidationResult>& results);
     void applyTunePackage(const ecu::TunePackage& pkg, const QString& path);
-    void applyRomBinary(const QByteArray& rom, const QString& ecuId, const QString& path);
-    QStringList availableEcuIds();
+    bool applyRomBinary(const QByteArray& rom, const QString& ecuId, const QString& path);
     ecu::LivePidSnapshot snapshot() const;
     std::optional<ecu::ValidationResult> primaryBoost(
         const std::vector<ecu::ValidationResult>& results) const;
