@@ -4,208 +4,169 @@ on:
   push:
     tags:
       - 'v*'
-  # Build téléchargeable à la demande (sans tag) : artefacts du run, pas de Release.
-  workflow_dispatch:
-
-permissions:
-  contents: write
 
 jobs:
-  version:
-    runs-on: ubuntu-24.04
-    outputs:
-      name: ${{ steps.v.outputs.name }}
-      code: ${{ steps.v.outputs.code }}
+  # ── Build Linux (ecu_studio PC) ────────────────────────────────────────
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-      - id: v
+      - uses: actions/checkout@v4
+
+      - name: Version depuis le tag
+        id: ver
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            echo "name=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-          else
-            # workflow_dispatch : version CMakeLists par défaut (override vide côté AppImage)
-            echo "name=0.0.0-ci" >> "$GITHUB_OUTPUT"
-          fi
-          echo "code=$(git rev-list --count HEAD)" >> "$GITHUB_OUTPUT"
+          TAG="${GITHUB_REF_NAME}"           # ex: v1.8.1
+          VER="${TAG#v}"                     # ex: 1.8.1
+          # versionCode = MAJOR*10000 + MINOR*100 + PATCH
+          IFS='.' read -r MAJ MIN PAT <<< "$VER"
+          CODE=$(( MAJ * 10000 + MIN * 100 + PAT ))
+          echo "version=$VER"   >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG"       >> "$GITHUB_OUTPUT"
+          echo "code=$CODE"     >> "$GITHUB_OUTPUT"
 
-  apk:
-    needs: version
-    if: startsWith(github.ref, 'refs/tags/v')
-    uses: ./.github/workflows/android.yml
-    with:
-      version_name: ${{ needs.version.outputs.name }}
-      version_code: ${{ needs.version.outputs.code }}
-      require_release_key: true
-    secrets: inherit
-
-  appimage:
-    runs-on: ubuntu-24.04
-    needs: version
-    steps:
-      - name: Checkout (with submodules)
-        uses: actions/checkout@v5
-        with:
-          submodules: recursive
-
-      - name: Install system dependencies
+      - name: Dépendances Qt6 + libs
         run: |
-          sudo apt-get update -q
-          sudo apt-get install -y \
-            cmake ninja-build git pkg-config patchelf libfuse2 \
-            qt6-base-dev qt6-charts-dev qt6-declarative-dev \
-            qt6-serialbus-dev qt6-serialport-dev qt6-connectivity-dev \
-            qt6-tools-dev qt6-tools-dev-tools libqt6opengl6-dev \
-            libgl1-mesa-dev libssl-dev \
-            libusb-1.0-0-dev libgit2-dev \
-            lua5.4 liblua5.4-dev \
-            nlohmann-json3-dev libgtest-dev \
-            libxkbcommon-x11-0 libxcb-cursor0 libxcb-xkb1 \
-            libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 \
-            libxcb-render-util0 libxcb-shape0 libxcb-xinerama0 \
-            libxcb-util1 libegl1 libgbm1
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            qt6-base-dev qt6-charts-dev qt6-serialbus-dev qt6-serialport-dev \
+            libusb-1.0-0-dev libgit2-dev liblua5.4-dev \
+            nlohmann-json3-dev cmake ninja-build
 
-      - name: CMake configure
+      - name: Build ecu_studio
         run: |
-          VERSION_OVERRIDE=""
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            VERSION_OVERRIDE="-DECU_VERSION_OVERRIDE=${GITHUB_REF_NAME#v}"
-          fi
           cmake -B build \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX=/usr \
-            -DECU_MPPS_SIMULATION=OFF \
+            -DECU_MPPS_SIMULATION=ON \
             -DECU_BUILD_TESTS=OFF \
-            -DECU_BUILD_SOCKETSPY=OFF \
-            -DECU_BUILD_ECU_DRIVE=OFF \
-            ${VERSION_OVERRIDE} \
+            -DECU_VERSION_OVERRIDE="${{ steps.ver.outputs.version }}" \
             -G Ninja
+          cmake --build build --target ecu_studio -j$(nproc)
+          strip build/apps/ecu-studio/ecu_studio
 
-      - name: CMake build
-        run: cmake --build build --target ecu_studio --parallel "$(nproc)"
-
-      - name: Download linuxdeploy and Qt plugin
-        run: |
-          curl -fsSL -o /tmp/linuxdeploy \
-            https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-          curl -fsSL -o /tmp/linuxdeploy-plugin-qt \
-            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
-          chmod +x /tmp/linuxdeploy /tmp/linuxdeploy-plugin-qt
-
-      - name: Build AppImage
-        run: |
-          DESTDIR=/tmp/appdir cmake --install build
-          QT_PLUGIN_DIR="$(qmake6 -query QT_INSTALL_PLUGINS 2>/dev/null || echo /usr/lib/x86_64-linux-gnu/qt6/plugins)"
-          mkdir -p /tmp/appdir/usr/plugins/tls
-          cp "${QT_PLUGIN_DIR}/tls/"*.so /tmp/appdir/usr/plugins/tls/ 2>/dev/null || true
-          LIBUSB="$(ldconfig -p | awk '/libusb-1.0\.so\.0/{print $NF; exit}')"
-          echo "Bundling libusb: ${LIBUSB:-INTROUVABLE}"
-          EXTRA_QT_MODULES="charts;serialbus;serialport;concurrent;sql;network;opengl" \
-          QMAKE="$(command -v qmake6)" \
-          /tmp/linuxdeploy \
-            --appdir /tmp/appdir \
-            --executable /tmp/appdir/usr/bin/ecu_studio \
-            --desktop-file apps/ecu-studio/resources/ecu-studio.desktop \
-            --icon-file scripts/dist/ecu-studio.png \
-            ${LIBUSB:+--library "$LIBUSB"} \
-            --plugin qt \
-            --output appimage
-          produced="$(ls ECU*Studio*.AppImage | head -1)"
-          if [ "$produced" != "ECU_Studio-x86_64.AppImage" ]; then
-            mv "$produced" "ECU_Studio-x86_64.AppImage"
-          fi
-          ls -la ECU_Studio-x86_64.AppImage
-
-      - name: Upload AppImage artifact
+      - name: Upload artifact Linux
         uses: actions/upload-artifact@v4
         with:
-          name: ECU_Studio-x86_64.AppImage
-          path: ECU_Studio-x86_64.AppImage
-          if-no-files-found: error
+          name: ecu_studio-linux
+          path: build/apps/ecu-studio/ecu_studio
 
-      - name: Sign release manifest
-        if: startsWith(github.ref, 'refs/tags/')
-        env:
-          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
-        run: |
-          if [ -z "$UPDATE_SIGNING_KEY" ]; then
-            echo "::warning::UPDATE_SIGNING_KEY absent — AppImage publiée SANS manifeste signé."
-            exit 0
-          fi
-          VERSION="${GITHUB_REF_NAME#v}"
-          APPIMAGE="ECU_Studio-x86_64.AppImage"
-          SHA256=$(sha256sum "$APPIMAGE" | awk '{print $1}')
-          printf '{\n  "version": "%s",\n  "filename": "%s",\n  "sha256": "%s"\n}\n' \
-              "$VERSION" "$APPIMAGE" "$SHA256" > release-manifest.json
-          echo "$UPDATE_SIGNING_KEY" > /tmp/_sign_key.pem
-          chmod 600 /tmp/_sign_key.pem
-          openssl pkeyutl -sign -inkey /tmp/_sign_key.pem -rawin \
-              -in release-manifest.json -out release-manifest.json.sig
-          rm -f /tmp/_sign_key.pem
-          echo "Manifest signed for v${VERSION} (sha256=${SHA256})"
-          cat release-manifest.json
-
-      - name: Upload manifest artifacts
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-manifest
-          path: |
-            release-manifest.json
-            release-manifest.json.sig
-          if-no-files-found: ignore
-
-  publish:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [version, apk, appimage]
-    runs-on: ubuntu-24.04
+  # ── Build Android APK (ecu_drive) ──────────────────────────────────────
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
-      - name: Download AppImage
-        uses: actions/download-artifact@v4
-        with:
-          name: ECU_Studio-x86_64.AppImage
-
-      - name: Download manifest (optional)
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: release-manifest
-
-      - name: Download APK
-        uses: actions/download-artifact@v4
-        with:
-          name: ecu-drive-arm64-apk
-
-      - name: Rename APK with version
+      - name: Version depuis le tag
+        id: ver
         run: |
-          mv ecu-drive-arm64.apk "ecu-drive-${GITHUB_REF_NAME}-arm64.apk"
-          ls -la ECU_Studio-x86_64.AppImage "ecu-drive-${GITHUB_REF_NAME}-arm64.apk"
-          ls -la release-manifest.json* 2>/dev/null || echo "(pas de manifeste signé)"
+          TAG="${GITHUB_REF_NAME}"
+          VER="${TAG#v}"
+          IFS='.' read -r MAJ MIN PAT <<< "$VER"
+          CODE=$(( MAJ * 10000 + MIN * 100 + PAT ))
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE"   >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
+      - name: Java 17
+        uses: actions/setup-java@v4
         with:
-          fail_on_unmatched_files: false
-          body: |
-            ## Installation
+          distribution: temurin
+          java-version: '17'
 
-            **PC / Linux (x86-64)** — `ECU_Studio-x86_64.AppImage`
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
 
-            **Android (arm64)** — `ecu-drive-*-arm64.apk` (ECU Drive) :
-            ouvrez-le sur le téléphone (autorisez l'installation depuis cette source),
-            ou `adb install -r ecu-drive-*-arm64.apk`.
+      - name: NDK 26
+        run: sdkmanager "ndk;26.3.11579264" "cmake;3.22.1"
 
-            Signé avec la clé de publication du projet : les versions suivantes
-            s'installent **par-dessus**. ECU Drive propose la mise à jour au démarrage.
-          files: |
-            ECU_Studio-x86_64.AppImage
-            ecu-drive-${{ github.ref_name }}-arm64.apk
-            release-manifest.json
-            release-manifest.json.sig
+      - name: Qt6 Android arm64
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.3'
+          host: linux
+          target: android
+          arch: android_arm64_v8a
+          modules: qtcharts qtserialbus qtserialport qtnetwork
+
+      - name: Patch AndroidManifest.xml
+        run: |
+          sed -i \
+            -e 's/android:versionCode="[^"]*"/android:versionCode="${{ steps.ver.outputs.code }}"/' \
+            -e 's/android:versionName="[^"]*"/android:versionName="${{ steps.ver.outputs.version }}"/' \
+            apps/ecu-drive/android/AndroidManifest.xml
+
+      - name: Build APK
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANDROID_NDK_ROOT: ${{ env.ANDROID_NDK_ROOT }}
+        run: |
+          cmake -B build-android \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_PLATFORM=android-26 \
+            -DQt6_DIR="$Qt6_DIR" \
+            -DECU_VERSION_OVERRIDE="${{ steps.ver.outputs.version }}" \
+            -DECU_MPPS_SIMULATION=ON \
+            -DECU_BUILD_TESTS=OFF \
+            -G Ninja
+          cmake --build build-android --target ecu_drive_apk -j$(nproc)
+
+      - name: Trouver l'APK
+        id: apk
+        run: |
+          APK=$(find build-android -name "ecu_drive*.apk" | grep -v "unsigned" | head -1)
+          echo "path=$APK" >> "$GITHUB_OUTPUT"
+
+      - name: Signer l'APK
+        uses: r0adkll/sign-android-release@v1
+        with:
+          releaseDirectory: ${{ steps.apk.outputs.path }}
+          signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
+          alias: ${{ secrets.ANDROID_KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Upload artifact APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecu_drive-android
+          path: ${{ steps.apk.outputs.path }}
+
+  # ── Créer la GitHub Release avec les assets ────────────────────────────
+  release:
+    name: GitHub Release
+    needs: [build-linux, build-android]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Renommer les binaires
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          mv dist/ecu_studio-linux/ecu_studio        dist/ecu_studio-linux-${TAG}
+          mv dist/ecu_drive-android/ecu_drive*.apk   dist/ecu_drive-${TAG}.apk 2>/dev/null || true
+          chmod +x dist/ecu_studio-linux-${TAG}
+
+      - name: Créer la Release GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "${{ github.ref_name }}"
+          body: |
+            Release ${{ github.ref_name }} — générée automatiquement par CI.
+
+            **Android** : télécharge `ecu_drive-${{ github.ref_name }}.apk` et installe-le.
+            L'app détecte les nouvelles versions automatiquement via le menu Mise à jour.
+
+            **Linux PC** : télécharge `ecu_studio-linux-${{ github.ref_name }}` et lance-le.
+          files: |
+            dist/ecu_studio-linux-${{ github.ref_name }}
+            dist/ecu_drive-${{ github.ref_name }}.apk
+          fail_on_unmatched_files: false

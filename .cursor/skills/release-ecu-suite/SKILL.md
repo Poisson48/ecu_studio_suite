@@ -1,104 +1,96 @@
 ---
 name: release-ecu-suite
-description: Release proprement ecu_studio_suite : build Release, bump de version, commit, tag annoté, push. Utiliser quand l'utilisateur demande de releaser, tagger, publier une mise à jour ou préparer une release.
+description: Release proprement ecu_studio_suite : bump de version, commit, tag annoté, push — la CI GitHub Actions builde et publie automatiquement l'APK Android et le binaire Linux. Utiliser quand l'utilisateur demande de releaser, tagger, publier une mise à jour ou préparer une release.
 ---
 
 # Release ECU Studio Suite
 
-## Contexte projet
+## Fonctionnement
 
-- Repo : `/data/leo/ecu_studio_suite`
-- Apps : `ecu_studio` (PC) et `ecu_drive` (Android/PC)
-- Versioning : `v<MAJOR>.<MINOR>.<PATCH>` — dernier tag via `git tag --sort=-version:refname | head -1`
-- Schéma de bump : PATCH pour fix/polish, MINOR pour nouvelle feature, MAJOR pour rupture
+Un push de tag `v*` déclenche `.github/workflows/release.yml` qui :
+1. Builde `ecu_studio` (Linux)
+2. Builde et signe l'APK `ecu_drive` (Android arm64)
+3. Crée la GitHub Release avec les deux binaires en assets
 
-## Étapes
+L'app Android (`Updater`) vérifie les releases GitHub et propose le téléchargement/installation de l'APK dès qu'une nouvelle version est disponible.
+
+## Étapes à faire localement
 
 ### 1. Vérifier l'état
 
 ```bash
+cd /data/leo/ecu_studio_suite
 git status --short
 git log --oneline $(git describe --tags --abbrev=0)..HEAD
 git tag --sort=-version:refname | head -3
 ```
 
-Relever : fichiers non commités, commits depuis le dernier tag, version actuelle.
-
-### 2. Build Release propre
+### 2. Build local de vérification (optionnel mais recommandé)
 
 ```bash
-cd /data/leo/ecu_studio_suite
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DECU_MPPS_SIMULATION=ON -DECU_BUILD_TESTS=OFF -G Ninja
 cmake --build build --target ecu_studio ecu_drive -j$(nproc)
 ```
 
-Si "no work to do" et des fichiers ont changé : `rm -rf build` puis relancer.
-
-Vérifier les binaires produits :
-```bash
-ls -lh build/apps/ecu-studio/ecu_studio build/apps/ecu-drive/ecu_drive
-```
-
-**Stopper si erreurs de compilation.**
+Stopper si erreurs de compilation.
 
 ### 3. Déterminer la nouvelle version
 
-Règle de bump basée sur les commits depuis le dernier tag :
-- `feat:` ou nouvelle lib/fonctionnalité → MINOR
-- `fix:` ou polish → PATCH
-- Breaking change → MAJOR
+Basé sur les commits depuis le dernier tag :
+- `feat:` ou nouvelle fonctionnalité → bump MINOR
+- `fix:` ou polish → bump PATCH
+- Breaking change → bump MAJOR
 
-Incrémenter et noter `NEW_VERSION=vX.Y.Z`.
+### 4. Commiter les fichiers sources
 
-### 4. Commiter
-
-Stager uniquement les fichiers sources pertinents (pas `build/`, pas les fichiers de test `run_test.sh`, `src_test.cpp`, `test_ols_real.cpp`).
+Ne jamais stager : `build/`, `run_test.sh`, `src_test.cpp`, `test_ols_real.cpp`
 
 ```bash
-git add apps/ libs/ CMakeLists.txt  # ajuster selon les fichiers modifiés
+git add apps/ libs/ CMakeLists.txt .github/ .cursor/  # ajuster selon les fichiers modifiés
+git commit -m "feat|fix: <résumé court> (vX.Y.Z)
+
+- changement 1
+- changement 2"
 ```
 
-Message de commit en français, format :
-```
-feat|fix: <résumé court> (<NEW_VERSION>)
-
-<liste des changements significatifs, une ligne par item>
-```
-
-Inclure la version dans la première ligne (ex: `feat: security access (v1.8.0)`).
-
-### 5. Tag annoté
+### 5. Tag annoté + push → déclenche la CI
 
 ```bash
 git tag -a vX.Y.Z -m "Release vX.Y.Z — <titre>
 
 - changement 1
-- changement 2
-..."
-```
+- changement 2"
 
-### 6. Push
-
-```bash
 git push origin main --tags
 ```
 
-Si pas de remote configuré, indiquer à l'utilisateur la commande à lancer.
+Le push du tag déclenche automatiquement le workflow CI. La GitHub Release est créée avec l'APK Android et le binaire Linux en quelques minutes.
 
-### 7. Vérification finale
+### 6. Vérification
 
 ```bash
 git log --oneline -3
 git tag --sort=-version:refname | head -3
-ls -lh build/apps/ecu-studio/ecu_studio build/apps/ecu-drive/ecu_drive
 ```
 
-Confirmer à l'utilisateur : version taguée, binaires buildés, taille des exécutables.
+Surveiller la CI sur : https://github.com/Poisson48/ecu_studio_suite/actions
+
+## Secrets GitHub requis pour signer l'APK
+
+À configurer dans Settings → Secrets → Actions du repo :
+
+| Secret | Contenu |
+|--------|---------|
+| `ANDROID_SIGNING_KEY` | Keystore base64 (`base64 -w0 release.keystore`) |
+| `ANDROID_KEY_ALIAS` | Alias de la clé dans le keystore |
+| `ANDROID_KEYSTORE_PASSWORD` | Mot de passe du keystore |
+| `ANDROID_KEY_PASSWORD` | Mot de passe de la clé |
+
+Sans ces secrets, l'APK ne sera pas signé et le job Android échouera (le Linux est indépendant).
 
 ## Règles
 
-- Ne jamais commiter `build/`, `*.o`, `*.a`, `run_test.sh`, `src_test.cpp`, `test_ols_real.cpp`
 - Ne jamais forcer un push sur `main`
-- Si le build échoue : corriger avant de commiter
-- Toujours utiliser un tag annoté (`-a`), jamais un tag léger
-- La version dans le message de commit et le tag doivent être identiques
+- Toujours tag annoté (`-a`), jamais un tag léger
+- La version dans le commit et le tag doivent être identiques
+- Mettre à jour `CMakeLists.txt` ligne `project(... VERSION X.Y.Z ...)` avec la nouvelle version
