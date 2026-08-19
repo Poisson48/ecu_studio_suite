@@ -48,7 +48,7 @@ add_executable(test_ecu_drive_updater
 target_include_directories(test_ecu_drive_updater PRIVATE
     ${CMAKE_SOURCE_DIR}/apps/ecu-drive/src)
 target_compile_definitions(test_ecu_drive_updater PRIVATE APP_VERSION="1.7.0-test")
-target_link_libraries(test_ecu_drive_updater PRIVATE Qt6::Core Qt6::Gui Qt6::Network GTest::gtest)
+target_link_libraries(test_ecu_drive_updater PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Network GTest::gtest)
 gtest_discover_tests(test_ecu_drive_updater)
 
 # ── ecu-mcp : serveur MCP JSON-RPC 2.0 ────────────────────────────────────────
