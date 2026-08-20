@@ -25,9 +25,12 @@
 
 #if defined(Q_OS_ANDROID)
 #  include <QFileDialog>
+#  include <QJniObject>
+#  include <QJniEnvironment>
 #endif
 #if defined(ELM_HAVE_BLUETOOTH)
 #  include <QBluetoothLocalDevice>
+#  include <QBluetoothAddress>
 #endif
 
 namespace ecu_drive {
@@ -145,6 +148,9 @@ DriveController::DriveController(elm::Elm327* elm, Updater* updater, QObject* pa
         refreshPorts();
 #if defined(ELM_HAVE_BLUETOOTH)
         selectLastBtDevice();
+        platformRequestBluetoothPermissions([this](bool granted) {
+            if (granted) loadBondedBtDevices();
+        });
 #endif
     });
 
@@ -285,6 +291,7 @@ void DriveController::startBtScan() {
                 tr("OK"));
             return;
         }
+        loadBondedBtDevices();
         ensureBtAgent();
         if (!m_btAgent) return;
         if (m_btAgent->isActive()) m_btAgent->stop();
@@ -308,6 +315,19 @@ void DriveController::toggleConnect() {
     }
     emit toast(tr("Connexion…"));
 #if defined(ELM_HAVE_BLUETOOTH)
+    if (m_btAgent && m_btAgent->isActive()) {
+        m_btAgent->stop();
+        setBtScanningState(false);
+    }
+    if (m_selectedBt.isEmpty()) {
+        for (const auto& d : m_btDevices) {
+            if (d.likelyObd) { m_selectedBt = d.addr; break; }
+        }
+        if (m_selectedBt.isEmpty() && !m_btDevices.empty())
+            m_selectedBt = m_btDevices.front().addr;
+        if (!m_selectedBt.isEmpty())
+            emit selectedBtChanged();
+    }
     if (!m_selectedBt.isEmpty()) {
         platformRequestBluetoothPermissions([this](bool granted) {
             if (!granted) {
@@ -1044,14 +1064,8 @@ void DriveController::ensureBtAgent() {
             this, [this](const QBluetoothDeviceInfo& info) {
         if (info.coreConfigurations() & QBluetoothDeviceInfo::LowEnergyCoreConfiguration)
             return;
-        const QString addr = info.address().toString();
-        const QString name = info.name().isEmpty() ? addr : info.name();
-        const bool likely = likelyElmBtName(name);
-        if (m_btObdOnly && !likely) return;
-        for (auto& d : m_btDevices)
-            if (d.addr == addr) { d.name = name; d.likelyObd = likely; emit btDevicesChanged(); return; }
-        m_btDevices.push_back({addr, name, likely});
-        emit btDevicesChanged();
+        addBtDevice(info.address().toString(),
+                    info.name().isEmpty() ? info.address().toString() : info.name());
     });
 
     connect(m_btAgent, &QBluetoothDeviceDiscoveryAgent::finished,
@@ -1080,8 +1094,66 @@ void DriveController::selectLastBtDevice() {
     emit selectedBtChanged();
 }
 
+void DriveController::addBtDevice(const QString& addr, const QString& name) {
+    if (addr.isEmpty()) return;
+    const bool likely = likelyElmBtName(name);
+    if (m_btObdOnly && !likely && addr.compare(m_selectedBt, Qt::CaseInsensitive) != 0)
+        return;
+    for (auto& d : m_btDevices) {
+        if (d.addr.compare(addr, Qt::CaseInsensitive) == 0) {
+            if (!name.isEmpty()) d.name = name;
+            d.likelyObd = likely || d.likelyObd;
+            emit btDevicesChanged();
+            return;
+        }
+    }
+    m_btDevices.push_back({addr, name.isEmpty() ? addr : name, likely});
+    emit btDevicesChanged();
+}
+
+void DriveController::loadBondedBtDevices() {
+#if defined(Q_OS_ANDROID)
+    const QJniObject jarr = QJniObject::callStaticObjectMethod(
+        "org/poisson48/ecudrive/BtRfcommHelper", "listBonded", "()[Ljava/lang/String;");
+    if (!jarr.isValid()) return;
+    QJniEnvironment env;
+    jobjectArray arr = jarr.object<jobjectArray>();
+    if (!arr) return;
+    const jsize n = env->GetArrayLength(arr);
+    for (jsize i = 0; i < n; ++i) {
+        QJniObject s(env->GetObjectArrayElement(arr, i));
+        if (!s.isValid()) continue;
+        const QString line = s.toString();
+        const QString addr = line.section(QLatin1Char('|'), 0, 0).trimmed();
+        const QString name = line.section(QLatin1Char('|'), 1).trimmed();
+        addBtDevice(addr, name.isEmpty() ? addr : name);
+    }
+    if (m_selectedBt.isEmpty()) {
+        for (const auto& d : m_btDevices) {
+            if (d.likelyObd) { setSelectedBt(d.addr); break; }
+        }
+    }
+#endif
+}
+
 void DriveController::toggleConnectAfterPerms() {
-    if (m_connected || m_selectedBt.isEmpty()) return;
+    if (m_connected) return;
+    if (m_btAgent && m_btAgent->isActive()) {
+        m_btAgent->stop();
+        setBtScanningState(false);
+    }
+#if defined(Q_OS_ANDROID)
+    QJniObject::callStaticMethod<void>(
+        "org/poisson48/ecudrive/BtRfcommHelper", "cancelDiscovery", "()V");
+#endif
+    if (m_selectedBt.isEmpty()) {
+        loadBondedBtDevices();
+        if (m_selectedBt.isEmpty()) {
+            setStatus(tr("Aucun périphérique BT sélectionné."), true);
+            emit toast(tr("Sélectionne un module Bluetooth"));
+            return;
+        }
+    }
 #if defined(Q_OS_ANDROID) || defined(Q_OS_LINUX)
     QBluetoothLocalDevice local;
     if (local.isValid()) {

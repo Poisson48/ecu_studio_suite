@@ -239,6 +239,8 @@ private:
     void ensureBtAgent();
     void setBtScanningState(bool on);
     void selectLastBtDevice();
+    void loadBondedBtDevices();
+    void addBtDevice(const QString& addr, const QString& name);
     void toggleConnectAfterPerms();
     static bool likelyElmBtName(const QString& name);
     struct BtDevice { QString addr; QString name; bool likelyObd = false; };

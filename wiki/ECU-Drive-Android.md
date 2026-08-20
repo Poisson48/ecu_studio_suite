@@ -41,7 +41,7 @@ cmake --build build-android --target ecu_drive
 ```
 
 ### Chinese blue ELM327 (Bluetooth Classic)
-Primary path (USB OTG not supported yet). Pair the dongle in system Bluetooth settings first (**PIN `1234` or `0000`**). ECU Drive requests BT permissions on first scan, scans **Classic / SPP only** (not BLE), prefers names like OBDII / ELM / V-LINK, then connects via SerialPort UUID with RFCOMM channel 1→2 fallback. Contact ON so the adapter is powered.
+Primary path (USB OTG not supported yet). Pair the dongle in system Bluetooth settings first (**PIN `1234` or `0000`**). ECU Drive requests BT permissions on first scan, lists **already-paired** Classic devices, scans **Classic / SPP only** (not BLE), prefers names like OBDII / ELM / V-LINK, then connects via native Android RFCOMM (SPP UUID, then channel 1→2). Contact ON so the adapter is powered.
 
 ### Auto-updates
 On launch, ECU Drive checks GitHub Releases for a newer `ecu-drive*-arm64.apk` (or any `ecu-drive*.apk`), shows notes, downloads, and installs via Android PackageInstaller. Each `v*` tag runs the **Release** workflow which builds a signed APK (`scripts/build-android-drive.sh`) and attaches it to the GitHub Release. One-time keystore setup: `bash scripts/make-android-release-key.sh` then set the three `ANDROID_*` secrets.
@@ -73,7 +73,7 @@ Not supported in the current beta (Java helper not wired). Use Bluetooth Classic
 4. Après : résumé + **Enregistrer sous…** / **Partager le log…** (CSV accessible)
 
 ### Module bleu chinois (Bluetooth classique)
-Chemin principal (USB OTG non supporté pour l’instant). **Appairer d’abord** le dongle dans les réglages Bluetooth du téléphone (**PIN `1234` ou `0000`**). ECU Drive demande les permissions BT au premier scan, ne scanne que le **BT classique / SPP** (pas le BLE), priorise les noms OBDII / ELM / V-LINK, puis se connecte via UUID SerialPort avec repli canaux RFCOMM 1 puis 2. Contact ON pour alimenter l’adaptateur.
+Chemin principal (USB OTG non supporté pour l’instant). **Appairer d’abord** le dongle dans les réglages Bluetooth du téléphone (**PIN `1234` ou `0000`**). ECU Drive demande les permissions BT au premier scan, liste les appareils **déjà appairés**, ne scanne que le **BT classique / SPP** (pas le BLE), priorise les noms OBDII / ELM / V-LINK, puis se connecte en RFCOMM natif Android (UUID SPP, puis canaux 1 et 2). Contact ON pour alimenter l’adaptateur.
 
 ### Mises à jour automatiques
 Au démarrage, ECU Drive interroge les Releases GitHub : si un `ecu-drive*-arm64.apk` (ou `ecu-drive*.apk`) plus récent existe, bannière + notes → téléchargement → installation PackageInstaller. Chaque tag `v*` lance le workflow **Release** qui compile l’APK signé (`scripts/build-android-drive.sh`) et le joint à la Release. Clé une fois : `bash scripts/make-android-release-key.sh` puis les 3 secrets `ANDROID_*`.

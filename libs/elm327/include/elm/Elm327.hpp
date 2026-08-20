@@ -43,7 +43,8 @@ public:
 
 #if defined(ELM_HAVE_BLUETOOTH)
     // BT classique SPP (modules ELM327 bleus chinois) :
-    // UUID SerialPort → canal RFCOMM 1 → canal 2.
+    // Desktop : UUID SerialPort → canal RFCOMM 1 → canal 2.
+    // Android : BluetoothSocket natif (Qt refuse le connect par canal).
     void connectBluetooth(const QString& address);
     bool isBluetoothTransport() const { return m_btTransport; }
 #endif
@@ -134,6 +135,9 @@ private slots:
     void onBtError();
     void onBtLinkLost();
     void onBtConnectTimeout();
+#ifdef Q_OS_ANDROID
+    void onAndroidBtResult(const QString& result, int gen);
+#endif
 #endif
 
 private:
@@ -152,6 +156,9 @@ private:
 #if defined(ELM_HAVE_BLUETOOTH)
     void tryNextBtAttempt();
     void startBtSocket();
+#ifdef Q_OS_ANDROID
+    void startAndroidNativeBt(int mode);
+#endif
 #endif
     bool isCdcAcmPort() const {
         return m_label.contains(QLatin1String("ACM"), Qt::CaseInsensitive)
@@ -165,6 +172,7 @@ private:
     QTimer*         m_btConnectTimeout = nullptr;
     QString         m_btAddress;
     int             m_btAttempt = 0; // 0=UUID SPP, 1=ch1, 2=ch2
+    int             m_btGen = 0;
     bool            m_btTransport = false;
     bool            m_atzRetried = false;
 #endif

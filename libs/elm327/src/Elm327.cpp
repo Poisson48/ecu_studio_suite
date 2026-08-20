@@ -15,6 +15,12 @@
 #  include <QBluetoothUuid>
 #endif
 
+#if defined(Q_OS_ANDROID) && defined(ELM_HAVE_BLUETOOTH)
+#  include <QJniObject>
+#  include <QJniEnvironment>
+#  include <thread>
+#endif
+
 #include <algorithm>
 
 namespace elm {
@@ -32,6 +38,78 @@ bool isElmBridge(quint16 vid, quint16 pid) {
         default:     return false;
     }
 }
+
+#if defined(Q_OS_ANDROID) && defined(ELM_HAVE_BLUETOOTH)
+constexpr const char* kBtHelper = "org/poisson48/ecudrive/BtRfcommHelper";
+
+class AndroidBtIo final : public QIODevice {
+public:
+    explicit AndroidBtIo(QObject* parent = nullptr) : QIODevice(parent) {
+        m_poll = new QTimer(this);
+        m_poll->setInterval(30);
+        connect(m_poll, &QTimer::timeout, this, [this]() {
+            const jint n = QJniObject::callStaticMethod<jint>(kBtHelper, "available", "()I");
+            if (n < 0) {
+                m_poll->stop();
+                QIODevice::close();
+                return;
+            }
+            if (n > 0)
+                emit readyRead();
+        });
+    }
+    ~AndroidBtIo() override {
+        m_poll->stop();
+    }
+
+    bool isSequential() const override { return true; }
+
+    bool open(OpenMode mode) override {
+        if (!QIODevice::open(mode | QIODevice::Unbuffered))
+            return false;
+        m_poll->start();
+        return true;
+    }
+
+    void close() override {
+        m_poll->stop();
+        QJniObject::callStaticMethod<void>(kBtHelper, "close", "()V");
+        QIODevice::close();
+    }
+
+    qint64 bytesAvailable() const override {
+        const jint n = QJniObject::callStaticMethod<jint>(kBtHelper, "available", "()I");
+        return QIODevice::bytesAvailable() + qMax(0, int(n));
+    }
+
+protected:
+    qint64 readData(char* data, qint64 maxSize) override {
+        if (maxSize <= 0) return 0;
+        QJniEnvironment env;
+        const jsize nmax = static_cast<jsize>(qMin(maxSize, qint64(4096)));
+        jbyteArray arr = env->NewByteArray(nmax);
+        const jint n = QJniObject::callStaticMethod<jint>(kBtHelper, "read", "([B)I", arr);
+        if (n > 0)
+            env->GetByteArrayRegion(arr, 0, n, reinterpret_cast<jbyte*>(data));
+        env->DeleteLocalRef(arr);
+        return n;
+    }
+
+    qint64 writeData(const char* data, qint64 maxSize) override {
+        if (maxSize <= 0) return 0;
+        QJniEnvironment env;
+        const jsize n = static_cast<jsize>(maxSize);
+        jbyteArray arr = env->NewByteArray(n);
+        env->SetByteArrayRegion(arr, 0, n, reinterpret_cast<const jbyte*>(data));
+        const jint written = QJniObject::callStaticMethod<jint>(kBtHelper, "write", "([B)I", arr);
+        env->DeleteLocalRef(arr);
+        return written;
+    }
+
+private:
+    QTimer* m_poll = nullptr;
+};
+#endif
 } // namespace
 
 Elm327::Elm327(QObject* parent) : QObject(parent) {
@@ -130,8 +208,8 @@ void Elm327::connectBluetooth(const QString& address) {
 void Elm327::tryNextBtAttempt() {
     if (m_btAttempt > 2) {
         failConnect(tr("Bluetooth : impossible de joindre %1\n"
-                       "(SPP / canaux 1–2).\n"
-                       "Appaire le module (PIN 1234 ou 0000) puis réessaie.")
+                       "(SPP / RFCOMM 1–2).\n"
+                       "Appaire le module (PIN 1234 ou 0000), contact ON, puis réessaie.")
                         .arg(m_btAddress));
         return;
     }
@@ -146,7 +224,23 @@ void Elm327::startBtSocket() {
         m_bt->deleteLater();
         m_bt = nullptr;
     }
+    if (m_io && m_ownIo) {
+        QObject::disconnect(m_io, nullptr, this, nullptr);
+        m_io->close();
+        m_io->deleteLater();
+    }
     m_io = nullptr;
+    m_ownIo = false;
+
+#if defined(Q_OS_ANDROID)
+    // Qt Android : connectToService(adresse, canal) → « Connecting to port is not supported ».
+    const char* label = (m_btAttempt == 0) ? "SPP"
+                      : (m_btAttempt == 1) ? "RFCOMM 1" : "RFCOMM 2";
+    emit status(tr("Bluetooth → %1 (%2)…").arg(m_btAddress, QString::fromLatin1(label)));
+    startAndroidNativeBt(m_btAttempt);
+    m_btConnectTimeout->start(20000);
+    return;
+#endif
 
     m_bt = new QBluetoothSocket(QBluetoothServiceInfo::RfcommProtocol, this);
     connect(m_bt, &QBluetoothSocket::connected, this, &Elm327::onBtConnected);
@@ -157,7 +251,7 @@ void Elm327::startBtSocket() {
     if (m_btAttempt == 0) {
         emit status(tr("Bluetooth → %1 (SPP UUID)…").arg(m_btAddress));
         m_bt->connectToService(
-            addr, QBluetoothUuid(QBluetoothUuid::ServiceClassUuid::SerialPort));
+            addr, QBluetoothUuid(QStringLiteral("00001101-0000-1000-8000-00805F9B34FB")));
     } else {
         const quint16 ch = (m_btAttempt == 1) ? quint16(1) : quint16(2);
         emit status(tr("Bluetooth → %1 (RFCOMM %2)…").arg(m_btAddress).arg(ch));
@@ -166,15 +260,71 @@ void Elm327::startBtSocket() {
     m_btConnectTimeout->start(18000);
 }
 
+#if defined(Q_OS_ANDROID)
+void Elm327::startAndroidNativeBt(int mode) {
+    const QString addr = m_btAddress;
+    const int gen = ++m_btGen;
+    std::thread([this, addr, mode, gen]() {
+        QJniEnvironment env;
+        QJniObject jAddr = QJniObject::fromString(addr);
+        const QJniObject jRes = QJniObject::callStaticObjectMethod(
+            kBtHelper, "connect",
+            "(Ljava/lang/String;I)Ljava/lang/String;",
+            jAddr.object<jstring>(), jint(mode));
+        const QString res = jRes.isValid() ? jRes.toString()
+                                           : QStringLiteral("échec JNI");
+        QMetaObject::invokeMethod(this, [this, res, gen]() {
+            onAndroidBtResult(res, gen);
+        }, Qt::QueuedConnection);
+    }).detach();
+}
+
+void Elm327::onAndroidBtResult(const QString& result, int gen) {
+    if (gen != m_btGen) {
+        if (result == QLatin1String("OK"))
+            QJniObject::callStaticMethod<void>(kBtHelper, "close", "()V");
+        return;
+    }
+    if (!m_opening || !m_btTransport) return;
+    if (result == QLatin1String("OK")) {
+        if (m_btConnectTimeout) m_btConnectTimeout->stop();
+        auto* io = new AndroidBtIo(this);
+        if (!io->open(QIODevice::ReadWrite)) {
+            io->deleteLater();
+            failConnect(tr("Bluetooth : ouverture du flux RFCOMM impossible"));
+            return;
+        }
+        m_io = io;
+        m_ownIo = true;
+        onBtConnected();
+        return;
+    }
+    ++m_btAttempt;
+    if (m_btAttempt <= 2) {
+        emit status(tr("BT échec (%1) — nouvel essai…").arg(result));
+        QTimer::singleShot(250, this, [this]() {
+            if (m_opening) tryNextBtAttempt();
+        });
+        return;
+    }
+    failConnect(tr("Bluetooth : %1\n"
+                   "Appaire le module (PIN 1234 ou 0000), contact ON, puis réessaie.")
+                    .arg(result));
+}
+#endif
+
 void Elm327::onBtConnected() {
     if (m_btConnectTimeout) m_btConnectTimeout->stop();
-    m_io = m_bt;
-    m_ownIo = false;
-    connect(m_bt, &QIODevice::readyRead, this, &Elm327::onReadyRead);
+    if (m_bt && !m_io) {
+        m_io = m_bt;
+        m_ownIo = false;
+    }
+    if (m_io)
+        connect(m_io, &QIODevice::readyRead, this, &Elm327::onReadyRead);
     // Clones chinois : jettent souvent les premiers octets juste après RFCOMM up.
     const int epoch = m_connectEpoch;
     QTimer::singleShot(400, this, [this, epoch]() {
-        if (epoch != m_connectEpoch || !m_bt || !m_bt->isOpen()) return;
+        if (epoch != m_connectEpoch || !m_io || !m_io->isOpen()) return;
         beginInit();
     });
 }
@@ -211,6 +361,11 @@ void Elm327::onBtLinkLost() {
 
 void Elm327::onBtConnectTimeout() {
     if (!m_opening || !m_btTransport) return;
+    if (m_io && m_io->isOpen()) return;
+#if defined(Q_OS_ANDROID)
+    ++m_btGen;
+    QJniObject::callStaticMethod<void>(kBtHelper, "close", "()V");
+#endif
     ++m_btAttempt;
     if (m_btAttempt <= 2) {
         emit status(tr("BT timeout — nouvel essai…"));
@@ -300,6 +455,9 @@ void Elm327::closeTransport() {
     } else if (m_io) {
         QObject::disconnect(m_io, nullptr, this, nullptr);
     }
+#if defined(Q_OS_ANDROID) && defined(ELM_HAVE_BLUETOOTH)
+    QJniObject::callStaticMethod<void>(kBtHelper, "close", "()V");
+#endif
     m_io = nullptr;
     m_ownIo = false;
 }
@@ -310,6 +468,7 @@ void Elm327::disconnectPort() {
     m_timeout->stop();
 #if defined(ELM_HAVE_BLUETOOTH)
     if (m_btConnectTimeout) m_btConnectTimeout->stop();
+    m_btGen++;
     m_btTransport = false;
     m_btAddress.clear();
     m_btAttempt = 0;

@@ -88,15 +88,22 @@ Item {
                         ComboBox {
                             id: btCombo
                             Layout.fillWidth: true
-                            model: Drive.btDevices.map(d => (d.likelyObd ? "★ " : "") + d.name + " (" + d.addr + ")")
-                            displayText: Drive.btDevices.length > 0
-                                ? (currentIndex >= 0 ? model[currentIndex] : "Sélectionner…")
+                            property var labels: Drive.btDevices.map(d => (d.likelyObd ? "★ " : "") + d.name + " (" + d.addr + ")")
+                            model: labels
+                            currentIndex: {
+                                const list = Drive.btDevices
+                                for (let i = 0; i < list.length; ++i)
+                                    if (list[i].addr === Drive.selectedBt) return i
+                                return list.length > 0 ? 0 : -1
+                            }
+                            displayText: labels.length > 0
+                                ? (currentIndex >= 0 ? labels[currentIndex] : "Sélectionner…")
                                 : "Aucun appareil"
                             Material.background: "#0f172a"
                             font.pixelSize: 12
-                            onActivated: {
-                                if (Drive.btDevices[currentIndex])
-                                    Drive.selectedBt = Drive.btDevices[currentIndex].addr
+                            onActivated: (index) => {
+                                if (Drive.btDevices[index])
+                                    Drive.selectedBt = Drive.btDevices[index].addr
                             }
                         }
                         Button {
