@@ -35,6 +35,13 @@ TEST(Obd2, InterpretCommonPids) {
     EXPECT_DOUBLE_EQ(*interpret(0x0D, speed, 1), 80.0);
 }
 
+TEST(Obd2, InterpretFuelRailAndFuelRate) {
+    std::uint8_t frp[2] = { 0x05, 0xDC }; // (0x05DC)*10 = 15000 kPa
+    EXPECT_DOUBLE_EQ(*interpret(0x23, frp, 2), 15000.0);
+    std::uint8_t rate[2] = { 0x00, 0x64 }; // 100 * 0.05 = 5.0 L/h
+    EXPECT_DOUBLE_EQ(*interpret(0x5E, rate, 2), 5.0);
+}
+
 TEST(Obd2, ParseFailsOnNoData) {
     auto r = parseResponse(QStringLiteral("NO DATA"), 0x01, 0x0C);
     EXPECT_FALSE(r.ok);

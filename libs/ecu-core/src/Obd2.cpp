@@ -39,7 +39,8 @@ const QList<LivePid>& livePids() {
         { 0x0D, "Vitesse",             "km/h" },
         { 0x04, "Charge moteur",       "%"    },
         { 0x0B, "Pression admission",  "kPa"  },  // MAP / boost
-        { 0x0A, "Pression carburant",  "kPa"  },
+        { 0x23, "Pression rampe",      "kPa"  },  // diesel FRP abs.
+        { 0x0A, "Pression carburant",  "kPa"  },  // essence (jauge)
         { 0x10, "Débit d'air (MAF)",   "g/s"  },
         { 0x05, "Temp. liquide",       "°C"   },
         { 0x0F, "Temp. admission",     "°C"   },
@@ -53,6 +54,7 @@ const QList<LivePid>& livePids() {
         { 0x2F, "Niveau carburant",    "%"    },
         { 0x42, "Tension module",      "V"    },
         { 0x33, "Pression baro.",      "kPa"  },
+        { 0x5E, "Conso. carburant",    "L/h"  },
         { 0x1F, "Temps moteur",        "s"    },
         { 0x21, "Distance MIL",        "km"   },
         { 0x31, "Distance effacement", "km"   },
@@ -148,6 +150,7 @@ std::optional<double> interpret(std::uint8_t pid, const std::uint8_t* data, std:
         case 0x11: return A * 100.0 / 255.0;           // papillon %
         case 0x1F: return 256.0 * A + B;               // temps moteur s
         case 0x21: return 256.0 * A + B;               // distance MIL km
+        case 0x23: return (256.0 * A + B) * 10.0;      // pression rampe abs. kPa
         case 0x24: return (256.0 * A + B) * 2.0 / 65536.0; // lambda commandé (ratio)
         case 0x2F: return A * 100.0 / 255.0;           // niveau carburant %
         case 0x31: return 256.0 * A + B;               // distance depuis effacement km
@@ -155,6 +158,7 @@ std::optional<double> interpret(std::uint8_t pid, const std::uint8_t* data, std:
         case 0x42: return (256.0 * A + B) / 1000.0;    // tension module V
         case 0x46: return A - 40.0;                    // temp ambiante °C
         case 0x5C: return A - 40.0;                    // temp huile °C
+        case 0x5E: return (256.0 * A + B) * 0.05;      // conso carburant L/h
         default:   return std::nullopt;
     }
 }

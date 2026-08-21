@@ -200,8 +200,9 @@ public slots:
 
     // MAJ
     void checkUpdates();
-    // Capteurs
+    // Capteurs / onglet UI (0=Conduite, 1=Capteurs, 2=Diag)
     Q_INVOKABLE void ensureSensorsPolling();
+    Q_INVOKABLE void setUiPage(int page);
 
 private:
     void onPid(quint8 pid, double value, const QString& name, const QString& unit);
@@ -216,6 +217,9 @@ private:
     void ensureTurboPolling();
     void refreshTurboLive();
     void refreshSensorsTable();
+    void applyPollingForCurrentPage();
+    QList<quint8> sensorsPollPids() const;
+    bool pidLikelySupported(quint8 pid) const;
     void startSession();
     void stopSession();
     void runValidation();
@@ -308,6 +312,10 @@ private:
     QHash<quint8, double>  m_live;
     QHash<quint8, QString> m_liveUnit;
     QSet<quint8>           m_ecuSupportedPids;
+    QSet<quint8>           m_knownUnsupported;
+    bool                   m_supportProbed = false;
+    bool                   m_pollRebuildPending = false;
+    int                    m_uiPage = 0; // 0 conduite, 1 capteurs, 2 diag
 
     // Turbo
     QString m_turboMap   = QStringLiteral("—");

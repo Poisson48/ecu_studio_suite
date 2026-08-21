@@ -23,6 +23,8 @@
 #include <QTimer>
 #include <QtMath>
 
+#include <algorithm>
+
 #if defined(Q_OS_ANDROID)
 #  include <QFileDialog>
 #  include <QJniObject>
@@ -63,15 +65,27 @@ DriveController::DriveController(elm::Elm327* elm, Updater* updater, QObject* pa
         m_connected = true;
         m_linkLossNotified = false;
         m_pendingDisconnectReason.clear();
+        m_ecuSupportedPids.clear();
+        m_knownUnsupported.clear();
+        m_supportProbed = false;
         emit connectedChanged();
         setStatus(tr("Connecté — %1").arg(v));
         emit toast(tr("ELM connecté — prêt"));
+        // Découvre les PID supportés puis démarre le polling adapté à l'onglet.
+        m_elm->probeSupportedPids();
     });
 
     connect(m_elm, &elm::Elm327::disconnected, this, [this]() {
         const bool intentional = m_userDisconnect;
         m_userDisconnect = false;
         m_connected = false;
+        m_ecuSupportedPids.clear();
+        m_knownUnsupported.clear();
+        m_supportProbed = false;
+        m_live.clear();
+        m_liveUnit.clear();
+        refreshSensorsTable();
+        refreshTurboLive();
         const bool hadSession = m_sessionOn;
         if (!intentional && hadSession && m_pendingDisconnectReason.isEmpty())
             m_pendingDisconnectReason = tr("Liaison Bluetooth perdue.");
@@ -119,10 +133,37 @@ DriveController::DriveController(elm::Elm327* elm, Updater* updater, QObject* pa
         }
         setStatus(ok ? tr("Codes effacés — relis pour confirmer.") : s);
         emit connectedChanged(); // refreshe dtcClearEnabled
+        applyPollingForCurrentPage();
     });
 
     connect(m_elm, &elm::Elm327::pidResult,    this, &DriveController::onPid);
     connect(m_elm, &elm::Elm327::rawResponse,  this, &DriveController::onRawResponse);
+
+    connect(m_elm, &elm::Elm327::supportedPidsReady, this, [this](const QList<quint8>& pids) {
+        m_ecuSupportedPids = QSet<quint8>(pids.begin(), pids.end());
+        m_supportProbed = true;
+        // Retire de la blacklist ce que le bitmap déclare supporté.
+        for (quint8 p : pids)
+            m_knownUnsupported.remove(p);
+        applyPollingForCurrentPage();
+        refreshSensorsTable();
+    });
+
+    connect(m_elm, &elm::Elm327::pidUnsupported, this, [this](quint8 pid) {
+        if (m_knownUnsupported.contains(pid))
+            return;
+        m_knownUnsupported.insert(pid);
+        refreshSensorsTable();
+        // Debounce : un cycle de poll peut émettre plusieurs NO DATA d'affilée.
+        if (m_pollRebuildPending)
+            return;
+        m_pollRebuildPending = true;
+        QTimer::singleShot(50, this, [this]() {
+            m_pollRebuildPending = false;
+            if (m_connected)
+                applyPollingForCurrentPage();
+        });
+    });
 
     connect(m_elm, &elm::Elm327::securityAccessResult, this, [this](bool ok, const QString& keyHex, const QString& detail) {
         m_saResult = ok ? tr("✓ key=%1 — %2").arg(keyHex, detail) : tr("✗ %1").arg(detail);
@@ -135,6 +176,7 @@ DriveController::DriveController(elm::Elm327* elm, Updater* updater, QObject* pa
         if (m_dtcAwaiting > 0) --m_dtcAwaiting;
         if (m_dtcAwaiting == 0) {
             setStatus(tr("%1 code(s) défaut trouvé(s).").arg(m_dtcFlags.size()));
+            applyPollingForCurrentPage();
         }
     });
 
@@ -411,9 +453,10 @@ void DriveController::startSession() {
     QList<std::uint8_t> qp;
     for (auto p : pids) qp.append(p);
     if (qp.isEmpty()) qp = { 0x0C, 0x04, 0x0B, 0x33 };
-    m_elm->startPolling(qp, 180);
     m_sessionOn = true;
     emit sessionChanged();
+    // Respecte l'onglet courant (Capteurs → catalogue enrichi).
+    applyPollingForCurrentPage();
     autoStartCsv();
     platformStartLoggingService(tr("ECU Drive"), tr("Session conduite — logging OBD actif"));
     m_verdict = tr("Acquisition…");
@@ -457,7 +500,7 @@ void DriveController::stopSession() {
     } else {
         setStatus(tr("Session arrêtée (aucune donnée)."));
     }
-    ensureTurboPolling();
+    applyPollingForCurrentPage();
 }
 
 // ── OBD / Sensors ─────────────────────────────────────────────────────────────
@@ -465,39 +508,152 @@ void DriveController::stopSession() {
 void DriveController::onPid(quint8 pid, double value, const QString&, const QString& unit) {
     m_live[pid] = value;
     if (!unit.isEmpty()) m_liveUnit[pid] = unit;
+    m_knownUnsupported.remove(pid);
     if (m_sessionOn) runValidation();
     refreshTurboLive();
     // Mise à jour capteurs en temps réel
     refreshSensorsTable();
 }
 
-void DriveController::ensureSensorsPolling() {
-    if (!m_connected || !m_elm || m_sessionOn) return;
-    // Extrait la liste des PIDs depuis livePids()
+bool DriveController::pidLikelySupported(quint8 pid) const {
+    if (m_knownUnsupported.contains(pid))
+        return false;
+    // Tant que le probe n'a pas répondu, on tente le catalogue (sauf blacklist).
+    if (!m_supportProbed || m_ecuSupportedPids.isEmpty())
+        return true;
+    return m_ecuSupportedPids.contains(pid);
+}
+
+QList<quint8> DriveController::sensorsPollPids() const {
     QList<quint8> pids;
-    for (const auto& p : ecu::obd2::livePids())
+    for (const auto& p : ecu::obd2::livePids()) {
+        if (!pidLikelySupported(p.pid))
+            continue;
         pids.append(p.pid);
-    m_elm->startPolling(pids, 500);
+    }
+    // Essentiels turbo / conduite : on les garde même si le bitmap est incomplet.
+    for (quint8 p : { quint8{0x0C}, quint8{0x0D}, quint8{0x04}, quint8{0x0B},
+                      quint8{0x10}, quint8{0x05}, quint8{0x0F} }) {
+        if (m_knownUnsupported.contains(p))
+            continue;
+        if (!pids.contains(p))
+            pids.prepend(p);
+    }
+    return pids;
+}
+
+void DriveController::setUiPage(int page) {
+    if (page < 0) page = 0;
+    if (page > 2) page = 2;
+    if (m_uiPage == page) {
+        // Re-entrée onglet Capteurs : relance le poll capteurs.
+        if (page == 1)
+            ensureSensorsPolling();
+        return;
+    }
+    m_uiPage = page;
+    applyPollingForCurrentPage();
+}
+
+void DriveController::applyPollingForCurrentPage() {
+    if (!m_connected || !m_elm) return;
+    if (m_dtcAwaiting > 0 || m_dtcClearPending) {
+        refreshTurboLive();
+        return;
+    }
+
+    if (m_sessionOn) {
+        QList<quint8> pids;
+        for (auto p : m_validator.requiredPids())
+            pids.append(static_cast<quint8>(p));
+        if (pids.isEmpty())
+            pids = { 0x0C, 0x04, 0x0B, 0x33 };
+        // Onglet Capteurs : enrichit avec le catalogue supporté (sinon la plupart
+        // des lignes restent à « — » pendant la session).
+        if (m_uiPage == 1) {
+            for (quint8 p : sensorsPollPids()) {
+                if (!pids.contains(p))
+                    pids.append(p);
+            }
+        }
+        m_elm->startPolling(pids, m_uiPage == 1 ? 280 : 180);
+        refreshTurboLive();
+        return;
+    }
+
+    if (m_uiPage == 1) {
+        ensureSensorsPolling();
+        return;
+    }
+    ensureTurboPolling();
+}
+
+void DriveController::ensureSensorsPolling() {
+    if (!m_connected || !m_elm) return;
+    if (m_dtcAwaiting > 0 || m_dtcClearPending) return;
+
+    if (m_sessionOn) {
+        QList<quint8> pids;
+        for (auto p : m_validator.requiredPids())
+            pids.append(static_cast<quint8>(p));
+        if (pids.isEmpty())
+            pids = { 0x0C, 0x04, 0x0B, 0x33 };
+        for (quint8 p : sensorsPollPids()) {
+            if (!pids.contains(p))
+                pids.append(p);
+        }
+        m_elm->startPolling(pids, 280);
+        refreshTurboLive();
+        return;
+    }
+
+    QList<quint8> pids = sensorsPollPids();
+    if (pids.isEmpty()) {
+        for (const auto& p : ecu::obd2::livePids())
+            pids.append(p.pid);
+    }
+    m_elm->startPolling(pids, 300);
+    refreshTurboLive();
 }
 
 void DriveController::refreshSensorsTable() {
     const auto& pids = ecu::obd2::livePids();
-    m_sensorValues.clear();
+    QVariantList next;
+    next.reserve(pids.size());
     for (const auto& p : pids) {
+        // Masque les PID clairement non supportés une fois le probe connu,
+        // sauf s'ils ont déjà une valeur live (ex. bitmap incomplet).
+        const bool has = m_live.contains(p.pid);
+        if (!has && m_supportProbed && !m_ecuSupportedPids.isEmpty()
+                && !m_ecuSupportedPids.contains(p.pid))
+            continue;
+        if (!has && m_knownUnsupported.contains(p.pid))
+            continue;
+
         QVariantMap row;
         row[QStringLiteral("name")] = QString::fromUtf8(p.name);
         row[QStringLiteral("unit")] = QString::fromUtf8(p.unit);
-        const bool has = m_live.contains(p.pid);
-        row[QStringLiteral("value")] = has ? QString::number(m_live.value(p.pid), 'f', 1) : QStringLiteral("—");
-        m_sensorValues.append(row);
+        row[QStringLiteral("value")] = has
+            ? QString::number(m_live.value(p.pid), 'f', 1)
+            : QStringLiteral("—");
+        next.append(row);
     }
+    if (next == m_sensorValues)
+        return;
+    m_sensorValues = std::move(next);
     emit sensorValuesChanged();
 }
 
 void DriveController::ensureTurboPolling() {
     if (!m_connected || !m_elm) return;
     if (m_sessionOn || m_dtcAwaiting > 0 || m_dtcClearPending) { refreshTurboLive(); return; }
-    m_elm->startPolling({ 0x0B, 0x33, 0x10, 0x0C, 0x04 }, 180);
+    QList<quint8> pids = { 0x0B, 0x33, 0x10, 0x0C, 0x04 };
+    pids.erase(std::remove_if(pids.begin(), pids.end(),
+                              [this](quint8 p) { return m_knownUnsupported.contains(p); }),
+               pids.end());
+    if (pids.isEmpty())
+        pids = { 0x0C, 0x0B, 0x10 };
+    m_elm->startPolling(pids, 180);
     refreshTurboLive();
 }
 

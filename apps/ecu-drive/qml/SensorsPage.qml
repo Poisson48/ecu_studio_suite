@@ -8,24 +8,53 @@ Item {
     id: page
     readonly property int touchMin: 44
 
-    ScrollView {
+    // Modèle local : mises à jour in-place (set) pour ne pas reset le scroll
+    ListModel { id: sensorModel }
+
+    function syncSensors() {
+        const vals = Drive.sensorValues
+        if (sensorModel.count !== vals.length) {
+            sensorModel.clear()
+            for (let i = 0; i < vals.length; ++i)
+                sensorModel.append(vals[i])
+            return
+        }
+        for (let i = 0; i < vals.length; ++i)
+            sensorModel.set(i, vals[i])
+    }
+
+    Component.onCompleted: syncSensors()
+
+    Connections {
+        target: Drive
+        function onSensorValuesChanged() { page.syncSensors() }
+    }
+
+    Flickable {
+        id: flick
         anchors.fill: parent
-        contentWidth: availableWidth
-        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        contentWidth: width
+        contentHeight: contentCol.implicitHeight + 24
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
 
         ColumnLayout {
-            width: page.width
+            id: contentCol
+            width: flick.width
             spacing: 12
-            Layout.leftMargin: 12; Layout.rightMargin: 12; Layout.topMargin: 12
+
+            // Marges via Item spacers (Layout.margins sur ColumnLayout racine est peu fiable)
+            Item { Layout.preferredHeight: 12; Layout.fillWidth: true }
 
             // ── Turbo live ────────────────────────────────────────────────
             Label {
                 text: "TURBO / PRESSION"
                 color: "#94a3b8"; font.pixelSize: 12; font.weight: Font.DemiBold; font.letterSpacing: 1.2
-                Layout.leftMargin: 4
+                Layout.leftMargin: 16; Layout.rightMargin: 16
             }
             Rectangle {
                 Layout.fillWidth: true
+                Layout.leftMargin: 12; Layout.rightMargin: 12
                 color: "#1e293b"; radius: 10; border.color: "#334155"; border.width: 1
                 height: turboCol.height + 16
 
@@ -54,7 +83,8 @@ Item {
 
             // ── Capteurs OBD live ─────────────────────────────────────────
             RowLayout {
-                Layout.fillWidth: true; Layout.leftMargin: 4
+                Layout.fillWidth: true
+                Layout.leftMargin: 16; Layout.rightMargin: 12
                 Label { Layout.fillWidth: true; text: "CAPTEURS OBD LIVE"; color: "#94a3b8"; font.pixelSize: 11; font.weight: Font.DemiBold; font.letterSpacing: 1.2 }
                 Button {
                     text: "Rafraîchir"; flat: true; implicitHeight: touchMin
@@ -65,36 +95,43 @@ Item {
 
             Rectangle {
                 Layout.fillWidth: true
+                Layout.leftMargin: 12; Layout.rightMargin: 12
                 color: "#1e293b"; radius: 10; border.color: "#334155"; border.width: 1
-                height: sensorList.height
+                implicitHeight: sensorCol.implicitHeight
+                visible: sensorModel.count > 0
+                clip: true
 
-                ListView {
-                    id: sensorList
+                Column {
+                    id: sensorCol
                     width: parent.width
-                    height: Math.min(contentHeight, page.height * 0.70)
-                    model: Drive.sensorValues
-                    clip: true
-                    interactive: contentHeight > height
 
-                    delegate: Rectangle {
-                        width: sensorList.width; height: 40
-                        color: index % 2 === 0 ? "#0f172a" : "#111827"
-                        radius: index === 0 ? 10 : (index === sensorList.count - 1 ? 10 : 0)
+                    Repeater {
+                        model: sensorModel
+                        delegate: Rectangle {
+                            required property int index
+                            required property string name
+                            required property string value
+                            required property string unit
 
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: 12; anchors.rightMargin: 12
-                            Label {
-                                Layout.fillWidth: true
-                                text: modelData.name
-                                color: "#cbd5e1"; font.pixelSize: 13
-                                elide: Text.ElideRight
-                            }
-                            Label {
-                                text: modelData.value + " " + modelData.unit
-                                color: modelData.value === "—" ? "#475569" : "#4ade80"
-                                font.pixelSize: 13; font.weight: Font.DemiBold
-                                font.family: "monospace"
+                            width: sensorCol.width
+                            height: 40
+                            color: index % 2 === 0 ? "#0f172a" : "#111827"
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 12; anchors.rightMargin: 12
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: name
+                                    color: "#cbd5e1"; font.pixelSize: 13
+                                    elide: Text.ElideRight
+                                }
+                                Label {
+                                    text: value + " " + unit
+                                    color: value === "—" ? "#475569" : "#4ade80"
+                                    font.pixelSize: 13; font.weight: Font.DemiBold
+                                    font.family: "monospace"
+                                }
                             }
                         }
                     }
@@ -102,13 +139,13 @@ Item {
             }
 
             Label {
-                visible: Drive.sensorValues.length === 0
+                visible: sensorModel.count === 0
                 text: Drive.connected ? "Rafraîchis pour lire les capteurs" : "Connecte l'ELM pour lire les capteurs"
                 color: "#475569"; font.pixelSize: 12
                 Layout.alignment: Qt.AlignHCenter
             }
 
-            Item { height: 16 }
+            Item { Layout.preferredHeight: 16; Layout.fillWidth: true }
         }
     }
 }

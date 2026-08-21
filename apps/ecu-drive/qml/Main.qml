@@ -64,7 +64,10 @@ ApplicationWindow {
             Layout.fillWidth: true
             Layout.fillHeight: true
             currentIndex: tabBar.currentIndex
-            onCurrentIndexChanged: tabBar.currentIndex = currentIndex
+            onCurrentIndexChanged: {
+                tabBar.currentIndex = currentIndex
+                Drive.setUiPage(currentIndex)
+            }
 
             DrivePage  {}
             SensorsPage {}
