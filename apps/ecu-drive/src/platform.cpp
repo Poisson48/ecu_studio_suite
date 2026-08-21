@@ -299,6 +299,23 @@ void platformStartLoggingService(const QString& title, const QString& text)
     });
 }
 
+void platformUpdateLoggingService(const QString& title, const QString& text)
+{
+    QNativeInterface::QAndroidApplication::runOnAndroidMainThread([title, text]() {
+        const QJniObject ctx = androidContext();
+        if (!ctx.isValid())
+            return;
+        const QJniObject jTitle = QJniObject::fromString(
+            title.isEmpty() ? QStringLiteral("ECU Drive") : title);
+        const QJniObject jText = QJniObject::fromString(
+            text.isEmpty() ? QStringLiteral("Logging OBD en cours") : text);
+        QJniObject::callStaticMethod<void>(
+            kLoggingService, "update",
+            "(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;)V",
+            ctx.object(), jTitle.object<jstring>(), jText.object<jstring>());
+    });
+}
+
 void platformStopLoggingService()
 {
     QNativeInterface::QAndroidApplication::runOnAndroidMainThread([]() {
@@ -310,6 +327,28 @@ void platformStopLoggingService()
             "(Landroid/content/Context;)V",
             ctx.object());
     });
+}
+
+bool platformIsIgnoringBatteryOptimizations()
+{
+    const QJniObject ctx = androidContext();
+    if (!ctx.isValid())
+        return true;
+    return QJniObject::callStaticMethod<jboolean>(
+        kLoggingService, "isIgnoringBatteryOptimizations",
+        "(Landroid/content/Context;)Z",
+        ctx.object());
+}
+
+bool platformRequestIgnoreBatteryOptimizations()
+{
+    const QJniObject activity = androidActivity();
+    if (!activity.isValid())
+        return false;
+    return QJniObject::callStaticMethod<jboolean>(
+        kLoggingService, "requestIgnoreBatteryOptimizations",
+        "(Landroid/app/Activity;)Z",
+        activity.object<jobject>());
 }
 
 void platformAlertBeep()
@@ -343,7 +382,10 @@ QString platformLaunchIntentUri(bool) { return {}; }
 bool platformShareFile(const QString&, const QString&) { return false; }
 void platformKeepScreenOn(bool) {}
 void platformStartLoggingService(const QString&, const QString&) {}
+void platformUpdateLoggingService(const QString&, const QString&) {}
 void platformStopLoggingService() {}
+bool platformRequestIgnoreBatteryOptimizations() { return false; }
+bool platformIsIgnoringBatteryOptimizations() { return true; }
 void platformAlertBeep()
 {
     QApplication::beep();

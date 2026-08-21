@@ -11,16 +11,22 @@ import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
+import android.net.Uri;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.VibratorManager;
+import android.provider.Settings;
 import android.util.Log;
 
 /**
  * Foreground Service lié à une session de conduite : empêche Android de tuer
- * le process Qt pendant le polling ELM / écriture CSV en arrière-plan.
+ * / endormir le process Qt pendant le polling ELM / écriture CSV en arrière-plan.
+ *
+ * - startForeground (type connectedDevice) → process exempté des kill agressifs
+ * - PARTIAL_WAKE_LOCK → CPU reste actif écran éteint (timers Qt / BT)
  */
 public class LoggingService extends Service {
 
@@ -30,29 +36,76 @@ public class LoggingService extends Service {
     public static final String EXTRA_TITLE = "title";
     public static final String EXTRA_TEXT = "text";
     public static final String ACTION_STOP = "org.poisson48.ecudrive.STOP_LOGGING";
+    public static final String ACTION_UPDATE = "org.poisson48.ecudrive.UPDATE_LOGGING";
+
+    private PowerManager.WakeLock mWakeLock;
+    private String mTitle = "ECU Drive";
+    private String mText = "Logging OBD en cours";
 
     @Override
     public void onCreate() {
         super.onCreate();
         ensureChannel(this);
+        acquireWakeLock();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null && ACTION_STOP.equals(intent.getAction())) {
+            releaseWakeLock();
             stopForeground(STOP_FOREGROUND_REMOVE);
             stopSelf();
             return START_NOT_STICKY;
         }
 
-        String title = intent != null ? intent.getStringExtra(EXTRA_TITLE) : null;
-        String text = intent != null ? intent.getStringExtra(EXTRA_TEXT) : null;
-        if (title == null || title.isEmpty())
-            title = "ECU Drive";
-        if (text == null || text.isEmpty())
-            text = "Logging OBD en cours";
+        if (intent != null) {
+            if (ACTION_UPDATE.equals(intent.getAction())) {
+                String t = intent.getStringExtra(EXTRA_TEXT);
+                if (t != null && !t.isEmpty())
+                    mText = t;
+                String ti = intent.getStringExtra(EXTRA_TITLE);
+                if (ti != null && !ti.isEmpty())
+                    mTitle = ti;
+            } else {
+                String title = intent.getStringExtra(EXTRA_TITLE);
+                String text = intent.getStringExtra(EXTRA_TEXT);
+                if (title != null && !title.isEmpty())
+                    mTitle = title;
+                if (text != null && !text.isEmpty())
+                    mText = text;
+            }
+        }
 
-        Notification notif = buildNotification(title, text);
+        acquireWakeLock();
+        promoteForeground();
+        return START_STICKY;
+    }
+
+    @Override
+    public void onDestroy() {
+        releaseWakeLock();
+        try {
+            stopForeground(STOP_FOREGROUND_REMOVE);
+        } catch (Exception ignored) {
+        }
+        super.onDestroy();
+    }
+
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        // Ne pas arrêter : la session / le CSV doivent survivre au swipe récent.
+        Log.i(TAG, "onTaskRemoved — FGS + wake lock maintenus");
+        promoteForeground();
+        super.onTaskRemoved(rootIntent);
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+    private void promoteForeground() {
+        Notification notif = buildNotification(mTitle, mText);
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForeground(NOTIF_ID, notif,
@@ -71,21 +124,43 @@ public class LoggingService extends Service {
                 Log.e(TAG, "startForeground fallback échoué", e2);
             }
         }
-        return START_STICKY;
-    }
-
-    @Override
-    public void onDestroy() {
+        // Met à jour la notif si déjà en foreground.
         try {
-            stopForeground(STOP_FOREGROUND_REMOVE);
+            NotificationManager nm = getSystemService(NotificationManager.class);
+            if (nm != null)
+                nm.notify(NOTIF_ID, notif);
         } catch (Exception ignored) {
         }
-        super.onDestroy();
     }
 
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
+    private void acquireWakeLock() {
+        if (mWakeLock != null && mWakeLock.isHeld())
+            return;
+        try {
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (pm == null)
+                return;
+            mWakeLock = pm.newWakeLock(
+                    PowerManager.PARTIAL_WAKE_LOCK,
+                    "ecu_drive:logging");
+            mWakeLock.setReferenceCounted(false);
+            mWakeLock.acquire(); // session entière — libéré dans onDestroy
+            Log.i(TAG, "PARTIAL_WAKE_LOCK acquis");
+        } catch (Exception e) {
+            Log.e(TAG, "WakeLock échoué", e);
+        }
+    }
+
+    private void releaseWakeLock() {
+        try {
+            if (mWakeLock != null && mWakeLock.isHeld()) {
+                mWakeLock.release();
+                Log.i(TAG, "PARTIAL_WAKE_LOCK relâché");
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "WakeLock release", e);
+        }
+        mWakeLock = null;
     }
 
     private Notification buildNotification(String title, String text) {
@@ -114,7 +189,8 @@ public class LoggingService extends Service {
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setContentIntent(content)
-                .setCategory(Notification.CATEGORY_SERVICE);
+                .setCategory(Notification.CATEGORY_SERVICE)
+                .setPriority(Notification.PRIORITY_LOW);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
             b.setVisibility(Notification.VISIBILITY_PUBLIC);
         return b.build();
@@ -131,9 +207,9 @@ public class LoggingService extends Service {
             return;
         ch = new NotificationChannel(
                 CHANNEL_ID,
-                "Session conduite",
+                "Session conduite / logging",
                 NotificationManager.IMPORTANCE_LOW);
-        ch.setDescription("Logging OBD en arrière-plan");
+        ch.setDescription("Maintient le logging OBD actif écran éteint");
         ch.setShowBadge(false);
         nm.createNotificationChannel(ch);
     }
@@ -156,13 +232,40 @@ public class LoggingService extends Service {
         }
     }
 
+    /** Met à jour le texte de la notification sans redémarrer le service. */
+    public static void update(Context ctx, String title, String text) {
+        if (ctx == null)
+            return;
+        Intent i = new Intent(ctx, LoggingService.class);
+        i.setAction(ACTION_UPDATE);
+        if (title != null)
+            i.putExtra(EXTRA_TITLE, title);
+        if (text != null)
+            i.putExtra(EXTRA_TEXT, text);
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                ctx.startForegroundService(i);
+            else
+                ctx.startService(i);
+        } catch (Exception e) {
+            Log.e(TAG, "update LoggingService échoué", e);
+        }
+    }
+
     public static void stop(Context ctx) {
         if (ctx == null)
             return;
         try {
-            ctx.stopService(new Intent(ctx, LoggingService.class));
+            Intent i = new Intent(ctx, LoggingService.class);
+            i.setAction(ACTION_STOP);
+            ctx.startService(i);
         } catch (Exception e) {
-            Log.e(TAG, "stop LoggingService échoué", e);
+            Log.w(TAG, "stop via ACTION_STOP échoué, fallback stopService", e);
+            try {
+                ctx.stopService(new Intent(ctx, LoggingService.class));
+            } catch (Exception e2) {
+                Log.e(TAG, "stop LoggingService échoué", e2);
+            }
         }
     }
 
@@ -187,6 +290,49 @@ public class LoggingService extends Service {
                 new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
                 48050);
         return true;
+    }
+
+    /** true si l'app est déjà exemptée d'optimisation batterie. */
+    public static boolean isIgnoringBatteryOptimizations(Context ctx) {
+        if (ctx == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.M)
+            return true;
+        try {
+            PowerManager pm = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
+            if (pm == null)
+                return true;
+            return pm.isIgnoringBatteryOptimizations(ctx.getPackageName());
+        } catch (Exception e) {
+            Log.w(TAG, "isIgnoringBatteryOptimizations", e);
+            return true;
+        }
+    }
+
+    /**
+     * Demande l'exemption d'optimisation batterie (nécessaire sur beaucoup
+     * d'OEM pour garder le BT + timers actifs écran éteint).
+     * @return true si une UI système a été ouverte
+     */
+    public static boolean requestIgnoreBatteryOptimizations(android.app.Activity activity) {
+        if (activity == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.M)
+            return false;
+        try {
+            if (isIgnoringBatteryOptimizations(activity))
+                return false;
+            Intent i = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+            i.setData(Uri.parse("package:" + activity.getPackageName()));
+            activity.startActivity(i);
+            return true;
+        } catch (Exception e) {
+            Log.w(TAG, "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS indisponible, fallback settings", e);
+            try {
+                Intent i = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                activity.startActivity(i);
+                return true;
+            } catch (Exception e2) {
+                Log.e(TAG, "battery settings échoué", e2);
+                return false;
+            }
+        }
     }
 
     /**

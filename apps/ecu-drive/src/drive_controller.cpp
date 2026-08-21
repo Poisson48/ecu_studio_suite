@@ -198,15 +198,28 @@ DriveController::DriveController(elm::Elm327* elm, Updater* updater, QObject* pa
 
     QTimer::singleShot(1500, m_updater, &Updater::check);
 
-    // App state
+    // App state — en session, réaffirme le FGS + wake quand on passe en arrière-plan.
     connect(qApp, &QGuiApplication::applicationStateChanged, this,
             [this](Qt::ApplicationState st) {
+        const bool wasSuspended = m_uiSuspended;
         m_uiSuspended = (st == Qt::ApplicationInactive
                          || st == Qt::ApplicationSuspended
                          || st == Qt::ApplicationHidden);
+        if (!m_sessionOn)
+            return;
+        if (m_uiSuspended && !wasSuspended) {
+            // App quitte le premier plan : s'assurer que le service + wake lock tiennent.
+            platformStartLoggingService(
+                tr("ECU Drive"),
+                tr("Logging OBD actif (arrière-plan)"));
+            ensureBackgroundWatchdog(true);
+        } else if (!m_uiSuspended && wasSuspended) {
+            platformUpdateLoggingService(
+                tr("ECU Drive"),
+                tr("Session conduite — logging OBD actif"));
+        }
     });
 }
-
 DriveController::~DriveController() = default;
 
 // ── Propriétés ────────────────────────────────────────────────────────────────
@@ -459,6 +472,17 @@ void DriveController::startSession() {
     applyPollingForCurrentPage();
     autoStartCsv();
     platformStartLoggingService(tr("ECU Drive"), tr("Session conduite — logging OBD actif"));
+    ensureBackgroundWatchdog(true);
+#if defined(Q_OS_ANDROID)
+    // Demande l'exemption batterie une fois (OEM agressifs sinon coupent le BT).
+    if (!platformIsIgnoringBatteryOptimizations()) {
+        QTimer::singleShot(600, this, [this]() {
+            if (!m_sessionOn) return;
+            if (platformRequestIgnoreBatteryOptimizations())
+                emit toast(tr("Autorise « Pas d'optimisation » pour le logging écran éteint"));
+        });
+    }
+#endif
     m_verdict = tr("Acquisition…");
     emit driveChanged();
     endBusy();
@@ -471,6 +495,7 @@ void DriveController::stopSession() {
     m_elm->stopPolling();
     m_sessionOn = false;
     emit sessionChanged();
+    ensureBackgroundWatchdog(false);
     platformStopLoggingService();
     autoStopCsv();
     const auto sum = m_session.finish();
@@ -655,6 +680,43 @@ void DriveController::ensureTurboPolling() {
         pids = { 0x0C, 0x0B, 0x10 };
     m_elm->startPolling(pids, 180);
     refreshTurboLive();
+}
+
+void DriveController::ensureBackgroundWatchdog(bool on) {
+    if (!on) {
+        if (m_bgWatchdog)
+            m_bgWatchdog->stop();
+        return;
+    }
+    if (!m_bgWatchdog) {
+        m_bgWatchdog = new QTimer(this);
+        m_bgWatchdog->setInterval(15000);
+        connect(m_bgWatchdog, &QTimer::timeout, this, &DriveController::onBackgroundWatchdog);
+    }
+    if (!m_bgWatchdog->isActive())
+        m_bgWatchdog->start();
+}
+
+void DriveController::onBackgroundWatchdog() {
+    if (!m_sessionOn) {
+        ensureBackgroundWatchdog(false);
+        return;
+    }
+    // Réaffirme FGS + notif (certains OEM tuent le service silencieusement).
+    const double rpm = m_live.value(0x0C, 0.0);
+    const QString text = m_uiSuspended
+        ? tr("BG · RPM %1 · %2 lignes CSV")
+              .arg(rpm > 0 ? QString::number(rpm, 'f', 0) : QStringLiteral("—"))
+              .arg(m_csvRows)
+        : tr("Session · RPM %1 · %2 lignes")
+              .arg(rpm > 0 ? QString::number(rpm, 'f', 0) : QStringLiteral("—"))
+              .arg(m_csvRows);
+    if (m_uiSuspended)
+        platformStartLoggingService(tr("ECU Drive"), text);
+    else
+        platformUpdateLoggingService(tr("ECU Drive"), text);
+    if (m_csv && m_csv->isOpen())
+        m_csv->flush();
 }
 
 void DriveController::refreshTurboLive() {
@@ -1120,6 +1182,7 @@ void DriveController::autoStartCsv() {
     m_session.setCsvPath(m_lastCsv);
     m_csvMaps.clear();
     m_lastCsvWriteMs = 0;
+    m_csvRows = 0;
     QTextStream ts(m_csv);
     ts << QStringLiteral("# ecu-drive-session v2\n");
     ts << QStringLiteral("# app=") << QStringLiteral(APP_VERSION)
@@ -1172,14 +1235,19 @@ void DriveController::appendCsv(const std::vector<ecu::ValidationResult>& result
        << ',' << QString::number(m_live.value(0x10, 0.0), 'f', 2);
     for (const QString& mn : m_csvMaps) {
         const ecu::ValidationResult* r = byName.value(mn, nullptr);
-        if (!r || r->status == ecu::ValidationStatus::NoData) { ts << QStringLiteral(",,,,,"); continue; }
+        if (!r || r->status == ecu::ValidationStatus::NoData) {
+            ts << QStringLiteral(",,,,,");
+            continue;
+        }
         ts << ',' << QString::number(r->measured, 'f', 2)
            << ',' << QString::number(r->expected, 'f', 2)
            << ',' << QString::number(r->delta, 'f', 2)
-           << ',' << statusLabel(r->status) << ',' << r->unit;
+           << ',' << statusLabel(r->status)
+           << ',' << r->unit;
     }
     ts << '\n';
     m_csv->flush();
+    ++m_csvRows;
 }
 
 QString DriveController::promptSaveLogAs(const QString& sourceCsv) {

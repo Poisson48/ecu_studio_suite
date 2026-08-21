@@ -162,19 +162,22 @@ ApplicationWindow {
                         : "Version " + Updater.latestVersion + " disponible"
                 }
                 Rectangle {
-                    Layout.fillWidth: true; height: 3; radius: 2
+                    Layout.fillWidth: true; height: 4; radius: 2
                     visible: Updater.downloading; color: "#334155"
                     Rectangle {
                         height: parent.height; radius: 2; color: "#3b82f6"
-                        width: parent.width * Updater.progress
-                        Behavior on width { NumberAnimation { duration: 120 } }
+                        width: Math.max(0, parent.width * Updater.progress)
+                        // Pas de Behavior : évite l'effet « rebond » / retour arrière.
                     }
                 }
                 Label {
-                    visible: !Updater.downloading
-                    text: Updater.readyToInstall ? "Android vous demandera confirmation"
+                    Layout.fillWidth: true; elide: Text.ElideRight
+                    text: Updater.downloading ? Updater.progressLabel
+                        : Updater.readyToInstall ? "Android vous demandera confirmation"
                         : "Vous avez la " + Updater.currentVersion
-                    color: "#64748b"; font.pixelSize: 12
+                    color: Updater.downloading ? "#93c5fd" : "#64748b"
+                    font.pixelSize: 12
+                    font.weight: Updater.downloading ? Font.DemiBold : Font.Normal
                 }
             }
             Button {

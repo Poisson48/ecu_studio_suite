@@ -55,7 +55,15 @@ void platformKeepScreenOn(bool on = true);
  */
 void platformStartLoggingService(const QString& title = QString(),
                                  const QString& text = QString());
+void platformUpdateLoggingService(const QString& title, const QString& text);
 void platformStopLoggingService();
+
+/**
+ * Demande l'exemption d'optimisation batterie (Android).
+ * Retourne true si une UI système a été ouverte. No-op hors Android.
+ */
+bool platformRequestIgnoreBatteryOptimizations();
+bool platformIsIgnoringBatteryOptimizations();
 
 /** Alerte underboost : ToneGenerator + vibration (Android). Desktop = QApplication::beep. */
 void platformAlertBeep();

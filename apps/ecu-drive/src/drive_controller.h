@@ -220,6 +220,8 @@ private:
     void applyPollingForCurrentPage();
     QList<quint8> sensorsPollPids() const;
     bool pidLikelySupported(quint8 pid) const;
+    void ensureBackgroundWatchdog(bool on);
+    void onBackgroundWatchdog();
     void startSession();
     void stopSession();
     void runValidation();
@@ -339,6 +341,8 @@ private:
     QFile*      m_csv = nullptr;
     QStringList m_csvMaps;
     qint64      m_lastCsvWriteMs = 0;
+    qint64      m_csvRows = 0;
+    QTimer*     m_bgWatchdog = nullptr;
     int         m_lastAlertAt = 0;
     bool        m_beepAlert = true;
 };

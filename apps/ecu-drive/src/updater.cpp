@@ -309,23 +309,21 @@ QString Updater::progressLabel() const
     const auto mo = [](qint64 b) {
         return QString::number(qreal(b) / (1024.0 * 1024.0), 'f', 1);
     };
-    const qint64 sec = m_dlStartedMs > 0
-        ? qMax(qint64(0), (QDateTime::currentMSecsSinceEpoch() - m_dlStartedMs) / 1000)
-        : 0;
+    const int pct = int(m_progress * 100 + 0.5);
 
     if (m_bytesTotal > 0 && m_bytesReceived > 0) {
-        return QStringLiteral("%1 % (%2 / %3 Mo)")
-            .arg(int(m_progress * 100 + 0.5))
+        return QStringLiteral("%1 %  ·  %2 / %3 Mo")
+            .arg(pct)
             .arg(mo(m_bytesReceived), mo(m_bytesTotal));
     }
     if (m_bytesReceived > 0)
-        return QStringLiteral("%1 Mo…").arg(mo(m_bytesReceived));
+        return QStringLiteral("%1 %  ·  %2 Mo…").arg(pct).arg(mo(m_bytesReceived));
 
-    // Android / Qt : souvent 0 octet signalé jusqu'à la fin — au moins un chrono.
-    if (m_bytesTotal > 0)
-        return QStringLiteral("0 / %1 Mo — %2 s…").arg(mo(m_bytesTotal)).arg(sec);
-    if (m_state == Downloading)
-        return QStringLiteral("%1 s…").arg(sec);
+    if (m_state == Downloading) {
+        if (m_bytesTotal > 0)
+            return QStringLiteral("%1 %  ·  0 / %2 Mo…").arg(pct).arg(mo(m_bytesTotal));
+        return QStringLiteral("%1 %…").arg(pct);
+    }
     return QStringLiteral("0 %");
 }
 
@@ -351,21 +349,34 @@ void Updater::applyDownloadProgress(qint64 received, qint64 total)
     else if (m_bytesTotal <= 0 && m_apkExpectedBytes > 0)
         m_bytesTotal = m_apkExpectedBytes;
 
+    qreal next = m_progress;
     if (m_bytesTotal > 0 && m_bytesReceived > 0) {
-        m_progress = qBound(0.0, qreal(m_bytesReceived) / qreal(m_bytesTotal), 0.99);
+        next = qBound(0.0, qreal(m_bytesReceived) / qreal(m_bytesTotal), 0.99);
     } else if (m_bytesReceived > 0) {
         constexpr qreal kExpect = 40.0 * 1024.0 * 1024.0;
-        m_progress = 0.90 * (1.0 - std::exp(-qreal(m_bytesReceived) / kExpect));
+        next = 0.90 * (1.0 - std::exp(-qreal(m_bytesReceived) / kExpect));
     } else if (m_state == Downloading && m_bytesTotal > 0 && m_dlStartedMs > 0) {
         // Estimation douce tant que le stack Android bufferise (évite 0 % figé).
+        // Plafond bas : dès que les vrais octets arrivent, on ne redescend pas.
         const qreal expectMs = qMax(10000.0,
             qreal(m_bytesTotal) / (2.0 * 1024.0 * 1024.0) * 1000.0);
         const qreal t = qreal(QDateTime::currentMSecsSinceEpoch() - m_dlStartedMs)
                         / expectMs;
-        m_progress = qBound(0.01, 0.85 * (1.0 - std::exp(-1.8 * t)), 0.85);
-    } else {
-        m_progress = 0.0;
+        next = qBound(0.01, 0.25 * (1.0 - std::exp(-1.8 * t)), 0.25);
+    } else if (m_state != Downloading) {
+        next = 0.0;
     }
+
+    // Monotone pendant le téléchargement : jamais de retour en arrière (perturbant).
+    if (m_state == Downloading)
+        next = qMax(m_progress, next);
+
+    if (qFuzzyCompare(next, m_progress)) {
+        // Même progression barre, mais le libellé (Mo / chrono) peut changer.
+        emit progressChanged();
+        return;
+    }
+    m_progress = next;
     emit progressChanged();
 }
 
